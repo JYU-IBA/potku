@@ -339,7 +339,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     @classmethod
     def from_file(cls, request, prefix: str, simulation_folder: Path,
                   mcsimu_file_path: Path, profile_file_path: Path,
-                  sample=None, detector=None, simulation=None):
+                  sample=None, detector=None, simulation=None, run=None):
         """Initialize ElementSimulation from JSON files.
 
         Args:
@@ -356,6 +356,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             detector: detector that is used when simulation is not run with
                 request settings.
             simulation: parent Simulation object of this ElementSimulation
+            run: ElementSimulation's run object
         """
         with mcsimu_file_path.open("r") as mcsimu_file:
             mcsimu = json.load(mcsimu_file)
@@ -444,7 +445,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             optimization_recoils=optimized_recoils,
             optimized_fluence=optimized_fluence,
             main_recoil=main_recoil, sample=sample, detector=detector,
-            **kwargs, **mcsimu, simulation=simulation)
+            **kwargs, **mcsimu, simulation=simulation, run=run)
 
     def get_full_name(self):
         """Returns the full name of the ElementSimulation object.

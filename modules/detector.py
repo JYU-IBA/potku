@@ -138,17 +138,15 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         if save_on_creation:
             self.to_file(self.path, measurement_file)
 
-    def update_directories(self, directory):
+    def update_directories(self, directory: Path):
         """Creates directories if they do not exist and updates paths.
         Args:
             directory: Path to where all the detector information goes.
         """
-        # FIXME __init__ docstring states that path is the path to .detector
-        #   file, not the directory
-        self.path = Path(directory)
-        self.path.mkdir(exist_ok=True)
+        self.path = directory / self.path.name
+        directory.mkdir(exist_ok=True)
 
-        self.efficiency_directory = Path(self.path, Detector.EFFICIENCY_DIR)
+        self.efficiency_directory = directory / Detector.EFFICIENCY_DIR
         self.efficiency_directory.mkdir(exist_ok=True)
 
     def update_directory_references(self, obj):
@@ -321,8 +319,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         """
         # Delete possible extra .detector files
         det_folder = detector_file.parent
-        det_folder.mkdir(exist_ok=True)
-        gf.remove_matching_files(det_folder, exts={".detector"})
+        det_folder.mkdir(parents=True, exist_ok=True)
 
         timestamp = time.time()
 

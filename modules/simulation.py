@@ -35,9 +35,12 @@ import logging
 import os
 import time
 
-from . import general_functions as gf
-
+from collections import namedtuple
 from pathlib import Path
+from typing import Optional
+from typing import List
+
+from . import general_functions as gf
 
 from .base import ElementSimulationContainer
 from .base import Serializable
@@ -82,12 +85,12 @@ class Simulations:
             return None
         return self.simulations[key]
 
-    def add_simulation_file(self, sample, simulation_path: Path, tab_id):
+    def add_simulation_file(self, sample, simulation_file: Path, tab_id):
         """Add a new file to simulations.
 
         Args:
             sample: The sample under which the simulation is put.
-            simulation_path: Path of the .simulation file.
+            simulation_file: Path of the .simulation file.
             tab_id: Integer representing identifier for simulation's tab.
 
         Return:
@@ -95,116 +98,75 @@ class Simulations:
         """
         simulation = None
 
-        simulation_folder_path, simulation_file = simulation_path.parent, \
-            simulation_path.name
-        sample_folder, simulation_folder = simulation_folder_path.parent, \
-            simulation_folder_path.name
+        simulation_folder = simulation_file.parent
         directory_prefix = Simulation.DIRECTORY_PREFIX
-        target_extension = ".target"
-        measurement_extension = ".measurement"
-        detector_extension = ".detector"
-        measurement_settings_file = ""
-        element_simulation_extension = ".mcsimu"
-        profile_extension = ".profile"
 
         # Create simulation from file
-        if simulation_path.exists():
-            simulation = Simulation.from_file(sample.request, simulation_path)
-            simulation.sample = sample
-            serial_number = int(simulation_folder[len(directory_prefix):len(
-                directory_prefix) + 2])
+        if simulation_file.exists():
+            (target_file, mesu_file,
+             elem_sim_files, profile_files,
+             detector_file) = Simulation.find_simulation_files(
+                simulation_folder)
+
+            if target_file is not None:
+                target = Target.from_file(
+                    target_file, mesu_file, sample.request)
+            else:
+                target = None
+
+            if detector_file is not None:
+                detector = Detector.from_file(
+                    detector_file, mesu_file, sample.request)
+            else:
+                detector = None
+
+            simulation = Simulation.from_file(
+                sample.request, simulation_file, measurement_file=mesu_file,
+                sample=sample, target=target, detector=detector)
+
+            serial_number = int(
+                simulation_folder.name[
+                    len(directory_prefix):len(directory_prefix) + 2])
             simulation.serial_number = serial_number
             simulation.tab_id = tab_id
 
-            # TODO provide detector, run and target as parameters to the
-            #  Simulation.from_file method or make Simulation read those files
-            #  too in that method
-            # TODO refactor these os.listdir iterations into something more
-            #   reusable and stable
+            for mcsimu_file in elem_sim_files:
+                element_str_with_name = mcsimu_file.stem
 
-            for entry in os.scandir(simulation_folder_path):
-                f = Path(entry.path)
-                if f.suffix == measurement_extension:
-                    measurement_settings_file = f
-                    simulation.run = Run.from_file(measurement_settings_file)
-                    with measurement_settings_file.open("r") as mesu_f:
-                        mesu_settings = json.load(mesu_f)
+                prefix, name = element_str_with_name.split("-")
 
-                    try:
-                        simulation.measurement_setting_file_name = \
-                            mesu_settings["general"]["name"]
-                        simulation.measurement_setting_file_description = \
-                            mesu_settings["general"]["description"]
-                        simulation.modification_time = \
-                            mesu_settings["general"]["modification_time_unix"]
-                    except KeyError:
-                        pass
-                    break
+                profile_file = next(
+                    p for p in profile_files if p.name.startswith(prefix)
+                )
 
-            # Read Detector information from file.
-            det_folder = Path(simulation_folder_path, "Detector")
-            if det_folder.is_dir():
-                for entry in os.scandir(det_folder):
-                    file = Path(entry.path)
-                    if file.suffix == detector_extension:
-                        simulation.detector = Detector.from_file(
-                            file, measurement_settings_file, self.request)
-                        simulation.detector.update_directories(det_folder)
-                        break
-
-            for entry in os.scandir(simulation_folder_path):
-                file = Path(entry.path)
-                # Read Target information from file.
-                if file.suffix == target_extension:
-                    simulation.target = Target.from_file(
-                        file, measurement_settings_file, self.request)
-
-                # Read read ElementSimulation information from files.
-                elif file.suffix == element_simulation_extension:
-                    # .mcsimu file
-                    mcsimu_file_path = file
-
-                    element_str_with_name = file.stem
-
-                    prefix, name = element_str_with_name.split("-")
-                    profile_file_path = None
-
-                    for e in os.scandir(simulation.directory):
-                        f = Path(e.path)
-                        if f.suffix == profile_extension and f.name.startswith(
-                                prefix):
-                            profile_file_path = f
-                            break
-
-                    if profile_file_path is not None \
-                            and profile_file_path.exists():
-                        # Create ElementSimulation from files
-                        element_simulation = ElementSimulation.from_file(
-                            self.request, prefix, simulation_folder_path,
-                            mcsimu_file_path, profile_file_path,
-                            sample=simulation.sample,
-                            detector=simulation.detector
-                        )
-                        simulation.element_simulations.append(
-                            element_simulation)
-                        element_simulation.run = simulation.run
-                        element_simulation.simulation = simulation
+                if profile_file is not None:
+                    # Create ElementSimulation from files
+                    element_simulation = ElementSimulation.from_file(
+                        self.request, prefix, simulation_folder,
+                        mcsimu_file, profile_file,
+                        sample=simulation.sample,
+                        detector=simulation.detector,
+                        run=simulation.run,
+                        simulation=simulation
+                    )
+                    simulation.element_simulations.append(
+                        element_simulation)
 
         # Create a new simulation
         else:
             # Not stripping the extension
-            simulation_name, extension = os.path.splitext(simulation_file)
+            simulation_name = simulation_file.stem
             try:
                 keys = sample.simulations.simulations.keys()
                 for key in keys:
                     if sample.simulations.simulations[key].directory == \
                             simulation_name:
                         return simulation  # simulation = None
-                simulation = Simulation(simulation_path, self.request,
-                                        name=simulation_name, tab_id=tab_id,
-                                        sample=sample)
-                serial_number = int(simulation_folder[len(directory_prefix):len(
-                    directory_prefix) + 2])
+                simulation = Simulation(
+                    simulation_file, self.request, name=simulation_name,
+                    tab_id=tab_id, sample=sample)
+                serial_number = int(simulation_folder.name[len(
+                    directory_prefix):len(directory_prefix) + 2])
                 simulation.serial_number = serial_number
                 self.request.samples.simulations.simulations[tab_id] = \
                     simulation
@@ -252,8 +214,10 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
 
     def __init__(self, path: Path, request, name="Default",
                  description="",
-                 modification_time=None, tab_id=-1, run=None,
-                 detector=None, target=None,
+                 modification_time=None, tab_id=-1,
+                 run: Optional[Run] = None,
+                 detector: Optional[Detector] = None,
+                 target: Optional[Target] = None,
                  measurement_setting_file_name="",
                  measurement_setting_file_description="", sample=None,
                  use_request_settings=True,
@@ -284,6 +248,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
 
         self.tab_id = tab_id
         self.path = Path(path)
+        self.directory, self.simulation_file = self.path.parent, self.path.name
         self.request = request
         self.sample = sample
 
@@ -303,54 +268,91 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
 
         self.element_simulations = []
 
-        self.run = run
-        self.detector = detector
-        self.target = target
         self.use_request_settings = use_request_settings
-        if self.target is None:
+
+        if target is None:
             self.target = Target()
+        else:
+            self.target = target
+
+        if run is None:
+            self.run = Run()
+        else:
+            self.run = run
+
+        if detector is None:
+            self.detector = Detector(
+                self.directory / "Detector" / "simulation.detector",
+                self.get_measurement_file(),
+                save_on_creation=save_on_creation)
+        else:
+            self.detector = detector
 
         self.serial_number = 0
-
-        self.directory, self.simulation_file = self.path.parent, self.path.name
 
         if save_on_creation:
             self.create_folder_structure()
             self.to_file(self.path)
 
     def create_folder_structure(self):
+        """Create folder structure for simulation.
         """
-        Create folder structure for simulation.
-        """
-        self.__make_directories(self.directory)
+        if not self.directory.exists():
+            self.directory.mkdir(exist_ok=True)
+            log = f"Created a directory {self.directory}."
+            logging.getLogger("request").info(log)
         self.set_loggers(self.directory, self.request.directory)
 
-    @staticmethod
-    def __make_directories(directory: Path):
+    def get_measurement_file(self) -> Path:
+        """Returns the path to .measurement file that contains the settings
+        of this Simulation.
         """
-        Makes a directory and adds the event to log.
-
-        Args:
-             directory: Directory to create.
-        """
-        if not directory.exists():
-            directory.mkdir(exist_ok=True)
-            log = "Created a directory {0}.".format(directory)
-            logging.getLogger("request").info(log)
+        # TODO this method should be defined in a common base class
+        return Path(self.path.parent,
+                    f"{self.measurement_setting_file_name}.measurement")
 
     def rename_simulation_file(self):
         """Renames the simulation files with self.simulatio_file.
         """
-        simulation_file = None
         for file in os.listdir(self.directory):
             if file.endswith(".simulation"):
-                simulation_file = file
-                break
-        if simulation_file:
-            gf.rename_file(Path(self.directory, simulation_file),
-                           self.simulation_file)
+                gf.rename_file(
+                    Path(self.directory, file),
+                    self.simulation_file)
 
-    def add_element_simulation(self, recoil_element):
+    @staticmethod
+    def find_simulation_files(simulation_dir: Path):
+        res = gf.find_files_by_extension(
+            simulation_dir, ".mcsimu", ".target", ".measurement", ".profile")
+        try:
+            det_res = gf.find_files_by_extension(
+                simulation_dir / "Detector", ".detector")
+        except OSError:
+            det_res = {".detector": []}
+
+        if res[".target"]:
+            target_file = res[".target"][0]
+        else:
+            target_file = None
+        if res[".measurement"]:
+            mesu_file = res[".measurement"][0]
+        else:
+            mesu_file = None
+
+        if det_res[".detector"]:
+            detector_file = det_res[".detector"][0]
+        else:
+            detector_file = None
+
+        sim_files = namedtuple(
+            "Simulation_files",
+            ("target", "measurement", "element_simulations", "profiles",
+             "detector"))
+        return sim_files(
+            target_file, mesu_file, res[".mcsimu"], res[".profile"],
+            detector_file)
+
+    def add_element_simulation(self, recoil_element) -> ElementSimulation:
         """Adds ElementSimulation to Simulation.
 
         Args:
@@ -369,19 +371,21 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             name_prefix=element_str, name=name, detector=self.detector,
             recoil_elements=[recoil_element], run=self.run, sample=self.sample,
             simulation_type=simulation_type)
-        # element_simulation.recoil_elements.append(recoil_element)
+
         self.element_simulations.append(element_simulation)
         return element_simulation
 
     @classmethod
-    def from_file(cls, request, file_path: Path, detector=None, target=None,
-                  run=None, sample=None, save_on_creation=True):
+    def from_file(cls, request, simulation_file: Path,
+                  measurement_file: Optional[Path] = None,
+                  detector=None, target=None, run=None, sample=None,
+                  save_on_creation=True):
         """Initialize Simulation from a JSON file.
 
         Args:
             request: Request which the Simulation belongs to.
-            file_path: A file path to JSON file containing the
-                simulation information.
+            simulation_file: path to .simulation file
+            measurement_file: path to .measurement file
             detector: Detector used by this simulation
             target: Target used by this simulation
             run: Run used by this simulation
@@ -389,25 +393,45 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             save_on_creation: whether Simulation object is saved to file
                 after initialization
         """
-        with file_path.open("r") as file:
+        with simulation_file.open("r") as file:
             simu_obj = json.load(file)
 
         # Overwrite the human readable time stamp with unix time stamp, as
         # that is what the Simulation object uses internally
         simu_obj["modification_time"] = simu_obj.pop("modification_time_unix")
 
-        return cls(
-            file_path, request, detector=detector, target=target, run=run,
-            sample=sample, **simu_obj, save_on_creation=save_on_creation)
+        if measurement_file is not None:
+            run = Run.from_file(measurement_file)
+            with measurement_file.open("r") as mesu_f:
+                mesu_settings = json.load(mesu_f)
 
-    def to_file(self, file_path):
+            try:
+                general = {
+                    "measurement_setting_file_name": mesu_settings["name"],
+                    "measurement_setting_file_description": mesu_settings[
+                        "description"]
+                }
+            except KeyError:
+                general = {}
+        else:
+            general = {}
+
+        return cls(
+            simulation_file, request, detector=detector, target=target, run=run,
+            sample=sample, **simu_obj, save_on_creation=save_on_creation,
+            **general)
+
+    def to_file(self, simulation_file: Optional[Path] = None,
+                measurement_file: Optional[Path] = None):
         """Save simulation settings to a file.
 
         Args:
-            file_path: File in which the simulation settings will be saved.
+            simulation_file: path to a .simulation file
+            measurement_file: path to a .measurement_file
         """
+        if simulation_file is None:
+            simulation_file = self.path
 
-        # TODO could add file paths to detector and run files here too
         time_stamp = time.time()
         obj = {
             "name": self.name,
@@ -418,12 +442,47 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             "use_request_settings": self.use_request_settings
         }
 
-        with open(file_path, "w") as file:
+        with simulation_file.open("w") as file:
             json.dump(obj, file, indent=4)
 
-    def update_directory_references(self, new_dir):
-        """
-        Update simualtion's directory references.
+        # Save measurement settings parameters.
+        if measurement_file is None:
+            measurement_file = self.get_measurement_file()
+
+        general_obj = {
+            "name": self.measurement_setting_file_name,
+            "description":
+                self.measurement_setting_file_description,
+            "modification_time":
+                time.strftime("%c %z %Z", time.localtime(time_stamp)),
+            "modification_time_unix": time_stamp,
+            "use_request_settings": self.use_request_settings
+        }
+
+        if measurement_file.exists():
+            with measurement_file.open("r") as mesu:
+                obj = json.load(mesu)
+            obj["general"] = general_obj
+        else:
+            obj = {
+                "general": general_obj
+            }
+
+        # Write measurement settings to file
+        with measurement_file.open("w") as file:
+            json.dump(obj, file, indent=4)
+
+        # Save Run object to file
+        self.run.to_file(measurement_file)
+        # Save Detector object to file
+        self.detector.to_file(self.detector.path, measurement_file)
+
+        # Save Target object to file
+        target_file = Path(self.directory, f"{self.target.name}.target")
+        self.target.to_file(target_file, measurement_file)
+
+    def update_directory_references(self, new_dir: Path):
+        """Update simulation's directory references.
 
         Args:
             new_dir: Path to simulation folder with new name.
@@ -440,25 +499,34 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
 
         self.set_loggers(self.directory, self.request.directory)
 
-    def get_running_simulations(self):
+    def get_running_simulations(self) -> List[ElementSimulation]:
+        """Returns a list of currently running simulations.
+        """
         return list(
             elem_sim for elem_sim in self.element_simulations
             if elem_sim.is_simulation_running()
         )
 
-    def get_finished_simulations(self):
+    def get_finished_simulations(self) -> List[ElementSimulation]:
+        """Returns a list of simulations that are finished.
+        """
         return list(
             elem_sim for elem_sim in self.element_simulations
             if elem_sim.is_simulation_finished()
         )
 
-    def get_running_optimizations(self):
+    def get_running_optimizations(self) -> List[ElementSimulation]:
+        """Returns a list of simulations currently involved in a running
+        optimization.
+        """
         return list(
             elem_sim for elem_sim in self.element_simulations
             if elem_sim.is_optimization_running()
         )
 
-    def get_finished_optimizations(self):
+    def get_finished_optimizations(self) -> List[ElementSimulation]:
+        """Returns a list of simulations that have optimizations results.
+        """
         return list(
             elem_sim for elem_sim in self.element_simulations
             if elem_sim.is_optimization_finished()

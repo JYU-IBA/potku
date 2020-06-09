@@ -311,6 +311,26 @@ class TestFileIO(unittest.TestCase):
             gf.remove_matching_files(path, exts={".bar"})
             self.assertTrue(path.is_file())
 
+    def test_find_files_by_extension(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            files = ["a.foo", "b.foo", "c.fooo", "d.foo.", "e", "d.bar"]
+            paths = [Path(tmp_dir, f) for f in files]
+            for p in paths:
+                p.open("w").close()
 
-if __name__ == "__main__":
-    unittest.main()
+            self.assertEqual({
+                ".foo": [Path(tmp_dir, "a.foo"), Path(tmp_dir, "b.foo")]
+            }, gf.find_files_by_extension(Path(tmp_dir), ".foo"))
+
+            self.assertEqual({
+                ".foo": [Path(tmp_dir, "a.foo"), Path(tmp_dir, "b.foo")],
+                ".bar": [Path(tmp_dir, "d.bar")],
+                ".zip": []
+            }, gf.find_files_by_extension(
+                Path(tmp_dir), ".foo", ".bar", ".zip"))
+
+            self.assertEqual({
+            }, gf.find_files_by_extension(Path(tmp_dir)))
+
+        self.assertRaises(
+            OSError, lambda: gf.find_files_by_extension(Path(tmp_dir)))

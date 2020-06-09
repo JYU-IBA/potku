@@ -286,9 +286,10 @@ class Request(ElementSimulationContainer):
             sim = Simulation(
                 Path(self.default_folder, "Default.simulation"), self,
                 save_on_creation=save_on_creation,
+                detector=self.default_detector,
                 description="This is a default simulation.",
                 measurement_setting_file_description="These are default "
-                                                     "measurement "
+                                                     "simulation "
                                                      "parameters.")
 
         mcsimu_path = Path(self.default_folder, "Default.mcsimu")

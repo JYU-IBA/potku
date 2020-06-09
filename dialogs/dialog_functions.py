@@ -29,13 +29,15 @@ __version__ = "2.0"
 import os
 import itertools
 from collections import namedtuple, defaultdict
+from typing import Union
+from pathlib import Path
 
 import widgets.gui_utils as gutils
 
-from pathlib import Path
-
 from modules.base import ElementSimulationContainer
 from modules.detector import Detector
+from modules.measurement import Measurement
+from modules.simulation import Simulation
 
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui
@@ -160,22 +162,22 @@ def delete_recoil_espe(tab, recoil_name):
 # TODO common base class for settings dialogs
 
 
-def update_detector_settings(entity, det_folder_path: Path,
-                             measurement_settings_file_path: Path):
+def update_detector_settings(entity: Union[Measurement, Simulation],
+                             detector_folder: Path, measurement_file: Path):
     """
 
     Args:
         entity: either a Measurement or Simulation
-        det_folder_path: path to the detector's folder,
-        measurement_settings_file_path: TODO
+        detector_folder: path to the detector's folder,
+        measurement_file: path to .measurement file
     """
     # Create default Detector for Measurement
-    detector_file_path = Path(det_folder_path, "Default.detector")
-    det_folder_path.mkdir(exist_ok=True)
+    detector_file_path = Path(detector_folder, "Default.detector")
+    detector_folder.mkdir(exist_ok=True)
 
     entity.detector = Detector(
-        detector_file_path, measurement_settings_file_path)
-    entity.detector.update_directories(det_folder_path)
+        detector_file_path, measurement_file)
+    entity.detector.update_directories(detector_folder)
 
     # Transfer the default detector efficiencies to new
     # Detector

@@ -352,7 +352,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
 
         self.use_default_profile_settings = use_default_profile_settings
 
-    def get_detector_or_default(self):
+    def get_detector_or_default(self) -> Detector:
         """Get measurement specific detector of default.
 
         Return:
@@ -415,32 +415,39 @@ class Measurement(Logger, AdjustableSettings, Serializable):
 
     @staticmethod
     def find_measurement_files(directory: Path):
-        profile_file = None
-        measurement_file = None
-        target_file = None
-        detector_file = None
-        for entry in os.scandir(directory):
-            # Iterate over the given directory
-            path = Path(entry.path)
-            if path.is_file():
-                if path.suffix == ".profile":
-                    profile_file = path
-                elif path.suffix == ".measurement":
-                    measurement_file = path
-                elif path.suffix == ".target":
-                    target_file = path
-            elif path.name == "Detector":
-                for e in os.scandir(path):
-                    p = Path(e.path)
-                    if p.suffix == ".detector" and p.is_file():
-                        detector_file = p
-                        # TODO causes ResourceWarning for unclosed scandir
-                        break
+        res = gf.find_files_by_extension(
+            directory, ".profile", ".measurement", ".target")
+        try:
+            det_res = gf.find_files_by_extension(
+                directory / "Detector", ".detector")
+        except OSError:
+            det_res = {".detector": []}
 
-        res = namedtuple(
+        if res[".profile"]:
+            profile_file = res[".profile"][0]
+        else:
+            profile_file = None
+
+        if res[".measurement"]:
+            measurement_file = res[".measurement"][0]
+        else:
+            measurement_file = None
+
+        if res[".target"]:
+            target_file = res[".target"][0]
+        else:
+            target_file = None
+
+        if det_res[".detector"]:
+            detector_file = det_res[".detector"][0]
+        else:
+            detector_file = None
+
+        mesu_files = namedtuple(
             "Measurement_files",
             ("profile", "measurement", "target", "detector"))
-        return res(profile_file, measurement_file, target_file, detector_file)
+        return mesu_files(
+            profile_file, measurement_file, target_file, detector_file)
 
     @classmethod
     def from_file(cls, measurement_info_path: Path, measurement_file_path: Path,

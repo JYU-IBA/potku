@@ -30,7 +30,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import os
-import time
 import logging
 
 import dialogs.dialog_functions as df
@@ -41,13 +40,10 @@ import modules.cut_file as cut_file
 from pathlib import Path
 
 from widgets.gui_utils import StatusBarHandler
-from modules.beam import Beam
-from modules.detector import Detector
 from modules.element import Element
-from modules.run import Run
-from modules.target import Target
+from modules.measurement import Measurement
+from modules.global_settings import GlobalSettings
 
-from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
@@ -61,25 +57,28 @@ class DepthProfileDialog(QtWidgets.QDialog):
     Dialog for making a depth profile.
     """
     checked_cuts = {}
-    x_unit = "1e15 at./cm²"
+    x_unit = "1e15 at./cm²"     # TODO make this an enum
     line_zero = False
     line_scale = False
     systerr = 0.0
     
-    def __init__(self, parent, statusbar=None):
+    def __init__(self, parent, measurement: Measurement, global_settings:
+                 GlobalSettings, statusbar: QtWidgets.QStatusBar = None):
         """Inits depth profile dialog.
         
         Args:
-            parent: A MeasurementTabWidget.
+            parent: a MeasurementTabWidget.
+            measurement: a Measurement object
+            global_settings: a GlobalSettings object
             statusbar: a QStatusBar object
         """
         super().__init__()
         uic.loadUi(Path("ui_files", "ui_depth_profile_params.ui"), self)
 
         self.parent = parent
-        self.measurement = parent.obj
+        self.measurement = measurement
+        self.__global_settings = global_settings
         self.statusbar = statusbar
-        self.__global_settings = self.measurement.request.global_settings
         
         # Connect buttons
         self.OKButton.clicked.connect(self.__accept_params)
@@ -101,8 +100,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
             DepthProfileDialog.checked_cuts[m_name] = []
 
         gutils.fill_cuts_treewidget(
-            self.measurement,
-            self.treeWidget, True,
+            self.measurement, self.treeWidget, True,
             DepthProfileDialog.checked_cuts[m_name])
         
         x_unit = DepthProfileDialog.x_unit
@@ -139,7 +137,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
             # Get the filepaths of the selected items
             root = self.treeWidget.invisibleRootItem()
             child_count = root.childCount()
-            m_name = self.parent.obj.name
+            m_name = self.measurement.name
             DepthProfileDialog.checked_cuts[m_name].clear()
             for i in range(child_count): 
                 item = root.child(i)
@@ -181,108 +179,27 @@ class DepthProfileDialog(QtWidgets.QDialog):
             
             # If items are selected, proceed to generating the depth profile
             if use_cut:
-                self.label_status.setText("Please wait. "
-                                          "Creating depth profile.")
-                QtCore.QCoreApplication.processEvents(
-                    QtCore.QEventLoop.AllEvents)
+                self.label_status.setText(
+                    "Please wait. Creating depth profile.")
                 if self.parent.depth_profile_widget:
                     self.parent.del_widget(self.parent.depth_profile_widget)
 
-                # If reference density changed, update value to measurement and
-                # use_default_settings to False, all to_files.
+                # If reference density changed, update value to measurement
                 if self.__reference_density_spinbox:
-                    self.parent.obj.reference_density = \
+                    self.measurement.reference_density = \
                         self.__reference_density_spinbox.value()
-                    if self.parent.obj.reference_density != \
-                            self.parent.obj.request.default_measurement\
-                            .reference_density:
-                        self.parent.obj.use_default_profile_settings = False
-                        measurement_file_path = Path(
-                            self.parent.obj.directory,
-                            self.parent.obj.measurement_setting_file_name +
-                            ".measurement")
-                        self.parent.obj.measurement_to_file(
-                            measurement_file_path)
-                        profile_file_path = Path(
-                            self.parent.obj.directory,
-                            self.parent.obj.profile_name + ".profile")
-                        self.parent.obj.profile_to_file(profile_file_path)
-
-                        if self.parent.obj.detector is None:
-                            default_det = self.parent.obj.\
-                                request.default_detector
-                            path = Path(self.parent.obj.directory, "Detector")
-                            os.makedirs(path, exist_ok=True)
-                            path_to_det_file = Path(
-                                path, f"{default_det.name}.detector")
-                            self.parent.obj.detector = Detector(
-                                path_to_det_file, measurement_file_path,
-                                default_det.name, default_det.description,
-                                time.time(), default_det.type,
-                                default_det.foils, default_det.tof_foils,
-                                default_det.virtual_size,
-                                default_det.tof_slope,
-                                default_det.tof_offset,
-                                default_det.angle_slope,
-                                default_det.angle_offset,
-                                default_det.timeres, default_det.detector_theta)
-
-                            self.parent.obj.detector.update_directories(path)
-                            effs = default_det.get_efficiency_files()
-                            for eff in effs:
-                                self.parent.obj.detector.add_efficiency_file(
-                                    Path(default_det.efficiency_directory, eff))
-                            self.parent.obj.detector.to_file(Path(
-                                self.parent.obj.detector.path,
-                                self.parent.obj.detector.name + ".detector"),
-                                measurement_file_path)
-
-                        if self.parent.obj.run is None:
-                            default_run = \
-                                self.parent.obj.request.default_measurement.run
-                            beam = Beam(default_run.beam.ion,
-                                        default_run.beam.energy,
-                                        default_run.beam.charge,
-                                        default_run.beam.energy_distribution,
-                                        default_run.beam.spot_size,
-                                        default_run.beam.divergence,
-                                        default_run.beam.profile)
-                            self.parent.obj.run = Run(beam,
-                                                      default_run.fluence,
-                                                      default_run.current,
-                                                      default_run.charge,
-                                                      default_run.time)
-                            self.parent.obj.run.to_file(measurement_file_path)
-
-                        if self.parent.obj.target is None:
-                            default_target = \
-                                self.parent.obj.request.default_measurement.\
-                                target
-                            self.parent.obj.target = Target(
-                                default_target.name, time.time(),
-                                default_target.description,
-                                default_target.target_type,
-                                default_target.image_size,
-                                default_target.image_file,
-                                default_target.scattering_element,
-                                default_target.target_theta)
-                            self.parent.obj.target.to_file(Path(
-                                self.parent.obj.directory,
-                                self.parent.obj.name + ".target"),
-                                measurement_file_path)
+                    if self.measurement.reference_density != \
+                            self.measurement.request.default_measurement\
+                                    .reference_density:
+                        self.measurement.to_file()
                 
-                self.parent.depth_profile_widget = \
-                    DepthProfileWidget(self.parent,
-                                       output_dir,
-                                       use_cut,
-                                       elements,
-                                       x_unit,
-                                       DepthProfileDialog.line_zero,
-                                       DepthProfileDialog.line_scale,
-                                       DepthProfileDialog.systerr,
-                                       progress=sbh.reporter.get_sub_reporter(
-                                           lambda x: 30 + 0.6 * x
-                                       ))
+                self.parent.depth_profile_widget = DepthProfileWidget(
+                    self.parent, output_dir, use_cut, elements, x_unit,
+                    DepthProfileDialog.line_zero, DepthProfileDialog.line_scale,
+                    DepthProfileDialog.systerr,
+                    progress=sbh.reporter.get_sub_reporter(
+                        lambda x: 30 + 0.6 * x
+                    ))
 
                 sbh.reporter.report(90)
                 
@@ -342,12 +259,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
     def __update_eff_files(self):
         """Update efficiency files to UI which are used.
         """
-        if self.parent.obj.detector is None:
-            eff_files = self.parent.obj.request.default_detector\
-                .get_efficiency_files()
-        else:
-            eff_files = self.parent.obj.detector.get_efficiency_files()
-
+        eff_files = self.measurement.detector.get_efficiency_files()
         df.update_used_eff_file_label(self, eff_files)
 
     def __show_important_settings(self):
@@ -380,6 +292,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 .depth_for_concentration_from
             depth_for_concentration_to = self.measurement\
                 .depth_for_concentration_to
+
         self.label_calibslope.setText(str(detector.tof_slope))
         self.label_caliboffset.setText(str(detector.tof_offset))
         self.label_depthstop.setText(str(depth_step_for_stopping))
@@ -419,7 +332,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
 
             self.parent = parent
             self.icon_manager = parent.icon_manager
-            self.measurement = parent.obj
+            self.measurement: Measurement = parent.obj
             self.output_dir = output_dir
             self.elements = elements
             self.x_units = x_units
@@ -502,11 +415,10 @@ class DepthProfileWidget(QtWidgets.QWidget):
         """Reimplemented method when closing widget.
         """
         self.parent.depth_profile_widget = None
-        file = Path(self.parent.obj.directory, self.save_file)
+        file = Path(self.measurement.directory, self.save_file)
         try:
-            if os.path.isfile(file):
-                os.unlink(file)
-        except:
+            file.unlink()
+        except OSError:
             pass
         super().closeEvent(evnt)
 

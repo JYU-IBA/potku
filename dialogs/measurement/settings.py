@@ -146,23 +146,9 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             try:
                 self.measurement.use_default_profile_settings = \
                     self.defaultSettingsCheckBox.isChecked()
-                if self.measurement.measurement_setting_file_name is None:
-                    file_name = "temp"
-                else:
-                    file_name = self.measurement.\
-                        measurement_setting_file_name
 
                 det_folder_path = Path(self.measurement.directory,
                                        "Detector")
-                measurement_settings_file_path = \
-                    Path(self.measurement.directory,
-                         f"{file_name}.measurement")
-
-                if self.measurement.detector is None:
-                    df.update_detector_settings(
-                        self.measurement,
-                        det_folder_path,
-                        measurement_settings_file_path)
 
                 # Set Detector object to settings widget
                 self.detector_settings_widget.obj = \
@@ -173,9 +159,9 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                 self.detector_settings_widget.update_settings()
 
                 self.profile_settings_widget.update_settings()
-                self.measurement.detector.path = \
-                    Path(det_folder_path,
-                         f"{self.measurement.detector.name}.detector")
+                self.measurement.detector.path = Path(
+                    det_folder_path,
+                    f"{self.measurement.detector.name}.detector")
 
                 # Delete possible extra .measurement and .profile files
                 gf.remove_matching_files(
@@ -183,34 +169,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                     exts={".measurement", ".profile"})
 
                 # Save general measurement settings parameters.
-                new_measurement_settings_file_path = Path(
-                    self.measurement.directory,
-                    self.measurement.measurement_setting_file_name +
-                    ".measurement")
-
-                self.measurement.measurement_to_file(
-                    new_measurement_settings_file_path)
-
-                # Save profile parameters
-                profile_file_path = Path(
-                    self.measurement.directory,
-                    f"{self.measurement.profile_name}.profile")
-                self.measurement.profile_to_file(profile_file_path)
-
-                # Save run parameters
-                self.measurement.run.to_file(
-                    new_measurement_settings_file_path)
-                # Save detector parameters
-                self.measurement.detector.to_file(
-                    self.measurement.detector.path,
-                    new_measurement_settings_file_path)
-
-                # Save target parameters
-                target_file_path = Path(
-                    self.measurement.directory,
-                    f"{self.measurement.target.name}.target")
-                self.measurement.target.to_file(
-                    target_file_path, new_measurement_settings_file_path)
+                self.measurement.to_file()
                 return True
             except TypeError:
                 QtWidgets.QMessageBox.question(

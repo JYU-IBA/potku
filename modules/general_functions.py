@@ -43,6 +43,8 @@ import time
 from timeit import default_timer as timer
 from pathlib import Path
 from decimal import Decimal
+from typing import Dict
+from typing import List
 
 
 # TODO this could still be organized into smaller modules
@@ -136,6 +138,28 @@ def remove_matching_files(directory, exts=None, filter_func=None):
         pass
 
 
+def find_files_by_extension(directory: Path, *exts) -> Dict[str, List[Path]]:
+    """Searches given directory and returns files that have given extensions.
+
+    Args:
+        directory: a Path object
+        exts: collection of files extensions to look for
+
+    Return:
+        dictionary where keys are strings (file extensions) and values are
+        lists of Path objects.
+    """
+    search_dict = {
+        ext: [] for ext in exts
+    }
+    for entry in os.scandir(directory):
+        path = Path(entry.path)
+        suffix = path.suffix
+        if suffix in search_dict and path.is_file():
+            search_dict[suffix].append(path)
+    return search_dict
+
+
 def hist(data, width=1.0, col=1):
     """Format data into slices of given width.
 
@@ -195,7 +219,7 @@ def copy_file_to_temp(file: Path) -> Path:
     return tmp_file
 
 
-def convert_mev_to_joule(energy_in_MeV):
+def convert_mev_to_joule(energy_in_MeV: float) -> float:
     """Converts MeV (mega electron volts) to joules.
     
     Args:
@@ -209,7 +233,7 @@ def convert_mev_to_joule(energy_in_MeV):
     return float(energy_in_MeV) * 1000000.0 / joule
 
 
-def convert_amu_to_kg(mass_in_amus):
+def convert_amu_to_kg(mass_in_amus: float) -> float:
     """Converts amus (atomic mass units) to kilograms.
     
     Args:

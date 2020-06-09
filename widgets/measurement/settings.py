@@ -224,14 +224,8 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         }
         self.set_properties(**run_params, **bean_params)
 
-        if self.obj.detector is None:
-            self.detector_theta = \
-                self.obj.request.default_detector.detector_theta
-            # TODO should there be a none check for target too?
-            self.target_theta = self.obj.request.default_target.target_theta
-        else:
-            self.detector_theta = self.obj.detector.detector_theta
-            self.target_theta = self.obj.target.target_theta
+        self.detector_theta = self.obj.detector.detector_theta
+        self.target_theta = self.obj.target.target_theta
 
     def check_angles(self):
         """

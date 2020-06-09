@@ -353,7 +353,8 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         """Opens depth profile dialog.
         """
         previous = self.depth_profile_widget
-        DepthProfileDialog(self, statusbar=self.statusbar)
+        DepthProfileDialog(self, self.obj, self.obj.request.global_settings,
+                           statusbar=self.statusbar)
         if self.depth_profile_widget != previous and \
                 type(self.depth_profile_widget) is not None:
             # TODO type(x) is not None???
