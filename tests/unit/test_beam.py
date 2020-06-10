@@ -31,6 +31,7 @@ import tests.mock_objects as mo
 
 from modules.beam import Beam
 from modules.element import Element
+from modules.enums import Profile
 
 
 class TestBeam(unittest.TestCase):
@@ -56,3 +57,18 @@ class TestBeam(unittest.TestCase):
         self.assertNotEqual(kwargs, beam.get_settings())
         beam.set_settings(**kwargs)
         self.assertEqual(kwargs, beam.get_settings())
+
+    def test_profile(self):
+        self.assertEqual(Profile.UNIFORM, Beam().profile)
+        self.assertEqual(
+            Profile.GAUSSIAN, Beam(profile=Profile.GAUSSIAN).profile)
+        self.assertEqual(
+            Profile.UNIFORM, Beam(profile="unIfoRm").profile)
+        self.assertEqual(
+            Profile.GAUSSIAN, Beam(profile="gaUssIan").profile)
+
+        self.assertEqual(
+            Profile.UNIFORM, Beam(profile="gaussiann").profile)
+
+        self.assertEqual(
+            Profile.UNIFORM, Beam(profile=None).profile)

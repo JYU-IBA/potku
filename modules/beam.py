@@ -31,6 +31,7 @@ __version__ = "2.0"
 from .base import AdjustableSettings
 from .base import MCERDParameterContainer
 from .element import Element
+from .enums import Profile
 
 
 class Beam(AdjustableSettings, MCERDParameterContainer):
@@ -39,7 +40,7 @@ class Beam(AdjustableSettings, MCERDParameterContainer):
     """
     def __init__(self, ion=None, energy=10, charge=4,
                  energy_distribution=0, spot_size=(3.0, 5.0), divergence=0,
-                 profile="Uniform"):
+                 profile=Profile.UNIFORM):
         """
         Initializes the Beam object.
 
@@ -62,7 +63,11 @@ class Beam(AdjustableSettings, MCERDParameterContainer):
         self.energy_distribution = energy_distribution
         self.spot_size = spot_size
         self.divergence = divergence
-        self.profile = profile
+
+        try:
+            self.profile = Profile(profile.lower())
+        except (ValueError, AttributeError):
+            self.profile = Profile.UNIFORM
 
     def get_mcerd_params(self):
         """Returns a list of strings that are passed as parameters for MCERD.

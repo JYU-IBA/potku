@@ -181,3 +181,12 @@ class ToFEColorScheme(str, Enum):
         if self is ToFEColorScheme.GREYSCALE:
             return "Greyscale"
         return "Greyscale (inverted)"
+
+
+@enum.unique
+class Profile(str, Enum):
+    UNIFORM = "uniform"
+    GAUSSIAN = "gaussian"
+
+    def __str__(self):
+        return self.value.capitalize()
