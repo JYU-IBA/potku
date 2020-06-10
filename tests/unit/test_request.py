@@ -77,6 +77,8 @@ class TestInit(unittest.TestCase):
             request.to_file()
             utils.assert_folder_structure_equal(self.folder_structure, path)
 
+            utils.disable_logging()
+
 
 class TestSerialization(unittest.TestCase):
     def test_serialization(self):
@@ -104,6 +106,7 @@ class TestSerialization(unittest.TestCase):
                 request_from_file.default_target.description
             )
 
+            utils.disable_logging()
 
     def test_default_values_are_same(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -134,6 +137,7 @@ class TestSerialization(unittest.TestCase):
                 request.default_simulation,
                 request_from_file.default_simulation
             )
+            utils.disable_logging()
 
     @staticmethod
     def assert_request_values_are_same(request: Request):

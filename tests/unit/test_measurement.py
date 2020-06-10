@@ -91,6 +91,8 @@ class TestFolderStructure(unittest.TestCase):
             utils.assert_folder_structure_equal(
                 self.after_to_file, Path(tmp_dir))
 
+            utils.disable_logging()
+
     def test_get_measurement_files(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             path = Path(tmp_dir, self.mesu_folder)
@@ -114,3 +116,5 @@ class TestFolderStructure(unittest.TestCase):
                 path / f"Default.target", tgt_file)
             self.assertEqual(
                 path / "Detector" / f"measurement.detector", det_file)
+
+            utils.disable_logging()

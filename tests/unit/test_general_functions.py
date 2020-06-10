@@ -313,7 +313,7 @@ class TestFileIO(unittest.TestCase):
 
     def test_find_files_by_extension(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
-            files = ["a.foo", "b.foo", "c.fooo", "d.foo.", "e", "d.bar"]
+            files = ["a.foo", "b.foo", "c.fooo", "d.foo.fo", "e", "d.bar"]
             paths = [Path(tmp_dir, f) for f in files]
             for p in paths:
                 p.open("w").close()
