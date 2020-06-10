@@ -39,6 +39,7 @@ import time
 
 from pathlib import Path
 from collections import namedtuple
+from typing import Optional
 
 from . import general_functions as gf
 from .cut_file import CutFile
@@ -96,7 +97,7 @@ class Measurements:
         Args:
             sample: The sample under which the measurement is put.
             file_path: Path of the .info measurement file or data file when
-            creating a new measurement.
+                creating a new measurement.
             tab_id: Integer representing identifier for measurement's tab.
             name: Name for the Measurement object.
             import_evnt_or_binary: Whether evnt or lst data is being imported
@@ -116,8 +117,7 @@ class Measurements:
                 Path(self.request.directory, sample.directory,
                      directory_prefix + "%02d" % next_serial + "-" + name)
             sample.increase_running_int_measurement_by_1()
-            if not measurement_directory.exists():
-                os.makedirs(measurement_directory)
+            measurement_directory.mkdir(exist_ok=True)
             measurement = Measurement(
                 self.request, measurement_directory, tab_id, name)
             measurement.sample = sample
@@ -132,9 +132,8 @@ class Measurements:
                 measurement
 
         else:
-            # TODO why is the same path split twice?
-            measurement_filename = file_path.name
-            file_directory, file_name = file_path.parent, file_path.name
+            file_name = file_path.name
+            file_directory = file_path.parent
 
             profile_file, mesu_file, tgt_file, det_file = \
                 Measurement.find_measurement_files(file_directory)
@@ -176,7 +175,7 @@ class Measurements:
 
             # Create new Measurement object.
             else:
-                measurement_name, extension = os.path.splitext(file_name)
+                measurement_name, extension = file_path.stem, file_path.suffix
                 try:
                     keys = sample.measurements.measurements.keys()
                     for key in keys:
@@ -188,21 +187,21 @@ class Measurements:
                         Path(self.request.directory, sample.directory,
                              directory_prefix + "%02d" % next_serial + "-" +
                              name)
+                    mesu_file = measurement_directory / f"{name}.info"
                     sample.increase_running_int_measurement_by_1()
                     measurement_directory.mkdir(exist_ok=True)
                     measurement = Measurement(
-                        self.request, measurement_directory, tab_id, name)
-                    measurement.sample = sample
+                        self.request, mesu_file, tab_id, name, sample=sample)
 
                     measurement.info_to_file(
                         Path(measurement_directory, measurement.name + ".info"))
 
                     # Create path for measurement file used by the program and
                     # create folder structure.
-                    new_measurement_file = Path(
-                        measurement_directory, "Data", measurement_filename)
+                    new_data_file = Path(
+                        measurement_directory, "Data", file_name)
                     measurement.create_folder_structure(
-                        measurement_directory, new_measurement_file,
+                        measurement_directory, new_data_file,
                         selector_cls=selector_cls)
                     if file_directory != Path(
                             measurement_directory, measurement.directory_data) \
@@ -212,7 +211,7 @@ class Measurements:
                     measurement.serial_number = serial_number
                     self.request.samples.measurements.measurements[tab_id] = \
                         measurement
-                    measurement.measurement_file = measurement_filename
+                    measurement.measurement_file = file_name
                 except Exception as e:
                     log = f"Something went wrong while adding a new " \
                           f"measurement: {e}"
@@ -279,7 +278,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         """
         # Run the base class initializer to establish logging
         Logger.__init__(self, name, "Measurement")
-
+        # FIXME path should be to info file
         self.tab_id = tab_id
 
         self.request = request  # To which request be belong to
@@ -336,10 +335,12 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             self.run = run
 
         if detector is None:
+            # Detector will be saved when self.to_file is called so
+            # save_on_creation is false here
             self.detector = Detector(
                 self.directory / "Detector" / "measurement.detector",
                 self.get_measurement_file(),
-                save_on_creation=save_on_creation)
+                save_on_creation=False)
         else:
             self.detector = detector
 
@@ -351,6 +352,9 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         self.selector = None
 
         self.use_default_profile_settings = use_default_profile_settings
+
+        if save_on_creation:
+            self.to_file()
 
     def get_detector_or_default(self) -> Detector:
         """Get measurement specific detector of default.
@@ -573,7 +577,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         """
         return self.get_composition_changes_dir() / "Changes"
 
-    def _get_settings_file(self) -> Path:
+    def _get_measurement_file(self) -> Path:
         """Returns the path to .measuremnent file.
         """
         return Path(
@@ -589,36 +593,37 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         """
         return self.directory / "tof_in"
 
-    def to_file(self, mesu_file: Path = None, profile_file: Path = None):
+    def _get_info_file(self) -> Path:
+        return self.directory / f"{self.name}.info"
+
+    def to_file(self, mesu_file: Path = None, profile_file: Path = None,
+                info_file: Path = None):
         # Save general measurement settings parameters.
         if mesu_file is None:
-            mesu_file = self._get_settings_file()
+            mesu_file = self._get_measurement_file()
 
         self.measurement_to_file(mesu_file)
-
-        if profile_file is None:
-            profile_file = self._get_profile_file()
-
         self.profile_to_file(profile_file)
+        self.info_to_file(info_file)
 
-        # Save run parameters
+        # Save run, detector and target parameters
+
         self.run.to_file(mesu_file)
-
-        # Save detector parameters
         self.detector.to_file(self.detector.path, mesu_file)
-
-        # Save target parameters
         target_file = Path(self.directory, f"{self.target.name}.target")
         self.target.to_file(target_file, mesu_file)
 
-    def measurement_to_file(self, measurement_file_path: Path):
+    def measurement_to_file(self, measurement_file: Optional[Path] = None):
         """Write a .measurement file.
 
         Args:
-            measurement_file_path: Path to .measurement file.
+            measurement_file: Path to .measurement file.
         """
-        if measurement_file_path.exists():
-            with measurement_file_path.open("r") as mesu:
+        if measurement_file is None:
+            measurement_file = self._get_measurement_file()
+
+        if measurement_file.exists():
+            with measurement_file.open("r") as mesu:
                 obj_measurement = json.load(mesu)
         else:
             obj_measurement = {}
@@ -633,15 +638,18 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             time.strftime("%c %z %Z", time.localtime(time_stamp))
         obj_measurement["general"]["modification_time_unix"] = time_stamp
 
-        with measurement_file_path.open("w") as file:
+        with measurement_file.open("w") as file:
             json.dump(obj_measurement, file, indent=4)
 
-    def info_to_file(self, info_file_path: Path):
+    def info_to_file(self, info_file: Optional[Path]):
         """Write an .info file.
 
         Args:
-            info_file_path: Path to .info file.
+            info_file: Path to .info file.
         """
+        if info_file is None:
+            info_file = self._get_info_file()
+
         time_stamp = time.time()
 
         obj_info = {
@@ -652,15 +660,18 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             "modification_time_unix": time_stamp
         }
 
-        with info_file_path.open("w") as file:
+        with info_file.open("w") as file:
             json.dump(obj_info, file, indent=4)
 
-    def profile_to_file(self, profile_file_path: Path):
+    def profile_to_file(self, profile_file: Optional[Path] = None):
         """Write a .profile file.
 
         Args:
-            profile_file_path: Path to .profile file.
+            profile_file: Path to .profile file.
         """
+        if profile_file is None:
+            profile_file = self._get_profile_file()
+
         obj_profile = {
             "general": {},
             "depth_profiles": {},
@@ -696,7 +707,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             self.number_of_splits
         obj_profile["composition_changes"]["normalization"] = self.normalization
 
-        with profile_file_path.open("w") as file:
+        with profile_file.open("w") as file:
             json.dump(obj_profile, file, indent=4)
 
     def create_folder_structure(self, measurement_folder: Path,

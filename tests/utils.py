@@ -247,7 +247,7 @@ def assert_folder_structure_equal(expected_structure: Dict, directory: Path):
     if keys != fnames:
         raise AssertionError(
             f"Contents of the directory {directory} did not match expected "
-            f"values. Expected:\n{keys}\nGot:\n{fnames}")
+            f"values. Expected:\n{sorted(keys)}\nGot:\n{sorted(fnames)}")
     for k, v in expected_structure.items():
         p = directory / k
         if isinstance(v, dict):

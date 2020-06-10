@@ -195,45 +195,27 @@ class Request(ElementSimulationContainer):
     def _create_default_measurement(self, save_on_creation) -> Measurement:
         """Returns default measurement.
         """
-        measurement_info_path = Path(self.default_folder, "Default.info")
-        if measurement_info_path.exists():
+        info_path = Path(self.default_folder, "Default.info")
+        if info_path.exists():
             # Read measurement from file
             measurement = Measurement.from_file(
-                measurement_info_path,
+                info_path,
                 Path(self.default_folder, "Default.measurement"),
                 Path(self.default_folder, "Default.profile"),
                 self)
             self.default_run = Run.from_file(self.default_measurement_file_path)
         else:
             # Create default measurement for request
-            default_info_path = Path(self.default_folder, "Default.info")
             measurement = Measurement(
-                self, path=default_info_path, run=self.default_run,
+                self, path=info_path, run=self.default_run,
                 detector=self.default_detector,
                 description="This is a default measurement.",
                 profile_description="These are default profile parameters.",
                 measurement_setting_file_description="These are default "
                                                      "measurement "
                                                      "parameters.",
-                use_default_profile_settings=False)
-            if save_on_creation:
-                # TODO should be mesu init param
-                measurement.info_to_file(Path(
-                    self.default_folder, f"{measurement.name}.info"))
-
-                measurement.measurement_to_file(Path(
-                    self.default_folder,
-                    measurement.measurement_setting_file_name
-                    + ".measurement"))
-
-                measurement.profile_to_file(Path(
-                    self.default_folder,
-                    f"{measurement.profile_name}.profile"))
-
-                measurement.run.to_file(Path(
-                    self.default_folder,
-                    measurement.measurement_setting_file_name +
-                    ".measurement"))
+                use_default_profile_settings=False,
+                save_on_creation=save_on_creation)
 
         return measurement
 

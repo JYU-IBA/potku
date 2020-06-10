@@ -39,6 +39,7 @@ from modules.measurement import Measurement
 class TestFolderStructure(unittest.TestCase):
     def setUp(self):
         self.mesu_name = "foo"
+        self.settings_file = "baz"
         self.profile_name = "bar"
         self.mesu_folder = "mesu"
         self.folder_structure = {
@@ -61,8 +62,9 @@ class TestFolderStructure(unittest.TestCase):
             "Detector": {
                 "measurement.detector": None
             },
+            f"{self.mesu_name}.info": None,
             f"{self.profile_name}.profile": None,
-            f"{self.mesu_name}.measurement": None,
+            f"{self.settings_file}.measurement": None,
             "Default.target": None
         })
 
@@ -70,8 +72,9 @@ class TestFolderStructure(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             path = Path(tmp_dir, self.mesu_folder)
             mesu = Measurement(
-                mo.get_request(), path / "mesu.info",
-                measurement_setting_file_name=self.mesu_name,
+                mo.get_request(), path / f"{self.mesu_name}.info",
+                name=self.mesu_name,
+                measurement_setting_file_name=self.settings_file,
                 profile_name=self.profile_name, save_on_creation=False)
             utils.disable_logging()
 
