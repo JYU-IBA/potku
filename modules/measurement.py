@@ -119,11 +119,9 @@ class Measurements:
             sample.increase_running_int_measurement_by_1()
             measurement_directory.mkdir(exist_ok=True)
             measurement = Measurement(
-                self.request, measurement_directory, tab_id, name)
-            measurement.sample = sample
+                self.request, measurement_directory, tab_id, name,
+                sample=sample)
 
-            measurement.info_to_file(
-                Path(measurement_directory, measurement.name + ".info"))
             measurement.create_folder_structure(
                 measurement_directory, None, selector_cls=selector_cls)
             serial_number = next_serial
@@ -192,9 +190,6 @@ class Measurements:
                     measurement_directory.mkdir(exist_ok=True)
                     measurement = Measurement(
                         self.request, mesu_file, tab_id, name, sample=sample)
-
-                    measurement.info_to_file(
-                        Path(measurement_directory, measurement.name + ".info"))
 
                     # Create path for measurement file used by the program and
                     # create folder structure.
@@ -454,15 +449,15 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             profile_file, measurement_file, target_file, detector_file)
 
     @classmethod
-    def from_file(cls, measurement_info_path: Path, measurement_file_path: Path,
-                  profile_file_path: Path, request, detector=None, run=None,
+    def from_file(cls, info_file: Path, measurement_file: Path,
+                  profile_file: Path, request, detector=None, run=None,
                   target=None, sample=None):
         """Read Measurement information from file.
 
         Args:
-            measurement_info_path: Path to .info file.
-            measurement_file_path: Path to .measurement file.
-            profile_file_path: Path to .profile file.
+            info_file: Path to .info file.
+            measurement_file: Path to .measurement file.
+            profile_file: Path to .profile file.
             request: Request that the Measurement belongs to.
             detector: Measurement's Detector object.
             run: Measurement's Run object.
@@ -472,12 +467,12 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         Return:
             Measurement object.
         """
-        with measurement_info_path.open("r") as mesu_info:
+        with info_file.open("r") as mesu_info:
             obj_info = json.load(mesu_info)
         obj_info["modification_time"] = obj_info.pop("modification_time_unix")
 
         try:
-            with measurement_file_path.open("r") as mesu_file:
+            with measurement_file.open("r") as mesu_file:
                 obj_gen = json.load(mesu_file)["general"]
 
             mesu_general = {
@@ -489,13 +484,13 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             }
         except (OSError, KeyError, AttributeError) as e:
             logging.getLogger("request").error(
-                f"Failed to read settings from file {measurement_file_path}: "
+                f"Failed to read settings from file {measurement_file}: "
                 f"{e}"
             )
             mesu_general = {}
 
         try:
-            with profile_file_path.open("r") as prof_file:
+            with profile_file.open("r") as prof_file:
                 obj_prof = json.load(prof_file)
 
             prof_gen = {
@@ -518,11 +513,11 @@ class Measurement(Logger, AdjustableSettings, Serializable):
 
         except (OSError, KeyError, AttributeError, json.JSONDecodeError) as e:
             logging.getLogger("request").error(
-                f"Failed to read settings from file {profile_file_path}: {e}"
+                f"Failed to read settings from file {profile_file}: {e}"
             )
             measurement = request.default_measurement
             if measurement is None:
-                return cls(request=request, path=measurement_info_path,
+                return cls(request=request, path=info_file,
                            **mesu_general, use_default_profile_settings=True)
             prof_gen = {
                 "profile_name": measurement.profile_name,
@@ -551,7 +546,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             use_default_profile_settings = True
 
         return cls(
-            request=request, path=measurement_info_path, run=run,
+            request=request, path=info_file, run=run,
             detector=detector, target=target, channel_width=channel_width,
             **obj_info, **prof_gen, **depth, **comp, **mesu_general,
             use_default_profile_settings=use_default_profile_settings,
@@ -596,24 +591,33 @@ class Measurement(Logger, AdjustableSettings, Serializable):
     def _get_info_file(self) -> Path:
         return self.directory / f"{self.name}.info"
 
-    def to_file(self, mesu_file: Path = None, profile_file: Path = None,
-                info_file: Path = None):
-        # Save general measurement settings parameters.
-        if mesu_file is None:
-            mesu_file = self._get_measurement_file()
+    def to_file(self, measurement_file: Optional[Path] = None,
+                profile_file: Optional[Path] = None,
+                info_file: Optional[Path] = None):
+        """Writes measurement to file. If optional path arguments are 'None',
+        default values will be used as file names.
 
-        self.measurement_to_file(mesu_file)
-        self.profile_to_file(profile_file)
-        self.info_to_file(info_file)
+        Args:
+            measurement_file: path to .measurement file
+            profile_file: path to .profile file
+            info_file: path to .info file
+        """
+        # Save general measurement settings parameters.
+        if measurement_file is None:
+            measurement_file = self._get_measurement_file()
+
+        self._measurement_to_file(measurement_file)
+        self._profile_to_file(profile_file)
+        self._info_to_file(info_file)
 
         # Save run, detector and target parameters
 
-        self.run.to_file(mesu_file)
-        self.detector.to_file(self.detector.path, mesu_file)
+        self.run.to_file(measurement_file)
+        self.detector.to_file(self.detector.path, measurement_file)
         target_file = Path(self.directory, f"{self.target.name}.target")
-        self.target.to_file(target_file, mesu_file)
+        self.target.to_file(target_file, measurement_file)
 
-    def measurement_to_file(self, measurement_file: Optional[Path] = None):
+    def _measurement_to_file(self, measurement_file: Optional[Path] = None):
         """Write a .measurement file.
 
         Args:
@@ -641,7 +645,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         with measurement_file.open("w") as file:
             json.dump(obj_measurement, file, indent=4)
 
-    def info_to_file(self, info_file: Optional[Path]):
+    def _info_to_file(self, info_file: Optional[Path]):
         """Write an .info file.
 
         Args:
@@ -663,7 +667,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         with info_file.open("w") as file:
             json.dump(obj_info, file, indent=4)
 
-    def profile_to_file(self, profile_file: Optional[Path] = None):
+    def _profile_to_file(self, profile_file: Optional[Path] = None):
         """Write a .profile file.
 
         Args:
@@ -821,19 +825,15 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         # ps.sort_stats("time")
         # ps.print_stats(10)
 
-    def rename_info_file(self, new_name=None):
+    def rename_info_file(self, new_name):
         """Renames the measurement data file.
         """
-        if new_name is None:
-            return
-        info_file = None
-        for file in os.listdir(self.directory):
-            if file.endswith(".info"):
-                info_file = file
-                break
-        if info_file:
-            gf.rename_file(Path(self.directory, info_file),
-                           new_name + ".info")
+        try:
+            self._get_info_file().unlink()
+        except OSError:
+            pass
+        self.name = new_name
+        self._info_to_file()
 
     def rename_files_in_directory(self, directory: Path):
         if not directory.exists():

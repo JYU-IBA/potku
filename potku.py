@@ -285,8 +285,6 @@ class Potku(QtWidgets.QMainWindow):
             if type(clicked_item.obj) is Measurement:
                 try:
                     clicked_item.obj.rename_info_file(new_name)
-                    clicked_item.obj.info_to_file(
-                        Path(new_dir, clicked_item.obj.name + ".info"))
                 except OSError as e:
                     QtWidgets.QMessageBox.critical(
                         self, "Error", f"Failed to rename info file: {e}.",

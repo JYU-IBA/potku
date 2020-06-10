@@ -34,6 +34,7 @@ import unittest
 import logging
 import platform
 import warnings
+import itertools
 
 from pathlib import Path
 from string import Template
@@ -262,3 +263,11 @@ def assert_folder_structure_equal(expected_structure: Dict, directory: Path):
                 f"Value should either be 'None' or a dictionary. {type(v)} "
                 f"given.")
 
+
+def assert_are_same(*args):
+    """Asserts that all given arguments are the same object. Raises
+    AssertionError if all objects are not the same.
+    """
+    for x, y in itertools.combinations(args, r=2):
+        if x is not y:
+            raise AssertionError(f"{x} is not {y}.")

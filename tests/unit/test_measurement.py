@@ -114,4 +114,3 @@ class TestFolderStructure(unittest.TestCase):
                 path / f"Default.target", tgt_file)
             self.assertEqual(
                 path / "Detector" / f"measurement.detector", det_file)
-

@@ -188,41 +188,29 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 filter_func = lambda e: e.simulation.use_request_settings
             else:
                 filter_func = lambda e: e.use_default_settings
-            if not df.delete_element_simulations(self, self.request,
-                                                 msg="request settings",
-                                                 filter_func=filter_func):
+            if not df.delete_element_simulations(
+                    self, self.request, msg="request settings",
+                    filter_func=filter_func):
                 return False
 
         try:
             self.measurement_settings_widget.update_settings()
             self.profile_settings_widget.update_settings()
 
-            default_measurement_settings_file = Path(
+            measurement_file = Path(
                 self.request.default_measurement.directory,
                 "Default.measurement")
+            profile_file = Path(
+                self.request.default_measurement.directory, "Default.profile")
 
-            self.request.default_measurement.measurement_to_file(
-                default_measurement_settings_file)
-
-            self.request.default_measurement.profile_to_file(Path(
-                self.request.default_measurement.directory,
-                "Default.profile"))
-
-            self.request.default_measurement.run.to_file(
-                default_measurement_settings_file)
-            
-            self.request.default_target.to_file(
-                None, default_measurement_settings_file)
+            self.request.default_measurement.to_file(
+                measurement_file, profile_file=profile_file)
 
             # Detector settings
             self.detector_settings_widget.update_settings()
 
             # Simulation settings
             self.simulation_settings_widget.update_settings()
-
-            self.request.default_detector.to_file(
-                Path(self.request.default_detector_folder, "Default.detector"),
-                default_measurement_settings_file)
 
             self.request.default_simulation.to_file(
                 Path(self.request.default_folder, "Default.simulation"))

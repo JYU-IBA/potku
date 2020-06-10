@@ -49,13 +49,15 @@ from .sample import Samples
 from .simulation import Simulation
 from .target import Target
 from .recoil_element import RecoilElement
+from .global_settings import GlobalSettings
 
 
 class Request(ElementSimulationContainer):
     """Request class to handle all measurements.
     """
 
-    def __init__(self, directory: Path, name, global_settings, tabs=None,
+    def __init__(self, directory: Path, name: str,
+                 global_settings: GlobalSettings, tabs=None,
                  save_on_creation=True, enable_logging=True):
         """ Initializes Request class.
         
@@ -64,17 +66,14 @@ class Request(ElementSimulationContainer):
             name: Name of the request.
             global_settings: A GlobalSettings class object (of the program).
             tabs: A dictionary of MeasurementTabWidgets and SimulationTabWidgets
-                  of the request.
+                of the request.
         """
-        self.directory = Path(directory)
+        self.directory = Path(directory).resolve()
         self.default_folder = Path(self.directory, "Default")
 
         self.request_name = name
         self.global_settings = global_settings
         self.samples = Samples(self)
-
-        self.default_run = Run()
-        # self.default_target = Target()
 
         self.__tabs = tabs
         self.__master_measurement = None
@@ -93,28 +92,26 @@ class Request(ElementSimulationContainer):
             self.default_folder, "Default.measurement")
 
         self.default_detector_folder = Path(self.default_folder, "Detector")
+
+        self.default_run = self._create_default_run()
+        self.default_target = self._create_default_target(
+            save_on_creation=save_on_creation
+        )
         self.default_detector = self._create_default_detector(
             self.default_detector_folder, save_on_creation=save_on_creation
         )
         self.default_measurement = self._create_default_measurement(
-            save_on_creation=save_on_creation
-        )
-        self.default_target = self._create_default_target(
-            save_on_creation=save_on_creation
+            save_on_creation=save_on_creation,
+            detector=self.default_detector,
+            target=self.default_target,
+            run=self.default_run
         )
         self.default_simulation, self.default_element_simulation = \
             self._create_default_simulation(
-                save_on_creation=save_on_creation)
-
-        # Set default Run, Detector and Target objects to Measurement
-        self.default_measurement.run = self.default_run
-        self.default_measurement.detector = self.default_detector
-        self.default_measurement.target = self.default_target
-
-        # Set default Run, Detector and Target objects to Simulation
-        self.default_simulation.run = self.default_run
-        self.default_simulation.detector = self.default_detector
-        self.default_simulation.target = self.default_target
+                save_on_creation=save_on_creation,
+                detector=self.default_detector,
+                target=self.default_target,
+                run=self.default_run)
 
         if enable_logging:
             self.__set_request_logger()
@@ -137,20 +134,30 @@ class Request(ElementSimulationContainer):
         self.__request_information["meta"]["master"] = ""
         self.__request_information["meta"]["nonslave"] = ""
         if self.request_file.exists():
-            self.load()
+            self._load()
         elif save_on_creation:
-            self.save()
+            self._save()
 
     def create_folder_structure(self):
         self.directory.mkdir(exist_ok=True)
         self.default_folder.mkdir(exist_ok=True)
 
+    def to_file(self):
+        self.create_folder_structure()
+        self._save()
+        self.default_measurement.to_file()
+        self.default_simulation.to_file()
+
     @classmethod
-    def from_file(cls, file, settings, tab_widgets):
+    def from_file(cls, file: Path, settings: GlobalSettings, tab_widgets=None):
         """Returns a new Request from an existing .request file and folder
         structure.
 
         Args:
+            file: path to a .request file
+            settings: GlobalSettings object
+            tab_widgets: A dictionary of MeasurementTabWidgets and
+                SimulationTabWidgets of the request.
         """
         # TODO better error checking
         file_path = Path(file).resolve()
@@ -162,8 +169,8 @@ class Request(ElementSimulationContainer):
             raise ValueError("Expected request file")
         return cls(file_path.parent, file_path.stem, settings, tab_widgets)
 
-    def _create_default_detector(self, folder: Path, save_on_creation) -> \
-            Detector:
+    def _create_default_detector(
+            self, folder: Path, save_on_creation) -> Detector:
         """Returns default detector.
         """
         detector_path = folder / "Default.detector"
@@ -192,7 +199,8 @@ class Request(ElementSimulationContainer):
 
         return detector
 
-    def _create_default_measurement(self, save_on_creation) -> Measurement:
+    def _create_default_measurement(self, save_on_creation, **kwargs) -> \
+            Measurement:
         """Returns default measurement.
         """
         info_path = Path(self.default_folder, "Default.info")
@@ -202,13 +210,11 @@ class Request(ElementSimulationContainer):
                 info_path,
                 Path(self.default_folder, "Default.measurement"),
                 Path(self.default_folder, "Default.profile"),
-                self)
-            self.default_run = Run.from_file(self.default_measurement_file_path)
+                self, **kwargs)
         else:
             # Create default measurement for request
             measurement = Measurement(
-                self, path=info_path, run=self.default_run,
-                detector=self.default_detector,
+                self, path=info_path, **kwargs,
                 description="This is a default measurement.",
                 profile_description="These are default profile parameters.",
                 measurement_setting_file_description="These are default "
@@ -239,36 +245,31 @@ class Request(ElementSimulationContainer):
 
         return target
 
-    def _create_default_run(self):
+    def _create_default_run(self) -> Run:
+        """Create default run.
         """
-        Create default run.
-        """
-        # TODO this is not used currently
         try:
             # Try reading Run parameters from .measurement file.
-            self.default_run = Run.from_file(self.default_measurement_file_path)
-        except KeyError:
-            # Save new Run parameters to file.
-            self.default_run.to_file(Path(
-                self.default_folder,
-                self.default_measurement.measurement_setting_file_name +
-                ".measurement"))
+            return Run.from_file(self.default_measurement_file_path)
+        except (KeyError, OSError):
+            return Run()
 
     def _create_default_simulation(
-            self, save_on_creation) -> Tuple[Simulation, ElementSimulation]:
-        """Create default simulation.
+            self, save_on_creation, target=None, **kwargs) -> \
+            Tuple[Simulation, ElementSimulation]:
+        """Create default simulation and ElementSimulation
         """
         simulation_path = Path(self.default_folder, "Default.simulation")
         if simulation_path.exists():
             # Read default simulation from file
             sim = Simulation.from_file(
-                self, simulation_path, save_on_creation=save_on_creation)
+                self, simulation_path, save_on_creation=save_on_creation,
+                target=target, **kwargs)
         else:
             # Create default simulation for request
             sim = Simulation(
                 Path(self.default_folder, "Default.simulation"), self,
-                save_on_creation=save_on_creation,
-                detector=self.default_detector,
+                save_on_creation=save_on_creation, target=target, **kwargs,
                 description="This is a default simulation.",
                 measurement_setting_file_description="These are default "
                                                      "simulation "
@@ -279,8 +280,8 @@ class Request(ElementSimulationContainer):
             # Read default element simulation from file
             elem_sim = ElementSimulation.from_file(
                 self, "4He", self.default_folder, mcsimu_path,
-                Path(self.default_folder, "Default.profile"), sim)
-            # TODO should this be added to sim's element sims?
+                Path(self.default_folder, "Default.profile"), sim,
+                **kwargs)
         else:
             # Create default element simulation for request
             elem_sim = ElementSimulation(
@@ -290,8 +291,9 @@ class Request(ElementSimulationContainer):
                 simulation=sim,
                 description="These are default simulation parameters.",
                 use_default_settings=False,
-                save_on_creation=save_on_creation)
-            sim.element_simulations.append(elem_sim)
+                save_on_creation=save_on_creation, **kwargs)
+
+        sim.element_simulations.append(elem_sim)
         return sim, elem_sim
 
     def exclude_slave(self, measurement):
@@ -307,7 +309,7 @@ class Request(ElementSimulationContainer):
         paths = [m.path for m in self.__non_slaves]
         self.__request_information["meta"]["nonslave"] = "|".join(
             paths)
-        self.save()
+        self._save()
 
     def include_slave(self, measurement):
         """ Include measurement to slave category under master.
@@ -322,7 +324,7 @@ class Request(ElementSimulationContainer):
         paths = [m.path for m in self.__non_slaves]
         self.__request_information["meta"]["nonslave"] = "|".join(
             paths)
-        self.save()
+        self._save()
 
     def get_name(self):
         """ Get the request's name.
@@ -421,7 +423,7 @@ class Request(ElementSimulationContainer):
                 return measurement
         return ""
 
-    def load(self):
+    def _load(self):
         """ Load request.
         """
         self.__request_information.read(self.request_file)
@@ -432,11 +434,11 @@ class Request(ElementSimulationContainer):
                 if path == measurement.path:
                     self.__non_slaves.append(measurement)
 
-    def save(self):
+    def _save(self):
         """ Save request.
         """
         # TODO: Saving properly.
-        with open(self.request_file, "wt+") as configfile:
+        with self.request_file.open("w") as configfile:
             self.__request_information.write(configfile)
 
     def save_cuts(self, measurement, progress=None):
@@ -513,12 +515,13 @@ class Request(ElementSimulationContainer):
             # name = measurement.name
             path = measurement.path
             self.__request_information["meta"]["master"] = path
-        self.save()
+        self._save()
 
     def __set_request_logger(self):
         """ Sets the logger which is used to log everything that doesn't happen
         in measurements.
         """
+        self.create_folder_structure()
         logger = logging.getLogger("request")
         logger.setLevel(logging.DEBUG)
 
