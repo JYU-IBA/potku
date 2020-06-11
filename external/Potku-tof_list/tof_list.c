@@ -735,7 +735,7 @@ char *filename_extension(const char *path) { /*  e.g. /bla/bla/tofe2363.O.ERD.0.
     *out = '\0';
     strcat(out, fname);
     strcat(out, ext);
-    free(fname_orig)
+    free(fname_orig);
     free(ext);
     return out;
 #else
