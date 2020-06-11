@@ -24,11 +24,12 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen"
-
-import time
+             "\n Sinikka Siironen \n Juhani Sundell"
 
 import widgets.input_validation as iv
+import widgets.binding as bnd
+import widgets.gui_utils as gutils
+from modules.measurement import Measurement
 
 from pathlib import Path
 
@@ -37,10 +38,38 @@ from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 
 
-class ProfileSettingsWidget(QtWidgets.QWidget):
+class ProfileSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
+                            metaclass=gutils.QtABCMeta):
     """Class for creating a profile settings tab.
     """
-    def __init__(self, measurement):
+    # TODO track_change may not be necessary here, as none of these values
+    #   are used for simulations
+    profile_name = bnd.bind("nameLineEdit", track_change=True)
+    profile_description = bnd.bind(
+        "descriptionPlainTextEdit", track_change=True)
+    profile_modification_time = bnd.bind(
+        "dateLabel", fget=bnd.unix_time_from_label,
+        fset=bnd.unix_time_to_label)
+
+    reference_density = bnd.bind(
+        "referenceDensityDoubleSpinBox", track_change=True)
+    number_of_depth_steps = bnd.bind(
+        "numberOfDepthStepsSpinBox", track_change=True)
+    depth_step_for_stopping = bnd.bind(
+        "depthStepForStoppingSpinBox", track_change=True)
+    depth_step_for_output = bnd.bind(
+        "depthStepForOutputSpinBox", track_change=True)
+    depth_for_concentration_from = bnd.bind(
+        "depthForConcentrationFromDoubleSpinBox", track_change=True)
+    depth_for_concentration_to = bnd.bind(
+        "depthForConcentrationToDoubleSpinBox", track_change=True)
+    channel_width = bnd.bind(
+        "channelWidthDoubleSpinBox", track_change=True)
+    number_of_splits = bnd.bind("numberOfSplitsSpinBox", track_change=True)
+    normalization = bnd.bind(
+        "normalizationComboBox", track_change=True)
+
+    def __init__(self, measurement: Measurement):
         """
         Initializes the widget.
 
@@ -50,6 +79,7 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
         super().__init__()
         uic.loadUi(Path("ui_files", "ui_profile_settings_tab.ui"), self)
         self.measurement = measurement
+        self._original_properties = {}
 
         self.fields_are_valid = False
         iv.set_input_field_red(self.nameLineEdit)
@@ -64,125 +94,21 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
         self.depthForConcentrationToDoubleSpinBox.setLocale(locale)
         self.channelWidthDoubleSpinBox.setLocale(locale)
 
-        self.show_settings()
+        gutils.fill_combobox(self.normalizationComboBox, ["First"])
+        self.set_properties(**self.measurement.get_settings())
 
-        self.depthForConcentrationFromDoubleSpinBox.valueChanged.connect(
-            lambda: self.__check_values(
-                self.depthForConcentrationFromDoubleSpinBox))
-        self.depthForConcentrationToDoubleSpinBox.valueChanged.connect(
-            lambda: self.__check_values(
-                self.depthForConcentrationToDoubleSpinBox))
+        gutils.set_min_max_handlers(
+            self.depthForConcentrationFromDoubleSpinBox,
+            self.depthForConcentrationToDoubleSpinBox,
+            min_diff=0.01
+        )
 
-    def __check_values(self, spinbox):
+    def get_original_property_values(self):
+        """Returns the original values of this Widget's properties.
         """
-        Check that depth for concentration from isn't bigger than depth for
-        concentration to value and other way around.
-
-        Args:
-            spinbox: Spinbox whose value is changed.
-        """
-        from_value = self.depthForConcentrationFromDoubleSpinBox.value()
-        to_value = self.depthForConcentrationToDoubleSpinBox.value()
-        if spinbox is self.depthForConcentrationFromDoubleSpinBox:
-            if from_value > to_value:
-                self.depthForConcentrationFromDoubleSpinBox.setValue(
-                    to_value - 0.01)
-        else:
-            if to_value < from_value:
-                self.depthForConcentrationToDoubleSpinBox.setValue(
-                    from_value + 0.01)
-
-    def show_settings(self):
-        """
-        Show profile settings.
-        """
-        self.nameLineEdit.setText(
-            self.measurement.profile_name)
-        self.descriptionPlainTextEdit.setPlainText(
-            self.measurement.profile_description)
-        self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
-            self.measurement.profile_modification_time)))
-        self.referenceDensityDoubleSpinBox.setValue(
-            self.measurement.reference_density)
-        self.numberOfDepthStepsSpinBox.setValue(
-            self.measurement.number_of_depth_steps)
-        self.depthStepForStoppingSpinBox.setValue(
-            self.measurement.depth_step_for_stopping)
-        self.depthStepForOutputSpinBox.setValue(
-            self.measurement.depth_step_for_output)
-        self.depthForConcentrationFromDoubleSpinBox.setValue(
-            self.measurement.depth_for_concentration_from)
-        self.depthForConcentrationToDoubleSpinBox.setValue(
-            self.measurement.depth_for_concentration_to)
-        self.channelWidthDoubleSpinBox.setValue(
-            self.measurement.channel_width)
-        self.numberOfSplitsSpinBox.setValue(
-            self.measurement.number_of_splits)
-        self.normalizationComboBox.setCurrentIndex(
-            self.normalizationComboBox.findText(
-                self.measurement.normalization))
+        return self._original_properties
 
     def update_settings(self):
+        """Update profile settings.
         """
-        Update profile settings.
-        """
-        self.measurement.profile_name = self.nameLineEdit.text()
-        self.measurement.profile_description = \
-            self.descriptionPlainTextEdit.toPlainText()
-        self.measurement.reference_density = \
-            self.referenceDensityDoubleSpinBox.value()
-        self.measurement.number_of_depth_steps = \
-            self.numberOfDepthStepsSpinBox.value()
-        self.measurement.depth_step_for_stopping = \
-            self.depthStepForStoppingSpinBox.value()
-        self.measurement.depth_step_for_output = \
-            self.depthStepForOutputSpinBox.value()
-        self.measurement.depth_for_concentration_from = \
-            self.depthForConcentrationFromDoubleSpinBox.value()
-        self.measurement.depth_for_concentration_to = \
-            self.depthForConcentrationToDoubleSpinBox.value()
-        self.measurement.channel_width = self.channelWidthDoubleSpinBox.value()
-        self.measurement.number_of_splits = self.numberOfSplitsSpinBox.value()
-        self.measurement.normalization = \
-            self.normalizationComboBox.currentText()
-
-    def values_changed(self):
-        """
-        Check if profile settings have changed.
-
-        Return:
-            True or False.
-        """
-        if self.measurement.profile_name != self.nameLineEdit.text():
-            return True
-        if self.measurement.profile_description != \
-            self.descriptionPlainTextEdit.toPlainText():
-            return True
-        if self.measurement.reference_density != \
-            self.referenceDensityDoubleSpinBox.value():
-            return True
-        if self.measurement.number_of_depth_steps != \
-            self.numberOfDepthStepsSpinBox.value():
-            return True
-        if self.measurement.depth_step_for_stopping != \
-            self.depthStepForStoppingSpinBox.value():
-            return True
-        if self.measurement.depth_step_for_output != \
-            self.depthStepForOutputSpinBox.value():
-            return True
-        if self.measurement.depth_for_concentration_from != \
-            self.depthForConcentrationFromDoubleSpinBox.value():
-            return True
-        if self.measurement.depth_for_concentration_to != \
-            self.depthForConcentrationToDoubleSpinBox.value():
-            return True
-        if self.measurement.channel_width != \
-            self.channelWidthDoubleSpinBox.value():
-            return True
-        if self.measurement.number_of_splits != \
-            self.numberOfSplitsSpinBox.value():
-            return True
-        if self.measurement.normalization != \
-            self.normalizationComboBox.currentText():
-            return True
-        return False
+        self.measurement.set_settings(**self.get_properties())
