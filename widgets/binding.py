@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -178,6 +178,12 @@ def _fset(instance, qobj_name, value):
     setter(qobj, value)
 
 
+# When _DEBUG_MODE is True, AttributeErrors and TypeErrors are raised
+# when properties are assigned incorrect values or the property itself
+# does not exist
+_DEBUB_MODE = False
+
+
 class PropertyBindingWidget(abc.ABC):
     """Base class for a widget that contains bindable properties.
     """
@@ -212,7 +218,8 @@ class PropertyBindingWidget(abc.ABC):
                 try:
                     setattr(self, p, kwargs[p])
                 except (AttributeError, TypeError):
-                    pass
+                    if _DEBUB_MODE:
+                        raise
 
     def get_properties(self):
         """Returns property names and their values as a dictionary.

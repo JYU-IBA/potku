@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -450,15 +450,20 @@ def set_btn_group_data(button_group: QtWidgets.QButtonGroup, values: Sequence):
 
 def set_min_max_handlers(
         lower_box: Union[QtWidgets.QSpinBox, QtWidgets.QDoubleSpinBox],
-        upper_box: Union[QtWidgets.QSpinBox, QtWidgets.QDoubleSpinBox]):
+        upper_box: Union[QtWidgets.QSpinBox, QtWidgets.QDoubleSpinBox],
+        min_diff=0):
     """Adds valueChanged handlers that automatically adjust the minimum
-    and maximum values of spin boxes.
+    and maximum values of spin boxes. Automatically adjusts current values
+    if lower_box has a higher value than upper_box.
 
     Args:
         lower_box: spin box whose current value should be the minimum value of
             the upper_box.
         upper_box: spin box whose current value should be the maximum value of
             the lower_box
+        min_diff: minimum difference allowed between the two values.
     """
-    lower_box.valueChanged.connect(lambda x: upper_box.setMinimum(x))
-    upper_box.valueChanged.connect(lambda x: lower_box.setMaximum(x))
+    lower_box.setMaximum(upper_box.value() + min_diff)
+    upper_box.setMinimum(lower_box.value() - min_diff)
+    lower_box.valueChanged.connect(lambda x: upper_box.setMinimum(x + min_diff))
+    upper_box.valueChanged.connect(lambda x: lower_box.setMaximum(x - min_diff))
