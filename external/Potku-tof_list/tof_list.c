@@ -237,6 +237,7 @@ int main(int argc, char *argv[])
          exit(2);
       }
       char *extension = filename_extension(filename);
+      fprintf(stderr, "extension: %s\n", extension);
       char *extension_orig=extension;
       Z[i]=0;
       while(isdigit(*extension)) Z[i] = Z[i]*10 + *extension++ - '0';
@@ -723,12 +724,22 @@ double ipow(double b, int e)
    return (ret);
 }
 
-char *filename_extension(const char *path) {
-    char *ext;
+char *filename_extension(const char *path) { /*  e.g. /bla/bla/tofe2363.O.ERD.0.cut => O.ERD.0.cut */
 #ifdef WIN32
-    ext = malloc(_MAX_EXT);
-    _splitpath(path, NULL, NULL, NULL, ext);
+    char *fname = malloc(_MAX_FNAME);
+    char *fname_orig = fname;
+    char *ext = malloc(_MAX_EXT);
+    _splitpath(path, NULL, NULL, fname, ext);
+    while(*fname++ != '.');
+    char *out = malloc(_MAX_FNAME+_MAX_EXT);
+    *out = '\0';
+    strcat(out, fname);
+    strcat(out, ext);
+    free(fname_orig)
+    free(ext);
+    return out;
 #else
+    char *ext;
     char *base = malloc(MAXPATHLEN);
     char *base_orig=base;
     basename_r(path, base);
