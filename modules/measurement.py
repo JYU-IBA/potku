@@ -1086,7 +1086,8 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             mesu = self
         return detector, run, target, mesu
 
-    def generate_tof_in(self, no_foil: bool = False, directory: Path = None):
+    def generate_tof_in(self, no_foil: bool = False, directory: Path = None) \
+            -> Path:
         """Generate tof.in file for external programs.
 
         Generates tof.in file for measurement to be used in external programs
@@ -1096,6 +1097,9 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         Args:
             no_foil: overrides the thickness of foil by setting it to 0
             directory: directory in which the tof.in is saved
+
+        Return:
+            path to generated tof.in file
         """
         # TODO refactor this into smaller functions
         if directory is None:
@@ -1224,10 +1228,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
                 format(tof_in.replace("\n", "; "))
             logging.getLogger(self.name).info(str_logmsg)
 
-        # Copy tof.in to bin-directory so tof_list can find it
-        # TODO this would be unnecessary if the path to tof.in is a
-        #   parameter given to tof_list
-        shutil.copy(tof_in_file, gf.get_bin_dir() / tof_in_file.name)
+        return tof_in_file
 
     @staticmethod
     def _get_attrs() -> set:

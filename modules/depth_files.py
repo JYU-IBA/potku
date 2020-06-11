@@ -41,6 +41,10 @@ import platform
 import subprocess
 import logging
 
+from pathlib import Path
+from functools import lru_cache
+from typing import Optional
+
 from . import math_functions as mf
 from . import comparison as comp
 from . import general_functions as gf
@@ -48,42 +52,41 @@ from .element import Element
 from .parsing import CSVParser
 from .measurement import Measurement
 
-from pathlib import Path
-from functools import lru_cache
-
 
 class DepthFileGenerator:
     """DepthFiles handles calling the external programs to create depth files.
     """
-    def __init__(self, file_paths, output_directory: Path, prefix="depth",
-                 tof_in_dir=None):
+    def __init__(self, cut_files, output_directory: Path, prefix="depth",
+                 tof_in_file: Optional[Path] = None):
         """Inits DepthFiles.
 
         Args:
-            file_paths: file paths of cut files to be used.
+            cut_files: file paths of cut files to be used.
             output_directory: path to the directory where depth files are to be
                 created.
-            tof_in_dir: path to directory where tof.in is located
+            tof_in_file: path to tof.in file
         """
-        self.__new_cut_files = [gf.copy_file_to_temp(f) for f in file_paths]
-        self.__output_path = Path(output_directory, prefix)
-        if tof_in_dir is None:
-            self.__tof_in_path = Path("tof.in")
+        self._cut_files = cut_files
+        # file_paths]
+        self._output_path = Path(output_directory, prefix)
+        if tof_in_file is None:
+            self._tof_in_file = Path("tof.in")
         else:
-            self.__tof_in_path = Path(tof_in_dir, "tof.in")
+            self._tof_in_file = tof_in_file
 
     def get_command(self):
         """Returns the command(s) used to run both tof_list and erd_depth.
         """
         if platform.system() == "Windows":
-            tof_bin = gf.get_bin_dir() / "tof_list.exe"
-            erd_bin = gf.get_bin_dir() / "erd_depth.exe"
+            tof_bin = str(gf.get_bin_dir() / "tof_list.exe")
+            erd_bin = str(gf.get_bin_dir() / "erd_depth.exe")
         else:
             tof_bin = "./tof_list"
             erd_bin = "./erd_depth"
 
-        return (str(tof_bin), *(str(f) for f in self.__new_cut_files)), \
-               (str(erd_bin), str(self.__output_path), str(self.__tof_in_path))
+        return (tof_bin, str(self._tof_in_file),
+                *(str(f) for f in self._cut_files)), \
+               (erd_bin, str(self._output_path), str(self._tof_in_file))
 
     def run(self):
         """Generate the files necessary for drawing the depth profile.
@@ -114,9 +117,10 @@ def generate_depth_files(cut_files, output_dir: Path,
         progress: a ProgressReporter object
     """
     # TODO this could be a method of Measurement
+    # TODO Measurment should not be an optional param
     if measurement is not None:
         # tof.in file needs to exists before running DepthFileGenerator
-        measurement.generate_tof_in(directory=tof_in_dir)
+        tof_in_file = measurement.generate_tof_in(directory=tof_in_dir)
 
     output_dir.mkdir(exist_ok=True)
 
@@ -135,7 +139,7 @@ def generate_depth_files(cut_files, output_dir: Path,
     if progress is not None:
         progress.report(30)
 
-    dp = DepthFileGenerator(cut_files, output_dir, tof_in_dir=tof_in_dir)
+    dp = DepthFileGenerator(cut_files, output_dir, tof_in_file=tof_in_file)
     dp.run()
 
     if progress is not None:
