@@ -28,7 +28,6 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
-import os
 import platform
 import shutil
 import subprocess
@@ -445,28 +444,25 @@ class MCERD:
         Args:
             destination: Destination folder.
         """
-        shutil.copy(self.result_file, destination)
-        shutil.copy(self.recoil_file, destination)
+        try:
+            shutil.copy(self.result_file, destination)
+            shutil.copy(self.recoil_file, destination)
+        except OSError:
+            # TODO log
+            pass
 
     def delete_unneeded_files(self):
         """
         Delete mcerd files that are not needed anymore.
         """
-        def delete_files(*files):
-            for f in files:
-                try:
-                    f.unlink()
-                except OSError:
-                    pass
-
-        delete_files(
+        gf.remove_files(
             self.__command_file, self.__detector_file, self.__target_file,
             self.__foils_file)
 
         def filter_func(f):
             return f.startswith(self.__rec_filename)
 
-        gf.remove_files(
+        gf.remove_matching_files(
             self.sim_dir, exts={".out", ".dat", ".range", ".pre"},
             filter_func=filter_func)
 

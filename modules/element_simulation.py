@@ -301,7 +301,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         # Delete possible extra rec files.
         # TODO use name instead of startswith
-        gf.remove_files(
+        gf.remove_matching_files(
             self.directory, exts={".rec", ".sct"},
             filter_func=lambda x: x.startswith(old_name))
 
@@ -339,7 +339,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     @classmethod
     def from_file(cls, request, prefix: str, simulation_folder: Path,
                   mcsimu_file_path: Path, profile_file_path: Path,
-                  sample=None, detector=None):
+                  sample=None, detector=None, simulation=None, run=None):
         """Initialize ElementSimulation from JSON files.
 
         Args:
@@ -355,6 +355,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             sample: sample under which the parent simulation belongs to
             detector: detector that is used when simulation is not run with
                 request settings.
+            simulation: parent Simulation object of this ElementSimulation
+            run: ElementSimulation's run object
         """
         with mcsimu_file_path.open("r") as mcsimu_file:
             mcsimu = json.load(mcsimu_file)
@@ -443,7 +445,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             optimization_recoils=optimized_recoils,
             optimized_fluence=optimized_fluence,
             main_recoil=main_recoil, sample=sample, detector=detector,
-            **kwargs, **mcsimu)
+            **kwargs, **mcsimu, simulation=simulation, run=run)
 
     def get_full_name(self):
         """Returns the full name of the ElementSimulation object.
@@ -922,7 +924,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         else:
             raise ValueError(f"Unknown optimization type: {optim_mode}.")
 
-        gf.remove_files(
+        gf.remove_matching_files(
             self.directory,
             exts={".recoil", ".erd", ".simu", ".scatter", ".rec"},
             filter_func=filter_func)
@@ -939,7 +941,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             return any(file.startswith(pre) for pre in prefixes) and \
                 "opt" not in file
 
-        gf.remove_files(
+        gf.remove_matching_files(
             self.directory,
             exts={".recoil", ".erd", ".simu", ".scatter"},
             filter_func=filter_func)
@@ -997,8 +999,11 @@ class ERDFileHandler:
         Return:
             new ERDFileHandler.
         """
-        full_paths = (Path(directory, file)
-                      for file in os.scandir(directory))
+        try:
+            full_paths = (Path(directory, file)
+                          for file in os.scandir(directory))
+        except OSError:
+            full_paths = []
         return cls(full_paths, recoil_element)
 
     def __iter__(self):

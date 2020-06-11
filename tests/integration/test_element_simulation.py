@@ -58,7 +58,7 @@ class TestElementSimulationSettings(unittest.TestCase):
         """
         with tempfile.TemporaryDirectory() as tmp_dir:
             # File paths
-            tmp_dir = Path(tmp_dir)
+            tmp_dir = Path(tmp_dir).resolve()
             mesu_file = tmp_dir / "mesu"
             det_dir = tmp_dir / "det"
             sim_dir = tmp_dir / "Sample_01-foo" / \

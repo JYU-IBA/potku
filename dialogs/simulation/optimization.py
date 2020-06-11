@@ -154,10 +154,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
                                 file.rsplit('.', 1)[0]
                             all_cuts.append(file_name_without_suffix)
 
-                    for file_2 in os.listdir(
-                            os.path.join(
-                                measurement.directory_composition_changes,
-                                "Changes")):
+                    for file_2 in os.listdir(measurement.get_changes_dir()):
                         if file_2.endswith(".cut"):
                             file_name_without_suffix = \
                                 file_2.rsplit('.', 1)[0]
@@ -283,8 +280,8 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
                                         item.text(0) + ".cut")
                     else:
                         cut_file = Path(
-                            used_measurement.directory_composition_changes,
-                            "Changes", item.text(0) + ".cut")
+                            used_measurement.get_changes_dir(),
+                            f"{item.text(0)}.cut")
                     cut_file_found = True
                     break
             i += 1

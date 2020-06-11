@@ -31,6 +31,7 @@ import tests.mock_objects as mo
 import tests.utils as utils
 
 from modules.element import Element
+from modules.enums import Profile
 from widgets.measurement.settings import MeasurementSettingsWidget
 
 from PyQt5.QtWidgets import QApplication
@@ -79,6 +80,11 @@ class MyTestCase(unittest.TestCase):
         self.mesu_widget.update_settings()
         self.assertEqual(self.mesu_widget.obj.run.beam.ion,
                          self.mesu_widget.beam_ion)
+
+    def test_profile_value(self):
+        self.assertEqual(self.mesu_widget.beam_profile, Profile.UNIFORM)
+        self.mesu_widget.beam_profile = Profile.GAUSSIAN
+        self.assertEqual(self.mesu_widget.beam_profile, Profile.GAUSSIAN)
 
 
 if __name__ == '__main__':

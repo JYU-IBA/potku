@@ -73,8 +73,8 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
         self.tabs.setTabBarAutoHide(True)
         screen_geometry = QDesktopWidget \
             .availableGeometry(QApplication.desktop())
-        self.resize(self.geometry().width() * 1.2,
-                    screen_geometry.size().height() * 0.8)
+        self.resize(int(self.geometry().width() * 1.2),
+                    int(screen_geometry.size().height() * 0.8))
 
         self.OKButton.clicked.connect(self.update_settings_and_close)
         self.applyButton.clicked.connect(self.update_settings)
@@ -154,7 +154,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
 
         if self.element_simulation.name != self.sim_widget.name:
             # Remove current simu file if name has been changed
-            self.element_simulation.remove_file()
+            self.element_simulation.remove_files()
 
         self.element_simulation.use_default_settings = self.use_default_settings
         self.sim_widget.update_settings()

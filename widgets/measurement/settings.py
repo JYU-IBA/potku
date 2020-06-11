@@ -37,7 +37,11 @@ import widgets.input_validation as iv
 import widgets.gui_utils as gutils
 
 from pathlib import Path
+from typing import Union
+from modules.enums import Profile
 from modules.element import Element
+from modules.simulation import Simulation
+from modules.measurement import Measurement
 from widgets.gui_utils import QtABCMeta
 from dialogs.element_selection import ElementSelectionDialog
 
@@ -115,9 +119,8 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
     target_theta = bnd.bind("targetThetaDoubleSpinBox", track_change=True)
     detector_theta = bnd.bind("detectorThetaDoubleSpinBox", track_change=True)
 
-    def __init__(self, obj):
-        """
-        Initializes the widget.
+    def __init__(self, obj: Union[Measurement, Simulation]):
+        """Initializes the widget.
 
         Args:
             obj: object that uses these settings, either a Measurement or a
@@ -152,10 +155,9 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         self.targetFiiDoubleSpinBox.setLocale(locale)
 
         # Fii angles are currently not used so disable their spin boxes
-        # TODO find out how fii angles should be used in MCERD so these
-        #   can be enabled
         self.detectorFiiDoubleSpinBox.setEnabled(False)
         self.targetFiiDoubleSpinBox.setEnabled(False)
+        gutils.fill_combobox(self.profileComboBox, Profile)
 
         # Copy of measurement's/simulation's run or default run
         # TODO should default run also be copied?
@@ -224,14 +226,8 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         }
         self.set_properties(**run_params, **bean_params)
 
-        if self.obj.detector is None:
-            self.detector_theta = \
-                self.obj.request.default_detector.detector_theta
-            # TODO should there be a none check for target too?
-            self.target_theta = self.obj.request.default_target.target_theta
-        else:
-            self.detector_theta = self.obj.detector.detector_theta
-            self.target_theta = self.obj.target.target_theta
+        self.detector_theta = self.obj.detector.detector_theta
+        self.target_theta = self.obj.target.target_theta
 
     def check_angles(self):
         """

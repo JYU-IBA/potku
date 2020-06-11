@@ -44,8 +44,8 @@ from modules.point import Point
 from modules.layer import Layer
 from modules.measurement import Measurement
 from modules.global_settings import GlobalSettings
-from modules.sample import Samples
 from modules.observing import Observer
+from modules.request import Request
 
 
 # This module can be used to generate various helper objects for testing
@@ -147,9 +147,8 @@ def get_measurement(request=None) -> Measurement:
     if request is None:
         request = get_request()
 
-    return Measurement(request, Path(tempfile.gettempdir(), "mesu"),
-                       run=get_run(), detector=get_detector(),
-                       target=get_target())
+    return Measurement(
+        request, Path(tempfile.gettempdir(), "mesu"), save_on_creation=False)
 
 
 def get_layer(element_count=1, randomize=False) -> Layer:
@@ -175,24 +174,14 @@ def get_global_settings() -> GlobalSettings:
         config_dir=tempfile.gettempdir(), save_on_creation=False)
 
 
-def get_request(return_real=False):
+def get_request() -> Request:
     """Returns a MockRequest object.
 
     This is done to avoid lengthy file writing operations when a real
     Request is initialized
     """
-    class MockRequest:
-        def __init__(self):
-            self.default_detector = get_detector()
-            self.default_element_simulation = get_element_simulation(
-                request=self)
-            self.directory = Path(tempfile.gettempdir())
-            self.default_run = get_run()
-            self.default_target = get_target()
-            self.default_measurement = get_measurement(self)
-            self.global_settings = get_global_settings()
-            self.samples = Samples(self)
-    return MockRequest()
+    return Request(tempfile.gettempdir(), "request", get_global_settings(),
+                   save_on_creation=False, enable_logging=False)
 
 
 class TestObserver(Observer):

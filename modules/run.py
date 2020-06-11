@@ -67,12 +67,12 @@ class Run(Serializable, AdjustableSettings):
         # List for undoing fluence values
         self.previous_fluence = []
 
-    def to_file(self, measurement_file_path: Path):
+    def to_file(self, measurement_file: Path):
         """
         Saves Run object and Beam object parameters into a file.
 
         Args:
-            measurement_file_path: Path to the .measurement file in which the
+            measurement_file: Path to the .measurement file in which the
                                    parameters are written.
         """
         run_obj = {
@@ -92,7 +92,7 @@ class Run(Serializable, AdjustableSettings):
         }
 
         try:
-            with measurement_file_path.open("r") as mesu:
+            with measurement_file.open("r") as mesu:
                 obj = json.load(mesu)
             timestamp = time.time()
             obj["general"]["modification_time"] = time.strftime(
@@ -104,20 +104,20 @@ class Run(Serializable, AdjustableSettings):
         obj["run"] = run_obj
         obj["beam"] = beam_obj
 
-        with measurement_file_path.open("w") as file:
+        with measurement_file.open("w") as file:
             json.dump(obj, file, indent=4)
 
     @classmethod
-    def from_file(cls, measurement_file_path):
+    def from_file(cls, measurement_file: Path):
         """
         Reads parameter sfrom file and makes a Run object from them.
         Args:
-             measurement_file_path: Filepath of the .measurement file.
+             measurement_file: Filepath of the .measurement file.
 
         Return:
             Returns the created Run object.
         """
-        with measurement_file_path.open("r") as mesu:
+        with measurement_file.open("r") as mesu:
             mesu = json.load(mesu)
 
         try:

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>375</width>
+    <width>434</width>
     <height>216</height>
    </rect>
   </property>
@@ -63,7 +63,7 @@
      <item row="0" column="0">
       <widget class="QLabel" name="simulationNameLabel">
        <property name="text">
-        <string>Measurement file:</string>
+        <string>Measurement file</string>
        </property>
       </widget>
      </item>
@@ -91,7 +91,7 @@
      <item row="1" column="0">
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>Measurement name:</string>
+        <string>Measurement name</string>
        </property>
       </widget>
      </item>
@@ -123,7 +123,7 @@
      <item row="2" column="0">
       <widget class="QLabel" name="SampleLabel">
        <property name="text">
-        <string>Place under sample:</string>
+        <string>Place under sample</string>
        </property>
       </widget>
      </item>
@@ -132,14 +132,14 @@
        <item>
         <widget class="QComboBox" name="samplesComboBox">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
          <property name="minimumSize">
           <size>
-           <width>0</width>
+           <width>100</width>
            <height>0</height>
           </size>
          </property>

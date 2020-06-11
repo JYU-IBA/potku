@@ -74,8 +74,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         screen_geometry = QtWidgets.QDesktopWidget.availableGeometry(
             QtWidgets.QApplication.desktop())
-        self.resize(self.geometry().width() * 1.2,
-                    screen_geometry.size().height() * 0.8)
+        self.resize(int(self.geometry().width() * 1.2),
+                    int(screen_geometry.size().height() * 0.8))
         self.defaultSettingsCheckBox.stateChanged.connect(
             self.__change_used_settings)
         self.OKButton.clicked.connect(self.__save_settings_and_close)
@@ -173,20 +173,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             # Update simulation settings
             self.simulation.use_request_settings = \
                 self.use_request_settings
-            measurement_settings_file_path = Path(
-                self.simulation.directory,
-                f"{self.simulation.measurement_setting_file_name}.measurement")
-            target_file_path = Path(self.simulation.directory,
-                                    f"{self.simulation.target.name}.target")
-            det_folder_path = Path(self.simulation.directory, "Detector")
 
-            if self.simulation.run is None:
-                # Create a default Run for simulation
-                self.simulation.run = Run()
-            if self.simulation.detector is None:
-                df.update_detector_settings(self.simulation,
-                                            det_folder_path,
-                                            measurement_settings_file_path)
+            det_folder_path = Path(self.simulation.directory, "Detector")
 
             # Set Detector object to settings widget
             self.detector_settings_widget.obj = self.simulation.detector
@@ -194,54 +182,14 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             # Update settings
             self.measurement_settings_widget.update_settings()
             self.detector_settings_widget.update_settings()
-            self.simulation.detector.path = \
-                Path(det_folder_path,
-                     f"{self.simulation.detector.name}.detector")
-
-            # Save measurement settings parameters.
-            new_measurement_settings_file_path = Path(
-                self.simulation.directory,
-                self.simulation.measurement_setting_file_name +
-                ".measurement")
-            general_obj = {
-                "name": self.simulation.measurement_setting_file_name,
-                "description":
-                    self.simulation.measurement_setting_file_description,
-                "modification_time":
-                    time.strftime("%c %z %Z", time.localtime(
-                        time.time())),
-                "modification_time_unix": time.time(),
-                "use_request_settings": self.simulation.use_request_settings
-            }
-
-            if new_measurement_settings_file_path.exists():
-                with open(new_measurement_settings_file_path) as mesu:
-                    obj = json.load(mesu)
-                obj["general"] = general_obj
-            else:
-                obj = {
-                    "general": general_obj
-                }
+            self.simulation.detector.path = Path(
+                det_folder_path, f"{self.simulation.detector.name}.detector")
 
             # Delete possible extra .measurement files
-            gf.remove_files(self.simulation.directory,
-                            exts={".measurement"})
+            gf.remove_matching_files(self.simulation.directory,
+                                     exts={".measurement"})
 
-            # Write measurement settings to file
-            with open(new_measurement_settings_file_path, "w") as file:
-                json.dump(obj, file, indent=4)
-
-            self.simulation.to_file(self.simulation.path)
-
-            # Save Run object to file
-            self.simulation.run.to_file(new_measurement_settings_file_path)
-            # Save Detector object to file
-            self.simulation.detector.to_file(self.simulation.detector.path,
-                                             new_measurement_settings_file_path)
-
-            # Save Target object to file
-            self.simulation.target.to_file(target_file_path,
-                                           new_measurement_settings_file_path)
+            self.simulation.to_file()
             return True
 
         except TypeError:

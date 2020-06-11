@@ -32,6 +32,7 @@ import json
 import time
 
 from pathlib import Path
+from typing import Optional
 
 from .element import Element
 from .layer import Layer
@@ -133,13 +134,13 @@ class Target:
         # the __init__ method.
         return cls(**target, target_theta=target_theta, layers=layers)
 
-    def to_file(self, target_file_path: Path, measurement_file_path: Path):
-        """
-        Save target parameters into files.
+    def to_file(self, target_file: Path,
+                measurement_file: Optional[Path] = None):
+        """Save target parameters into files.
 
         Args:
-            target_file_path: File in which the target params will be saved.
-            measurement_file_path: File in which target angles will be saved.
+            target_file: File in which the target params will be saved.
+            measurement_file: File in which target angles will be saved.
         """
         timestamp = time.time()
         obj = {
@@ -165,14 +166,13 @@ class Target:
             }
             obj["layers"].append(layer_obj)
 
-        if target_file_path is not None:
-            with target_file_path.open("w") as file:
-                json.dump(obj, file, indent=4)
+        with target_file.open("w") as file:
+            json.dump(obj, file, indent=4)
 
-        if measurement_file_path is not None:
+        if measurement_file is not None:
             # Read .measurement to obj to update only target angles
             try:
-                with measurement_file_path.open("r") as mesu:
+                with measurement_file.open("r") as mesu:
                     obj = json.load(mesu)
                 obj["geometry"]["target_theta"] = self.target_theta
             except (OSError, KeyError):
@@ -180,5 +180,5 @@ class Target:
                         "target_theta": self.target_theta
                     }
 
-            with measurement_file_path.open("w") as file:
+            with measurement_file.open("w") as file:
                 json.dump(obj, file, indent=4)

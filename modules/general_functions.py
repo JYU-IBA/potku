@@ -33,20 +33,18 @@ __version__ = "2.0"
 
 import bisect
 import hashlib
-import numpy as np
 import os
 import platform
 import shutil
 import subprocess
 import tempfile
-import logging
 import time
 
 from timeit import default_timer as timer
 from pathlib import Path
 from decimal import Decimal
-
-from .parsing import ToFListParser
+from typing import Dict
+from typing import List
 
 
 # TODO this could still be organized into smaller modules
@@ -94,23 +92,20 @@ def rename_file(old_path, new_name):
     return new_file
 
 
-def remove_file(file_path):
-    """Removes file or directory.
+def remove_files(*file_paths):
+    """Removes files.
 
     Args:
-        file_path: Path of file or directory to remove.
+        *file_paths: file paths to remove
     """
-    if not file_path:
-        return
-    try:
-        # shutil.rmtree(file_path)
-        os.remove(file_path)
-    except Exception as e:
-        # Removal failed
-        print(e)
+    for f in file_paths:
+        try:
+            f.unlink()
+        except OSError:
+            pass
 
 
-def remove_files(directory, exts=None, filter_func=None):
+def remove_matching_files(directory, exts=None, filter_func=None):
     """Removes all files in a directory that match given conditions.
 
     Args:
@@ -121,6 +116,7 @@ def remove_files(directory, exts=None, filter_func=None):
             provided, only the files that have the correct extension and match
             the filter_func condition will be deleted.
     """
+    # TODO should also allow deleting files while not declaring extensions
     if not exts:
         return
     if filter_func is None:
@@ -140,6 +136,28 @@ def remove_files(directory, exts=None, filter_func=None):
     except OSError:
         # Directory not found (or directory is a file), nothing to do
         pass
+
+
+def find_files_by_extension(directory: Path, *exts) -> Dict[str, List[Path]]:
+    """Searches given directory and returns files that have given extensions.
+
+    Args:
+        directory: a Path object
+        exts: collection of files extensions to look for
+
+    Return:
+        dictionary where keys are strings (file extensions) and values are
+        lists of Path objects.
+    """
+    search_dict = {
+        ext: [] for ext in exts
+    }
+    for entry in os.scandir(directory):
+        path = Path(entry.path)
+        suffix = path.suffix
+        if suffix in search_dict and path.is_file():
+            search_dict[suffix].append(path)
+    return search_dict
 
 
 def hist(data, width=1.0, col=1):
@@ -182,168 +200,26 @@ def hist(data, width=1.0, col=1):
     return hist_list
 
 
-def calculate_spectrum(tof_listed_files, spectrum_width, measurement,
-                       directory_es, no_foil=False):
-    """Calculate energy spectrum data from .tof_list files and writes the
-    results to .hist files.
+def copy_file_to_temp(file: Path) -> Path:
+    """Copy file into temp directory.
 
     Args:
-        tof_listed_files: contents of .tof_list files belonging to the
-                          measurement as a dict.
-        spectrum_width: TODO
-        measurement: measurement which the .tof_list files belong to
-        directory_es: directory
-        no_foil: whether foil thickeness was set to 0 or not. This affects
-                 the file name
-
-    Returns:
-        contents of .hist files as a dict
-    """
-    histed_files = {}
-    keys = tof_listed_files.keys()
-    invalid_keys = set()
-
-    for key in keys:
-        histed_files[key] = hist(tof_listed_files[key],
-                                 spectrum_width, 3)
-        if not histed_files[key]:
-            invalid_keys.add(key)
-            continue
-        first_val = (histed_files[key][0][0] - spectrum_width, 0)
-        last_val = (histed_files[key][-1][0] + spectrum_width, 0)
-        histed_files[key].insert(0, first_val)
-        histed_files[key].append(last_val)
-
-    for key in keys:
-        if key in invalid_keys:
-            continue
-        file = measurement.name
-        histed = histed_files[key]
-
-        if no_foil:
-            foil_txt = ".no_foil"
-        else:
-            foil_txt = ""
-
-        filename = Path(directory_es,
-                        "{0}.{1}{2}.hist".format(os.path.splitext(file)[0],
-                                                 key,
-                                                 foil_txt))
-        numpy_array = np.array(histed, dtype=[('float', float), ('int', int)])
-
-        np.savetxt(filename, numpy_array, delimiter=" ", fmt="%5.5f %6d")
-
-    return histed_files
-
-
-def copy_cut_file_to_temp(cut_file) -> Path:
-    """
-    Copy cut file into temp directory.
-
-    Args:
-        cut_file: Cut file to copy.
+        file: path to the file to copy.
 
     Return:
-        Path to the cut file in temp directory.
+        Path to the file in temp directory.
     """
-    # Move cut file to temp folder, at least in Windows tof_list works
-    # properly when cut file is there.
-    # TODO: check that this works in mac and Linux
-    cut_file_name = Path(cut_file).name
+    fname = Path(file).name
 
     # OS specific directory where temporary MCERD files will be stored.
     # In case of Linux and Mac this will be /tmp and in Windows this will
     # be the C:\Users\<username>\AppData\Local\Temp.
-    tmp = tempfile.gettempdir()
-
-    new_cut_file = Path(tmp, cut_file_name)
-    shutil.copyfile(cut_file, new_cut_file)
-    return new_cut_file
+    tmp_file = Path(tempfile.gettempdir(), fname)
+    shutil.copyfile(file, tmp_file)
+    return tmp_file
 
 
-def tof_list(cut_file, directory, save_output=False, no_foil=False,
-             logger_name=None):
-    """ToF_list
-
-    Arstila's tof_list executables interface for Python.
-
-    Args:
-        cut_file: A string representing cut file to be ran through tof_list.
-        directory: A string representing measurement's energy spectrum
-                   directory.
-        save_output: A boolean representing whether tof_list output is saved.
-        no_foil: whether foil thickness was used when .cut files were generated.
-                 This affects the file path when saving output
-        logger_name: name of a logging entity
-
-    Returns:
-        Returns cut file as list transformed through Arstila's tof_list program.
-    """
-    bin_dir = get_bin_dir()
-
-    if not cut_file:
-        return []
-
-    new_cut_file = copy_cut_file_to_temp(cut_file)
-    tof_parser = ToFListParser()
-
-    try:
-        if platform.system() == 'Windows':
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            command = (str(bin_dir / "tof_list.exe"), str(new_cut_file))
-            stdout = subprocess.check_output(command,
-                                             cwd=bin_dir,
-                                             shell=True,
-                                             startupinfo=startupinfo)
-        else:
-            command = "{0} {1}".format("./tof_list", str(new_cut_file))
-            p = subprocess.Popen(command.split(' ', 1),
-                                 cwd=bin_dir,
-                                 stdin=subprocess.PIPE,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
-            stdout, _ = p.communicate()
-
-        tof_output = list(tof_parser.parse_strs(
-            stdout.decode().splitlines(), method="row", ignore="w"))
-
-        if save_output:
-            if not directory:
-                directory = Path(
-                    os.path.realpath(os.path.curdir), "energy_spectrum_output")
-
-            os.makedirs(directory, exist_ok=True)
-
-            if no_foil:
-                foil_txt = ".no_foil"
-            else:
-                foil_txt = ""
-
-            directory_es_file = Path(
-                directory,
-                "{0}{1}.tof_list".format(Path(cut_file).stem,
-                                         foil_txt))
-            numpy_array = np.array(
-                tof_output, dtype=[
-                    ('float1', float), ('float2', float), ('float3', float),
-                    ('int1', int), ('float4', float), ('string', np.str_, 3),
-                    ('float5', float), ('int2', int)])
-            np.savetxt(directory_es_file, numpy_array, delimiter=" ",
-                       fmt="%5.1f %5.1f %10.5f %3d %8.4f %s %6.3f %d")
-        return tof_output
-    except Exception as e:
-        msg = f"Error in tof_list: {e}"
-        if logger_name is not None:
-            logging.getLogger(logger_name).error(msg)
-        else:
-            print(msg)
-        return []
-    finally:
-        remove_file(new_cut_file)
-
-
-def convert_mev_to_joule(energy_in_MeV):
+def convert_mev_to_joule(energy_in_MeV: float) -> float:
     """Converts MeV (mega electron volts) to joules.
     
     Args:
@@ -357,7 +233,7 @@ def convert_mev_to_joule(energy_in_MeV):
     return float(energy_in_MeV) * 1000000.0 / joule
 
 
-def convert_amu_to_kg(mass_in_amus):
+def convert_amu_to_kg(mass_in_amus: float) -> float:
     """Converts amus (atomic mass units) to kilograms.
     
     Args:
@@ -584,53 +460,14 @@ def find_nearest(x, lst):
         return before
 
 
-def calculate_new_point(previous_point, new_x, next_point,
-                        area_points):
-    """
-    Calculate a new point whose x coordinate is given, between previous
-    and next point.
-
-    Args:
-        previous_point: Previous point.
-        new_x: X coordinate for new point.
-        next_point: Next point.
-        area_points: List of points where a new point is added.
-    """
-    try:
-        previous_x = previous_point.get_x()
-        previous_y = previous_point.get_y()
-
-        next_x = next_point.get_x()
-        next_y = next_point.get_y()
-    except AttributeError:
-        previous_x = previous_point[0]
-        previous_y = previous_point[1]
-        next_x = next_point[0]
-        next_y = next_point[1]
-
-    x_diff = round(next_x - previous_x, 4)
-    y_diff = round(next_y - previous_y, 4)
-
-    if x_diff == 0.0:
-        # If existing points are close enough
-        return
-
-    k = y_diff / x_diff
-    new_y = k * new_x - k * previous_x + previous_y
-
-    new_point = (new_x, new_y)
-    area_points.append(new_point)
-
-
-def uniform_espe_lists(lists, channel_width):
-    """
-    Modify given energy spectra lists to have the same amount of items.
+def uniform_espe_lists(espe1, espe2, channel_width=0.025):
+    """Modify given energy spectra lists to have the same amount of items.
 
     Return:
         Modified lists.
     """
-    first = lists[0]
-    second = lists[1]
+    first = espe1
+    second = espe2
     # check if first x values don't match
     # add zero values to the one missing the x values
     if second[0][0] < first[0][0]:
@@ -762,7 +599,4 @@ def get_bin_dir() -> Path:
 def get_data_dir() -> Path:
     """Returns absolute path to Potku's data directory.
     """
-    # TODO maybe add -DDEVELOPER_MODE_ENABLE=ON option to Jibal's CMake
-    #   configuration and change data dir to external/data instead of
-    #   external/share
     return _get_external_dir() / "share"

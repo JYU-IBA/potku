@@ -29,7 +29,6 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import shutil
 import time
 
 import dialogs.dialog_functions as df
@@ -37,8 +36,6 @@ import modules.general_functions as gf
 
 from pathlib import Path
 
-from modules.run import Run
-from modules.target import Target
 from modules.measurement import Measurement
 
 from PyQt5 import QtCore
@@ -72,8 +69,8 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         screen_geometry = QtWidgets.QDesktopWidget.availableGeometry(
             QtWidgets.QApplication.desktop())
-        self.resize(self.geometry().width() * 1.2,
-                    screen_geometry.size().height() * 0.8)
+        self.resize(int(self.geometry().width() * 1.2),
+                    int(screen_geometry.size().height() * 0.8))
         self.defaultSettingsCheckBox.stateChanged.connect(
             self.__change_used_settings)
         self.OKButton.clicked.connect(self.__save_settings_and_close)
@@ -90,25 +87,20 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         )
 
         # Add detector settings view to the settings view
-        if self.measurement.detector:
-            detector_object = self.measurement.detector
-        else:
-            detector_object = self.measurement.request.default_detector
         self.detector_settings_widget = DetectorSettingsWidget(
-            detector_object, self.measurement.request, self.icon_manager,
-            self.measurement_settings_widget.tmp_run)
+            self.measurement.detector, self.measurement.request,
+            self.icon_manager, self.measurement_settings_widget.tmp_run)
 
         self.tabs.addTab(self.detector_settings_widget, "Detector")
 
-        if self.measurement.detector is not None:
-            self.defaultSettingsCheckBox.setCheckState(0)
-            self.measurement_settings_widget.nameLineEdit.setText(
-                self.measurement.measurement_setting_file_name)
-            self.measurement_settings_widget.descriptionPlainTextEdit \
-                .setPlainText(
-                    self.measurement.measurement_setting_file_description)
-            self.measurement_settings_widget.dateLabel.setText(time.strftime(
-                "%c %z %Z", time.localtime(self.measurement.modification_time)))
+        self.defaultSettingsCheckBox.setChecked(
+            self.measurement.use_default_profile_settings)
+        self.measurement_settings_widget.nameLineEdit.setText(
+            self.measurement.measurement_setting_file_name)
+        self.measurement_settings_widget.descriptionPlainTextEdit.setPlainText(
+                self.measurement.measurement_setting_file_description)
+        self.measurement_settings_widget.dateLabel.setText(time.strftime(
+            "%c %z %Z", time.localtime(self.measurement.modification_time)))
 
         # Add profile settings view to the settings view
         self.profile_settings_widget = ProfileSettingsWidget(self.measurement)
@@ -126,17 +118,12 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.tabs.setEnabled(True)
 
     def __update_parameters(self):
-        """Update Measurement's Run, Detector and Target objects. If measurement
-        specific parameters are in use, save them into a file.
-        """
         if self.measurement_settings_widget.isotopeComboBox.currentIndex()\
                 == -1:
-            QtWidgets.QMessageBox.critical(self, "Warning",
-                                           "No isotope selected.\n\nPlease "
-                                           "select an isotope for the beam "
-                                           "element.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.critical(
+                self, "Warning",
+                "No isotope selected.\n\nPlease select an isotope for the beam "
+                "element.", QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             return False
 
         if not self.measurement.measurement_setting_file_name:
@@ -145,125 +132,51 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         if not self.measurement.profile_name:
             self.measurement.profile_name = self.measurement.name
 
-        check_box = self.defaultSettingsCheckBox
-        if check_box.isChecked():
-            # Use request settings
-            def_mesu = self.measurement.request.default_measurement
-            self.measurement.run = None
-            self.measurement.detector = None
-            self.measurement.use_default_profile_settings = True
-            self.measurement.measurement_setting_file_description = \
-                def_mesu.measurement_setting_file_description
-            self.measurement.target = None
+        # Check the target and detector angles
+        ok_pressed = self.measurement_settings_widget.check_angles()
+        if ok_pressed:
+            if not self.tabs.currentWidget().fields_are_valid:
+                QtWidgets.QMessageBox.critical(
+                    self, "Warning",
+                    "Some of the setting values have not been set.\n"
+                    "Please input values in fields indicated in red.",
+                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+                return False
+            # Use Measurement specific settings
+            try:
+                self.measurement.use_default_profile_settings = \
+                    self.defaultSettingsCheckBox.isChecked()
 
-            # Revert all profile parameters to default.
-            self.measurement.copy_settings_from(def_mesu)
+                det_folder_path = Path(self.measurement.directory,
+                                       "Detector")
 
-            det_folder_path = Path(self.measurement.directory, "Detector")
-            if det_folder_path.exists():
-                # Remove Measurement specific Detector files
-                shutil.rmtree(det_folder_path)
+                # Set Detector object to settings widget
+                self.detector_settings_widget.obj = \
+                    self.measurement.detector
 
-            gf.remove_files(
-                self.measurement.directory,
-                exts={".measurement", ".profile", ".target"})
-            return True
-        else:
-            # Check the target and detector angles
-            ok_pressed = self.measurement_settings_widget.check_angles()
-            if ok_pressed:
-                if not self.tabs.currentWidget().fields_are_valid:
-                    QtWidgets.QMessageBox.critical(self, "Warning",
-                                                   "Some of the setting values "
-                                                   "have not been set.\n" +
-                                                   "Please input values in "
-                                                   "fields indicated in red.",
-                                                   QtWidgets.QMessageBox.Ok,
-                                                   QtWidgets.QMessageBox.Ok)
-                    return False
-                # Use Measurement specific settings
-                try:
-                    self.measurement.use_default_profile_settings = False
-                    if self.measurement.measurement_setting_file_name is None:
-                        file_name = "temp"
-                    else:
-                        file_name = self.measurement.\
-                            measurement_setting_file_name
+                # Update settings
+                self.measurement_settings_widget.update_settings()
+                self.detector_settings_widget.update_settings()
 
-                    if self.measurement.target is None:
-                        # Create default Target object for Measurement
-                        self.measurement.target = Target()
-                    if self.measurement.run is None:
-                        # Create default Run object for Measurement
-                        self.measurement.run = Run()
+                self.profile_settings_widget.update_settings()
+                self.measurement.detector.path = Path(
+                    det_folder_path,
+                    f"{self.measurement.detector.name}.detector")
 
-                    det_folder_path = Path(self.measurement.directory,
-                                           "Detector")
-                    measurement_settings_file_path = \
-                        Path(self.measurement.directory,
-                             f"{file_name}.measurement")
+                # Delete possible extra .measurement and .profile files
+                gf.remove_matching_files(
+                    self.measurement.directory,
+                    exts={".measurement", ".profile"})
 
-                    if self.measurement.detector is None:
-                        df.update_detector_settings(
-                            self.measurement,
-                            det_folder_path,
-                            measurement_settings_file_path)
-
-                    # Set Detector object to settings widget
-                    self.detector_settings_widget.obj = \
-                        self.measurement.detector
-
-                    # Update settings
-                    self.measurement_settings_widget.update_settings()
-                    self.detector_settings_widget.update_settings()
-
-                    self.profile_settings_widget.update_settings()
-                    self.measurement.detector.path = \
-                        Path(det_folder_path,
-                             f"{self.measurement.detector.name}.detector")
-
-                    # Delete possible extra .measurement and .profile files
-                    gf.remove_files(
-                        self.measurement.directory,
-                        exts={".measurement", ".profile"})
-
-                    # Save general measurement settings parameters.
-                    new_measurement_settings_file_path = Path(
-                        self.measurement.directory,
-                        self.measurement.measurement_setting_file_name +
-                        ".measurement")
-                    self.measurement.measurement_to_file(
-                        new_measurement_settings_file_path)
-
-                    # Save run parameters
-                    self.measurement.run.to_file(
-                        new_measurement_settings_file_path)
-                    # Save detector parameters
-                    self.measurement.detector.to_file(
-                        self.measurement.detector.path,
-                        new_measurement_settings_file_path)
-
-                    # Save profile parameters
-                    profile_file_path = Path(
-                        self.measurement.directory,
-                        f"{self.measurement.profile_name}.profile")
-                    self.measurement.profile_to_file(profile_file_path)
-
-                    # Save target parameters
-                    target_file_path = Path(
-                        self.measurement.directory,
-                        f"{self.measurement.target.name}.target")
-                    self.measurement.target.to_file(
-                        target_file_path, new_measurement_settings_file_path)
-                    return True
-                except TypeError:
-                    QtWidgets.QMessageBox.question(self, "Warning",
-                                                   "Some of the setting values "
-                                                   "have not been set.\n" +
-                                                   "Please input setting values"
-                                                   " to save them.",
-                                                   QtWidgets.QMessageBox.Ok,
-                                                   QtWidgets.QMessageBox.Ok)
+                # Save general measurement settings parameters.
+                self.measurement.to_file()
+                return True
+            except TypeError:
+                QtWidgets.QMessageBox.question(
+                    self, "Warning",
+                    "Some of the setting values have not been set.\n"
+                    "Please input setting values to save them.",
+                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
         return False
 
     def __save_settings_and_close(self):

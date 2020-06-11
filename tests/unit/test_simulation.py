@@ -118,5 +118,3 @@ class TestSimulation(unittest.TestCase):
             self.assertEqual(sim.target.target_type, sim2.target.target_type)
 
             self.assertEqual(sim.run.fluence, sim2.run.fluence)
-
-            self.assertNotEqual(sim.modification_time, sim2.modification_time)
