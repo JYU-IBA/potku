@@ -27,7 +27,8 @@ along with this program (file named 'LICENCE').
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
-             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n " \
+             "Juhani Sundell"
 __version__ = "2.0"
 
 import hashlib
@@ -645,7 +646,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         with measurement_file.open("w") as file:
             json.dump(obj_measurement, file, indent=4)
 
-    def _info_to_file(self, info_file: Optional[Path]):
+    def _info_to_file(self, info_file: Optional[Path] = None):
         """Write an .info file.
 
         Args:
@@ -1042,8 +1043,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         logging.getLogger(self.name).info(log_msg)
 
     def __remove_old_cut_files(self):
-        """
-        Remove old cut files.
+        """Remove old cut files.
         """
         gf.remove_matching_files(self.directory_cuts, exts={".cut"})
         directory_changes = self.get_changes_dir()
@@ -1086,15 +1086,20 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             mesu = self
         return detector, run, target, mesu
 
-    def generate_tof_in(self, no_foil: bool = False, directory: Path = None):
-        """ Generate tof.in file for external programs.
+    def generate_tof_in(self, no_foil: bool = False, directory: Path = None) \
+            -> Path:
+        """Generate tof.in file for external programs.
+
+        Generates tof.in file for measurement to be used in external programs
+        (tof_list, erd_depth). By default,q the file is written to measurement
+        folder.
 
         Args:
             no_foil: overrides the thickness of foil by setting it to 0
             directory: directory in which the tof.in is saved
-        
-        Generates tof.in file for measurement to be used in external programs 
-        (tof_list, erd_depth).
+
+        Return:
+            path to generated tof.in file
         """
         # TODO refactor this into smaller functions
         if directory is None:
@@ -1223,8 +1228,33 @@ class Measurement(Logger, AdjustableSettings, Serializable):
                 format(tof_in.replace("\n", "; "))
             logging.getLogger(self.name).info(str_logmsg)
 
-        # Copy tof.in to bin-directory so tof_list can find it
-        # TODO this would be unnecessary if the path to tof.in is a
-        #   parameter given to tof_list
-        shutil.copy(tof_in_file, gf.get_bin_dir() / tof_in_file.name)
+        return tof_in_file
 
+    @staticmethod
+    def _get_attrs() -> set:
+        """Returns a set of attribute names. These Measument attribute values
+        can be set by calling set_settings.
+        """
+        return {
+            "profile_name", "profile_description",
+            "profile_modification_time", "reference_density",
+            "number_of_depth_steps", "depth_step_for_stopping",
+            "depth_step_for_output", "depth_for_concentration_from",
+            "depth_for_concentration_to", "channel_width", "number_of_splits",
+            "normalization"
+        }
+
+    def get_settings(self) -> dict:
+        """Returns the values of this Measurement's settings
+        """
+        return {
+            attr: getattr(self, attr) for attr in self._get_attrs()
+        }
+
+    def set_settings(self, **kwargs):
+        """Sets the values of this Measurement's settings.
+        """
+        attrs = self._get_attrs()
+        for key, value in kwargs.items():
+            if key in attrs:
+                setattr(self, key, value)

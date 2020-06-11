@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -26,6 +26,7 @@ __version__ = "2.0"
 
 import unittest
 import sys
+import random
 
 import widgets.gui_utils as gutils
 
@@ -113,21 +114,29 @@ class TestMinMaxHandlers(unittest.TestCase):
     def test_min_max_handlers(self):
         spinbox1 = QtWidgets.QDoubleSpinBox()
         spinbox2 = QtWidgets.QDoubleSpinBox()
+        spinbox1.setValue(10)
+        spinbox2.setValue(9)
         gutils.set_min_max_handlers(spinbox1, spinbox2)
 
-        spinbox1.setValue(10.5)
-        self.assertEqual(10.5, spinbox2.value())
-        self.assertEqual(10.5, spinbox1.maximum())
-        self.assertEqual(10.5, spinbox2.minimum())
+        self.assertEqual(9, spinbox1.value())
+        self.assertEqual(9, spinbox2.value())
+        self.assertEqual(9, spinbox1.maximum())
+        self.assertEqual(9, spinbox2.minimum())
 
-        # Now value of spinbox2 cannot be set below 10.5
         spinbox2.setValue(5.6)
-        self.assertEqual(10.5, spinbox2.value())
-        self.assertEqual(10.5, spinbox1.value())
+        self.assertEqual(9, spinbox2.value())
+        self.assertEqual(9, spinbox1.value())
 
         spinbox2.setValue(42)
         self.assertEqual(42, spinbox1.maximum())
 
+    def test_prop_based(self):
+        spinbox1 = QtWidgets.QSpinBox()
+        spinbox2 = QtWidgets.QSpinBox()
+        gutils.set_min_max_handlers(spinbox1, spinbox2)
+        n = 100
 
-if __name__ == '__main__':
-    unittest.main()
+        for _ in range(n):
+            sb = random.choice([spinbox1, spinbox2])
+            sb.setValue(random.randint(0, 100))
+            self.assertTrue(spinbox1.value() <= spinbox2.value())
