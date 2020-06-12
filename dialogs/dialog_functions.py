@@ -182,7 +182,7 @@ def update_detector_settings(entity: Union[Measurement, Simulation],
     # Transfer the default detector efficiencies to new
     # Detector
     for eff_file in entity.request.default_detector.get_efficiency_files(
-            full_path=True):
+            return_full_paths=True):
         entity.detector.add_efficiency_file(eff_file)
 
 

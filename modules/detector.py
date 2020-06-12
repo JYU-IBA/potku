@@ -163,9 +163,12 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
 
         self.efficiency_directory = Path(new_path, Detector.EFFICIENCY_DIR)
 
-    def get_efficiency_files(self, full_path=False):
+    def get_efficiency_files(self, return_full_paths: bool = False):
         """Returns efficiency files that are in detector's efficiency file
         folder, either with full path or just the file name.
+
+        Args:
+            return_full_paths: whether full paths are returned or not
 
         Return:
             Returns a string list of efficiency files.
@@ -173,7 +176,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         def filter_func(dir_entry):
             fp = Path(dir_entry)
             if fp.is_file() and fp.suffix == ".eff":
-                if full_path:
+                if return_full_paths:
                     return fp
                 return Path(fp.name)
             return None
@@ -443,7 +446,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         # Remove previous files
         gf.remove_matching_files(destination, {".eff"})
 
-        for eff in self.get_efficiency_files(full_path=True):
+        for eff in self.get_efficiency_files(return_full_paths=True):
             try:
                 used_file = Detector.get_used_efficiency_file_name(eff)
             except ValueError:

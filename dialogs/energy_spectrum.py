@@ -484,12 +484,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # This is probably not the most effective way, or practical for 
         # that matter, to get all efficiency files from directory defined
         # in global settings that match the cut files of measurements.
-        if self.measurement.detector:
-            eff_files = self.measurement.detector.get_efficiency_files()
-        else:
-            eff_files = self.measurement.request.default_detector.\
-                get_efficiency_files()
-
+        detector = self.measurement.get_detector_or_default()
+        eff_files = detector.get_efficiency_files()
         df.update_used_eff_file_label(self, eff_files)
 
 

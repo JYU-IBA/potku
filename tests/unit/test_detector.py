@@ -182,7 +182,7 @@ class TestEfficiencyFiles(unittest.TestCase):
                                 for f in self.filtered_effs)
             self.assertEqual(
                 full_paths, sorted(self.det.get_efficiency_files(
-                    full_path=True)))
+                    return_full_paths=True)))
 
             # directories are not returned
             dir_path = Path(self.det.efficiency_directory, "O.eff")
@@ -238,7 +238,7 @@ class TestEfficiencyFiles(unittest.TestCase):
                 self.det.add_efficiency_file(Path(tmp_dir, file))
 
             # Adding a file that is already in the folder does nothing
-            for file in self.det.get_efficiency_files(full_path=True):
+            for file in self.det.get_efficiency_files(return_full_paths=True):
                 self.det.add_efficiency_file(file)
 
             # Adding a directory raises an error
