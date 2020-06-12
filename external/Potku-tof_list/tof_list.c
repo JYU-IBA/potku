@@ -3,6 +3,15 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#ifdef WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#else
+#include <libgen.h> /* for basename_r() */
+#include <sys/param.h> /* for MAXPATHLEN */
+#endif
 /* #include <dirent.h> */
 
 
@@ -81,7 +90,6 @@
 
 #define MAXELEMENTS 100
 
-#define INPUT_FILE  "tof.in"
 #define MASS_FILE   DATAPATH/masses.dat
 #define STOP_DATA   DATAPATH/stopping.bin
 
@@ -144,8 +152,9 @@ double get_mass(char *,int *);
 double get_energy(double,double,double);
 double get_eloss(double,double **);
 /* int get_step(double,double **); */
-void read_input(Input *);
+void read_input(const char *, Input *);
 double ipow(double,int);
+char *filename_extension(const char *);
 
 int main(int argc, char *argv[])
 {
@@ -154,39 +163,45 @@ int main(int argc, char *argv[])
 /* struct dirent **files; */
 
    char **symbol,*tmp;
-   int count,evnum,i,j,noweight=FALSE,stop=0,tech=ERD,tmpi,*Z,ZZ;
+   int evnum,i,noweight=FALSE,tech=ERD,tmpi,*Z,ZZ;
    int e,tof;
 /* int *step; */
    double beamM,energy,*emax,*M,*M2,tmpd,***sto,***weight;
    gsto_table_t *table;
 
-   if(argc == 1){
-      printf("Usage: tof_list [filename] [filename] ...\n");
+   if(argc < 3){
+      printf("Usage: tof_list [config_file] [filename] [filename] ...\n");
       exit(1);
    }
-   fprintf(stderr, "It is me, %s here. I have %i cut files to process.\n", argv[0], argc-1);
+   const char *tofin_filename = argv[1];
+
+   fprintf(stderr, "%s: config from %s, %i cut files to process.\n", argv[0], argv[1], argc-2);
+#ifdef DEBUG
    int argi;
-   for(argi=1; argi < argc; argi++) {
+   for(argi=0; argi < argc; argi++) {
         fprintf(stderr, "argv[%i] = \"%s\"\n", argi, argv[argi]);
    }
    fprintf(stderr, "\n");
+#endif
+   argv += 2;
+   argc -= 2;
 
-   fp = (FILE **) malloc(sizeof(FILE *)*(argc-1));
-   input.ecalib = (double *) malloc(sizeof(double)*(argc-1));
-   symbol = (char **) malloc(sizeof(char *)*(argc-1));
+   fp = (FILE **) malloc(sizeof(FILE *)*(argc));
+   input.ecalib = (double *) malloc(sizeof(double)*(argc));
+   symbol = (char **) malloc(sizeof(char *)*(argc));
    tmp = (char *) malloc(sizeof(char)*WORD_LENGTH);
-/*   evnum = (int *) malloc(sizeof(int)*(argc-1)); */
-/* step = (int *) malloc(sizeof(int)*(argc-1)); */
-   Z = (int *) malloc(sizeof(int)*(argc-1));
-/*   e = (double *) malloc(sizeof(double)*(argc-1)); */
-   emax = (double *) malloc(sizeof(double)*(argc-1));
-   M = (double *) malloc(sizeof(double)*(argc-1));
-   M2 = (double *) malloc(sizeof(double)*(argc-1));
-/*   tof = (double *) malloc(sizeof(double)*(argc-1)); */
-   sto = (double ***) malloc(sizeof(double **)*(argc-1));
-   weight = (double ***) malloc(sizeof(double **)*(argc-1));
+/*   evnum = (int *) malloc(sizeof(int)*(argc)); */
+/* step = (int *) malloc(sizeof(int)*(argc)); */
+   Z = (int *) malloc(sizeof(int)*(argc));
+/*   e = (double *) malloc(sizeof(double)*(argc)); */
+   emax = (double *) malloc(sizeof(double)*(argc));
+   M = (double *) malloc(sizeof(double)*(argc));
+   M2 = (double *) malloc(sizeof(double)*(argc));
+/*   tof = (double *) malloc(sizeof(double)*(argc)); */
+   sto = (double ***) malloc(sizeof(double **)*(argc));
+   weight = (double ***) malloc(sizeof(double **)*(argc));
 
-   read_input(&input);
+   read_input(tofin_filename, &input);
 
 /* Useless filename.* feature
 
@@ -211,19 +226,22 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Error in loading stopping.\n");
         return 0;
     }
-    for(i=0; i<argc-1; i++){
-      fprintf(stderr, "fp[%i] is \"%s\"\n", i, argv[i+1]);
+    for(i=0; i<argc; i++){
+      char *filename=argv[i];
+      fprintf(stderr, "file %i is \"%s\"\n", i, filename);
       input.ecalib[i] = 0.0;
       symbol[i] = (char *) malloc(sizeof(char)*3);
-      fp[i] = fopen(argv[i+1],"r");
+      fp[i] = fopen(filename, "r");
       if(fp[i] == NULL){
-         fprintf(stderr,"Could not open data file %s\n",argv[i+1]);
+         fprintf(stderr,"Could not open data file %s\n", filename);
          exit(2);
       }
-      while(*argv[i+1]++ != '.');
-	  Z[i]=0; /* In Windows GCC, Z[i] is initialized with a large number as it's content, so this had to be done */
-      while(isdigit(*argv[i+1])) Z[i] = Z[i]*10 + *argv[i+1]++ - '0';
-      while(isalpha(*argv[i+1])) *symbol[i]++ = *argv[i+1]++; *symbol[i] = '\0';
+      char *extension = filename_extension(filename);
+      fprintf(stderr, "extension: %s\n", extension);
+      char *extension_orig=extension;
+      Z[i]=0;
+      while(isdigit(*extension)) Z[i] = Z[i]*10 + *extension++ - '0';
+      while(isalpha(*extension)) *symbol[i]++ = *extension++; *symbol[i] = '\0';
       while(!isupper(*--symbol[i]));
       ZZ = Z[i];
       fprintf(stderr, "ZZ=%i (mass number), symbol[%i]=%s\n", ZZ, i, symbol[i]);
@@ -238,8 +256,8 @@ int main(int argc, char *argv[])
 /*    step[i] = get_step(emax[i]*MAX_FACTOR,sto[i]); */
       weight[i] = set_weight(symbol[i],Z[i],&input);
       Z[i] = ZZ;
-      if(*argv[i+1] == '.'){
-         if(*++argv[i+1] == 'e'){
+      if(*extension == '.'){
+         if(*++extension == 'e'){
             tmp = strcpy(tmp,symbol[i]);
             if((fp2 = fopen(strcat(tmp,".calib"),"r")) == NULL){
                fprintf(stderr,"Could not locate calibration file %s\n",tmp);
@@ -249,51 +267,44 @@ int main(int argc, char *argv[])
             fclose(fp2);
          }
       }
+      free(extension_orig);
    }
    gsto_deallocate(table); /* Stopping data loaded in already, this is not used anymore */
-   for(i=0; i<argc-2; i++) {
-      for(j=i+1; j<argc-1; j++){
-         //if(strcmp(symbol[i],symbol[j])) noweight = TRUE;  with this, efficiencies with isotopes works
-	  }
-   }
-
-   char herp_c [100];
-   char *herp_d;
    int derp_n;
-   char herpderp_1 [10];
-   char herpderp_2 [10];
    float user_weight = 1.0;
-
-   char herp_type [3];
-   char herp_scatter [6];
+   char *herp_c = malloc(sizeof(char)*WORD_LENGTH); 
+   char *herpderp_1=malloc(sizeof(char)*WORD_LENGTH);
+   char *herpderp_2=malloc(sizeof(char)*WORD_LENGTH);
+   char *herp_type=malloc(sizeof(char)*WORD_LENGTH);
+   char *herp_scatter=malloc(sizeof(char)*WORD_LENGTH);
+   char *herp_d = malloc(sizeof(char)*WORD_LENGTH);
    int herp_isotope=0;
-   for(i=0;i<argc-1;i++){
+   for(i=0; i < argc; i++){
       fprintf(stderr, "Processing file %i.\n", i);
 	  tech = ERD;
-	  herp_d = (char *) malloc(sizeof(char)*WORD_LENGTH);
       /* Don't read the first ten lines, except the one line which
          contains the user-specified weight factor which is memorized. */
       for(derp_n=0;derp_n<10;derp_n++){
-	     fgets(herp_c, 100, fp[i]);
+	     fgets(herp_c, 256, fp[i]);
          if(derp_n == 1){//line number2 in cut file = RBS or ERD
-            sscanf(herp_c, "%s %s", &herpderp_1, &herp_type);
+            sscanf(herp_c, "%s %s", herpderp_1, herp_type);
 			if (strcmp(herp_type, "RBS") == 0) {
                 tech = RBS;
                 fprintf(stderr, "This is RBS\n");
             }
          }
          if(derp_n == 2){ //line number3 in cut file = user weight factor
-			sscanf(herp_c, "%s %s %f", &herpderp_1, &herpderp_2, &user_weight);
+			sscanf(herp_c, "%s %s %f", herpderp_1, herpderp_2, &user_weight);
          }
 		 if(derp_n == 5 && tech == RBS) { //line number6 in cut file = scatter element
-            sscanf(herp_c, "%s %s %s", &herpderp_1, &herpderp_2, herp_d);
+            sscanf(herp_c, "%s %s %s", herpderp_1, herpderp_2, herp_d);
 
 			// Parse isotope from string -separate mass from element (from line 6)
             herp_isotope=0;
 			while(isdigit(*herp_d)) herp_isotope = herp_isotope*10 + *herp_d++ - '0';
 
 			// Parse element
-			sscanf(herp_d, "%s", herp_scatter);
+			sscanf(herp_d, "%5s", herp_scatter);
 
 			fprintf(stderr, "Scatter element: %s\n", herp_scatter);
 			fprintf(stderr, "Scatter isotope: %i\n", herp_isotope);
@@ -380,7 +391,7 @@ int main(int argc, char *argv[])
    }
 #endif
 
-   for(i=0; i<argc-1; i++)
+   for(i=0; i < argc; i++)
       fclose(fp[i]);
 
    exit(0);
@@ -587,15 +598,15 @@ int get_step(double e, double **sto)
 
 */
 
-void read_input(Input *input)
+void read_input(const char *input_file, Input *input)
 {
    FILE *fp;
    char *read;
    int Z=0;
 
-   fp = fopen(INPUT_FILE,"r");
+   fp = fopen(input_file, "r");
    if(fp == NULL){
-      fprintf(stderr,"Could not open input file %s\n",INPUT_FILE);
+      fprintf(stderr,"Could not open input file %s\n", input_file);
       exit(6);
    }
     char *line = (char *) malloc(sizeof(char)*WORD_LENGTH);
@@ -609,12 +620,12 @@ void read_input(Input *input)
     }
     fclose(fp);
 
-    fp = fopen(INPUT_FILE, "r");
+    fp = fopen(input_file, "r");
    /* The loop here (word by word) is rediculous. I'm not going to touch it. */
    while(fscanf(fp, "%s", read)==1) {
       if(!strcmp(read,"Beam:")){
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          while(isdigit(*read)) Z = Z*10 + *read++ - '0';
@@ -623,78 +634,78 @@ void read_input(Input *input)
       }
       else if(!strcmp(read,"Energy:")){
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          input->beamE = atof(read)*C_MEV;
       }
       else if(!strcmp(read,"Detector")){
          if(fscanf(fp,"%s",read) == 0 && strcmp(read,"angle:")){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          input->theta = atof(read);
       }
       else if(!strcmp(read,"Target")){
          if(fscanf(fp,"%s",read) == 0 && strcmp(read,"angle:")){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          input->target_angle = atof(read);
       }
       else if(!strcmp(read,"Toflen:")){
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          input->tof = atof(read);
       }
       else if(!strcmp(read,"Carbon")){
          if(fscanf(fp,"%s",read) == 0 && strcmp(read,"foil")){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          if(fscanf(fp,"%s",read) == 0 && strcmp(read,"thickness")){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          input->foil_thick = atof(read);
       }
       else if(!strcmp(read,"TOF")){
          if(fscanf(fp,"%s",read) == 0 && strcmp(read,"calibration:")){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          input->calib1 = atof(read);
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          input->calib2 = atof(read);
       }
       else if(!strcmp(read,"Efficiency")){
          if(fscanf(fp,"%s",read) == 0 && strcmp(read,"directory:")){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
 		 sscanf(read,"%s",input->eff_dir);
@@ -711,4 +722,30 @@ double ipow(double b, int e)
    while(e-->0) ret *= b;
 
    return (ret);
+}
+
+char *filename_extension(const char *path) { /*  e.g. /bla/bla/tofe2363.O.ERD.0.cut => O.ERD.0.cut */
+#ifdef WIN32
+    char *fname = malloc(_MAX_FNAME);
+    char *fname_orig = fname;
+    char *ext = malloc(_MAX_EXT);
+    _splitpath(path, NULL, NULL, fname, ext);
+    while(*fname++ != '.');
+    char *out = malloc(_MAX_FNAME+_MAX_EXT);
+    *out = '\0';
+    strcat(out, fname);
+    strcat(out, ext);
+    free(fname_orig);
+    free(ext);
+    return out;
+#else
+    char *ext;
+    char *base = malloc(MAXPATHLEN);
+    char *base_orig=base;
+    basename_r(path, base);
+    while(*base++ != '.');
+    ext = strdup(base);
+    free(base_orig);
+#endif
+    return ext;
 }

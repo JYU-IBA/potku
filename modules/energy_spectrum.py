@@ -68,9 +68,9 @@ class EnergySpectrum:
         self.__directory_es = measurement.get_energy_spectra_dir()
         # TODO ATM tof_in is generated twice when calculating espes. This
         #      should be refactored
-        self.__measurement.generate_tof_in(no_foil=no_foil)
+        tof_in_file = self.__measurement.generate_tof_in(no_foil=no_foil)
         self.__tof_listed_files = self.__load_cuts(
-            no_foil=no_foil, progress=progress)
+            no_foil=no_foil, progress=progress, tof_in_file=tof_in_file)
 
     @staticmethod
     def calculate_measured_spectra(measurement: Measurement, cut_files,
@@ -110,7 +110,7 @@ class EnergySpectrum:
             self.__tof_listed_files, self.__spectrum_width, self.__measurement,
             self.__directory_es, no_foil=no_foil)
 
-    def __load_cuts(self, no_foil=False, progress=None):
+    def __load_cuts(self, no_foil=False, progress=None, tof_in_file=None):
         """Loads cut files through tof_list into list.
 
         Args:
@@ -142,7 +142,8 @@ class EnergySpectrum:
 
                 cut_dict[key] = EnergySpectrum.tof_list(
                     cut_file, self.__directory_es, save_output=save_output,
-                    no_foil=no_foil, logger_name=self.__measurement.name)
+                    no_foil=no_foil, logger_name=self.__measurement.name,
+                    tof_in_file=tof_in_file)
 
                 if progress is not None:
                     progress.report(i / count * 90)
@@ -156,7 +157,7 @@ class EnergySpectrum:
 
     @staticmethod
     def tof_list(cut_file: Path, directory: Path = None, save_output=False,
-                 no_foil=False, logger_name=None):
+                 no_foil=False, logger_name=None, tof_in_file="tof.in"):
         """ToF_list
 
         Arstila's tof_list executables interface for Python.
@@ -180,7 +181,6 @@ class EnergySpectrum:
         if not cut_file:
             return []
 
-        new_cut_file = gf.copy_file_to_temp(cut_file)
         tof_parser = ToFListParser()
 
         try:
@@ -189,7 +189,7 @@ class EnergySpectrum:
             else:
                 executable = "./tof_list"
 
-            cmd = executable, str(new_cut_file)
+            cmd = executable, str(tof_in_file), str(cut_file)
             p = subprocess.Popen(
                 cmd, cwd=bin_dir, stdout=subprocess.PIPE,
                 universal_newlines=True)
@@ -224,8 +224,6 @@ class EnergySpectrum:
             else:
                 print(msg)
             return []
-        finally:
-            gf.remove_files(new_cut_file)
 
     @staticmethod
     def _calculate_spectrum(tof_listed_files, spectrum_width: float,
