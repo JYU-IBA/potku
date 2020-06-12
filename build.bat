@@ -14,14 +14,14 @@ cd submodules\jibal\
 del /q build\CMakeCache.txt
 mkdir build
 cd build
-cmake -DCMAKE_INSTALL_PREFIX=%EXT_DIR% ..
+cmake -A x64 -DCMAKE_INSTALL_PREFIX=%EXT_DIR% ..
 msbuild INSTALL.vcxproj /property:Configuration=Release
 
 cd ..\..\mcerd
 del /q build\CMakeCache.txt
 mkdir build
 cd build
-cmake -DCMAKE_PREFIX_PATH=%EXT_DIR% -DCMAKE_INSTALL_PREFIX=%EXT_DIR% ..
+cmake -A x64 -DCMAKE_PREFIX_PATH=%EXT_DIR% -DCMAKE_INSTALL_PREFIX=%EXT_DIR% ..
 msbuild INSTALL.vcxproj /property:Configuration=Release
 
 cd %CUR_DIR%
