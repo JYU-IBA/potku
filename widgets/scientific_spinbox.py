@@ -25,7 +25,9 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
+import math
 import widgets.input_validation as iv
+import modules.math_functions as mf
 
 from widgets.input_validation import InputValidator
 
@@ -41,14 +43,13 @@ class ScientificSpinBox(QtWidgets.QWidget):
     """
     Class for custom double spinbox that handles scientific notation.
     """
-    def __init__(self, value, multiplier, minimum, maximum, double=True,
-                 show_btns=True):
+    def __init__(self, value=0.0, minimum=0.0, maximum=math.inf,
+                 step=0.1, decimals=17, show_btns=True):
         """
         Initializes the spinbox.
 
         Args:
             value: Number for spinbox.
-            multiplier: Multiplier for number.
             minimum: Minimum allowed value.
             maximum: Maximum allowed value.
             double: Whether to validate for double or int.
@@ -57,282 +58,54 @@ class ScientificSpinBox(QtWidgets.QWidget):
         """
         super().__init__()
         uic.loadUi(Path("ui_files", "ui_scientific_spinbox_widget.ui"), self)
-
-        self.validator = InputValidator(double)
         self.minimum = minimum
         self.maximum = maximum
+        self.step = step
+        self.decimals = decimals
 
-        # There can only be 17 characters in the value part
-        if len(str(value)) > 17:
-            new_value = str(value)[:18]
-            value = float(new_value)
-        self.value = value
-        self.multiplier = multiplier
+        self.set_value(value)
 
-        if "e" in str(self.value):
-            self.value_str = str(self.value)
-        else:
-            self.value_str = str(self.value) + str(self.multiplier)[1:]
-        self.scientificLineEdit.setText(self.value_str)
-
-        self.scientificLineEdit.textChanged.connect(lambda: self.validate(
-            self.scientificLineEdit.cursorPosition()
-        ))
+        #self.scientificLineEdit.textChanged.connect(lambda: self.validate(
+        #    self.scientificLineEdit.cursorPosition()
+        #))
 
         if show_btns:
-            self.upButton.clicked.connect(self.increase_value)
-            self.downButton.clicked.connect(self.decrease_value)
+            self.upButton.clicked.connect(lambda *_: self._set_value(1))
+            self.downButton.clicked.connect(lambda *_: self._set_value(-1))
         else:
             self.upButton.hide()
             self.downButton.hide()
 
         self.scientificLineEdit.installEventFilter(self)
 
-    def check_min_and_max(self):
-        """
-        Check that value inside line edit is inside the minimum and maximum.
-        Also check that value is floatable.
-        """
-        value_str = self.scientificLineEdit.text()
-        if self.check_valid():
-            value = float(value_str)
-            if value < self.minimum:
-                self.scientificLineEdit.setText(str(self.minimum))
-            elif value > self.maximum:
-                self.scientificLineEdit.setText(str(self.maximum))
-            iv.set_input_field_white(self.scientificLineEdit)
-            if 'e' in value_str:
-                index = value_str.index('e')
-                self.value = float(Decimal(value_str[:index]))
-                self.multiplier = float(Decimal("1" + value_str[index:]))
-            else:
-                self.value = float(value_str)
-                self.multiplier = 1
-            self.value_str = value_str
-            return True
-        return False
-
-    def check_valid(self):
-        """
-        Check if spinbox has a value that can be interpreted as a float.
-
-        Return:
-            True or False.
-        """
-        value_str = self.scientificLineEdit.text()
-        try:
-            value = float(value_str)
-            if value_str.endswith('.'):
-                raise ValueError
-            iv.set_input_field_white(self.scientificLineEdit)
-            self.value = value
-            return True
-        except ValueError:
-            iv.set_input_field_red(self.scientificLineEdit)
-            self.value = None
-            self.multiplier = None
-            return False
-
-    def decrease_value(self):
-        """
-        Decrease the value of the spinbox. If scientific notation is used,
-        decrease before the 'e'. If not, decrease the smallest decimal.
-        """
-        if not self.scientificLineEdit.hasFocus():
-            self.scientificLineEdit.setFocus()
-        value_str = self.scientificLineEdit.text()
-        try:
-            float(value_str)
-        except ValueError:
-            return
-        try:
-            # If scientific notation in use
-            e_index = value_str.index('e')
-            number_part = value_str[:e_index]
-            multiply_part = value_str[e_index:]
-            parts = number_part.split('.')
-            if len(parts) == 1:  # No decimal
-                final_value = int(parts[0]) - 1
-                new_text = str(final_value) + multiply_part
-            else:
-                # TODO remove duplicate code and add tests
-                decimals = parts[1]
-                decimal_length = len(decimals)
-                decrease = 1 / (10 ** decimal_length)
-                value_f = float(parts[0]) + float("0." + decimals) - decrease
-
-                final_value = round(value_f, decimal_length)
-
-                check_split = str(final_value).split('.')
-                add_zero = False
-                if len(check_split[1]) < len(parts[1]):
-                    add_zero = True
-
-                if add_zero:
-                    new_text = str(final_value) + "0" + multiply_part
-                else:
-                    new_text = str(final_value) + multiply_part
-
-            self.scientificLineEdit.setText(new_text)
-        except ValueError:
-            pass
-            # Not scientific notation
-            parts = value_str.split('.')
-            if len(parts) == 1:  # No decimal
-                final_value = int(parts[0]) - 1
-                new_text = str(final_value)
-            else:
-                decimals = parts[1]
-                decimal_length = len(decimals)
-                decrease = 1 / (10 ** decimal_length)
-                value_f = float(parts[0]) + float("0." + decimals) - decrease
-
-                final_value = round(value_f, decimal_length)
-
-                check_split = str(final_value).split('.')
-                add_zero = False
-                if len(check_split[1]) < len(parts[1]):
-                    add_zero = True
-
-                if add_zero:
-                    new_text = str(final_value) + "0"
-                else:
-                    new_text = str(final_value)
-
-            self.scientificLineEdit.setText(new_text)
-
-        self.validate(len(new_text))
+    def _set_value(self, coef):
+        cur_value = self.get_value()
+        v, m = mf.split_scientific_notation(cur_value)
+        self.set_value((v + coef * self.step) * m)
 
     def eventFilter(self, source, event):
         """
         Check minimum and maximum values when focusing out of the spinbox.
         """
         if event.type() == QtCore.QEvent.FocusOut:
-            self.check_min_and_max()
+            # self.check_min_and_max()
             return super().eventFilter(source, event)
         return super().eventFilter(source, event)
 
-    def increase_value(self):
-        """
-        Increase the value of the spinbox. If scientific notation is used,
-       increase before the 'e'. If not, increase the smallest decimal.
-        """
-        if not self.scientificLineEdit.hasFocus():
-            self.scientificLineEdit.setFocus()
-        value_str = self.scientificLineEdit.text()
-        try:
-            float(value_str)
-        except ValueError:
-            return
-        try:
-            # If scientific notation in use
-            e_index = value_str.index('e')
-            number_part = value_str[:e_index]
-            multiply_part = value_str[e_index:]
-            parts = number_part.split('.')
-            if len(parts) == 1:  # No decimal
-                final_value = int(parts[0]) + 1
-                if final_value * float("1" + multiply_part) > self.maximum:
-                    new_text = str(self.maximum)
-                else:
-                    new_text = str(final_value) + multiply_part
-            else:
-                decimals = parts[1]
-                decimal_length = len(decimals)
-                increase = 1 / (10 ** decimal_length)
-                value_f = float(parts[0]) + float("0." + decimals) + increase
-
-                final_value = round(value_f, decimal_length)
-
-                check_split = str(final_value).split('.')
-                add_zero = False
-                if len(check_split[1]) < len(parts[1]):
-                    add_zero = True
-
-                if add_zero:
-                    new_text = str(final_value) + "0" + multiply_part
-                else:
-                    new_text = str(final_value) + multiply_part
-
-                if final_value * float("1" + multiply_part) > self.maximum:
-                    new_text = str(self.maximum)
-
-            self.scientificLineEdit.setText(new_text)
-        except ValueError:
-            pass
-            # Not scientific notation
-            parts = value_str.split('.')
-            if len(parts) == 1:  # No decimal
-                final_value = int(parts[0]) + 1
-                new_text = str(final_value)
-            else:
-                decimals = parts[1]
-                decimal_length = len(decimals)
-                increase = 1 / (10 ** decimal_length)
-                value_f = float(parts[0]) + float("0." + decimals) + increase
-
-                final_value = round(value_f, decimal_length)
-
-                check_split = str(final_value).split('.')
-                add_zero = False
-                if len(check_split[1]) < len(parts[1]):
-                    add_zero = True
-
-                if add_zero:
-                    new_text = str(final_value) + "0"
-                else:
-                    new_text = str(final_value)
-
-            self.scientificLineEdit.setText(new_text)
-
-        self.validate(len(new_text))
-
-    def validate(self, pos):
-        """
-        Validate the input.
-
-        Args:
-            pos: Position of the cursor on the string of text.
-        """
-        string = self.scientificLineEdit.text()
-        match = self.validator.validate(string, pos)
-        try:
-            #if not float(match) <= self.maximum:
-            #    match = match[:len(match) - 1]
-            if not float(match) <= self.maximum:
-                match = str(self.maximum)
-            if not self.minimum <= float(match):
-                match = str(self.minimum)
-        except ValueError:
-            pass
-        # Find out if number part is longer than 17
-        if 'e' in match:
-            e_index = match.index('e')
-            e_part = match[e_index:]
-            number_part = match[:e_index]
-            if len(number_part) > 17 and '.' in number_part:
-                while len(number_part) > 17:
-                    number_part = number_part[:len(number_part) - 1]
-                match = number_part + e_part
-        else:
-            if len(match) > 17 and '.' in match:
-                while len(match) > 17:
-                    match = match[:len(match) - 1]
-
-        self.scientificLineEdit.setText(match)
-        self.scientificLineEdit.setCursorPosition(pos)
-        iv.set_input_field_white(self.scientificLineEdit)
-        self.check_valid()
-
-    def set_value(self, value):
+    def set_value(self, value: float):
         """Sets the value of the Spin box, provided that the given value is
         valid.
         """
-        # TODO treat the value internally as a float/decimal instead of a
-        #  string
-        self.scientificLineEdit.setText(str(value))
+        if value < self.minimum:
+            value = self.minimum
+        if value > self.maximum:
+            value = self.maximum
 
-    def get_value(self):
+        self.scientificLineEdit.setText(
+            mf.format_to_scientific_notation(value, max_decimals=self.decimals)
+        )
+
+    def get_value(self) -> float:
         """Returns the value of the spinbox as a float.
         """
         return float(self.scientificLineEdit.text())

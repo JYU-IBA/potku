@@ -53,8 +53,8 @@ class GetEspe:
 
     def __init__(self, beam: Beam, detector: Detector, target: Target,
                  solid, recoil_file: Path, erd_file: Path, spectrum_file: Path,
-                 reference_density: float = 4.98, multiplier: float = 1e22,
-                 ch: float = 0.025, fluence: float = 1.00e+9,
+                 reference_density: float = 4.98e22,
+                 ch: float = 0.025, fluence: float = 1.00e+12,
                  timeres: float = 250.0):
         """Initializes the GetEspe class.
         """
@@ -64,7 +64,7 @@ class GetEspe:
         self.__channel_width = ch
         self.__fluence = fluence  # from Run object
         self.__timeres = timeres
-        self.__density = reference_density * multiplier
+        self.__density = reference_density
         self.__solid = solid
         self.__recoil_file = recoil_file
         self.__erd_file = erd_file

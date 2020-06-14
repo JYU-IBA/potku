@@ -24,7 +24,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen"
+             "\n Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import copy
@@ -144,11 +144,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.formLayout_2.removeRow(self.offsetLineEdit)
 
         # Parse the value and multiplier
-        self.scientific_tof_slope = ScientificSpinBox(
-            0, 0, -math.inf, math.inf)
-
-        self.scientific_tof_offset = ScientificSpinBox(
-            0, 0, -math.inf, math.inf)
+        self.scientific_tof_slope = ScientificSpinBox()
+        self.scientific_tof_offset = ScientificSpinBox(minimum=-math.inf)
 
         self.formLayout_2.insertRow(
             0, "ToF slope [s/channel]:", self.scientific_tof_slope)

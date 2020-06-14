@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -42,59 +42,43 @@ class TestSciSpinbox(unittest.TestCase):
     # Change working directory to root so the Spinbox can load ui-files
     @utils.change_wd_to_root
     def setUp(self):
-        # PyQt triggers a DeprecationWarning when loading an ui file.
-        # Suppress the it so the test output does not get cluttered by
-        # unnecessary warnings.
-        self.sbox = utils.run_without_warnings(
-            lambda: ScientificSpinBox(10.0, 1e+22, 5.0e+20, 10.0e+23))
+        self.sbox = ScientificSpinBox(
+            1.123e+22, minimum=1.0e+20, maximum=9.9e+23)
 
     def test_decrease(self):
         down_btn = self.sbox.downButton
         QTest.mouseClick(down_btn, Qt.LeftButton)
-        self.assertEqual(
-            "9.9e+22",
-            self.sbox.scientificLineEdit.text()
+        self.assertAlmostEqual(
+            1.023e+22, self.sbox.get_value(), places=1
         )
         QTest.mouseClick(down_btn, Qt.LeftButton)
         self.assertEqual(
-            "9.8e+22",
-            self.sbox.scientificLineEdit.text()
+            0.923e+22, self.sbox.get_value()
         )
 
     def test_increase(self):
         up_btn = self.sbox.upButton
         QTest.mouseClick(up_btn, Qt.LeftButton)
         self.assertEqual(
-            "10.1e+22",
-            self.sbox.scientificLineEdit.text()
+            1.223e+22, self.sbox.get_value()
         )
         QTest.mouseClick(up_btn, Qt.LeftButton)
         self.assertEqual(
-            "10.2e+22",
-            self.sbox.scientificLineEdit.text()
+            1.323e+22, self.sbox.get_value()
         )
 
     def test_set_value(self):
-        # Value below min
-        self.sbox.set_value(1.234e-6)
-        self.assertEqual(5e+20, self.sbox.get_value())
-
-        # Value over max
-        self.sbox.set_value(5e25)
-        self.assertEqual(10e23, self.sbox.get_value())
-
-        # Try setting a string
-        self.sbox.set_value("5e21")
-        self.assertEqual(5e21, self.sbox.get_value())
-
-        # Try setting a float
         self.sbox.set_value(5e22)
         self.assertEqual(5e22, self.sbox.get_value())
 
-        # Try setting a roman numeral
-        self.sbox.set_value("XVII")
-        self.assertRaises(ValueError, lambda: self.sbox.get_value())
+        # Value below min
+        self.sbox.set_value(10)
+        self.assertEqual(1.0e20, self.sbox.get_value())
 
+        # Value over max
+        self.sbox.set_value(5e25)
+        self.assertEqual(9.9e23, self.sbox.get_value())
 
-if __name__ == '__main__':
-    unittest.main()
+        # Try setting a string
+        self.assertRaises(
+            TypeError, lambda: self.sbox.set_value("5e21"))

@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -29,6 +29,7 @@ __version__ = "2.0"
 
 import math
 
+from typing import Tuple
 from shapely.geometry import Polygon
 
 
@@ -295,14 +296,25 @@ def calculate_area(line1, line2=None):
     return polygon.area
 
 
-def split_scientific_notation(x):
+def split_scientific_notation(x: float) -> Tuple[float, float]:
     """Formulates the given number x into scientific notation and returns
     the value part and the multiplier part as separate floats.
     """
-    d = float(x)
-    sn = "%e" % d
-    val, multi = sn.split("e")
+    x_str = format_to_scientific_notation(x)
+    val, multi = x_str.split("e")
     return float(val), float(f"1e{multi}")
+
+
+def format_to_scientific_notation(x: float, max_decimals=None) -> str:
+    """Returns the given number x as a string in scientific notation.
+    """
+    if max_decimals is None:
+        return f"{x:e}"
+    val, _ = split_scientific_notation(x)
+    decimals = len(str(val)) - 2
+    if decimals > max_decimals:
+        decimals = max_decimals
+    return "{1:0.{0}e}".format(decimals, x)
 
 
 def calculate_bin_counts(data, comp_x, comp_y, min_count=1, max_count=8000,

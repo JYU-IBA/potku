@@ -25,7 +25,7 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import copy
@@ -50,8 +50,8 @@ class RecoilElement(MCERDParameterContainer, Serializable):
     def __init__(self, element, points, color="red", name="Default",
                  rec_type="rec",
                  description="These are default recoil settings.",
-                 multiplier=1e22, reference_density=4.98,
-                 modification_time=None, channel_width=None, **kwargs):
+                 reference_density=4.98e22, modification_time=None,
+                 channel_width=None):
         """Inits recoil element.
 
         Args:
@@ -70,12 +70,7 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         self.description = description
         self.type = rec_type
 
-        # This is multiplied by 1e22
-        # Note: reference density should just be a single value, not two (i.e.
-        # reference_density and multiplier). Changing this would however cause
-        # issues with backwards compatibility so leave it as it is for now.
         self.reference_density = reference_density
-        self.multiplier = multiplier
         self.channel_width = channel_width
 
         # TODO might want to use some sort of sorted collection instead of a
@@ -407,7 +402,6 @@ class RecoilElement(MCERDParameterContainer, Serializable):
             self.description = new_values["description"]
             self.reference_density = new_values["reference_density"]
             self.color = new_values["color"]
-            self.multiplier = new_values["multiplier"]
         except KeyError:
             raise
 
@@ -425,6 +419,8 @@ class RecoilElement(MCERDParameterContainer, Serializable):
 
         timestamp = time.time()
 
+        # Multiplier is saved to maintain backwards compatibility with old
+        # save files
         obj = {
             "name": self.name,
             "description": self.description,
@@ -434,7 +430,7 @@ class RecoilElement(MCERDParameterContainer, Serializable):
             "simulation_type": self.type,
             "element":  self.element.get_prefix(),
             "reference_density": self.reference_density,
-            "multiplier": self.multiplier,
+            "multiplier": 1,
             "profile": [
                 {
                     "Point": str(point)
@@ -465,7 +461,13 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         # Pop the values that need conversion and/or are provided as positional
         # arguments.
         element = Element.from_string(reco.pop("element"))
-        reco["modification_time"] = reco["modification_time_unix"]
+        reco["modification_time"] = reco.pop("modification_time_unix")
+
+        # Multiply reference density with multiplier in case the recoil file
+        # is of the old format
+        reco["reference_density"] *= reco.pop("multiplier")
+        # TODO do something with simulation_type
+        reco.pop("simulation_type")
 
         # Profile is a list of dicts where each dict is in the form of
         # { 'Point': 'x y' }. itertools.chain produces a flattened list of

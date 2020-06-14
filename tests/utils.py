@@ -264,10 +264,21 @@ def assert_folder_structure_equal(expected_structure: Dict, directory: Path):
                 f"given.")
 
 
-def assert_are_same(*args):
+def assert_all_same(*args):
     """Asserts that all given arguments are the same object. Raises
-    AssertionError if all objects are not the same.
+    AssertionError if that is not the case.
     """
-    for x, y in itertools.combinations(args, r=2):
-        if x is not y:
-            raise AssertionError(f"{x} is not {y}.")
+    if not all(x is y for x, y in itertools.combinations(args, 2)):
+        raise AssertionError(
+            f"All given arguments are not the same object. Arguments: "
+            f"{','.join(str(a) for a in args)}")
+
+
+def assert_all_equal(*args):
+    """Asserts that all given arguments are equal. Raises AssertionError if
+    that is not the case.
+    """
+    if not all(x == y for x, y in itertools.combinations(args, 2)):
+        raise AssertionError(
+            f"All given arguments are not equal. Arguments: "
+            f"{','.join(str(a) for a in args)}")

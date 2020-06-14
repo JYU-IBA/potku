@@ -1,13 +1,10 @@
 # coding=utf-8
 """
-Created on TODO
-Updated on 27.1.2020
-
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -431,7 +428,7 @@ class TestPropertyBased(unittest.TestCase):
                              list(range_function(zipped, **kwargs)))
 
 
-class TestMisc(unittest.TestCase):
+class TestScientificNotation(unittest.TestCase):
     def test_split_scientific_notation(self):
         self.assertEqual((2, 1e10), mf.split_scientific_notation(2e10))
         self.assertEqual((3.123, 1e-11), mf.split_scientific_notation(
@@ -443,6 +440,24 @@ class TestMisc(unittest.TestCase):
 
         self.assertRaises(ValueError,
                           lambda: mf.split_scientific_notation("2e2e2"))
+
+    def test_fmt_to_scientific_notation(self):
+        self.assertEqual(
+            "1.000000e+01", mf.format_to_scientific_notation(10)
+        )
+
+        self.assertEqual(
+            "1.000000e+02", mf.format_to_scientific_notation(100)
+        )
+
+        self.assertEqual(
+            "1.0e-01", mf.format_to_scientific_notation(
+                0.1, max_decimals=3)
+        )
+        self.assertEqual(
+            "3.141593e+00", mf.format_to_scientific_notation(
+                math.pi, max_decimals=8)
+        )
 
 
 class TestPointInside(unittest.TestCase):

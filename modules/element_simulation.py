@@ -281,8 +281,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 "name": full_name,
                 "description": recoil.description,
                 "reference_density": recoil.reference_density,
-                "color": recoil.color,
-                "multiplier": recoil.multiplier
+                "color": recoil.color
             }
             self.update_recoil_element(recoil, values)
         self.recoil_elements.extend(self.optimization_recoils)
@@ -861,7 +860,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             "target": self.simulation.target,
             "ch": channel_width,
             "reference_density": recoil_element.reference_density,
-            "multiplier": recoil_element.multiplier,
             "fluence": used_fluence,
             "timeres": detector.timeres,
             "solid": detector.calculate_solid(),

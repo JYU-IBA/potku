@@ -1053,8 +1053,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             "Name: " + self.current_recoil_element.name)
         self.parent.referenceDensityLabel.setText(
             "Reference density: " + "{0:1.2e}".format(
-                self.current_recoil_element.reference_density *
-                self.current_recoil_element.multiplier) + " at./cm\xb3"
+                self.current_recoil_element.reference_density) + " at./cm\xb3"
         )
 
     def recoil_element_info_on_switch(self):
