@@ -27,14 +27,13 @@ __version__ = "2.0"
 
 import math
 import widgets.input_validation as iv
-import modules.math_functions as mf
 
-from widgets.input_validation import InputValidator
+from widgets.input_validation import ScientificValidator
 
 from decimal import Decimal
+from typing import Union
 from pathlib import Path
 
-from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
@@ -43,69 +42,81 @@ class ScientificSpinBox(QtWidgets.QWidget):
     """
     Class for custom double spinbox that handles scientific notation.
     """
-    def __init__(self, value=0.0, minimum=0.0, maximum=math.inf,
-                 step=0.1, decimals=17, show_btns=True):
+    _UP = 0
+    _DOWN = 1
+
+    def __init__(self, value=0.0, minimum=0.0, maximum=math.inf, decimals=17,
+                 show_btns=True):
         """
         Initializes the spinbox.
 
         Args:
-            value: Number for spinbox.
-            minimum: Minimum allowed value.
-            maximum: Maximum allowed value.
-            double: Whether to validate for double or int.
+            value: value of spinbox
+            minimum: minimum allowed value
+            maximum: maximum allowed value
+            decimals: number of decimals to show
             show_btns: Whether buttons that increase or decrease the value
-                       are shown.
+                are shown.
         """
         super().__init__()
         uic.loadUi(Path("ui_files", "ui_scientific_spinbox_widget.ui"), self)
+        self._value = Decimal(str(value))
         self.minimum = minimum
         self.maximum = maximum
-        self.step = step
         self.decimals = decimals
 
-        self.set_value(value)
+        self.scientificLineEdit: QtWidgets.QLineEdit
+        self._validator = ScientificValidator(
+            self.minimum, self.maximum, self.decimals, self,
+            accepted=lambda: iv.set_input_field_white(self.scientificLineEdit),
+            intermediate=lambda: iv.set_input_field_yellow(
+                self.scientificLineEdit),
+            invalid=lambda: iv.set_input_field_red(self.scientificLineEdit)
+            )
+        self.scientificLineEdit.setValidator(self._validator)
 
-        #self.scientificLineEdit.textChanged.connect(lambda: self.validate(
-        #    self.scientificLineEdit.cursorPosition()
-        #))
+        self.set_value(self._value)
 
         if show_btns:
-            self.upButton.clicked.connect(lambda *_: self._set_value(1))
-            self.downButton.clicked.connect(lambda *_: self._set_value(-1))
+            self.upButton.clicked.connect(lambda *_: self._step_adjustment(
+                self._UP))
+            self.downButton.clicked.connect(lambda *_: self._step_adjustment(
+                self._DOWN))
         else:
             self.upButton.hide()
             self.downButton.hide()
 
-        self.scientificLineEdit.installEventFilter(self)
-
-    def _set_value(self, coef):
-        cur_value = self.get_value()
-        v, m = mf.split_scientific_notation(cur_value)
-        self.set_value((v + coef * self.step) * m)
-
-    def eventFilter(self, source, event):
-        """
-        Check minimum and maximum values when focusing out of the spinbox.
-        """
-        if event.type() == QtCore.QEvent.FocusOut:
-            # self.check_min_and_max()
-            return super().eventFilter(source, event)
-        return super().eventFilter(source, event)
-
-    def set_value(self, value: float):
+    def set_value(self, value: Union[float, Decimal]):
         """Sets the value of the Spin box, provided that the given value is
         valid.
         """
-        if value < self.minimum:
-            value = self.minimum
-        if value > self.maximum:
-            value = self.maximum
+        if isinstance(value, Decimal):
+            value = value
+        else:
+            value = Decimal(str(value))
+        self.scientificLineEdit.setText(f"{value:e}")
 
-        self.scientificLineEdit.setText(
-            mf.format_to_scientific_notation(value, max_decimals=self.decimals)
-        )
+    def _step_adjustment(self, direction):
+        """Adjusts current value of the spinbox either up or down a step.
+        """
+        # TODO currently this does not take into account changes in magnitude.
+        #   So for example when stepping down, this goes
+        #       10.1e10 -> 10.0e10 -> 9.0e9, instead of
+        #       10.1e10 -> 10.0e10 -> 9.9e9
+        cur_val = self._get_value()
+        sign, digits, exp = cur_val.as_tuple()
+        adj_digits = 1, *(0 for _ in range(len(digits) - 2))
+        adjustment = Decimal((direction, adj_digits, exp))
+        self.set_value(cur_val + adjustment)
 
     def get_value(self) -> float:
         """Returns the value of the spinbox as a float.
         """
-        return float(self.scientificLineEdit.text())
+        return float(self._get_value())
+
+    def _get_value(self) -> Decimal:
+        """Returns the value of the spinbox as a Decimal. This is used
+        for internal handling of the value.
+        """
+        return Decimal(self.scientificLineEdit.text())
+

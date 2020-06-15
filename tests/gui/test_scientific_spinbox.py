@@ -27,7 +27,10 @@ __version__ = "2.0"
 import sys
 import unittest
 import tests.utils as utils
+import random
+import math
 
+from decimal import Decimal
 from widgets.scientific_spinbox import ScientificSpinBox
 
 from PyQt5.QtWidgets import QApplication
@@ -42,30 +45,42 @@ class TestSciSpinbox(unittest.TestCase):
     # Change working directory to root so the Spinbox can load ui-files
     @utils.change_wd_to_root
     def setUp(self):
+        self.minimum = 1.0e20
+        self.maximum = 9.9e23
         self.sbox = ScientificSpinBox(
-            1.123e+22, minimum=1.0e+20, maximum=9.9e+23)
+            1.123e+22, minimum=self.minimum, maximum=self.maximum)
+
+        down_btn = self.sbox.downButton
+        up_btn = self.sbox.upButton
+        self.click_down = lambda: QTest.mouseClick(down_btn, Qt.LeftButton)
+        self.click_up = lambda: QTest.mouseClick(up_btn, Qt.LeftButton)
+
+    def test_display(self):
+        self.sbox.set_value(5.5e+22)
+        self.assertEqual("5.5e+22", self.sbox.scientificLineEdit.text())
+
+        self.sbox.set_value(math.pi)
+        self.assertEqual(
+            "3.141592653589793e+0", self.sbox.scientificLineEdit.text())
 
     def test_decrease(self):
-        down_btn = self.sbox.downButton
-        QTest.mouseClick(down_btn, Qt.LeftButton)
-        self.assertAlmostEqual(
-            1.023e+22, self.sbox.get_value(), places=1
-        )
-        QTest.mouseClick(down_btn, Qt.LeftButton)
-        self.assertEqual(
-            0.923e+22, self.sbox.get_value()
-        )
+        self.sbox.set_value(5.5e+22)
+        self.click_down()
+        self.assertEqual(5.4e+22, self.sbox.get_value())
+
+        # Note: following behaviour may change
+        self.sbox.set_value(1.0001e+22)
+        self.click_down()
+        self.assertEqual(9.001e+21, self.sbox.get_value())
 
     def test_increase(self):
-        up_btn = self.sbox.upButton
-        QTest.mouseClick(up_btn, Qt.LeftButton)
-        self.assertEqual(
-            1.223e+22, self.sbox.get_value()
-        )
-        QTest.mouseClick(up_btn, Qt.LeftButton)
-        self.assertEqual(
-            1.323e+22, self.sbox.get_value()
-        )
+        self.sbox.set_value(9.81e+22)
+        self.click_up()
+        self.assertEqual(9.91e+22, self.sbox.get_value())
+
+        # Note: following behaviour may change
+        self.click_up()
+        self.assertEqual(1.001e+23, self.sbox.get_value())
 
     def test_set_value(self):
         self.sbox.set_value(5e22)
@@ -73,11 +88,11 @@ class TestSciSpinbox(unittest.TestCase):
 
         # Value below min
         self.sbox.set_value(10)
-        self.assertEqual(1.0e20, self.sbox.get_value())
+        self.assertEqual(self.minimum, self.sbox.get_value())
 
         # Value over max
         self.sbox.set_value(5e25)
-        self.assertEqual(9.9e23, self.sbox.get_value())
+        self.assertEqual(self.maximum, self.sbox.get_value())
 
         # Try setting a string
         self.assertRaises(

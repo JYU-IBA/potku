@@ -29,6 +29,7 @@ __version__ = "2.0"
 
 import math
 
+from decimal import Decimal
 from typing import Tuple
 from shapely.geometry import Polygon
 
@@ -294,27 +295,6 @@ def calculate_area(line1, line2=None):
 
     polygon = Polygon(polygon_points)
     return polygon.area
-
-
-def split_scientific_notation(x: float) -> Tuple[float, float]:
-    """Formulates the given number x into scientific notation and returns
-    the value part and the multiplier part as separate floats.
-    """
-    x_str = format_to_scientific_notation(x)
-    val, multi = x_str.split("e")
-    return float(val), float(f"1e{multi}")
-
-
-def format_to_scientific_notation(x: float, max_decimals=None) -> str:
-    """Returns the given number x as a string in scientific notation.
-    """
-    if max_decimals is None:
-        return f"{x:e}"
-    val, _ = split_scientific_notation(x)
-    decimals = len(str(val)) - 2
-    if decimals > max_decimals:
-        decimals = max_decimals
-    return "{1:0.{0}e}".format(decimals, x)
 
 
 def calculate_bin_counts(data, comp_x, comp_y, min_count=1, max_count=8000,
