@@ -46,7 +46,7 @@ from decimal import Decimal
 from modules.parsing import ToFListParser
 from subprocess import Popen
 from tests.utils import stopwatch
-
+from itertools import (takewhile, repeat)
 
 # TODO this could still be organized into smaller modules
 
@@ -354,10 +354,10 @@ def tof_list(cut_file, directory, save_output=False, no_foil=False,
 
 def convert_mev_to_joule(energy_in_MeV):
     """Converts MeV (mega electron volts) to joules.
-    
+
     Args:
         energy_in_MeV: Value to be converted (float)
-    
+
     Returns:
         Returns energy in MeVs (float)
     """
@@ -368,10 +368,10 @@ def convert_mev_to_joule(energy_in_MeV):
 
 def convert_amu_to_kg(mass_in_amus):
     """Converts amus (atomic mass units) to kilograms.
-    
+
     Args:
         mass_in_amus: Value to be converted (float)
-    
+
     Returns:
         Returns mass in kilograms (float)
     """
@@ -715,7 +715,7 @@ def round_value_by_four_biggest(value):
 
 
 def count_lines_in_file(file_path, check_file_exists=False):
-    """Returns the number of lines in given file.
+    """Returns the number of newline symbols in given file (ignores last line).
 
     Args:
         file_path: absolute path to a file
@@ -723,24 +723,25 @@ def count_lines_in_file(file_path, check_file_exists=False):
                            counting lines. Returns 0 if the file does not exist.
 
     Return:
-        number of lines in a file
+        number of newline symbols in a file
     """
     if check_file_exists and not os.path.isfile(file_path):
         return 0
 
-    # Start counting from -1 so we can return 0 if there are no lines in the
-    # file
-    counter = -1
+    # source: https://stackoverflow.com/a/27518377
+    f = open(file_path, 'rb')
+    bufgen = takewhile(lambda x: x, (f.raw.read(1024*1024) for _ in repeat(None)))
+    return sum( buf.count(b'\n') for buf in bufgen )
 
-    # https://stackoverflow.com/questions/845058/how-to-get-line-count-of-a \
-    # -large-file-cheaply-in-python
-    with open(file_path) as f:
-        # Set value of counter to the index of each line
-        for counter, _ in enumerate(f):
-            pass
-
-    # Add +1 to get the total number of lines
-    return counter + 1
+def rawincount(self, filename):
+    """
+        Reads the number of lines in a text file. Used for determining the shape
+        of the ndarray which holds measurement data in memory.
+        Source: https://stackoverflow.com/questions/845058/how-to-get-line-count-of-a-large-file-cheaply-in-python/27518377#27518377
+    """
+    f = open(filename, 'rb')
+    bufgen = takewhile(lambda x: x, (f.raw.read(1024*1024) for _ in repeat(None)))
+    return sum( buf.count(b'\n') for buf in bufgen )
 
 
 @stopwatch()
