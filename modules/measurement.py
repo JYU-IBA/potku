@@ -36,6 +36,8 @@ import logging
 import os
 import shutil
 import time
+import numpy as np
+import matplotlib as plt
 
 import modules.general_functions as gf
 
@@ -239,7 +241,7 @@ class Measurements:
 
     def remove_by_tab_id(self, tab_id):
         """Removes measurement from measurements by tab id
-        
+
         Args:
             tab_id: Integer representing tab identifier.
         """
@@ -333,7 +335,7 @@ class Measurement(Logger):
         self.number_of_splits = number_of_splits
         self.normalization = normalization
 
-        self.data = []
+        self.data = None
 
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
@@ -680,30 +682,41 @@ class Measurement(Logger):
         # import cProfile, pstats
         # pr = cProfile.Profile()
         # pr.enable()
-        n = 0
+
         try:
             measurement_name, extension = os.path.splitext(
                 self.measurement_file)
-            extension = extension.lower()
-            if extension == ".asc":
-                file_to_open = Path(
-                    self.directory, self.directory_data,
-                    f"{measurement_name}.asc")
-                # TODO this could maybe be done with CSVParser, but variable
-                #      column counts are going to be a problem
-                with open(file_to_open, "r") as fp:
-                    for line in fp:
-                        n += 1  # Event number
-                        # TODO: Figure good way to split into columns.
-                        # REGEX too slow.
+            file_to_open = str(Path(
+                            self.directory, self.directory_data,
+                            measurement_name))
+            file_npy = file_to_open + '.npy'
+            file_asc = file_to_open + '.asc'
+
+            # load array directly from .npy file instead of reading .asc
+            if os.path.isfile(file_npy):
+                self.data = np.load(file_npy)
+                self.selector.measurement = self
+
+            # read .asc and save it as .npy to speed up access later
+            elif os.path.isfile(file_asc):
+                num_of_lines = gf.count_lines_in_file(file_asc)
+                with open(file_asc, "r") as fp:
+                    # initialize ndarray with the right shape
+                    int_array = np.ndarray((2, num_of_lines), dtype=int)
+
+                    for i, line in enumerate(fp):
                         split = line.split()
-                        split_len = len(split)
-                        if split_len == 2:  # At least two columns
-                            self.data.append([int(split[0]), int(split[1]), n])
-                        if split_len == 3:
-                            self.data.append([int(split[0]), int(split[1]),
-                                              int(split[2]), n])
-            self.selector.measurement = self
+                        # parsing straight to numpy data types is really slow
+                        int_array[0, i] = int(split[0])
+                        int_array[1, i] = int(split[1])
+                        #TODO: can .asc files have more than two columns?
+
+                    # TODO: can values exceed 65k?
+                    uint16_array = int_array.astype(np.uint16) # reduce array size
+                    np.save(file_npy, uint16_array)
+                    self.data = uint16_array
+                    self.selector.measurement = self
+
         except IOError as e:
             error_log = "Error while loading the {0} {1}. {2}".format(
                 "measurement date for the measurement",
@@ -715,10 +728,10 @@ class Measurement(Logger):
         except Exception as e:
             error_log = "Unexpected error: {0}".format(e)
             logging.getLogger('request').error(error_log)
-        # pr.disable()
-        # ps = pstats.Stats(pr)
-        # ps.sort_stats("time")
-        # ps.print_stats(10)
+            # pr.disable()
+            # ps = pstats.Stats(pr)
+            # ps.sort_stats("time")
+            # ps.print_stats(10)
 
     def rename_info_file(self, new_name=None):
         """Renames the measurement data file.
@@ -746,11 +759,11 @@ class Measurement(Logger):
 
     def set_axes(self, axes, progress=None):
         """ Set axes information to selector within measurement.
-        
-        Sets axes information to selector to add selection points. Since 
+
+        Sets axes information to selector to add selection points. Since
         previously when creating measurement old selection could not be checked.
         Now is time to check for it, while data is still "loading".
-        
+
         Args:
             axes: Matplotlib FigureCanvas's subplot
             progress: ProgressReporter object
@@ -783,7 +796,7 @@ class Measurement(Logger):
     def add_point(self, point, canvas):
         """ Add point into selection or create new selection if first or all
         closed.
-        
+
         Args:
             point: Point (x, y) to be added to selection.
             canvas: matplotlib's FigureCanvas where selections are drawn.
@@ -801,8 +814,8 @@ class Measurement(Logger):
 
     def undo_point(self):
         """Undo last point in open selection.
-             
-        Undo last point in open (last) selection. If there are no selections, 
+
+        Undo last point in open (last) selection. If there are no selections,
         do nothing.
         """
         return self.selector.undo_point()
@@ -825,11 +838,11 @@ class Measurement(Logger):
 
     def end_open_selection(self, canvas):
         """ End last open selection.
-        
-        Ends last open selection. If selection is open, it will show dialog to 
+
+        Ends last open selection. If selection is open, it will show dialog to
         select element information and draws into canvas before opening the
         dialog.
-        
+
         Args:
             canvas: Matplotlib's FigureCanvas
 
@@ -841,11 +854,11 @@ class Measurement(Logger):
 
     def selection_select(self, cursorpoint, highlight=True):
         """ Select a selection based on point.
-        
+
         Args:
             cursorpoint: Point (x, y) which is clicked on the graph to select
                          selection.
-            highlight: Boolean to determine whether to highlight just this 
+            highlight: Boolean to determine whether to highlight just this
                        selection.
 
         Return:
@@ -856,7 +869,7 @@ class Measurement(Logger):
 
     def selection_count(self):
         """ Get count of selections.
-        
+
         Return:
             Returns the count of selections in selector object.
         """
@@ -864,15 +877,15 @@ class Measurement(Logger):
 
     def reset_select(self):
         """ Reset selection to None.
-        
+
         Resets current selection to None and resets colors of all selections
-        to their default values. 
+        to their default values.
         """
         self.selector.reset_select()
 
     def remove_selected(self):
         """ Remove selection
-        
+
         Removes currently selected selection.
         """
         self.selector.remove_selected()
@@ -893,9 +906,11 @@ class Measurement(Logger):
 
     def save_cuts(self, progress=None):
         """ Save cut files
-        
+
         Saves data points within selections into cut files.
         """
+        starttime = time.time()
+
         if self.selector.is_empty():
             self.__remove_old_cut_files()
             # Remove .selections file
@@ -908,49 +923,33 @@ class Measurement(Logger):
             return 0
 
         self.__make_directories(self.directory_cuts)
-
-        starttime = time.time()
-
         self.__remove_old_cut_files()
 
-        # Initializes the list size to match the number of selections.
-        points_in_selection = [[] for _ in range(self.selector.count())]
+        for i, selection in enumerate(self.selector.selections):
+            selection_points = selection.get_points_tuple()
+            polygon = plt.path.Path(selection_points)  # matplotlib polygon
 
-        # Go through all points in measurement data
-        data_count = len(self.data)
-        for n in range(data_count):  # while n < data_count: 
-            if n % 5000 == 0:
-                # Do not always update UI to make it faster.
-                if progress is not None:
-                    progress.report(n / data_count * 80)
-            point = self.data[n]
-            # Check if point is within selectors' limits for faster processing.
-            if not self.selector.axes_limits.is_inside(point):
-                continue
+            # array of bools. True means point is inside polygon
+            points = polygon.contains_points(np.transpose(self.data))
 
-            for i, selection in enumerate(self.selector.selections):
-                if selection.point_inside(point):
-                    points_in_selection[i].append(point)
+            # indices of the True values, shape is (1, N)
+            points = np.where(points == True)
 
-        # Save all found data points into appropriate element cut files
-        # Firstly clear old cut files so those won't be accidentally
-        # left there.
-        if progress is not None:
-            progress.report(80)
+            if len(points[0]):
+                points_in_selection = []
+                for j, index in enumerate(points[0]):
+                    # this would be faster with numpy, especially transposed,
+                    # but parsing numpy data types to string is slow
+                    points_in_selection.append((int(self.data[0, index]),  # x
+                                                int(self.data[1, index]),  # y
+                                                int(index+1)))             # event
 
-        content_length = len(points_in_selection)
-        for i, points in enumerate(points_in_selection):
-            if points:  # If not empty selection -> save
                 selection = self.selector.get_at(i)
                 cut_file = CutFile(Path(self.directory, self.directory_cuts))
-                cut_file.set_info(selection, points)
+                cut_file.set_info(selection, points_in_selection)
                 cut_file.save()
-            if progress is not None:
-                progress.report(80 + (i / content_length) * 0.2)
 
-        if progress is not None:
-            progress.report(100)
-
+        print(time.time() - starttime)
         log_msg = f"Saving finished in {time.time() - starttime} seconds."
         logging.getLogger(self.name).info(log_msg)
 
@@ -965,7 +964,7 @@ class Measurement(Logger):
 
     def get_cut_files(self):
         """ Get cut files from a measurement.
-        
+
         Return:
             Returns a list of cut files in measurement.
         """
@@ -980,9 +979,9 @@ class Measurement(Logger):
 
     def load_selection(self, filename, progress=None):
         """ Load selections from a file_path.
-        
+
         Removes all current selections and loads selections from given filename.
-        
+
         Args:
             filename: String representing (full) directory to selection
             file_path.
@@ -996,8 +995,8 @@ class Measurement(Logger):
         Args:
             no_foil: overrides the thickness of foil by setting it to 0
             directory: directory in which the tof.in is saved
-        
-        Generates tof.in file for measurement to be used in external programs 
+
+        Generates tof.in file for measurement to be used in external programs
         (tof_list, erd_depth).
         """
         # TODO refactor this into smaller functions
