@@ -3,10 +3,10 @@
 Created on 26.3.2013
 Updated on 20.11.2018
 
-Potku is a graphical user interface for analyzation and 
-visualization of measurement data collected from a ToF-ERD 
-telescope. For physics calculations Potku uses external 
-analyzation components.  
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
 Sinikka Siironen
@@ -30,6 +30,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import os
+import numpy as np
 
 from pathlib import Path
 
@@ -43,15 +44,15 @@ class CutFile:
     def __init__(self, directory=None, elem_loss=False, weight_factor=1.0,
                  split_number=0, split_count=1):
         """ Inits cut file_path object.
-        
+
         Args:
             directory: String representing cut directory.
             elem_loss: Boolean representing whether cut file_path is made from
                        elemental losses splits.
-            weight_factor: Float representing element weight factor. 
+            weight_factor: Float representing element weight factor.
             split_number: Integer. Required for Elemental Losses, do not
             overwrite splits.
-            split_count: Integer. Required for Elemental Losses, total count of 
+            split_count: Integer. Required for Elemental Losses, total count of
                          splits.
         """
         self.directory = directory
@@ -67,10 +68,10 @@ class CutFile:
         self.detector_angle = None
         self.data = []
         self.element_number = None
-    
+
     def set_info(self, selection, data):
         """ Set selection information and data into CutFile.
-        
+
         Args:
             selection: Selection class object.
             data: Lists of data points.
@@ -88,7 +89,7 @@ class CutFile:
 
     def load_file(self, file):
         """Load and parse cut file_path.
-        
+
         Args:
             file: String representing cut file.
         """
@@ -114,7 +115,7 @@ class CutFile:
             for line in fp:
                 if dirtyinteger < 10:  # Probably not the best way.
                     line_split = line.strip().split(':')
-                    if len(line_split) > 1: 
+                    if len(line_split) > 1:
                         key = line_split[0].strip()
                         value = line_split[1].strip()
                         if key == "Count":
@@ -136,12 +137,12 @@ class CutFile:
                 else:
                     self.data.append([int(i) for i in line.split()])
                 dirtyinteger += 1
-    
+
     def save(self, element_count=0):
         """Save cut file_path.
-        
+
         Saves data points into cut file_path with meta information.
-        
+
         Args:
             element_count: Integer representing which selection was used of
             total count of same element and isotope selection. This is so
@@ -149,7 +150,7 @@ class CutFile:
             2H selection.
         """
         element = self.element
-        if element and self.directory and self.data:
+        if element and self.directory and len(self.data):
             measurement_name_with_prefix = self.directory.parents[1]
             # First "-" is in sample name, second in measurement name
             # NOT IF THERE ARE - IN NAME PART!!
@@ -179,10 +180,10 @@ class CutFile:
                         self.directory, "{0}.{1}.{2}.{3}.cut".format(
                             measurement_name, element, suffix, element_count))
                     try:
-                        # Using of os.path is not allowed here. 
+                        # Using of os.path is not allowed here.
                         # http://stackoverflow.com/questions/82831/
                         # how-do-i-check-if-a-file-exists-using-python
-                        with open(file): 
+                        with open(file):
                             pass
                         element_count += 1
                     except IOError:
@@ -202,30 +203,31 @@ class CutFile:
             my_file.write("Split count: {0}\n".format(self.split_count))
             my_file.write("\n")
             my_file.write("ToF, Energy, Event number\n")
-            for p in self.data:  # Write all points
-                my_file.write(' '.join(map(str, p)))
-                my_file.write('\n')
+            lines = '\n'.join(' '.join(map(str, p)) for p in self.data)
+            # calling write() once instead of N times is much faster
+            my_file.write(lines)
+            my_file.write('\n')
             my_file.close()
-         
+
     def split(self, reference_cut, splits=10, save=True):
         """Splits cut file into X splits based on reference cut.
-        
+
         Args:
             reference_cut: Cut file (of heavy element) which is used split.
             splits: Integer determining how many splits is cut splitted to.
             save: Boolean deciding whether or not to save splits.
-            
+
         Return:
             Returns a list containing lists of the cut's splits' values.
         """
         # Cast to int to cut decimals.
-        split_size = int(len(reference_cut.data) / splits)  
+        split_size = int(len(reference_cut.data) / splits)
         self_size = len(self.data)
         row_index, split = 0, 0
         cut_splits = [[] for unused_i in range(splits)]
         while split < splits and row_index < self_size:
             # Get last event number in first split
-            max_event = reference_cut.data[((split + 1) * split_size) - 1][-1]  
+            max_event = reference_cut.data[((split + 1) * split_size) - 1][-1]
             while row_index < self_size and \
                     self.data[row_index][-1] <= max_event:
                 cut_splits[split].append(self.data[row_index])
@@ -237,7 +239,7 @@ class CutFile:
 
     def __save_splits(self, splits, cut_splits):
         """Save splits into new CutFiles.
-        
+
         Args:
             splits: Integer determining how many splits is cut splitted to.
             cut_splits: List of splitted data.
@@ -253,7 +255,7 @@ class CutFile:
 
     def copy_info(self, cut_file, new_dir, data, additional_weight_factor=1.0):
         """Copy information from cut file_path object into this.
-        
+
         Args:
             cut_file: CutFile class object.
             new_dir: New directory for cut file.
@@ -273,10 +275,10 @@ class CutFile:
 
 def is_rbs(file):
     """Check if cut file is RBS.
-    
+
     Args:
         file: A string representing file to be checked.
-        
+
     Return:
         Returns True if cut file is RBS and False if not.
     """
@@ -286,7 +288,7 @@ def is_rbs(file):
             if dirtyinteger >= 10:
                 break
             line_split = line.strip().split(':')
-            if len(line_split) > 1: 
+            if len(line_split) > 1:
                 key = line_split[0].strip()
                 value = line_split[1].strip()
                 if key == "Type":
@@ -297,12 +299,12 @@ def is_rbs(file):
 
 def get_scatter_element(file):
     """Check if cut file is RBS.
-    
+
     Args:
         file: A string representing file to be checked.
-        
+
     Return:
-        Returns an Element class object of scatter element. Returns an empty 
+        Returns an Element class object of scatter element. Returns an empty
         Element class object if there is no scatter element (in case of ERD).
     """
     with open(file) as fp:
@@ -311,7 +313,7 @@ def get_scatter_element(file):
             if dirtyinteger >= 10:
                 break
             line_split = line.strip().split(':')
-            if len(line_split) > 1: 
+            if len(line_split) > 1:
                 key = line_split[0].strip()
                 value = line_split[1].strip()
                 if key == "Scatter Element":
