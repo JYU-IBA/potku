@@ -50,7 +50,6 @@ from .parsing import ToFListParser
 
 from modules.parsing import ToFListParser
 from subprocess import Popen
-from tests.utils import stopwatch
 from itertools import (takewhile, repeat)
 
 # TODO this could still be organized into smaller modules
@@ -349,10 +348,10 @@ def tof_list(cut_file, directory, save_output=False, no_foil=False,
 
 def convert_mev_to_joule(energy_in_MeV):
     """Converts MeV (mega electron volts) to joules.
-    
+
     Args:
         energy_in_MeV: Value to be converted (float)
-    
+
     Returns:
         Returns energy in MeVs (float)
     """
@@ -363,10 +362,10 @@ def convert_mev_to_joule(energy_in_MeV):
 
 def convert_amu_to_kg(mass_in_amus):
     """Converts amus (atomic mass units) to kilograms.
-    
+
     Args:
         mass_in_amus: Value to be converted (float)
-    
+
     Returns:
         Returns mass in kilograms (float)
     """
