@@ -29,7 +29,7 @@ __version__ = "2.0"
 
 import math
 
-from modules.base import MCERDParameterContainer
+from .base import MCERDParameterContainer
 
 
 # Unit conversion values for solid angle

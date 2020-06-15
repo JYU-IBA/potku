@@ -274,8 +274,6 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
                               self.obj.sample.serial_number + "-" + \
                               self.obj.sample.name
             file_path = lines[0].strip()
-            if self.obj.directory in file_path:
-                file_path = file_path.replace(file_path + os.sep, "")
             reference_cut = self.__confirm_filepath(file_path,
                                                     name, m_name,
                                                     old_folder_prefix,

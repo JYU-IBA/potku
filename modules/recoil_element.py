@@ -33,14 +33,14 @@ import json
 import itertools
 import time
 
-import modules.file_paths as fp
-import modules.math_functions as mf
+from . import file_paths as fp
+from . import math_functions as mf
 
-from modules.base import Serializable
-from modules.base import MCERDParameterContainer
-from modules.element import Element
-from modules.point import Point
-from modules.parsing import CSVParser
+from .base import Serializable
+from .base import MCERDParameterContainer
+from .element import Element
+from .point import Point
+from .parsing import CSVParser
 
 
 class RecoilElement(MCERDParameterContainer, Serializable):

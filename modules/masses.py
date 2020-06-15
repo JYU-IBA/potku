@@ -32,26 +32,22 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Juhani Sundell"
 __version__ = "2.0"
 
-import os
-
-from modules.parsing import CSVParser
-
-from pathlib import Path
 from collections import defaultdict
+
+from . import general_functions as gf
+from .parsing import CSVParser
 
 _ISOTOPES = defaultdict(list)
 NUMBER_KEY = "number"
 ABUNDANCE_KEY = "abundance"
 MASS_KEY = "mass"
 
-this_dir = Path(__file__).parent
-file_path = Path(this_dir, os.pardir, "external", "Potku-data",
-                 "masses.dat").resolve()
+masses_file = gf.get_data_dir() / "masses.dat"
 
 # Parser to parse data from masses.dat. Empty rows are ignored, first line
 # is skipped.
 parser = CSVParser((3, str), (2, int), (5, float), (4, float))
-data = parser.parse_file(file_path, ignore="e", method="row", skip=1)
+data = parser.parse_file(masses_file, ignore="e", method="row", skip=1)
 
 for elem, n, a, m in data:
     _ISOTOPES[elem].append({
@@ -65,7 +61,7 @@ for elem, n, a, m in data:
 
 # Remove extra variables
 del elem, n, a, m
-del this_dir, file_path
+del masses_file
 del parser, data
 
 

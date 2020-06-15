@@ -96,16 +96,15 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
         # TODO
         return None
 
-    def add_simulation_target_and_recoil(self, progress=None):
+    def add_simulation_target_and_recoil(self, progress=None, **kwargs):
         """ Add target widget for modifying the target and recoils into tab.
 
         Args:
             progress: ProgressReporter object
         """
-        self.simulation_target = TargetWidget(self, self.obj, self.obj.target,
-                                              self.icon_manager,
-                                              progress=progress,
-                                              statusbar=self.statusbar)
+        self.simulation_target = TargetWidget(
+            self, self.obj, self.obj.target, self.icon_manager,
+            progress=progress, statusbar=self.statusbar, **kwargs)
         self.add_widget(self.simulation_target, has_close_button=False)
 
     def add_optimization_results_widget(self, elem_sim, measurement_elem,
@@ -163,7 +162,6 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
                 self.optimization_result_widget.results_accepted.connect(
                     self.simulation_target.results_accepted.emit
                 )
-                element_simulation.optimization_done = True
                 element_simulation.optimization_widget = \
                     self.optimization_result_widget
                 icon = self.icon_manager.get_icon("potku_icon.ico")
@@ -172,7 +170,6 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
             elif element_simulation.optimized_fluence:
                 self.optimization_result_widget = OptimizedFluenceWidget(
                     element_simulation)
-                element_simulation.optimization_done = True
                 element_simulation.optimization_widget = \
                     self.optimization_result_widget
                 icon = self.icon_manager.get_icon("potku_icon.ico")
@@ -190,11 +187,10 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
         for file in os.listdir(self.simulation.directory):
             if file.endswith(".save"):
                 # TODO this can be a problem if the request folder has been
-                # copied elsewhere, as the '.save' file has the old file
-                # paths saved
-                file_path = os.path.join(self.simulation.directory, file)
+                #   copied elsewhere, as the '.save' file has the old file
+                #   paths saved
+                file_path = Path(self.simulation.directory, file)
                 save_file_int = file.rsplit('_', 1)[1].split(".save")[0]
-                lines = []
                 with open(file_path, 'r') as save_file:
                     lines = save_file.readlines()
                 if not lines:
@@ -227,7 +223,7 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
     def __open_optimization_dialog(self):
         OptimizationDialog(self.simulation, self)
 
-    def load_data(self, progress=None):
+    def load_data(self, progress=None, **kwargs):
         """Loads the data belonging to the Simulation into view.
         """
         if not self.data_loaded:
@@ -240,7 +236,8 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
             else:
                 sub_progress = None
 
-            self.add_simulation_target_and_recoil(progress=sub_progress)
+            self.add_simulation_target_and_recoil(
+                progress=sub_progress, **kwargs)
 
             if progress is not None:
                 sub_progress = progress.get_sub_reporter(

@@ -34,7 +34,9 @@ import tests.utils as utils
 
 from pathlib import Path
 from unittest.mock import patch
+from unittest.mock import Mock
 from modules.simulation import Simulation
+from modules.enums import OptimizationType
 
 
 class TestSimulation(unittest.TestCase):
@@ -65,13 +67,21 @@ class TestSimulation(unittest.TestCase):
 
         elem_sim = sim.element_simulations[0]
         elem_sim.use_default_settings = False
-        elem_sim.start(1, 1)
-        self.assertEqual(([elem_sim], [], [], []),
-                         sim.get_active_simulations())
+        elem_sim.start(1, 1).subscribe(Mock())
+        self.assertEqual(([elem_sim], [], [], []), sim.get_active_simulations())
 
-        elem_sim.stop()
-        self.assertEqual(([], [elem_sim], [], []),
-                         sim.get_active_simulations())
+        elem_sim._set_flags(False)
+        self.assertEqual(
+            ([], [elem_sim], [], []), sim.get_active_simulations())
+
+        elem_sim.optimization_recoils = [mo.get_recoil_element()]
+        elem_sim.start(1, 1, optimization_type=OptimizationType.RECOIL)
+        self.assertEqual(
+            ([], [elem_sim], [elem_sim], []), sim.get_active_simulations())
+
+        elem_sim._set_flags(False)
+        self.assertEqual(
+            ([], [elem_sim], [], [elem_sim]), sim.get_active_simulations())
 
     def test_serialization(self):
         with tempfile.TemporaryDirectory() as tmp_dir:

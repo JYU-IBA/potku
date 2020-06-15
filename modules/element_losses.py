@@ -32,8 +32,8 @@ __version__ = "2.0"
 import os
 
 from pathlib import Path
-from modules.cut_file import CutFile
-from modules.element import Element
+from .cut_file import CutFile
+from .element import Element
 
 
 class ElementLosses:
@@ -243,20 +243,20 @@ class ElementLossesSplitHolder:
     def get_cut(self, key):
         """Get cut file used to make splits.
         """
-        if key not in self.__cut_mains.keys():
+        if key not in self.__cut_mains:
             return None
         return self.__cut_mains[key]
 
     def get_splits(self, key):
         """Get splits of a cut file.
         """
-        if key not in self.__splits.keys():
+        if key not in self.__splits:
             return []
         return self.__splits[key]
 
     def add_splits(self, key, cut, splits):
         """Add splits to a cut file
         """
-        if key not in self.__cut_mains.keys():
+        if key not in self.__cut_mains:
             self.__cut_mains[key] = cut
         self.__splits[key] = splits

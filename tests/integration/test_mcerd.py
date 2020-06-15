@@ -27,13 +27,14 @@ __version__ = "2.0"
 
 import unittest
 import tempfile
-import platform
 
 import tests.mock_objects as mo
 import tests.utils as utils
 
 import modules.general_functions as gf
 
+from modules.enums import SimulationType
+from modules.enums import SimulationMode
 from modules.mcerd import MCERD
 from modules.target import Target
 from modules.layer import Layer
@@ -58,11 +59,10 @@ class TestMCERD(unittest.TestCase):
                 Element.from_string("Si 1.0")
             ], 1000.0, 2.32, start_depth=90.01)
         ])
-        cls.mcerd = MCERD({
+        cls.mcerd = MCERD(101, {
             "recoil_element": mo.get_recoil_element(),
             "sim_dir": tempfile.gettempdir(),
-            "simulation_type": "ERD",
-            "seed_number": 101,
+            "simulation_type": SimulationType.ERD,
             "target": target,
             "detector": mo.get_detector(),
             "beam": mo.get_beam(),
@@ -73,13 +73,12 @@ class TestMCERD(unittest.TestCase):
             "minimum_main_scattering_angle": 6.5,
             "minimum_energy_of_ions": 8.15,
             "number_of_recoils": 15,
-            "simulation_mode": "narrow",
+            "simulation_mode": SimulationMode.NARROW,
             "number_of_scaling_ions": 14,
             "number_of_ions_in_presimu": 100,
             "number_of_ions": 1000
         }, mo.get_element_simulation().get_full_name())
 
-    @utils.expected_failure_if(platform.system() == "Windows")
     def test_get_command(self):
         """Tests the get_command function on different platforms.
         """
@@ -89,11 +88,11 @@ class TestMCERD(unittest.TestCase):
         file_path = self.directory / "He-Default"
 
         with utils.PlatformSwitcher("Windows"):
-            cmd = f"{bin_path}.exe {file_path}"
+            cmd = f"{bin_path}.exe", str(file_path)
             self.assertEqual(cmd, self.mcerd.get_command())
 
         with utils.PlatformSwitcher("Linux"):
-            cmd = f"ulimit -s 64000; exec {bin_path} {file_path}"
+            cmd = "./mcerd", str(file_path)
             self.assertEqual(cmd, self.mcerd.get_command())
 
         with utils.PlatformSwitcher("Darwin"):

@@ -53,7 +53,7 @@ class ElementWidget(QtWidgets.QWidget):
 
     def __init__(self, parent, element, parent_tab, element_simulation,
                  color, icon_manager, statusbar=None, spectra_changed=None,
-                 recoil_name_changed=None):
+                 recoil_name_changed=None, settings_updated=None):
         """
         Initializes the ElementWidget.
 
@@ -108,7 +108,8 @@ class ElementWidget(QtWidgets.QWidget):
         settings_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                       QtWidgets.QSizePolicy.Fixed)
         settings_button.clicked.connect(
-            self.open_element_simulation_settings)
+            lambda: self.open_element_simulation_settings(
+                settings_updated=settings_updated))
         settings_button.setToolTip("Edit element simulation settings")
 
         add_recoil_button = QtWidgets.QPushButton()
@@ -178,12 +179,14 @@ class ElementWidget(QtWidgets.QWidget):
         # Save recoil element
         recoil_element.to_file(self.element_simulation.directory)
 
-    def open_element_simulation_settings(self):
+    def open_element_simulation_settings(self, settings_updated=None):
         """
         Open element simulation settings.
         """
-        ElementSimulationSettingsDialog(self.element_simulation,
-                                        self.tab)
+        es = ElementSimulationSettingsDialog(self.element_simulation, self.tab)
+        if settings_updated is not None:
+            es.settings_updated.connect(settings_updated.emit)
+        es.exec_()
 
     def plot_spectrum(self, spectra_changed=None):
         """

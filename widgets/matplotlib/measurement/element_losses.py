@@ -135,13 +135,13 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
             # Check RBS selection
             rbs_string = ""
             if len(cut_file) == 3:
-                if key + ".cut" in self.__rbs_list.keys():
+                if key + ".cut" in self.__rbs_list:
                     element_object = self.__rbs_list[key + ".cut"]
                     element = element_object.symbol
                     isotope = element_object.isotope
                     rbs_string = "*"
             else:
-                if key in self.__rbs_list.keys():
+                if key in self.__rbs_list:
                     element_object = self.__rbs_list[key]
                     element = element_object.symbol
                     isotope = element_object.isotope
@@ -155,10 +155,8 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
                                                   cut_file[2])
             else:
                 color_string = "{0}{1}{2}".format(isotope, element, cut_file[2])
-            if color_string not in self.selection_colors.keys():
-                color = "red"
-            else:
-                color = self.selection_colors[color_string]
+
+            color = self.selection_colors.get(color_string, "red")
 
             # Set label text
             if len(cut_file) == 3:

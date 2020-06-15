@@ -34,7 +34,7 @@ import numpy as np
 
 from pathlib import Path
 
-from modules.element import Element
+from .element import Element
 
 
 class CutFile:

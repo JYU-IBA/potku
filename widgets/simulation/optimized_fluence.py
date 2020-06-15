@@ -77,7 +77,7 @@ class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
         Show calculated solutions in the widget.
         """
         text = f"{evaluations} evaluations left. Running."
-        if self.element_simulation.optimization_mcerd_running:
+        if self.element_simulation.is_optimization_running():
             text += " Simulating."
         self.progressLabel.setText(text)
 

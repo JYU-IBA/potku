@@ -44,6 +44,8 @@ from matplotlib.widgets import SpanSelector
 
 from modules.element import Element
 from modules.measurement import Measurement
+from modules.recoil_element import RecoilElement
+from modules.element_simulation import ElementSimulation
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QGuiApplication
@@ -51,8 +53,6 @@ from PyQt5.QtGui import QGuiApplication
 from scipy import integrate
 
 from widgets.matplotlib.base import MatplotlibWidget
-
-from tests.utils import stopwatch
 
 
 class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
@@ -385,7 +385,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         except AttributeError:
             return None
 
-    def __sortt(self, key):
+    @staticmethod
+    def __sortt(key):
         cut_file = key.split('.')
         # TODO sort by RBS selection
         # TODO provide elements as parameters, do not initialize them here
@@ -398,7 +399,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         recoils = []
         for elem_sim in self.parent.parent.obj.element_simulations:
             for recoil in elem_sim.recoil_elements:
-                for used_file in self.histed_files.keys():
+                for used_file in self.histed_files:
                     used_file_name = os.path.split(used_file)[1]
                     if used_file_name == recoil.prefix + "-" + recoil.name + \
                             ".simu":
@@ -438,13 +439,13 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 # Check RBS selection
                 rbs_string = ""
                 if len(cut_file) == 3:
-                    if key + ".cut" in self.__rbs_list.keys():
+                    if key + ".cut" in self.__rbs_list:
                         element_object = self.__rbs_list[key + ".cut"]
                         element = element_object.symbol
                         isotope = element_object.isotope
                         rbs_string = "*"
                 else:
-                    if key in self.__rbs_list.keys():
+                    if key in self.__rbs_list:
                         element_object = self.__rbs_list[key]
                         element = element_object.symbol
                         isotope = element_object.isotope
@@ -694,8 +695,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.canvas.draw()
         self.canvas.flush_events()
 
-    @stopwatch()
-    def update_spectra(self, rec_elem, elem_sim):
+    @gf.stopwatch()
+    def update_spectra(self, rec_elem: RecoilElement,
+                       elem_sim: ElementSimulation):
         """Updates spectra line that belongs to given recoil element.
 
         Args:
@@ -713,16 +715,14 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         if rec_elem is None or elem_sim is None:
             return
 
-        spectrum_file = Path(elem_sim.directory,
-                             f"{rec_elem.get_full_name()}.simu")
+        espe_file = Path(elem_sim.directory, f"{rec_elem.get_full_name()}.simu")
 
-        if spectrum_file in self.plots:
-            elem_sim.calculate_espe(rec_elem, ch=self.channel_width)
-            espe_data = gf.read_espe_file(spectrum_file)
+        if espe_file in self.plots:
+            espe, _ = elem_sim.calculate_espe(rec_elem, ch=self.channel_width)
 
-            data = get_axis_values(espe_data)
+            data = get_axis_values(espe)
 
-            self.plots[spectrum_file].set_data(data)
+            self.plots[espe_file].set_data(data)
 
             self.canvas.draw()
             self.canvas.flush_events()

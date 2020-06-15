@@ -133,10 +133,13 @@ class TestElementSimulationSettings(unittest.TestCase):
 
     def assert_expected_settings(self, elem_sim, request, sim,
                                  mock_mcerd: Mock):
-        elem_sim.start(1, 1, use_old_erd_files=False)
-        settings = mock_mcerd.call_args[0][0]
-        self.assertEqual(get_expected_settings(elem_sim, request, sim),
-                         settings)
+        elem_sim.start(1, 1, use_old_erd_files=False).subscribe(Mock())
+        elem_sim._set_flags(False)
+        args = mock_mcerd.call_args[0]
+        seed, d = args[0], args[1]
+        settings = {**d, "seed_number": seed}
+        self.assertEqual(
+            get_expected_settings(elem_sim, request, sim), settings)
 
 
 def get_expected_settings(elem_sim: ElementSimulation, request: Request,

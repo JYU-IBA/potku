@@ -28,13 +28,14 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
 __version__ = "2.0"
 
 import json
-import os
 import time
 
-from modules.base import Serializable
-from modules.base import AdjustableSettings
-from modules.beam import Beam
-from modules.element import Element
+from pathlib import Path
+
+from .base import Serializable
+from .base import AdjustableSettings
+from .beam import Beam
+from .element import Element
 
 
 class Run(Serializable, AdjustableSettings):
@@ -54,9 +55,10 @@ class Run(Serializable, AdjustableSettings):
             charge: Charge.
             run_time: Time of the run.
         """
-        self.beam = beam
-        if not self.beam:
+        if beam is None:
             self.beam = Beam()
+        else:
+            self.beam = beam
         self.fluence = fluence
         self.current = current
         self.charge = charge
@@ -65,7 +67,7 @@ class Run(Serializable, AdjustableSettings):
         # List for undoing fluence values
         self.previous_fluence = []
 
-    def to_file(self, measurement_file_path):
+    def to_file(self, measurement_file_path: Path):
         """
         Saves Run object and Beam object parameters into a file.
 
@@ -89,20 +91,20 @@ class Run(Serializable, AdjustableSettings):
             "profile": self.beam.profile
         }
 
-        if os.path.exists(measurement_file_path):
-            with open(measurement_file_path) as mesu:
+        try:
+            with measurement_file_path.open("r") as mesu:
                 obj = json.load(mesu)
-            obj["general"]["modification_time"] = time.strftime("%c %z %Z",
-                                                                time.localtime(
-                                                                 time.time()))
-            obj["general"]["modification_time_unix"] = time.time()
-            obj["run"] = run_obj
-            obj["beam"] = beam_obj
-        else:
-            obj = {"run": run_obj,
-                   "beam": beam_obj}
+            timestamp = time.time()
+            obj["general"]["modification_time"] = time.strftime(
+                "%c %z %Z", time.localtime(timestamp))
+            obj["general"]["modification_time_unix"] = timestamp
+        except (OSError, KeyError):
+            obj = {}
 
-        with open(measurement_file_path, "w") as file:
+        obj["run"] = run_obj
+        obj["beam"] = beam_obj
+
+        with measurement_file_path.open("w") as file:
             json.dump(obj, file, indent=4)
 
     @classmethod
@@ -115,17 +117,22 @@ class Run(Serializable, AdjustableSettings):
         Return:
             Returns the created Run object.
         """
-        with open(measurement_file_path) as mesu:
+        with measurement_file_path.open("r") as mesu:
             mesu = json.load(mesu)
 
-        run = mesu["run"]
-        run["run_time"] = run.pop("time")
-        beam = mesu["beam"]
+        try:
+            run = mesu["run"]
+            run["run_time"] = run.pop("time")
+        except KeyError:
+            run = {}
 
-        ion = Element.from_string(beam.pop("ion"))
-        spot_size = tuple(beam.pop("spot_size"))
-
-        beam_object = Beam(ion=ion, spot_size=spot_size, **beam)
+        try:
+            beam = mesu["beam"]
+            ion = Element.from_string(beam.pop("ion"))
+            spot_size = tuple(beam.pop("spot_size"))
+            beam_object = Beam(ion=ion, spot_size=spot_size, **beam)
+        except KeyError:
+            beam_object = None
 
         return cls(beam=beam_object, **run)
 

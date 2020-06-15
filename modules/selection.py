@@ -35,15 +35,15 @@ __version__ = "2.0"
 import logging
 import os
 
-import modules.math_functions as mf
-import modules.general_functions as gf
+from . import math_functions as mf
+from . import general_functions as gf
 
 import matplotlib as mpl
 from matplotlib.lines import Line2D
 
 from pathlib import Path
 
-from modules.element import Element
+from .element import Element
 
 
 
@@ -416,7 +416,7 @@ class Selector:
                 color_string = "{0}{1}{2}{3}".format(prefix, isotope,
                                                      element,
                                                      dirtyinteger)
-                if color_string not in color_dict.keys():
+                if color_string not in color_dict:
                     break
                 dirtyinteger += 1
             color_dict[color_string] = sel.default_color

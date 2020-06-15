@@ -35,10 +35,10 @@ import widgets.gui_utils as gutils
 from pathlib import Path
 
 from modules.base import ElementSimulationContainer
-from modules.element import Element
 from modules.detector import Detector
 
 from PyQt5 import QtWidgets
+from PyQt5 import QtGui
 
 
 def check_for_red(widget):
@@ -171,7 +171,7 @@ def update_detector_settings(entity, det_folder_path: Path,
     """
     # Create default Detector for Measurement
     detector_file_path = Path(det_folder_path, "Default.detector")
-    os.makedirs(det_folder_path, exist_ok=True)
+    det_folder_path.mkdir(exist_ok=True)
 
     entity.detector = Detector(
         detector_file_path, measurement_settings_file_path)
@@ -312,6 +312,7 @@ def _element_simulations_to_list(finished_simulations,
     formatted string.
     """
     # Transform the lists into a nested dictionary to avoid duplicates
+    # TODO simplify this
     d = defaultdict(lambda: defaultdict(dict))
     for elem_sim in itertools.chain(finished_simulations,
                                     running_simulations,
@@ -361,8 +362,9 @@ def delete_element_simulations(qdialog,
     if not _get_confirmation(qdialog, msg=msg, **all_sims._asdict()):
         return False
 
-    # Reset simulations
-    for elem_sim in itertools.chain(*all_sims):
+    # Reset simulations. Using set here as one ElementSimulation could appear
+    # on multiple lists.
+    for elem_sim in set(itertools.chain(*all_sims)):
         elem_sim.reset()
 
         # Change full edit unlocked
@@ -378,6 +380,7 @@ def delete_element_simulations(qdialog,
 
         try:
             tab.del_widget(elem_sim.optimization_widget)
+            elem_sim.optimization_widget = None
         except AttributeError:
             # tab is still None, nothing to do
             pass
@@ -428,3 +431,28 @@ def set_up_side_panel(qwidget, key, side):
     qwidget.hidePanelButton.clicked.connect(
         lambda: gutils.change_arrow(qwidget.hidePanelButton)
     )
+
+
+def get_btn_stylesheet(color: QtGui.QColor):
+    """Returns a stylesheet for a button based on the given color.
+    """
+    luminance = 0.2126 * color.red() + 0.7152 * color.green()
+    luminance += 0.0722 * color.blue()
+    if luminance < 50:
+        text_color = "white"
+    else:
+        text_color = "black"
+    return f"background-color: {color.name()}; color: {text_color};"
+
+
+def set_btn_color(button: QtWidgets.QPushButton, color: QtGui.QColor, colormap,
+                  element: str):
+    """Sets the background and text color of a button depending on the given
+    color, colormap and element.
+    """
+    button.setStyleSheet(get_btn_stylesheet(color))
+
+    if color.name() == colormap[element]:
+        button.setText(f"Automatic [{element}]")
+    else:
+        button.setText("")

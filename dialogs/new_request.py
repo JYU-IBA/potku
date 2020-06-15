@@ -59,7 +59,7 @@ class RequestNewDialog(QtWidgets.QDialog):
         self.directory = None
 
         self.requestDirectoryLineEdit.setText(
-            self.parent.settings.get_request_directory())
+            str(self.parent.settings.get_request_directory()))
 
         # Connect buttons
         self.pushOk.clicked.connect(self.__create_request)

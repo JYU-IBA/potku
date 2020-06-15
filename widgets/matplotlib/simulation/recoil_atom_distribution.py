@@ -51,8 +51,12 @@ from matplotlib.widgets import SpanSelector
 
 from modules.element import Element
 from modules.point import Point
+from modules.enums import SimulationType
 from modules.recoil_element import RecoilElement
 from modules.element_simulation import ElementSimulation
+from modules.simulation import Simulation
+from modules.target import Target
+from modules.global_settings import GlobalSettings
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
@@ -67,6 +71,7 @@ from widgets.simulation.controls import SimulationControlsWidget
 from widgets.simulation.percentage_widget import PercentageWidget
 from widgets.simulation.point_coordinates import PointCoordinatesWidget
 from widgets.simulation.recoil_element import RecoilElementWidget
+from widgets.base_tab import BaseTab
 
 
 class ElementManager:
@@ -77,7 +82,7 @@ class ElementManager:
     Each RecoilElement has 1 Element, 1 ElementWidget and 2...n Points.
     """
 
-    def __init__(self, parent_tab, parent, icon_manager, simulation,
+    def __init__(self, parent_tab, parent, icon_manager, simulation: Simulation,
                  statusbar=None):
         """
         Initializes element manager.
@@ -95,7 +100,8 @@ class ElementManager:
         self.statusbar = statusbar
         self.element_simulations = self.simulation.element_simulations
 
-    def get_element_simulation_with_recoil_element(self, recoil_element):
+    def get_element_simulation_with_recoil_element(
+            self, recoil_element: RecoilElement) -> ElementSimulation:
         """
         Get element simulation with recoil element.
 
@@ -109,7 +115,8 @@ class ElementManager:
             if element_simulation.recoil_elements[0] == recoil_element:
                 return element_simulation
 
-    def get_element_simulation_with_radio_button(self, radio_button):
+    def get_element_simulation_with_radio_button(
+            self, radio_button) -> ElementSimulation:
         """
         Get element simulation with radio button.
 
@@ -124,8 +131,10 @@ class ElementManager:
                 if button == radio_button:
                     return element_simulation
 
-    def get_recoil_element_with_radio_button(self, radio_button,
-                                             element_simulation):
+    @staticmethod
+    def get_recoil_element_with_radio_button(
+            radio_button,
+            element_simulation: ElementSimulation) -> RecoilElement:
         """
         Get recoil element with radio button from given element simulation.
 
@@ -140,8 +149,10 @@ class ElementManager:
             if recoil_element.widgets[0].radio_button == radio_button:
                 return recoil_element
 
-    def add_new_element_simulation(self, element, color, spectra_changed=None,
-                                   recoil_name_changed=None):
+    def add_new_element_simulation(
+            self, element, color, spectra_changed=None,
+            recoil_name_changed=None, settings_updated=None,
+            **kwargs) -> ElementSimulation:
         """
         Create a new ElementSimulation and RecoilElement with default points.
 
@@ -152,6 +163,9 @@ class ElementManager:
                 distribution is changed, causing the spectra to change also.
             recoil_name_changed: pyqtSignal that is emitted when recoil element
                 name changes
+            settings_updated: pyqtSignal that is emitted when settings are
+                changed
+            kwargs: keyword arguments passed down to SimulationControlsWidget
 
         Return:
             Created ElementSimulation
@@ -180,15 +194,8 @@ class ElementManager:
         for xy in xys:
             points.append(Point(xy))
 
-        # if element.isotope is None:
-        #     element.isotope = int(round(masses.get_standard_isotope(
-        #         element.symbol)))
-
-        if self.simulation.request.default_element_simulation.simulation_type \
-                == "ERD":
-            rec_type = "rec"
-        else:
-            rec_type = "sct"
+        rec_type = self.simulation.request.default_element_simulation\
+            .simulation_type.get_recoil_type()
 
         recoil_element = RecoilElement(element, points, color,
                                        rec_type=rec_type)
@@ -198,21 +205,24 @@ class ElementManager:
             self.parent, element, self.parent_tab, element_simulation, color,
             self.icon_manager, statusbar=self.statusbar,
             spectra_changed=spectra_changed,
-            recoil_name_changed=recoil_name_changed)
+            recoil_name_changed=recoil_name_changed,
+            settings_updated=settings_updated)
         recoil_element.widgets.append(element_widget)
 
         # Add simulation controls widget
         simulation_controls_widget = SimulationControlsWidget(
             element_simulation, self.parent,
-            recoil_name_changed=recoil_name_changed)
+            recoil_name_changed=recoil_name_changed,
+            settings_updated=settings_updated, **kwargs)
         self.parent_tab.contentsLayout.addWidget(simulation_controls_widget)
         element_simulation.recoil_elements[0] \
             .widgets.append(simulation_controls_widget)
 
         return element_simulation
 
-    def add_element_simulation(self, element_simulation, spectra_changed=None,
-                               recoil_name_changed=None):
+    def add_element_simulation(
+            self, element_simulation: ElementSimulation, spectra_changed=None,
+            recoil_name_changed=None, settings_updated=None, **kwargs):
         """
         Add an existing ElementSimulation.
 
@@ -220,20 +230,27 @@ class ElementManager:
             element_simulation: ElementSimulation to be added.
             spectra_changed: pyqtSignal that is emitted when recoil element
                 distribution is changed, causing the spectra to change also.
+            recoil_name_changed: pyqtSignal that is emitted when recoil name
+                changes.
+            settings_updated: pyqtSignal that is emitted when simulation
+                settings are updated
+            kwargs: keyword arguments passed down to SimulationControl
         """
         main_element_widget = ElementWidget(
             self.parent, element_simulation.recoil_elements[0].element,
             self.parent_tab, element_simulation,
             element_simulation.recoil_elements[0].color, self.icon_manager,
             statusbar=self.statusbar, spectra_changed=spectra_changed,
-            recoil_name_changed=recoil_name_changed)
+            recoil_name_changed=recoil_name_changed,
+            settings_updated=settings_updated)
         element_simulation.recoil_elements[0] \
             .widgets.append(main_element_widget)
 
         # Add simulation controls widget
         simulation_controls_widget = SimulationControlsWidget(
             element_simulation, self.parent,
-            recoil_name_changed=recoil_name_changed)
+            recoil_name_changed=recoil_name_changed,
+            settings_updated=settings_updated, **kwargs)
         self.parent_tab.contentsLayout.addWidget(simulation_controls_widget)
         element_simulation.recoil_elements[0] \
             .widgets.append(simulation_controls_widget)
@@ -303,7 +320,7 @@ class ElementManager:
         if rw is not None:
             rw.radio_button.setChecked(True)
 
-    def remove_element_simulation(self, element_simulation):
+    def remove_element_simulation(self, element_simulation: ElementSimulation):
         """
         Remove element simulation.
 
@@ -328,7 +345,8 @@ class ElementManager:
         for file_path in files_to_be_removed:
             os.remove(file_path)
 
-    def get_radio_buttons(self, element_simulation):
+    @staticmethod
+    def get_radio_buttons(element_simulation: ElementSimulation):
         """
         Get all radio buttons based on element simulation.
 
@@ -382,8 +400,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     full_edit_on = bnd.bind("edit_lock_push_button", fget=_full_edit_from_btn,
                             fset=_full_edit_to_btn)
 
-    def __init__(self, parent, simulation, target, tab, icon_manager,
-                 statusbar=None):
+    def __init__(self, parent, simulation: Simulation, target: Target,
+                 tab: BaseTab, icon_manager, statusbar=None, **kwargs):
         """Inits recoil atom distribution widget.
 
         Args:
@@ -426,7 +444,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                   QtWidgets.QSizePolicy.Expanding))
 
         self.parent.addPushButton.clicked.connect(
-            self.add_element_with_dialog)
+            lambda: self.add_element_with_dialog(**kwargs))
         self.parent.removePushButton.clicked.connect(
             self.remove_current_element)
 
@@ -550,7 +568,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.on_draw()
 
         if self.simulation.element_simulations:
-            self.__update_figure()
+            self.__update_figure(**kwargs)
 
         for button in self.radios.buttons():
             button.setChecked(True)
@@ -561,7 +579,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 elem_sim, spectra_changed=self.recoil_dist_changed,
                 recoil_name_changed=self.recoil_name_changed))
 
-    def format_coord(self, x, y):
+    @staticmethod
+    def format_coord(x, y):
         """
         Format mouse coordinates.
 
@@ -576,13 +595,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         y_part = "\ny:{0:1.4f}".format(y)
         return x_part + y_part
 
-    def __update_figure(self):
+    def __update_figure(self, **kwargs):
         """
         Update figure.
         """
         for element_simulation in self.simulation.element_simulations:
             self.add_element(element_simulation.recoil_elements[0].element,
-                             element_simulation)
+                             element_simulation, **kwargs)
 
         self.simulation.element_simulations[0].recoil_elements[0]. \
             widgets[0].radio_button.setChecked(True)
@@ -607,15 +626,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             interval_changed=self.limit_changed
         )
         self.tab.add_widget(percentage_widget)
-
-    def open_element_simulation_settings(self):
-        """
-        Open element simulation settings.
-        """
-        if not self.current_element_simulation:
-            return
-        ElementSimulationSettingsDialog(self.current_element_simulation,
-                                        self.tab)
 
     def open_recoil_element_info(self):
         """
@@ -691,17 +701,20 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Unlock or lock full edit.
         """
         if not self.full_edit_on:
+            # TODO use the function in dialog functions
             # Check if current element simulation is running
             add = None
-            if self.current_element_simulation.mcerd_objects and not\
-                    self.current_element_simulation.optimization_running:
+            if self.current_element_simulation.is_simulation_running() and not\
+                    self.current_element_simulation.is_optimization_running():
                 add = "Are you sure you want to unlock full edit for this" \
                       " running element simulation?\nIt will be stopped and " \
                       "all its simulation results will be deleted.\n\nUnlock " \
                       "full edit anyway?"
-            elif self.current_element_simulation.simulations_done and not \
-                    self.current_element_simulation.optimization_done and not\
-                    self.current_element_simulation.optimization_running:
+            elif self.current_element_simulation.is_simulation_finished() \
+                    and not \
+                    self.current_element_simulation.is_optimization_finished() \
+                    and not \
+                    self.current_element_simulation.is_optimization_running():
                 add = "Are you sure you want to unlock full edit for this " \
                       "element simulation?\nAll its simulation results will " \
                       "be deleted.\n\nUnlock full edit anyway?"
@@ -1053,7 +1066,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         else:
             self.parent.elementInfoWidget.show()
 
-    def add_element_with_dialog(self):
+    def add_element_with_dialog(self, **kwargs):
         """
         Add new element simulation with dialog.
         """
@@ -1063,12 +1076,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
             # Pass the color down as hex code
             element_simulation = self.add_element(Element(
-                dialog.element, isotope), color=dialog.color.name())
+                dialog.element, isotope), color=dialog.color.name(), **kwargs)
 
             element_simulation.recoil_elements[0].widgets[0].radio_button \
                 .setChecked(True)
 
-    def add_element(self, element, element_simulation=None, color=None):
+    def add_element(self, element, element_simulation=None, color=None,
+                    **kwargs):
         """Adds a new ElementSimulation based on the element. If elem_sim is
         not None, only UI widgets need to be added.
 
@@ -1076,17 +1090,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             element: Element that is added.
             element_simulation: ElementSimulation that needs the UI widgets.
             color: A QColor object.
+            kwargs: keyword arguments passed down to SimulationControlsWidget
         """
         if element_simulation is None:
             # Create new ElementSimulation
             element_simulation = \
                 self.element_manager.add_new_element_simulation(
                     element, color, spectra_changed=self.recoil_dist_changed,
-                    recoil_name_changed=self.recoil_name_changed)
+                    recoil_name_changed=self.recoil_name_changed, **kwargs)
         else:
             self.element_manager.add_element_simulation(
                 element_simulation, spectra_changed=self.recoil_dist_changed,
-                recoil_name_changed=self.recoil_name_changed)
+                recoil_name_changed=self.recoil_name_changed, **kwargs)
 
         # Add recoil element widgets
         for recoil_element in element_simulation.recoil_elements:
@@ -1142,7 +1157,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 pass  # Recoil was not in list
             self.show_other_recoils()
             # Delete rec, recoil and simu files.
-            if element_simulation.simulation_type == "ERD":
+            if element_simulation.simulation_type == SimulationType.ERD:
                 rec_suffix = ".rec"
                 recoil_suffix = ".recoil"
             else:
@@ -1175,25 +1190,20 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             return
 
         # Check if current element simulation is running
-        if self.current_element_simulation.mcerd_objects:
+        if self.current_element_simulation.is_optimization_running() or \
+                self.current_element_simulation.is_simulation_running():
             add = "\nAlso its simulation will be stopped."
         else:
             add = ""
         # TODO use the function from dialog_functions in here
-        reply = QtWidgets.QMessageBox.question(self.parent, "Confirmation",
-                                               "If you delete selected "
-                                               "element simulation, "
-                                               "all possible recoils "
-                                               "connected to it will be "
-                                               "also deleted." + add
-                                               + "This also applies to possible"
-                                               " optimization.\n\nAre you "
-                                               "sure you want to delete "
-                                               "selected element simulation?",
-                                               QtWidgets.QMessageBox.Yes |
-                                               QtWidgets.QMessageBox.No |
-                                               QtWidgets.QMessageBox.Cancel,
-                                               QtWidgets.QMessageBox.Cancel)
+        reply = QtWidgets.QMessageBox.question(
+            self.parent, "Confirmation",
+            "If you delete selected element simulation, all possible recoils "
+            f"connected to it will be also deleted.{add} "
+            f"This also applies to possible optimization.\n\n"
+            "Are you sure you want to delete selected element simulation?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+            QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
         if reply == QtWidgets.QMessageBox.No or reply == \
                 QtWidgets.QMessageBox.Cancel:
             return  # If clicked Yes, then continue normally
@@ -1203,23 +1213,16 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         # Stop simulation if running
         if add:
-            if self.current_element_simulation.optimization_running:
-                self.current_element_simulation.stop()
-                self.current_element_simulation.optimization_stopped = True
-                self.current_element_simulation.optimization_running = False
-            else:
-                self.current_element_simulation.stop()
-                # Remove possible other recoil elements
-                for recoil_elem in element_simulation.recoil_elements:
-                    if recoil_elem is element_simulation.recoil_elements[0]:
-                        continue
-                    self.remove_recoil_element(recoil_elem.widgets[0],
-                                               element_simulation, recoil_elem)
-                    # Delete energy spectra that use recoil
-                    df.delete_recoil_espe(self.tab, recoil_elem.get_full_name())
+            self.current_element_simulation.stop()
+            # Remove possible other recoil elements
+            for recoil_elem in element_simulation.recoil_elements:
+                if recoil_elem is element_simulation.recoil_elements[0]:
+                    continue
+                self.remove_recoil_element(recoil_elem.widgets[0],
+                                           element_simulation, recoil_elem)
+                # Delete energy spectra that use recoil
+                df.delete_recoil_espe(self.tab, recoil_elem.get_full_name())
 
-        self.current_recoil_element = None
-        self.remove_element(element_simulation)
         # Remove recoil lines
         for recoil in element_simulation.recoil_elements:
             if recoil in self.other_recoils:
@@ -1240,14 +1243,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.tab.del_widget(
                 self.current_element_simulation.optimization_widget)
 
-        self.show_other_recoils()
+        self.current_recoil_element = None
         self.current_element_simulation = None
+        self.remove_element(element_simulation)
+        self.show_other_recoils()
         self.parent.elementInfoWidget.hide()
         self.update_plot()
 
-    def export_elements(self):
-        """
-        Export elements from target layers into element simulations.
+    def export_elements(self, **kwargs):
+        """Export elements from target layers into element simulations.
         """
         for layer in self.target.layers:
             for layer_element in layer.elements:
@@ -1267,7 +1271,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             break
                 if not already_exists:
                     color = self.colormap[layer_element.symbol]
-                    self.add_element(layer_element, color=color)
+                    self.add_element(layer_element, color=color, **kwargs)
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -1702,8 +1706,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                         self.current_element_simulation.recoil_elements[
                             0] != recoil:
                     # Check if point is added between two zeros
-                    if right_neighbor.get_y() == 0.0 and left_neighbor.get_y() == \
-                            0.0:
+                    if right_neighbor.get_y() == 0.0 and \
+                            left_neighbor.get_y() == 0.0:
                         new_point.set_y(0.0)
                     elif new_point.get_y() < 0.0001:
                         new_point.set_y(0.0001)
@@ -2351,7 +2355,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             break
                 if point_to_add is not None:
                     point = self.add_point(
-                        point_to_add, recoil=self.current_element_simulation
+                        point_to_add,
+                        recoil=self.current_element_simulation
                             .recoil_elements[0], multiply=True)
                     main_points_to_add.append(point)
 
@@ -2546,7 +2551,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.point_remove_action.setEnabled(False)
                 allow_delete = False
             if self.current_recoil_element.get_points()[-1] in \
-                    self.selected_points and not self.full_edit_on and allow_delete:
+                    self.selected_points and not self.full_edit_on and \
+                    allow_delete:
                 self.point_remove_action.setEnabled(False)
                 allow_delete = False
             if 0.0 in self.current_recoil_element.get_ys() and allow_delete:

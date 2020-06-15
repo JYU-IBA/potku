@@ -41,8 +41,12 @@ from modules.recoil_element import RecoilElement
 from modules.element import Element
 from modules.element_simulation import ERDFileHandler
 from modules.element_simulation import ElementSimulation
+from modules.enums import OptimizationType
 
 from tests.utils import expected_failure_if
+
+from pathlib import Path
+from unittest.mock import patch
 
 
 class TestErdFileHandler(unittest.TestCase):
@@ -125,8 +129,8 @@ class TestErdFileHandler(unittest.TestCase):
 
         exp = [(f, s, False) for f, s in self.expected_values]
         self.assertEqual(exp, [f for f in handler])
-        self.assertEqual(0, handler.get_active_atom_counts())
-        self.assertEqual(0, handler.get_old_atom_counts())
+        self.assertEqual(0, handler.get_active_atom_count())
+        self.assertEqual(0, handler.get_old_atom_count())
 
     def test_max_seed(self):
         handler = ERDFileHandler([], self.elem_4he)
@@ -191,79 +195,99 @@ class TestErdFileHandler(unittest.TestCase):
 
             # Initialise a handler from the tmp_dir and add an active file
             handler = ERDFileHandler.from_directory(tmp_dir, self.elem_4he)
-            handler.add_active_file(os.path.join(tmp_dir,
-                                                 "4He-Default.103.erd"))
+            handler.add_active_file(
+                os.path.join(tmp_dir, "4He-Default.103.erd"))
 
             # Append a line to each file
             for erd_file, _, _ in handler:
                 write_line(erd_file)
 
-            self.assertEqual(1, handler.get_active_atom_counts())
-            self.assertEqual(4, handler.get_old_atom_counts())
+            self.assertEqual(1, handler.get_active_atom_count())
+            self.assertEqual(4, handler.get_old_atom_count())
+            self.assertEqual(5, handler.get_total_atom_count())
 
             # As the results of old files are cached, only counts in active
             # files are incremented
             for erd_file, _, _ in handler:
                 write_line(erd_file)
 
-            self.assertEqual(2, handler.get_active_atom_counts())
-            self.assertEqual(4, handler.get_old_atom_counts())
+            self.assertEqual(2, handler.get_active_atom_count())
+            self.assertEqual(4, handler.get_old_atom_count())
+            self.assertEqual(6, handler.get_total_atom_count())
 
             # If the handler is updated, active file is moved to old files
             handler.update()
-            self.assertEqual(0, handler.get_active_atom_counts())
-            self.assertEqual(6, handler.get_old_atom_counts())
+            self.assertEqual(0, handler.get_active_atom_count())
+            self.assertEqual(6, handler.get_old_atom_count())
+            self.assertEqual(6, handler.get_total_atom_count())
 
             # Now the atom count will no longer update in the added file
             for erd_file, _, _ in handler:
                 write_line(erd_file)
 
-            self.assertEqual(0, handler.get_active_atom_counts())
-            self.assertEqual(6, handler.get_old_atom_counts())
+            self.assertEqual(0, handler.get_active_atom_count())
+            self.assertEqual(6, handler.get_old_atom_count())
+            self.assertEqual(6, handler.get_total_atom_count())
 
         # Assert that clearing also clears cache
         handler.clear()
-        self.assertEqual(0, handler.get_old_atom_counts())
+        self.assertEqual(0, handler.get_active_atom_count())
+        self.assertEqual(0, handler.get_old_atom_count())
+        self.assertEqual(0, handler.get_total_atom_count())
 
         # Assert that tmp dir got deleted
         self.assertFalse(os.path.exists(tmp_dir))
 
+    def test_results_exists(self):
+        handler = ERDFileHandler([], self.elem_4he)
+        self.assertFalse(handler.results_exist())
+        handler.add_active_file(self.valid_erd_files[0])
+        self.assertTrue(handler.results_exist())
+        handler.update()
+        self.assertTrue(handler.results_exist())
+        handler.clear()
+        self.assertFalse(handler.results_exist())
+
     def test_thread_safety(self):
         """Tests that ErdFileHandler is thread safe."""
-        n = 10000
+        n = 1000
+        delay = 0.001
         handler = ERDFileHandler([], self.elem_4he)
 
         def adder():
             for i in range(n):
                 handler.add_active_file(f"4He-Default.{i}.erd")
 
-        self.assert_runs_ok(adder, handler.get_active_atom_counts)
+        self.assert_runs_ok(adder, handler.get_active_atom_count)
         self.assertEqual(n, len(handler))
 
         def updater():
-            time.sleep(0.01)
+            time.sleep(delay)
             handler.update()
 
-        self.assert_runs_ok(handler.get_active_atom_counts, updater)
+        self.assert_runs_ok(handler.get_active_atom_count, updater)
         self.assertEqual(n, len(handler))
 
         def clearer():
-            time.sleep(0.01)
+            time.sleep(delay)
             handler.clear()
 
-        self.assert_runs_ok(handler.get_old_atom_counts, clearer)
+        self.assert_runs_ok(handler.get_old_atom_count, clearer)
         self.assertEqual(0, len(handler))
 
         # Add the files again and see if counting old atoms works when updating
         adder()
-        self.assert_runs_ok(handler.get_old_atom_counts, updater)
+        self.assert_runs_ok(handler.get_old_atom_count, updater)
         self.assertEqual(n, len(handler))
 
         clearer()
         self.assertEqual(0, len(handler))
 
         self.assert_runs_ok(adder, updater)
-        self.assertEqual(n, len(handler))
+        # TODO Updating and adding at the same time may cause the total count
+        #  to be more than n, hence the less or equal comparison. A better
+        #  multithreading test is needed to test this thing properly.
+        self.assertTrue(n <= len(handler))
 
     @staticmethod
     def assert_runs_ok(func1, func2):
@@ -286,11 +310,9 @@ class TestElementSimulation(unittest.TestCase):
             "minimum_main_scattering_angle": 14.0,
             "number_of_preions": 3
         }
-        self.elem_sim = ElementSimulation(tempfile.gettempdir(),
-                                          mo.get_request(),
-                                          [self.main_rec],
-                                          save_on_creation=False,
-                                          **self.kwargs)
+        self.elem_sim = ElementSimulation(
+            tempfile.gettempdir(), mo.get_request(), [self.main_rec],
+            save_on_creation=False, **self.kwargs)
 
     def test_get_full_name(self):
         self.assertEqual("Default", self.elem_sim.get_full_name())
@@ -369,6 +391,120 @@ class TestElementSimulation(unittest.TestCase):
         """
         self.assertRaises(AttributeError,
                           lambda: utils.slots_test(self.elem_sim))
+
+    @patch("modules.get_espe.GetEspe.__init__", return_value=None)
+    @patch("modules.get_espe.GetEspe.run", return_value=None)
+    def test_calculate_spectrum(self, mock_run, mock_get_espe):
+        """Tests that the file paths generated during energy spectrum
+        calculation are correct depending on the type of optimization.
+        """
+        self.main_rec.name = "main_rec"
+        optim_recoil = mo.get_recoil_element()
+        optim_recoil.prefix = "C"
+        optim_recoil.name = "optimized"
+        espe_recoil = mo.get_recoil_element()
+        espe_recoil.prefix = "H"
+        espe_recoil.name = "spectrum"
+
+        self.elem_sim.optimization_recoils = [optim_recoil]
+        self.elem_sim.simulation = mo.get_simulation()
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            self.elem_sim.directory = tmp_dir
+
+            # No optimization
+            rec_file = Path(
+                tmp_dir, f"{espe_recoil.get_full_name()}.recoil")
+            erd_file = Path(
+                tmp_dir, f"{self.main_rec.get_full_name()}.*.erd")
+            espe_file = Path(
+                tmp_dir, f"{espe_recoil.get_full_name()}.simu")
+
+            kwargs = {
+                "recoil_element": espe_recoil
+            }
+            self.assert_files_equal(
+                mock_get_espe, kwargs, rec_file, erd_file, espe_file)
+
+            # Recoil optimization
+            rec_file = Path(
+                tmp_dir, f"{espe_recoil.get_full_name()}.recoil")
+            erd_file = Path(
+                tmp_dir, f"{optim_recoil.prefix}-opt.*.erd")
+            espe_file = Path(
+                tmp_dir, f"{espe_recoil.get_full_name()}.simu")
+
+            kwargs = {
+                "recoil_element": espe_recoil,
+                "optimization_type": OptimizationType.RECOIL
+            }
+            self.assert_files_equal(
+                mock_get_espe, kwargs, rec_file, erd_file, espe_file)
+
+            # Fluence optimization
+            rec_file = Path(
+                tmp_dir, f"{espe_recoil.prefix}-optfl.recoil")
+            erd_file = Path(
+                tmp_dir, f"{self.main_rec.prefix}-optfl.*.erd")
+            espe_file = Path(
+                tmp_dir, f"{espe_recoil.prefix}-optfl.simu")
+
+            kwargs = {
+                "recoil_element": espe_recoil,
+                "optimization_type": OptimizationType.FLUENCE
+            }
+            self.assert_files_equal(
+                mock_get_espe, kwargs, rec_file, erd_file, espe_file)
+
+    def assert_files_equal(self, mock_get_espe, kwargs, rec_file, erd_file,
+                           espe_file):
+        _, file = self.elem_sim.calculate_espe(**kwargs)
+
+        args = mock_get_espe.call_args[1]
+        self.assertEqual(rec_file, args["recoil_file"])
+        self.assertEqual(erd_file, args["erd_file"])
+        self.assertEqual(espe_file, args["spectrum_file"])
+        self.assertEqual(espe_file, file)
+
+        self.assertTrue(rec_file.exists())
+        rec_file.unlink()
+
+    @patch("modules.element_simulation.ERDFileHandler.results_exist")
+    def test_elem_sim_state(self, mock_exist):
+        """Tests for ElementSimulation's state booleans.
+        """
+        mock_exist.side_effect = [False, True, True, True]
+        self.assertFalse(self.elem_sim.is_simulation_running())
+        self.assertFalse(self.elem_sim.is_simulation_finished())
+        self.assertFalse(self.elem_sim.is_optimization_running())
+        self.assertFalse(self.elem_sim.is_optimization_finished())
+
+        self.elem_sim._set_flags(True)
+
+        self.assertTrue(self.elem_sim.is_simulation_running())
+        self.assertFalse(self.elem_sim.is_simulation_finished())
+        self.assertFalse(self.elem_sim.is_optimization_running())
+        self.assertFalse(self.elem_sim.is_optimization_finished())
+
+        self.elem_sim._set_flags(False)
+
+        self.assertFalse(self.elem_sim.is_simulation_running())
+        self.assertTrue(self.elem_sim.is_simulation_finished())
+        self.assertFalse(self.elem_sim.is_optimization_running())
+        self.assertFalse(self.elem_sim.is_optimization_finished())
+
+        self.elem_sim._set_flags(True, OptimizationType.RECOIL)
+
+        self.assertFalse(self.elem_sim.is_simulation_running())
+        self.assertTrue(self.elem_sim.is_simulation_finished())
+        self.assertTrue(self.elem_sim.is_optimization_running())
+        self.assertFalse(self.elem_sim.is_optimization_finished())
+
+        self.elem_sim.optimized_fluence = 1
+        self.assertFalse(self.elem_sim.is_optimization_finished())
+
+        self.elem_sim._set_flags(False)
+        self.assertTrue(self.elem_sim.is_optimization_finished())
 
 
 def write_line(file):

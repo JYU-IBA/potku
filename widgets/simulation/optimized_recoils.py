@@ -79,16 +79,19 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
         self.pareto_front = RecoilAtomParetoFront(self)
 
         self.recoil_atoms.results_accepted.connect(self.results_accepted.emit)
-        self.pushButton.clicked.connect(self.switch_widget)
+        self.rb_group_optim.buttonToggled.connect(self.switch_widget)
 
-    def switch_widget(self):
-        self.stackedWidget: QtWidgets.QStackedWidget
-        if self.stackedWidget.currentIndex() == 1:
-            self.pushButton.setText("Show Pareto front")
+    def switch_widget(self, rb: QtWidgets.QRadioButton, b: bool):
+        """Switches between Recoil distribution and Pareto front views.
+        """
+        if not b:
+            return
+        if rb.text().startswith("Recoil"):
             self.stackedWidget.setCurrentIndex(0)
+            self.beamLabel.show()
         else:
-            self.pushButton.setText("Show distribution")
             self.stackedWidget.setCurrentIndex(1)
+            self.beamLabel.hide()
 
     def delete(self):
         """Delete variables and do clean up.
@@ -111,13 +114,11 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
             pass
         super().closeEvent(evnt)
 
-    def update_progress(self, evaluations):
+    def update_progress(self, evaluations, state):
         """
         Show calculated solutions in the widget.
         """
-        text = f"{evaluations} evaluations left. Running."
-        if self.element_simulation.optimization_mcerd_running:
-            text += " Simulating."
+        text = f"{evaluations} evaluations left. {state}."
         self.progressLabel.setText(text)
 
     def show_results(self, evaluations):
@@ -128,13 +129,21 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
         self.recoil_atoms.show_recoils()
 
     def on_next_handler(self, msg):
-        self.update_progress(msg["evaluations_left"])
+        if "evaluations_left" in msg:
+            self.update_progress(msg["evaluations_left"], msg["state"])
         if "pareto_front" in msg:
             self.pareto_front.update_pareto_front(msg["pareto_front"])
 
     def on_error_handler(self, err):
-        text = f"Error encountered: {err['error']} Optimization stopped."
+        try:
+            err_msg = err["error"]
+        except TypeError:
+            # rx error
+            err_msg = err
+
+        text = f"Error encountered: {err_msg} Optimization stopped."
         self.progressLabel.setText(text)
 
-    def on_completed_handler(self, msg):
-        self.show_results(msg["evaluations_done"])
+    def on_completed_handler(self, msg=None):
+        if msg is not None:
+            self.show_results(msg["evaluations_done"])

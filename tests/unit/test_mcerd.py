@@ -29,7 +29,8 @@ import rx
 import itertools
 
 import modules.mcerd as mcerd
-import modules.observing as observing
+
+from tests.mock_objects import TestObserver
 
 
 class TestParseOutput(unittest.TestCase):
@@ -81,74 +82,82 @@ class TestParseOutput(unittest.TestCase):
 
     def test_pipeline(self):
         output = [
-            b"Calculated 0 of 100 ions (0%)",
-            b"Calculated 100 of 100 ions (100%)",
-            b"Presimulation finished",
-            b"Energy would change too much in virtual detector",
-            b"Calculated 50 of 100 ions (50%)",
+            b"Initializing parameters.",
+            b"Reading input files.",
             b"Beam ion: Z=17, M=34.969",
-            b"Atom:   5 6.0000 12.000000",
+            b"Starting simulation.",
+            b"Calculated 20 of 100 ions (20%)",
+            b"Presimulation finished",
+            b"Calculated 50 of 100 ions (50%)",
+            b"Energy would change too much in virtual detector",
+            b"Opening target file xyz",
+            b"atom: 1 1.0, con: 0.048 6.920",
             b"angave 25.6119865",
             b"bar"
         ]
 
-        class Observer:
-            def __init__(self):
-                self.nexts = []
-                self.errs = []
-                self.compl_called = False
-
-            def on_next(self, x):
-                self.nexts.append(x)
-
-            def on_error(self, x):
-                self.errs.append(x)
-
-            def on_completed(self):
-                self.compl_called = True
-
-        obs = Observer()
+        obs = TestObserver()
         rx.from_iterable(iter(output)).pipe(
             mcerd.MCERD.get_pipeline(100, "foo"),
-            # observing.get_printer()
         ).subscribe(obs)
 
-        self.assertEqual(len(output) - 1, len(obs.nexts))
+        # Dictionaries should all contain the same keys
         self.assertTrue(all(
-            x.keys() == y.keys() for x, y in itertools.combinations(
-                obs.nexts, 2)
-        ))
+            obs.nexts[0].keys() == x.keys() for x in obs.nexts[1:])
+        )
+        # No errors in the given data set
         self.assertEqual([], obs.errs)
-        self.assertTrue(obs.compl_called)
+        # Stream should be completed
+        self.assertEqual(["done"], obs.compl)
+        # Input has been parsed into 7 items
+        self.assertEqual(7, len(obs.nexts))
 
         self.assertEqual({
             "presim": True,
-            "calculated": 100,
-            "total": 100,
-            "percentage": 100,
+            "calculated": 0,
+            "total": 0,
+            "percentage": 0,
             "seed": 100,
             "name": "foo",
-            "msg": ""
-        }, obs.nexts[1])
+            "msg": "Initializing parameters.",
+            "is_running": True
+        }, obs.nexts[0])
 
         self.assertEqual({
-            "presim": False,
-            "msg": "Presimulation finished",
+            "presim": True,
+            "msg": "Reading input files.\n"
+                   "Beam ion: Z=17, M=34.969\n"
+                   "Starting simulation.",
             "seed": 100,
             "name": "foo",
             "calculated": 0,
             "percentage": 0,
-            "total": 100
+            "total": 0,
+            "is_running": True
+        }, obs.nexts[1])
+
+        self.assertEqual({
+            "presim": True,
+            "msg": "",
+            "seed": 100,
+            "name": "foo",
+            "calculated": 20,
+            "percentage": 20,
+            "total": 100,
+            "is_running": True
         }, obs.nexts[2])
 
         self.assertEqual({
             "presim": False,
-            "msg": "angave 25.6119865",
+            "msg": "Opening target file xyz\n"
+                   "atom: 1 1.0, con: 0.048 6.920\n"
+                   "angave 25.6119865",
             "seed": 100,
             "name": "foo",
             "percentage": 100,
             "calculated": 50,
-            "total": 100
+            "total": 100,
+            "is_running": False
         }, obs.nexts[-1])
 
 
