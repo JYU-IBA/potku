@@ -552,6 +552,9 @@
           </item>
           <item row="0" column="1">
            <widget class="QDoubleSpinBox" name="min_conc_spinbox">
+            <property name="toolTip">
+             <string>This is the minimum concentration that points can be dragged to. You may still set points to zero by adjusting the 'y' value in the input field (when full edit is on).</string>
+            </property>
             <property name="decimals">
              <number>6</number>
             </property>
@@ -3174,8 +3177,8 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="cross_section_radios"/>
-  <buttongroup name="elementButtons"/>
   <buttongroup name="ion_division_radios"/>
+  <buttongroup name="elementButtons"/>
+  <buttongroup name="cross_section_radios"/>
  </buttongroups>
 </ui>

@@ -398,8 +398,17 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     update_element_simulation = pyqtSignal(ElementSimulation)
     recoil_name_changed = pyqtSignal(ElementSimulation, RecoilElement)
 
-    full_edit_on = bnd.bind("edit_lock_push_button", fget=_full_edit_from_btn,
-                            fset=_full_edit_to_btn)
+    # TODO change this to minimum_concentration_changed
+    full_edit_changed = pyqtSignal()
+
+    @property
+    def full_edit_on(self) -> bool:
+        return _full_edit_from_btn(self, "edit_lock_push_button")
+
+    @full_edit_on.setter
+    def full_edit_on(self, value: bool):
+        _full_edit_to_btn(self, "edit_lock_push_button", value)
+        self.full_edit_changed.emit()
 
     def __init__(self, parent, simulation: Simulation, target: Target,
                  tab: BaseTab, icon_manager, settings: GlobalSettings,
@@ -573,6 +582,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             lambda elem_sim: self.element_manager.update_element_simulation(
                 elem_sim, spectra_changed=self.recoil_dist_changed,
                 recoil_name_changed=self.recoil_name_changed))
+
+    def get_minimum_concentration(self) -> float:
+        """Returns the minimum concentration that points can be dragged to.
+        """
+        return self._settings.get_minimum_concentration()
 
     @staticmethod
     def format_coord(x, y):
@@ -1352,7 +1366,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.mpl_toolbar.addSeparator()
 
         # Coordinates widget
-        self.coordinates_widget = PointCoordinatesWidget(self)
+        self.coordinates_widget = PointCoordinatesWidget(
+            self, full_edit_changed=self.full_edit_changed)
         self.coordinates_action = self.mpl_toolbar.addWidget(
             self.coordinates_widget)
 
@@ -1873,7 +1888,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         dr_ps = self.dragged_points
 
         new_coords = [
-            [x, max(self._settings.get_minimum_concentration(), y)]
+            [x, max(self.get_minimum_concentration(), y)]
             for x, y in self.get_new_checked_coordinates(event)
         ]
 
@@ -1935,6 +1950,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """Returns checked new coordinates for dragged points.
         They have been checked for neighbor or axis limit collisions.
         """
+        # TODO needs refactor
         dr_ps = self.dragged_points
 
         leftmost_dr_p = dr_ps[0]
@@ -1983,7 +1999,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.current_element_simulation.recoil_elements[0]:
             y_min = 0.0001
         else:
-            y_min = self.current_element_simulation.y_min
+            if self.current_element_simulation.get_full_edit_on():
+                y_min = 0.0
+            else:
+                y_min = 0.0001
         if new_coords[self.lowest_dr_p_i][1] < y_min:
             new_coords[self.lowest_dr_p_i][1] = y_min
             for i in range(0, len(dr_ps)):
