@@ -1,14 +1,33 @@
 # Potku
 
-Potku is an analysis software for time-of-flight elastic recoil detection 
-analysis (ToF-ERDA) and simulation. The software is being developed for Windows, 
-Linux and Mac.
+Potku is a simulation and analysis software for time-of-flight elastic recoil
+detection analysis (ToF-ERDA). The software can be run on Windows, Linux and
+macOS.
 
-This repository contains the Python source code for Potku's graphical user 
-interface as well as the source code for external C programs that perform 
-most of the number crunching.
+This repository contains the Python source code for Potku's graphical user
+interface (Qt5) as well as the source code for programs that perform most of
+the number crunching, written in C. Some of these software are in separate
+submodules, please see the instructions below if you want to run the
+development version.
 
-## Getting started with development
+Ready to run binary packages are available are available on the 
+[official website](https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/).
+
+    Copyright (C) 2013-2020 Potku developers
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    
+Please refer to the [full license](LICENSE) for details.
+
+# Getting started with development
 
 First step is to install Python 3.6 along with pip package installer. Make 
 sure they are added to your PATH. Then install Pipenv:
@@ -40,17 +59,17 @@ command line:
 $ python run_potku.py
 ````
 
-## Compiling the external C programs
+## Compiling the C programs
 
 The graphical user interface won't be of much use without the C programs that 
-perform analysis and simulation. In order to compile them, following tools 
+perform the depth profiling and simulation. In order to compile them, following tools 
 must be installed:
 
 - make
 - gcc
 - Requirements for [Jibal](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#minimum-requirements)
 
-#### Linux and MacOS
+#### Linux and macOS
 
 Install cmake and gsl using the package manager of your distribution or 
 homebrew. Then run
@@ -59,7 +78,7 @@ homebrew. Then run
 $ ./build.sh
 ````
 
-to compile all programs.
+to compile all programs. Note that this script has no error checking, if you encounter issues please check that all steps of the build have been successful.
 
 #### Windows
 
@@ -108,4 +127,4 @@ $ pyinstaller potku_[win or unix].spec
 
 ## Licence
 
-Potku is licensed under GPL-2.0. See 'LICENCE' for details.
+Potku is licensed under GNU General Public License. See [LICENSE](LICENSE) for details.
