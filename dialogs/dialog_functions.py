@@ -454,7 +454,10 @@ def set_btn_color(button: QtWidgets.QPushButton, color: QtGui.QColor, colormap,
     """
     button.setStyleSheet(get_btn_stylesheet(color))
 
-    if color.name() == colormap[element]:
-        button.setText(f"Automatic [{element}]")
-    else:
+    try:
+        if color.name() == colormap[element]:
+            button.setText(f"Automatic [{element}]")
+        else:
+            button.setText("")
+    except KeyError:
         button.setText("")
