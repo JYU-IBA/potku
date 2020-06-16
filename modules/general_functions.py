@@ -39,6 +39,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+import functools
 
 from timeit import default_timer as timer
 from pathlib import Path
@@ -55,6 +56,7 @@ def stopwatch(log_file=None):
     as an argument.
     """
     def outer(func):
+        @functools.wraps(func)
         def inner(*args, **kwargs):
             start = timer()
             res = func(*args, **kwargs)

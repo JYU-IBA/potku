@@ -26,6 +26,7 @@ __version__ = "2.0"
 
 import abc
 import platform
+import functools
 
 from pathlib import Path
 from typing import Sequence
@@ -120,6 +121,7 @@ def process_event_loop(func):
     """Decorator that processes QCoreApplication's event loop.
     after the function has been called.
     """
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         res = func(*args, **kwargs)
         _process_event_loop()
@@ -414,6 +416,7 @@ def block_treewidget_signals(func):
     """Decorator that blocks signals from an instance's treeWidget so that
     the tree can be edited.
     """
+    @functools.wraps(func)
     def wrapper(instance, *args, **kwargs):
         instance.treeWidget.blockSignals(True)
         res = func(instance, *args, **kwargs)

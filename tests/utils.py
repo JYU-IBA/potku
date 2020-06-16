@@ -7,7 +7,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -35,6 +35,7 @@ import logging
 import platform
 import warnings
 import itertools
+import functools
 
 from pathlib import Path
 from string import Template
@@ -79,6 +80,7 @@ def change_wd_to_root(func):
     old_wd = Path.cwd()
     root = get_root_folder()
 
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         # Change the dir, run the func and change back in the finally
         # block
@@ -130,7 +132,8 @@ def check_md5_for_files(file_paths, checksum):
 
 def verify_files(file_paths, checksum, msg=None):
     """Decorator function that can be used to verify files before
-    running a test."""
+    running a test.
+    """
     b, reason = check_md5_for_files(file_paths, checksum)
     if b:
         return lambda func: func

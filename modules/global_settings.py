@@ -31,6 +31,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import configparser
+import functools
 
 from .enums import CrossSection
 from .enums import IonDivision
@@ -48,10 +49,11 @@ def handle_exceptions(return_value=None, attr=None):
             given attribute. This attribute must belong to the instance whose
             method is being decorated.
     """
-    def outer(f):
+    def outer(func):
+        @functools.wraps(func)
         def inner(instance, *args, **kwargs):
             try:
-                return f(instance, *args, **kwargs)
+                return func(instance, *args, **kwargs)
             except (configparser.NoSectionError, configparser.NoOptionError,
                     KeyError, ValueError, AttributeError):
                 if return_value is not None:
@@ -645,4 +647,3 @@ class GlobalSettings:
             "Uus": "red",
             "Uuo": "red"
         }
-
