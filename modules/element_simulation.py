@@ -77,8 +77,7 @@ _SETTINGS_MAP = {
 
 class ElementSimulation(Observable, Serializable, AdjustableSettings,
                         MCERDParameterContainer):
-    """
-    Class for handling the element specific simulation. Can have multiple
+    """Class for handling the element specific simulation. Can have multiple
     MCERD objects.
     """
 
@@ -91,7 +90,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 "channel_width", "detector", "__erd_filehandler", \
                 "description", "run", "name", \
                 "use_default_settings", "simulation", \
-                "__full_edit_on", "y_min", "main_recoil",\
+                "__full_edit_on", "main_recoil",\
                 "optimization_recoils", "optimization_widget", \
                 "_optimization_running", "optimized_fluence", \
                 "sample", "__cts", "_simulation_running", "_running_event"
@@ -233,30 +232,21 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         if self.is_simulation_finished():
             self.__full_edit_on = False
-            self.y_min = 0.0001
         else:
             self.__full_edit_on = True
-            self.y_min = 0.0
 
     def unlock_edit(self):
+        """Unlock full edit.
         """
-        Unlock full edit.
-
-        Also resets ElementSimulation
-        """
-        self.y_min = 0.0
         self.__full_edit_on = True
 
     def lock_edit(self):
+        """Lock full edit.
         """
-        Lock full edit.
-        """
-        self.y_min = 0.0001
         self.__full_edit_on = False
 
     def get_full_edit_on(self):
-        """
-        Get whether full edit is on or not.
+        """Get whether full edit is on or not.
 
         Return:
             True of False.

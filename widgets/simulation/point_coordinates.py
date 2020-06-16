@@ -38,7 +38,7 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
     Class for handling point coordinates spin boxes.
     """
 
-    def __init__(self, parent, optimize=False):
+    def __init__(self, parent, optimize=False, full_edit_changed=None):
         """
         Initializes the widget.
 
@@ -92,7 +92,8 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
         self.y_coordinate_box.setDecimals(4)
         self.y_coordinate_box.setMaximum(1000000000000)
         self.y_coordinate_box.setMaximumWidth(62)
-        self.y_coordinate_box.setMinimum(0.0)
+        self.y_coordinate_box.setValue(0.0001)
+        self._set_y_min()
         self.y_coordinate_box.setKeyboardTracking(False)
         if not optimize:
             self.y_coordinate_box.valueChanged.connect(
@@ -124,9 +125,30 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
 
         self.setLayout(vertical_layout)
 
-    def __multiply_coordinate(self, spinbox):
+        self._full_edit_changed = full_edit_changed
+        if full_edit_changed is not None:
+            full_edit_changed.connect(self._set_y_min)
+
+    def closeEvent(self, event):
+        try:
+            self._full_edit_changed.disconnect(self._set_y_min)
+        except AttributeError:
+            pass
+        super().closeEvent(event)
+
+    def _set_y_min(self):
+        """Sets the minimum value of y spinbox depending on whether full edit
+        is on or not.
         """
-        Multiply the spinbox's value with the value in clipboard.
+        if self.parent.full_edit_on:
+            self.y_coordinate_box.setMinimum(0.0)
+        else:
+            if self.y_coordinate_box.value() > 0:
+                self.y_coordinate_box.setMinimum(
+                    self.parent.get_minimum_concentration())
+
+    def __multiply_coordinate(self, spinbox):
+        """Multiply the spinbox's value with the value in clipboard.
 
         Args:
             spinbox: Spinbox whose value is multiplied.

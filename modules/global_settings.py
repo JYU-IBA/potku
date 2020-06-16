@@ -506,6 +506,20 @@ class GlobalSettings:
         """
         self.__config[self._SIMULATION]["ion_division"] = str(int(value))
 
+    @handle_exceptions(return_value=0.0001)
+    def get_minimum_concentration(self) -> float:
+        """Returns the minimum concentration that can be set in recoil atom
+        distribution.
+        """
+        return self.__config.getfloat(self._SIMULATION, "min_concentration")
+
+    def set_minimum_concentration(self, value: float):
+        """Sets the minimum concentration that can be set in recoil atom
+        distribution. Must be a positive value.
+        """
+        if value > 0:
+            self.__config[self._SIMULATION]["min_concentration"] = str(value)
+
     @staticmethod
     def get_default_colors():
         """Returns a dictionary containing default color values for all

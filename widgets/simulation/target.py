@@ -33,6 +33,9 @@ import time
 
 from pathlib import Path
 from modules.element_simulation import ElementSimulation
+from modules.simulation import Simulation
+from modules.global_settings import GlobalSettings
+from modules.target import Target
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -51,8 +54,9 @@ class TargetWidget(QtWidgets.QWidget):
     """
     results_accepted = pyqtSignal(ElementSimulation)
 
-    def __init__(self, tab, simulation, target, icon_manager,
-                 progress=None, statusbar=None, **kwargs):
+    def __init__(self, tab, simulation: Simulation, target: Target,
+                 icon_manager, settings: GlobalSettings, progress=None,
+                 statusbar=None, **kwargs):
         """Initializes thw widget that can be used to define target composition
         and
         recoil atom distribution.
@@ -82,7 +86,7 @@ class TargetWidget(QtWidgets.QWidget):
             progress.report(50)
 
         self.recoil_distribution_widget = RecoilAtomDistributionWidget(
-            self, self.simulation, self.target, tab, icon_manager,
+            self, self.simulation, self.target, tab, icon_manager, settings,
             statusbar=self.statusbar, **kwargs)
         self.results_accepted.connect(
             self.recoil_distribution_widget.update_element_simulation.emit)

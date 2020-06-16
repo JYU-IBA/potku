@@ -74,6 +74,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
     presim_ions = bnd.bind("presim_spinbox")
     sim_ions = bnd.bind("sim_spinbox")
     ion_division = bnd.bind("ion_division_radios")
+    min_concentration = bnd.bind("min_conc_spinbox")
 
     coinc_count = bnd.bind("line_coinc_count")
 
@@ -108,6 +109,8 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.cancelButton.clicked.connect(self.close)
         buttons = self.findChild(QtWidgets.QButtonGroup, "elementButtons")
         buttons.buttonClicked.connect(self.__change_element_color)
+
+        self.min_conc_spinbox.setLocale(QtCore.QLocale.c())
 
         if platform.system() == "Darwin":
             self.gridLayout.setVerticalSpacing(15)
@@ -170,6 +173,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.presim_ions = self.settings.get_min_presim_ions()
         self.sim_ions = self.settings.get_min_simulation_ions()
         self.ion_division = self.settings.get_ion_division()
+        self.min_concentration = self.settings.get_minimum_concentration()
 
         self.save_window_geometries = gutils.get_potku_setting(
             BaseTab.SAVE_WINDOW_GEOM_KEY, True
@@ -218,6 +222,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.settings.set_min_presim_ions(self.presim_ions)
         self.settings.set_min_simulation_ions(self.sim_ions)
         self.settings.set_ion_division(self.ion_division)
+        self.settings.set_minimum_concentration(self.min_concentration)
 
         gutils.set_potku_setting(
             BaseTab.SAVE_WINDOW_GEOM_KEY, self.save_window_geometries)
