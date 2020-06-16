@@ -595,6 +595,7 @@ class Potku(QtWidgets.QMainWindow):
 
             if type(tab) is SimulationTabWidget:
                 kwargs = {
+                    "settings": self.settings,
                     "settings_updated": self.settings_updated,
                     "ion_division": self.settings.get_ion_division(),
                     "min_presim_ions": self.settings.get_min_presim_ions(),
@@ -602,9 +603,9 @@ class Potku(QtWidgets.QMainWindow):
                 }
             else:
                 kwargs = {}
-            tab.load_data(self.settings, progress=sbh.reporter.get_sub_reporter(
-                lambda x: 0.9 * x
-            ), **kwargs)
+            tab.load_data(
+                progress=sbh.reporter.get_sub_reporter(lambda x: 0.9 * x),
+                **kwargs)
 
             name = tab.obj.name
             if type(tab) is MeasurementTabWidget:
@@ -1167,7 +1168,7 @@ class Potku(QtWidgets.QMainWindow):
                 tab.data_loaded = load_data
                 if load_data:
                     tab.add_simulation_target_and_recoil(
-                        self.settings,
+                        settings=self.settings,
                         ion_division=self.settings.get_ion_division(),
                         min_presim_ions=self.settings.get_min_presim_ions(),
                         min_sim_ions=self.settings.get_min_simulation_ions(),

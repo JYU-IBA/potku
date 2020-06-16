@@ -226,7 +226,7 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
     def __open_optimization_dialog(self):
         OptimizationDialog(self.simulation, self)
 
-    def load_data(self, settings, progress=None, **kwargs):
+    def load_data(self, progress=None, **kwargs):
         """Loads the data belonging to the Simulation into view.
         """
         if not self.data_loaded:
@@ -240,7 +240,7 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
                 sub_progress = None
 
             self.add_simulation_target_and_recoil(
-                settings, progress=sub_progress, **kwargs)
+                progress=sub_progress, **kwargs)
 
             if progress is not None:
                 sub_progress = progress.get_sub_reporter(
