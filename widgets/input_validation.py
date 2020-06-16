@@ -34,11 +34,12 @@ __version__ = "2.0"
 
 import re
 
-from PyQt5.QtWidgets import QLineEdit
-from PyQt5.QtGui import QValidator
+from PyQt5 import QtWidgets
+from PyQt5 import QtGui
+from PyQt5 import QtCore
 
 
-class InputValidator(QValidator):
+class InputValidator(QtGui.QValidator):
     """Validator to check the validity of user inputs.
     
     Accepts double values with scientific notation (i.e. 0.232, 12.5e-12) and
@@ -104,12 +105,51 @@ class InputValidator(QValidator):
                 return ""
 
 
-def check_text(input_field: QLineEdit, qwidget=None):
+class ScientificValidator(QtGui.QDoubleValidator):
+    """Validator for scientific notation.
+    """
+    def __init__(self, *args, accepted=None, intermediate=None, invalid=None):
+        """Initializes a new ScientificValidator.
+
+        Args:
+            *args: positional arguments passed down to QDoubleValidator
+            accepted: function that is called if validation result is
+                QDoubleValidator.Acceptable
+            intermediate: function that is called if validation result is
+                QDoubleValidator.Intermediate
+            invalid: function that is called if validation result is
+                QDoubleValidator.Invalid
+        """
+        super().__init__(*args)
+        self.setNotation(QtGui.QDoubleValidator.ScientificNotation)
+        self.setLocale(QtCore.QLocale.c())
+        self._accepted = accepted
+        self._intermediate = intermediate
+        self._invalid = invalid
+
+    def validate(self, value: str, position: int):
+        """Overrides QDoubleValidator's validate method.
+        """
+        state, inp, pos = super().validate(value, position)
+        if state == QtGui.QDoubleValidator.Acceptable:
+            if self._accepted is not None:
+                self._accepted()
+        elif state == QtGui.QDoubleValidator.Intermediate:
+            if self._intermediate is not None:
+                self._intermediate()
+        else:
+            if self._invalid is not None:
+                self._invalid()
+        return state, inp, pos
+
+
+def check_text(input_field: QtWidgets.QLineEdit, qwidget=None):
     """Checks if the given QLineEdit input field contains text. If not,
     field's background is set red.
 
     Args:
         input_field: QLineEdit object.
+        qwidget: parent of input_field or None
 
     Return:
         True for white, False for red.
@@ -126,7 +166,7 @@ def check_text(input_field: QLineEdit, qwidget=None):
         return True
 
 
-def set_input_field_red(input_field):
+def set_input_field_red(input_field: QtWidgets.QWidget):
     """Sets the background of given input field red.
 
     Args:
@@ -135,13 +175,22 @@ def set_input_field_red(input_field):
     input_field.setStyleSheet("background-color: %s" % "#f6989d")
 
 
-def set_input_field_white(input_field):
+def set_input_field_white(input_field: QtWidgets.QWidget):
     """Sets the background of given input field white.
 
     Args:
         input_field: Qt widget that supports Qt Style Sheets.
     """
     input_field.setStyleSheet("background-color: %s" % "#ffffff")
+
+
+def set_input_field_yellow(input_field: QtWidgets.QWidget):
+    """Sets the background of given input field yellow.
+
+    Args:
+        input_field: Qt widget that supports Qt Style Sheets.
+    """
+    input_field.setStyleSheet("background-color: %s" % "#ebde34")
 
 
 def validate_text_input(text, regex):
@@ -167,7 +216,7 @@ def validate_text_input(text, regex):
         return text
 
 
-def sanitize_file_name(line_edit: QLineEdit):
+def sanitize_file_name(line_edit: QtWidgets.QLineEdit):
     """Sanitizes the text in the given input so that it is okay to use in a
     file name.
 

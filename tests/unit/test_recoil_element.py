@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -52,7 +52,6 @@ class TestRecoilElement(unittest.TestCase):
             description="foo",
             name="bar",
             rec_type="rec",
-            multiplier=2,
             reference_density=3,
             channel_width=self.ch_width,
             modification_time=self.timestamp

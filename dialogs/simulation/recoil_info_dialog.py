@@ -25,7 +25,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import time
@@ -59,10 +59,6 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
     reference_density = bnd.bind("scientific_spinbox")
 
     @property
-    def multiplier(self):
-        return self.scientific_spinbox.multiplier
-
-    @property
     def color(self):
         return self.tmp_color.name()
 
@@ -83,9 +79,8 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         self.colormap = colormap
 
         value = self.recoil_element.reference_density
-        multiplier = self.recoil_element.multiplier
-        self.scientific_spinbox = ScientificSpinBox(value, multiplier,
-                                                    0.01, 99.99e22)
+        self.scientific_spinbox = ScientificSpinBox(
+            value=value, minimum=0.01, maximum=99.99e22)
 
         uic.loadUi(Path("ui_files", "ui_recoil_info_dialog.ui"), self)
 
@@ -129,22 +124,22 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         Return:
             True or False.
         """
-        if self.scientific_spinbox.check_min_and_max():
+        try:
+            self.scientific_spinbox.get_value()
             return True
-        return False
+        except TypeError:
+            return False
 
     def __accept_settings(self):
         """Function for accepting the current settings and closing the dialog
         window.
         """
         if not self.fields_are_valid or not self.__density_valid():
-            QtWidgets.QMessageBox.critical(self, "Warning",
-                                           "Some of the setting values are "
-                                           "invalid.\n" +
-                                           "Please input values in fields "
-                                           "indicated in red.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.critical(
+                self, "Warning",
+                "Some of the setting values are invalid.\n" +
+                "Please input values in fields indicated in red.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             return
 
         if self.name != self.recoil_element.name:
@@ -153,11 +148,9 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
                              self.element_simulation.recoil_elements):
                 QtWidgets.QMessageBox.critical(
                     self, "Warning",
-                    "Name of the recoil element is "
-                    "already in use. Please use a "
-                    "different name",
-                    QtWidgets.QMessageBox.Ok,
-                    QtWidgets.QMessageBox.Ok)
+                    "Name of the recoil element is already in use. Please use "
+                    "a different name",
+                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 return
 
         # If current recoil is used in a running simulation
@@ -174,8 +167,7 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
                     "stopped.\n\n"
                     "Do you want to save changes anyway?",
                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel,
-                    QtWidgets.QMessageBox.Cancel)
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
                 if reply == QtWidgets.QMessageBox.No or reply == \
                         QtWidgets.QMessageBox.Cancel:
                     return

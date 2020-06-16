@@ -141,22 +141,22 @@ class TestSerialization(unittest.TestCase):
 
     @staticmethod
     def assert_request_values_are_same(request: Request):
-        utils.assert_are_same(
+        utils.assert_all_same(
             request,
             request.default_measurement.request,
             request.default_simulation.request
         )
-        utils.assert_are_same(
+        utils.assert_all_same(
             request.default_detector,
             request.default_measurement.detector,
             request.default_simulation.detector
         )
-        utils.assert_are_same(
+        utils.assert_all_same(
             request.default_run,
             request.default_measurement.run,
             request.default_simulation.run
         )
-        utils.assert_are_same(
+        utils.assert_all_same(
             request.default_target,
             request.default_measurement.target,
             request.default_simulation.target

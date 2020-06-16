@@ -36,6 +36,7 @@ from pathlib import Path
 
 from widgets.binding import PropertyBindingWidget
 from widgets.gui_utils import QtABCMeta
+from widgets.scientific_spinbox import ScientificSpinBox
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -201,4 +202,7 @@ class OptimizationFluenceParameterWidget(OptimizationParameterWidget):
             kwargs: property values to be shown in the widget.
         """
         ui_file = Path("ui_files", "ui_optimization_fluence_params.ui")
+        self.fluenceDoubleSpinBox = ScientificSpinBox(10e12)
         super().__init__(ui_file, **kwargs)
+        self.fluence_form_layout.addRow(
+            "Upper limit", self.fluenceDoubleSpinBox)

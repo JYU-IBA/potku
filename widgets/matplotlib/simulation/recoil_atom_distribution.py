@@ -31,15 +31,13 @@ __version__ = "2.0"
 import matplotlib
 import os
 
-import modules.math_functions as mf
 import modules.general_functions as gf
 import dialogs.dialog_functions as df
 import widgets.binding as bnd
 
 from pathlib import Path
+from typing import Optional
 
-from dialogs.simulation.element_simulation_settings import \
-    ElementSimulationSettingsDialog
 from dialogs.simulation.multiply_area import MultiplyAreaDialog
 from dialogs.simulation.recoil_element_selection import \
     RecoilElementSelectionDialog
@@ -56,7 +54,6 @@ from modules.recoil_element import RecoilElement
 from modules.element_simulation import ElementSimulation
 from modules.simulation import Simulation
 from modules.target import Target
-from modules.global_settings import GlobalSettings
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
@@ -420,12 +417,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.tab = tab
         self.simulation = simulation
 
-        self.current_element_simulation: ElementSimulation = None
-        self.current_recoil_element: RecoilElement = None
-        self.element_manager = ElementManager(self.tab, self,
-                                              self.__icon_manager,
-                                              self.simulation,
-                                              statusbar)
+        self.current_element_simulation: Optional[ElementSimulation] = None
+        self.current_recoil_element: Optional[RecoilElement] = None
+        self.element_manager = ElementManager(
+            self.tab, self, self.__icon_manager, self.simulation, statusbar)
         self.target = target
         self.layer_colors = [(0.9, 0.9, 0.9), (0.85, 0.85, 0.85)]
 
@@ -631,16 +626,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Open recoil element info.
         """
-        dialog = RecoilInfoDialog(self.current_recoil_element, self.colormap,
-                                  self.current_element_simulation)
+        dialog = RecoilInfoDialog(
+            self.current_recoil_element, self.colormap,
+            self.current_element_simulation)
         if dialog.isOk:
             new_values = dialog.get_properties()
-            # reference density is split into value part and multiplier part
-            # to maintain backwards compatibility.
-            ref_dens, multi = mf.split_scientific_notation(
-                new_values["reference_density"])
-            new_values["reference_density"] = ref_dens
-            new_values["multiplier"] = multi
             try:
                 old_recoil_name = self.current_recoil_element.name
                 self.current_element_simulation.update_recoil_element(
@@ -1053,8 +1043,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             "Name: " + self.current_recoil_element.name)
         self.parent.referenceDensityLabel.setText(
             "Reference density: " + "{0:1.2e}".format(
-                self.current_recoil_element.reference_density *
-                self.current_recoil_element.multiplier) + " at./cm\xb3"
+                self.current_recoil_element.reference_density) + " at./cm\xb3"
         )
 
     def recoil_element_info_on_switch(self):

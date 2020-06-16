@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>373</width>
-    <height>403</height>
+    <width>457</width>
+    <height>915</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -41,9 +41,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-141</y>
-        <width>417</width>
-        <height>821</height>
+        <y>0</y>
+        <width>485</width>
+        <height>908</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -435,7 +435,7 @@ restart the application.</string>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_11">
             <item>
-             <layout class="QFormLayout" name="formLayout_4">
+             <layout class="QFormLayout" name="run_form_layout">
               <item row="0" column="0">
                <widget class="QLabel" name="beamSpotSizeLabel">
                 <property name="text">
@@ -524,6 +524,13 @@ restart the application.</string>
                 </property>
                </widget>
               </item>
+              <item row="1" column="1">
+               <widget class="QDoubleSpinBox" name="divergenceDoubleSpinBox">
+                <property name="maximum">
+                 <double>100000000000000004384584304507619735463404765184.000000000000000</double>
+                </property>
+               </widget>
+              </item>
               <item row="2" column="0">
                <widget class="QLabel" name="label_23">
                 <property name="text">
@@ -552,51 +559,13 @@ restart the application.</string>
                </widget>
               </item>
               <item row="3" column="0">
-               <widget class="QLabel" name="label_13">
-                <property name="text">
-                 <string>Fluence:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="4" column="0">
                <widget class="QLabel" name="label_12">
                 <property name="text">
                  <string>Current [nA]:</string>
                 </property>
                </widget>
               </item>
-              <item row="5" column="0">
-               <widget class="QLabel" name="label">
-                <property name="text">
-                 <string>Charge [μC]:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="6" column="0">
-               <widget class="QLabel" name="label_11">
-                <property name="text">
-                 <string>Time [s]:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QDoubleSpinBox" name="divergenceDoubleSpinBox">
-                <property name="maximum">
-                 <double>100000000000000004384584304507619735463404765184.000000000000000</double>
-                </property>
-               </widget>
-              </item>
               <item row="3" column="1">
-               <widget class="QDoubleSpinBox" name="fluenceDoubleSpinBox">
-                <property name="maximum">
-                 <double>10000000000000000000.000000000000000</double>
-                </property>
-                <property name="value">
-                 <double>1000000000000.000000000000000</double>
-                </property>
-               </widget>
-              </item>
-              <item row="4" column="1">
                <widget class="QDoubleSpinBox" name="currentDoubleSpinBox">
                 <property name="decimals">
                  <number>2</number>
@@ -609,14 +578,28 @@ restart the application.</string>
                 </property>
                </widget>
               </item>
-              <item row="5" column="1">
+              <item row="4" column="0">
+               <widget class="QLabel" name="label">
+                <property name="text">
+                 <string>Charge [μC]:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="1">
                <widget class="QDoubleSpinBox" name="runChargeDoubleSpinBox">
                 <property name="decimals">
                  <number>3</number>
                 </property>
                </widget>
               </item>
-              <item row="6" column="1">
+              <item row="5" column="0">
+               <widget class="QLabel" name="label_11">
+                <property name="text">
+                 <string>Time [s]:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="1">
                <widget class="QDoubleSpinBox" name="timeDoubleSpinBox">
                 <property name="maximum">
                  <double>9999999999999999538762658202121142272.000000000000000</double>
