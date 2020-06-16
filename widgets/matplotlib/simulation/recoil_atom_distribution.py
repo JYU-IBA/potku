@@ -54,6 +54,7 @@ from modules.recoil_element import RecoilElement
 from modules.element_simulation import ElementSimulation
 from modules.simulation import Simulation
 from modules.target import Target
+from modules.global_settings import GlobalSettings
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
@@ -378,14 +379,17 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     Using this widget, the user can edit the recoil atom distribution
     for the simulation.
     """
-    color_scheme = {"Default color": "jet",
-                    "Greyscale": "Greys",
-                    "Greyscale (inverted)": "gray"}
+    color_scheme = {
+        "Default color": "jet",
+        "Greyscale": "Greys",
+        "Greyscale (inverted)": "gray"
+    }
 
-    tool_modes = {0: "",
-                  1: "pan/zoom",  # Matplotlib's drag
-                  2: "zoom rect"  # Matplotlib's zoom
-                  }
+    tool_modes = {
+        0: "",
+        1: "pan/zoom",  # Matplotlib's drag
+        2: "zoom rect"  # Matplotlib's zoom
+    }
     # Signal that is emitted when recoil distribution changes
     recoil_dist_changed = pyqtSignal(RecoilElement, ElementSimulation)
     # Signal that is emitted when limit values are changed
@@ -398,7 +402,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             fset=_full_edit_to_btn)
 
     def __init__(self, parent, simulation: Simulation, target: Target,
-                 tab: BaseTab, icon_manager, statusbar=None, **kwargs):
+                 tab: BaseTab, icon_manager, settings: GlobalSettings,
+                 statusbar=None, **kwargs):
         """Inits recoil atom distribution widget.
 
         Args:
@@ -408,7 +413,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             tab: TODO
             icon_manager: An IconManager class object.
         """
-
+        # TODO set minimum value of spinbox when full edit is off
+        # TODO change the button text when full edit is on (or use radio btns)
         super().__init__(parent)
         self.parent = parent
         self.canvas.manager.set_title("Recoil Atom Distribution")
@@ -416,6 +422,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.__icon_manager = icon_manager
         self.tab = tab
         self.simulation = simulation
+        self._settings = settings
 
         self.current_element_simulation: Optional[ElementSimulation] = None
         self.current_recoil_element: Optional[RecoilElement] = None
@@ -505,22 +512,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         # Span selection tool (used to select all points within a range
         # on the x axis)
-        self.span_selector = SpanSelector(self.axes, self.on_span_select,
-                                          'horizontal', useblit=True,
-                                          rectprops=dict(alpha=0.5,
-                                                         facecolor='red'),
-                                          button=1, span_stays=True,
-                                          onmove_callback=self.on_span_motion)
+        self.span_selector = SpanSelector(
+            self.axes, self.on_span_select, "horizontal", useblit=True,
+            rectprops=dict(alpha=0.5, facecolor='red'), button=1,
+            span_stays=True, onmove_callback=self.on_span_motion)
         self.span_selector.set_active(False)
 
-        self.rectangle_selector = RectangleSelector(self.axes,
-                                                    self.on_rectangle_select,
-                                                    useblit=True,
-                                                    drawtype='box',
-                                                    rectprops=dict(
-                                                        alpha=0.5,
-                                                        facecolor='red'),
-                                                    button=3)
+        self.rectangle_selector = RectangleSelector(
+            self.axes, self.on_rectangle_select, useblit=True, drawtype="box",
+            rectprops=dict(alpha=0.5, facecolor='red'), button=3)
 
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
@@ -1282,21 +1282,17 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 color=self.current_recoil_element.color, marker="o",
                 markersize=10, linestyle="None")
 
-            self.markers_selected, = self.axes.plot(0, 0, marker="o",
-                                                    markersize=10,
-                                                    linestyle="None",
-                                                    color='yellow',
-                                                    visible=False)
+            self.markers_selected, = self.axes.plot(
+                0, 0, marker="o", markersize=10, linestyle="None",
+                color="yellow", visible=False)
         else:
             self.lines, = self.axes.plot(0, 0, color="blue", visible=False)
-            self.markers, = self.axes.plot(0, 0, color="blue", marker="o",
-                                           markersize=10, linestyle="None",
-                                           visible=False)
-            self.markers_selected, = self.axes.plot(0, 0, marker="o",
-                                                    markersize=10,
-                                                    linestyle="None",
-                                                    color='yellow',
-                                                    visible=False)
+            self.markers, = self.axes.plot(
+                0, 0, color="blue", marker="o", markersize=10, linestyle="None",
+                visible=False)
+            self.markers_selected, = self.axes.plot(
+                0, 0, marker="o", markersize=10, linestyle="None",
+                color="yellow", visible=False)
 
         self.axes.set_xlim(-1, 40)
         self.axes.set_ylim(-0.1, 2)
@@ -1876,13 +1872,16 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         dr_ps = self.dragged_points
 
-        new_coords = self.get_new_checked_coordinates(event)
+        new_coords = [
+            [x, max(self._settings.get_minimum_concentration(), y)]
+            for x, y in self.get_new_checked_coordinates(event)
+        ]
 
         # Check if the point's y coordinate is zero or it is the last or
         # first point. Move accordingly
-        # When full edit is not on, zero vy values stay zero, and start and
+        # When full edit is not on, zero y values stay zero, and start and
         # end points can only move in y direction
-        for i in range(0, len(dr_ps)):
+        for i in range(len(dr_ps)):
             # End point
             if dr_ps[i] == self.current_recoil_element.get_points()[-1] \
                     and (not self.full_edit_on or self.current_recoil_element

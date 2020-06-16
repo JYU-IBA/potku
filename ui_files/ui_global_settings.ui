@@ -32,7 +32,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="tab_6">
       <attribute name="title">
@@ -491,14 +491,14 @@
           <string>Ion counts</string>
          </property>
          <layout class="QFormLayout" name="formLayout_5">
-          <item row="0" column="0">
+          <item row="1" column="0">
            <widget class="QLabel" name="label">
             <property name="text">
              <string>Minimum number of presimulation ions</string>
             </property>
            </widget>
           </item>
-          <item row="0" column="1">
+          <item row="1" column="1">
            <widget class="QSpinBox" name="presim_spinbox">
             <property name="locale">
              <locale language="C" country="AnyCountry"/>
@@ -514,14 +514,14 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
+          <item row="2" column="0">
            <widget class="QLabel" name="label_3">
             <property name="text">
              <string>Minimum number of simulation ions</string>
             </property>
            </widget>
           </item>
-          <item row="1" column="1">
+          <item row="2" column="1">
            <widget class="QSpinBox" name="sim_spinbox">
             <property name="locale">
              <locale language="C" country="AnyCountry"/>
@@ -531,6 +531,38 @@
             </property>
             <property name="singleStep">
              <number>1000</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QGroupBox" name="groupBox_9">
+         <property name="title">
+          <string>Recoil distribution</string>
+         </property>
+         <layout class="QFormLayout" name="formLayout_3">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_10">
+            <property name="text">
+             <string>Minimum concentration</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QDoubleSpinBox" name="min_conc_spinbox">
+            <property name="decimals">
+             <number>6</number>
+            </property>
+            <property name="minimum">
+             <double>0.000001000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.000100000000000</double>
+            </property>
+            <property name="value">
+             <double>0.000100000000000</double>
             </property>
            </widget>
           </item>
@@ -3142,8 +3174,8 @@
  <resources/>
  <connections/>
  <buttongroups>
+  <buttongroup name="cross_section_radios"/>
   <buttongroup name="elementButtons"/>
   <buttongroup name="ion_division_radios"/>
-  <buttongroup name="cross_section_radios"/>
  </buttongroups>
 </ui>

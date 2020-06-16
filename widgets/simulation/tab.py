@@ -96,14 +96,17 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
         # TODO
         return None
 
-    def add_simulation_target_and_recoil(self, progress=None, **kwargs):
-        """ Add target widget for modifying the target and recoils into tab.
+    def add_simulation_target_and_recoil(self, settings, progress=None,
+                                         **kwargs):
+        """Add target widget for modifying the target and recoils into tab.
 
         Args:
+            settings: a GlobalSettings object
             progress: ProgressReporter object
+            kwargs: keyword arguments passed down to TargetWidget
         """
         self.simulation_target = TargetWidget(
-            self, self.obj, self.obj.target, self.icon_manager,
+            self, self.obj, self.obj.target, self.icon_manager, settings,
             progress=progress, statusbar=self.statusbar, **kwargs)
         self.add_widget(self.simulation_target, has_close_button=False)
 
@@ -223,7 +226,7 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
     def __open_optimization_dialog(self):
         OptimizationDialog(self.simulation, self)
 
-    def load_data(self, progress=None, **kwargs):
+    def load_data(self, settings, progress=None, **kwargs):
         """Loads the data belonging to the Simulation into view.
         """
         if not self.data_loaded:
@@ -237,7 +240,7 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
                 sub_progress = None
 
             self.add_simulation_target_and_recoil(
-                progress=sub_progress, **kwargs)
+                settings, progress=sub_progress, **kwargs)
 
             if progress is not None:
                 sub_progress = progress.get_sub_reporter(

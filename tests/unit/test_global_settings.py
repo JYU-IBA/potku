@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -124,6 +124,13 @@ class TestGlobalSettings(unittest.TestCase):
         # New elements can be added
         self.gs.set_element_color("foo", "green")
         self.assertEqual("green", self.gs.get_element_color("foo"))
+
+    def test_minimum_concentration(self):
+        self.assertEqual(0.0001, self.gs.get_minimum_concentration())
+        self.gs.set_minimum_concentration(1)
+        self.assertEqual(1, self.gs.get_minimum_concentration())
+        self.gs.set_minimum_concentration(0)
+        self.assertEqual(1, self.gs.get_minimum_concentration())
 
     def test_serialiazation(self):
         """Deserialized GlobalSettings object should have the same
