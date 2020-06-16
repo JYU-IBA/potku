@@ -29,8 +29,9 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
 import platform
+
+from pathlib import Path
 
 from modules.cut_file import CutFile
 from modules.calibration import TOFCalibration
@@ -60,14 +61,14 @@ class CalibrationDialog(QtWidgets.QDialog):
             parent_settings_widget: A widget this dialog was opened from.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_calibration_dialog.ui"), self)
+
         self.measurements = measurements
         self.run = run
         self.detector = detector
         self.__cut_file = CutFile()
         self.__cut_files = {}
-        
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_calibration_dialog.ui"), self)
+
         self.parent_settings_widget = parent_settings_widget
         self.tof_calibration = TOFCalibration()
         
@@ -84,81 +85,72 @@ class CalibrationDialog(QtWidgets.QDialog):
                 subitem.file_name = cut_file
                 item.addChild(subitem)
                 cut_object = CutFile()
-                cut_object.load_file(os.path.join(measurement.directory_cuts,
-                                                  cut_file))
+                cut_object.load_file(Path(measurement.directory_cuts, cut_file))
                 self.__cut_files[cut_file] = cut_object
-            self.ui.cutFilesTreeWidget.addTopLevelItem(item)
+            self.cutFilesTreeWidget.addTopLevelItem(item)
             item.setExpanded(True)
         # Resize columns to fit the content nicely
-        for column in range(0, self.ui.cutFilesTreeWidget.columnCount()):
-            self.ui.cutFilesTreeWidget.resizeColumnToContents(column)
+        for column in range(0, self.cutFilesTreeWidget.columnCount()):
+            self.cutFilesTreeWidget.resizeColumnToContents(column)
 
         self.curveFittingWidget = \
-            CalibrationCurveFittingWidget(self,
-                                          self.__cut_file,
-                                          self.tof_calibration,
-                                          self.detector,
-                                          self.ui.binWidthSpinBox.value(), 1,
-                                          self.run)
+            CalibrationCurveFittingWidget(
+                self, self.__cut_file, self.tof_calibration, self.detector,
+                self.binWidthSpinBox.value(), 1, self.run)
         
         old_params = None
         # Get old parameters from the parent dialog
-        if parent_settings_widget:
+        if parent_settings_widget is not None:
             try:
-                f1 = float(self.parent_settings_widget.scientific_tof_offset.value_str)
-                f2 = float(self.parent_settings_widget.scientific_tof_slope.value_str)
+                f1 = self.parent_settings_widget.tof_offset
+                f2 = self.parent_settings_widget.tof_slope
                 old_params = f1, f2
             except ValueError as e:
                 m = "Can't get old calibration parameters from the settings " \
-                    "dialog."
+                    f"dialog: {e}."
                 print(m)
                 
         self.linearFittingWidget = CalibrationLinearFittingWidget(
             self, self.tof_calibration, old_params)
         
-        self.ui.fittingResultsLayout.addWidget(self.curveFittingWidget)
-        self.ui.calibrationResultsLayout.addWidget(self.linearFittingWidget)        
+        self.fittingResultsLayout.addWidget(self.curveFittingWidget)
+        self.calibrationResultsLayout.addWidget(self.linearFittingWidget)
         
         # Set up connections
-        self.ui.cutFilesTreeWidget.itemSelectionChanged.connect(
+        self.cutFilesTreeWidget.itemSelectionChanged.connect(
             lambda: self.change_current_cut(
-                self.ui.cutFilesTreeWidget.currentItem()))
-        self.ui.pointsTreeWidget.itemClicked.connect(self.__set_state_for_point)
-        self.ui.acceptPointButton.clicked.connect(self.__accept_point)
-        self.ui.binWidthSpinBox.valueChanged.connect(self.__update_curve_fit)
-        self.ui.binWidthSpinBox.setKeyboardTracking(False)
-        self.ui.acceptCalibrationButton.clicked.connect(self.accept_calibration)
-        self.ui.cancelButton.clicked.connect(self.close)
-        self.ui.removePointButton.clicked.connect(self.remove_selected_points)
-        self.ui.tofChannelLineEdit.editingFinished.connect(
+                self.cutFilesTreeWidget.currentItem()))
+        self.pointsTreeWidget.itemClicked.connect(self.__set_state_for_point)
+        self.acceptPointButton.clicked.connect(self.__accept_point)
+        self.binWidthSpinBox.valueChanged.connect(self.__update_curve_fit)
+        self.binWidthSpinBox.setKeyboardTracking(False)
+        self.acceptCalibrationButton.clicked.connect(self.accept_calibration)
+        self.cancelButton.clicked.connect(self.close)
+        self.removePointButton.clicked.connect(self.remove_selected_points)
+        self.tofChannelLineEdit.editingFinished.connect(
             lambda: self.set_calibration_point(
-                float(self.ui.tofChannelLineEdit.text())))
+                float(self.tofChannelLineEdit.text())))
         
         # Set the validator for lineEdit so user can't give invalid values
         double_validator = QtGui.QDoubleValidator()
-        self.ui.tofChannelLineEdit.setValidator(double_validator)
+        self.tofChannelLineEdit.setValidator(double_validator)
         
         self.timer = QtCore.QTimer(interval=1500, timeout=self.timeout)
 
-        if platform.system() == "Darwin":
-            self.ui.tofSecondsLineEdit.setFixedWidth(170)
-            self.ui.tofChannelLineEdit.setFixedWidth(170)
-            self.ui.offsetLineEdit.setFixedWidth(170)
-            self.ui.slopeLineEdit.setFixedWidth(170)
-
-        if platform.system() == "Linux":
-            self.ui.tofSecondsLineEdit.setFixedWidth(190)
-            self.ui.tofChannelLineEdit.setFixedWidth(190)
-            self.ui.offsetLineEdit.setFixedWidth(190)
-            self.ui.slopeLineEdit.setFixedWidth(190)
         self.exec_()
+
+    def showEvent(self, _):
+        """Called after dialog is shown. Size is adjusted so that all elements
+        fit nicely on screen.
+        """
+        self.adjustSize()
 
     def remove_selected_points(self):
         """Remove selected items from point tree widget
         """
         removed_something = False
-        root = self.ui.pointsTreeWidget.invisibleRootItem()
-        for item in self.ui.pointsTreeWidget.selectedItems():
+        root = self.pointsTreeWidget.invisibleRootItem()
+        for item in self.pointsTreeWidget.selectedItems():
             if item and hasattr(item, "point"):
                 removed_something = True
                 self.tof_calibration.remove_point(item.point)
@@ -178,17 +170,11 @@ class CalibrationDialog(QtWidgets.QDialog):
         """Set calibration parameters to parent dialog's calibration parameters 
         fields.
         """
-        if self.parent_settings_widget:
-            self.parent_settings_widget.scientific_tof_slope\
-                .scientificLineEdit.\
-                setText(self.ui.slopeLineEdit.text())
-            self.parent_settings_widget.scientific_tof_slope.value_str = \
-                self.ui.slopeLineEdit.text()
-            self.parent_settings_widget.scientific_tof_offset\
-                .scientificLineEdit.\
-                setText(self.ui.offsetLineEdit.text())
-            self.parent_settings_widget.scientific_tof_offset.value_str = \
-                self.ui.offsetLineEdit.text()
+        if self.parent_settings_widget is not None:
+            self.parent_settings_widget.tof_slope = float(
+                self.slopeLineEdit.text())
+            self.parent_settings_widget.tof_offset = float(
+                self.offsetLineEdit.text())
             return True
         return False
 
@@ -202,11 +188,11 @@ class CalibrationDialog(QtWidgets.QDialog):
         results = self.tof_calibration.get_fit_parameters()
         if results[0] and results[1]:
             if self.set_calibration_parameters_to_parent():
-                self.ui.acceptCalibrationLabel.setText(calib_ok)
+                self.acceptCalibrationLabel.setText(calib_ok)
             else:
-                self.ui.acceptCalibrationLabel.setText(calib_no)
+                self.acceptCalibrationLabel.setText(calib_no)
         else:
-            self.ui.acceptCalibrationLabel.setText(calib_inv)
+            self.acceptCalibrationLabel.setText(calib_inv)
 
     def change_current_cut(self, current_item):
         """Changes the current cut file drawn to the curve fitting widget.
@@ -234,7 +220,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         """Redraws everything in the curve fitting graph. Updates the bin width
         too.
         """
-        bin_width = self.ui.binWidthSpinBox.value()
+        bin_width = self.binWidthSpinBox.value()
         self.curveFittingWidget.matplotlib.change_bin_width(bin_width)
         self.curveFittingWidget.matplotlib.change_cut(self.__cut_file)
 
@@ -272,22 +258,22 @@ class CalibrationDialog(QtWidgets.QDialog):
         Args:
             text: String to be set to the label.
         """
-        self.ui.acceptPointLabel.setText(text)
+        self.acceptPointLabel.setText(text)
         self.timer.start()
 
     def timeout(self):
         """Timeout event method to remove label text.
         """
-        self.ui.acceptPointLabel.setText("")
+        self.acceptPointLabel.setText("")
         self.timer.stop()
 
     def __enable_accept_calibration_button(self):
         """Let press accept calibration only if there are parameters available.
         """
         if self.tof_calibration.slope or self.tof_calibration.offset:
-            self.ui.acceptCalibrationButton.setEnabled(True)
+            self.acceptCalibrationButton.setEnabled(True)
         else:
-            self.ui.acceptCalibrationButton.setEnabled(False)
+            self.acceptCalibrationButton.setEnabled(False)
 
     def __add_point_to_tree(self, tof_calibration_point):
         """Adds a ToF Calibration point to the pointsTreeWidget and sets the 
@@ -296,7 +282,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         item = QtWidgets.QTreeWidgetItem([tof_calibration_point.get_name()])
         item.point = tof_calibration_point
         item.setCheckState(0, QtCore.Qt.Checked)
-        self.ui.pointsTreeWidget.addTopLevelItem(item)
+        self.pointsTreeWidget.addTopLevelItem(item)
 
     def __change_selected_points(self):
         """Redraws the linear fitting graph.
@@ -321,9 +307,7 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
             run: Run object.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_tof_curve_fitting_widget.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_tof_curve_fitting_widget.ui"), self)
         # NOTE: One of these should always be there. Could probably use "else"
         if hasattr(dialog.parent_settings_widget, "request"):
             self.img_dir = dialog.parent_settings_widget.request.directory
@@ -351,9 +335,7 @@ class CalibrationLinearFittingWidget(QtWidgets.QWidget):
             old_params: Old calibration parameters in tuple (slope, offset).
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_tof_linear_fitting_widget.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_tof_linear_fitting_widget.ui"), self)
         # NOTE: One of these should always be there. Could probably use "else"
         if hasattr(dialog.parent_settings_widget, "request"):
             self.img_dir = dialog.parent_settings_widget.request.directory

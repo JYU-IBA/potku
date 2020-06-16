@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>154</width>
-    <height>26</height>
+    <height>34</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -45,6 +45,11 @@
      </property>
      <item>
       <widget class="QLineEdit" name="scientificLineEdit">
+       <property name="font">
+        <font>
+         <pointsize>11</pointsize>
+        </font>
+       </property>
        <property name="autoFillBackground">
         <bool>false</bool>
        </property>

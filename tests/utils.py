@@ -1,0 +1,284 @@
+# coding=utf-8
+"""
+Created on 19.1.2020
+Updated on 8.2.2020
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2020 TODO
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
+
+utils.py contains various utility functions to be used in tests
+"""
+
+__author__ = "Juhani Sundell"
+__version__ = "2.0"
+
+import os
+import hashlib
+import unittest
+import logging
+import platform
+import warnings
+import itertools
+
+from pathlib import Path
+from string import Template
+from typing import Dict
+
+
+def get_sample_data_dir() -> Path:
+    """Returns the absolute path to the sample data directory.
+    """
+    # Absolute path to the directory where utils.py file is
+    path_to_this_file = Path(__file__).parent
+    # Traverse the path to sample data
+    path_to_sample_data = Path(path_to_this_file, os.pardir, "sample_data")
+    # Return the path as an absolute path
+    return path_to_sample_data.resolve()
+
+
+def get_resource_dir() -> Path:
+    """Returns the resource directory's absolute path as a string."""
+    return Path(__file__).parent / "resource"
+
+
+def get_root_folder() -> Path:
+    """Returns root folder of Potku.
+    """
+    return Path(__file__).parent.parent.resolve()
+
+
+def change_wd_to_root(func):
+    """Helper wrapper function that changes the working directory to the root
+    directory of Potku for the duration of the wrapped function. After the
+    function has run, working directory is changed back so other tests are
+    not affected.
+
+    This decorator was originally used to test code that read a file
+    using a relative path. Now the file path has been made absolute, so this
+    function is no longer needed for its original purpose. However, there may
+    be other uses for this.
+    """
+    # Get old working directory and path to this file. Then traverse to
+    # parent directory (i.e. the root)
+    old_wd = Path.cwd()
+    root = get_root_folder()
+
+    def wrapper(*args, **kwargs):
+        # Change the dir, run the func and change back in the finally
+        # block
+        os.chdir(root)
+        try:
+            func(*args, **kwargs)
+        finally:
+            os.chdir(old_wd)
+
+    # Return the wrapper function
+    return wrapper
+
+
+def get_md5_for_files(file_paths):
+    """Calculates MD5 hash for the combined content of all given
+    files."""
+    hasher = hashlib.md5()
+    for file_path in file_paths:
+        with open(file_path, "rb") as file:
+            buf = file.read()
+            hasher.update(buf)
+
+    return hasher.hexdigest()
+
+
+def check_md5_for_files(file_paths, checksum):
+    """Checks that the combined contents of all files match the
+    given checksum.
+
+    Args:
+        file_paths: absolute paths to file
+        checksum: hexadecimal string representation of the expected
+            checksum
+
+    Return:
+        tuple where first element is a boolean value that tells if
+        the given files match the checksum, and second element is a
+        message that tells further details about the check.
+    """
+    try:
+        actual_checksum = get_md5_for_files(file_paths)
+        if actual_checksum == checksum:
+            return True, "files match the given checksum"
+
+        return False, "files do not match the given checksum"
+    except Exception as e:
+        return False, e
+
+
+def verify_files(file_paths, checksum, msg=None):
+    """Decorator function that can be used to verify files before
+    running a test."""
+    b, reason = check_md5_for_files(file_paths, checksum)
+    if b:
+        return lambda func: func
+    if msg is not None:
+        return unittest.skip("{0}: {1}.".format(msg, reason))
+    return unittest.skip(reason)
+
+
+def disable_logging():
+    """Disables loggers and removes their file handles"""
+    loggers = [logging.getLogger(name) for name in
+               logging.root.manager.loggerDict]
+    for logger in loggers:
+        logger.disabled = True
+        for handler in logger.handlers:
+            handler.close()
+
+
+class PlatformSwitcher:
+    """Context manager that switches the value returned by platform.system().
+
+    Usage:
+    with PlatformSwitcher('name of the os'):
+        # os specific code here
+    """
+    platforms = {"Windows", "Linux", "Darwin"}
+
+    def __init__(self, system):
+        # TODO find a way to switch os specific separator chars in paths
+        if system not in self.platforms:
+            raise ValueError(f"PlatformSwitcher was given an unsupported os "
+                             f"{system}")
+        self.system = system
+        self.old_platsys = platform.system
+
+    def __enter__(self):
+        """Upon entering the context manager platform.system is overridden
+        to return a value given in initialization."""
+        platform.system = lambda: self.system
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """When exiting, platform.system is restored."""
+        platform.system = self.old_platsys
+
+
+class ListdirSwitcher:
+    """Context manager that changes the output of os.listdir to a given list
+    of strings.
+    """
+    def __init__(self, file_names):
+        self.file_names = file_names
+        self.old_listdir = os.listdir
+
+    def __enter__(self):
+        os.listdir = lambda _: self.file_names
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        os.listdir = self.old_listdir
+
+
+def get_template_file_contents(template_file, **kwargs):
+    """Reads a template file and substitutes in the values provided as
+    keyword arguments.
+    """
+    with open(template_file) as file:
+        temp = Template(file.read())
+
+    return temp.substitute(kwargs)
+
+
+def expected_failure_if(cond):
+    """Decorator that expects a test to fail if the condition is True.
+    """
+    if cond:
+        return unittest.expectedFailure
+    return lambda func: func
+
+
+def run_without_warnings(func):
+    """Runs the given function and returns its return value while ignoring
+    warnings.
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return func()
+
+
+def slots_test(obj):
+    """Checks whether the given object has a working __slots__ declaration,
+    this function raises an AttributeError
+    """
+    if not hasattr(obj, "__slots__"):
+        return
+    for i in range(1000):
+        attr = f"xyz{i}"
+        if not hasattr(obj, attr) and attr not in getattr(obj, "__slots__"):
+            setattr(obj, attr, "foo")
+            break
+
+
+def assert_folder_structure_equal(expected_structure: Dict, directory: Path):
+    """Tests if the given directory contains the expected folder structure.
+
+    Args:
+        expected_structure: folder structure defined as dictionary. Keys are
+            fjles and folders, values are dictionaries (if the key is a folder)
+            or NoneTypes.
+        directory: path to a directory whose structure is being tested.
+    """
+    if not isinstance(expected_structure, dict):
+        raise ValueError(f"Expected folder structure should be defined as "
+                         f"dictionary, {type(expected_structure)} given")
+    fnames = set(f.name for f in os.scandir(directory))
+    keys = set(expected_structure.keys())
+    if keys != fnames:
+        raise AssertionError(
+            f"Contents of the directory {directory} did not match expected "
+            f"values. Expected:\n{sorted(keys)}\nGot:\n{sorted(fnames)}")
+    for k, v in expected_structure.items():
+        p = directory / k
+        if isinstance(v, dict):
+            assert_folder_structure_equal(v, p)
+        elif v is None:
+            if not p.is_file():
+                raise AssertionError(
+                    f"Expected {p} to be a file but it was not."
+                )
+        else:
+            raise ValueError(
+                f"Value should either be 'None' or a dictionary. {type(v)} "
+                f"given.")
+
+
+def assert_all_same(*args):
+    """Asserts that all given arguments are the same object. Raises
+    AssertionError if that is not the case.
+    """
+    if not all(x is y for x, y in itertools.combinations(args, 2)):
+        raise AssertionError(
+            f"All given arguments are not the same object. Arguments: "
+            f"{','.join(str(a) for a in args)}")
+
+
+def assert_all_equal(*args):
+    """Asserts that all given arguments are equal. Raises AssertionError if
+    that is not the case.
+    """
+    if not all(x == y for x, y in itertools.combinations(args, 2)):
+        raise AssertionError(
+            f"All given arguments are not equal. Arguments: "
+            f"{','.join(str(a) for a in args)}")

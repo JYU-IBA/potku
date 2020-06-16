@@ -32,8 +32,13 @@ import numpy
 import os
 import struct
 
-from modules.general_functions import open_files_dialog
-from modules.general_functions import validate_text_input
+import dialogs.dialog_functions as df
+import widgets.input_validation as iv
+
+from widgets.gui_utils import StatusBarHandler
+
+from pathlib import Path
+from dialogs.file_dialogs import open_files_dialog
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -47,14 +52,15 @@ class ImportDialogBinary(QtWidgets.QDialog):
         """Init binary measurement import dialog.
         """
         super().__init__()
-        self.__request = request
+        uic.loadUi(Path("ui_files", "ui_import_dialog_binary.ui"), self)
+
+        self.request = request
         self.__icon_manager = icon_manager
         self.__statusbar = statusbar
-        self.__parent = parent
-        self.__global_settings = self.__parent.settings
-        uic.loadUi(os.path.join("ui_files", "ui_import_dialog_binary.ui"), self)
+        self.parent = parent
+        self.__global_settings = self.parent.settings
         self.imported = False
-        self.__files_added = {}  # Dictionary of files to be imported.
+        self.files_added = {}  # Dictionary of files to be imported.
         
         self.button_import.clicked.connect(self.__import_files) 
         self.button_cancel.clicked.connect(self.close) 
@@ -72,23 +78,10 @@ class ImportDialogBinary(QtWidgets.QDialog):
         """Add a file to list of files to be imported.
         """
         files = open_files_dialog(self,
-                                  self.__request.directory,
+                                  self.request.directory,
                                   "Select binary files to be imported",
                                   "Binary format (*.lst)")
-        if not files:
-            return
-        for file in files:
-            if file in self.__files_added:
-                continue
-            directoty, filename = os.path.split(file)
-            name, unused_ext = os.path.splitext(filename)
-            item = QtWidgets.QTreeWidgetItem([name])
-            item.file = file
-            item.name = name
-            item.filename = filename
-            item.directory = directoty
-            self.__files_added[file] = file
-            self.treeWidget.addTopLevelItem(item)
+        df.add_imported_files_to_tree(self, files)
         self.__check_if_import_allowed()
 
     def __check_if_import_allowed(self):
@@ -122,11 +115,8 @@ class ImportDialogBinary(QtWidgets.QDialog):
         """Import binary files.
         """
         imported_files = {}
-        progress_bar = QtWidgets.QProgressBar()
-        self.__statusbar.addWidget(progress_bar, 1)
-        progress_bar.show()
-        progress_bar.setValue(10)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+        sbh = StatusBarHandler(self.__statusbar)
+        sbh.reporter.report(10)
         
         root = self.treeWidget.invisibleRootItem()
         root_child_count = root.childCount()
@@ -135,39 +125,33 @@ class ImportDialogBinary(QtWidgets.QDialog):
             item = root.child(i)
             input_file = item.file
 
-            sample = self.__request.samples.add_sample()
-            self.__parent.add_root_item_to_tree(sample)
+            sample = self.request.samples.add_sample()
+            self.parent.add_root_item_to_tree(sample)
             item_name = item.name.replace("_", "-")
 
             regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-            item_name = validate_text_input(item_name, regex)
+            item_name = iv.validate_text_input(item_name, regex)
 
-            measurement = self.__parent.add_new_tab("measurement", "",
-                                                    sample,
-                                                    object_name=item_name,
-                                                    import_evnt_or_binary=True)
+            measurement = self.parent.add_new_tab("measurement", "",
+                                                  sample,
+                                                  object_name=item_name,
+                                                  import_evnt_or_binary=True)
             output_file = "{0}.{1}".format(measurement.directory_data +
                                            os.sep + item_name, "asc")
             n = 2
             while True:  # Allow import of same named files.
                 if not os.path.isfile(output_file):
                     break
-                output_file = "{0}-{2}.{1}".format(measurement.directory_data
-                 + os.sep + item_name, "asc", n)
+                output_file = "{0}-{2}.{1}".format(
+                    measurement.directory_data + os.sep + item_name, "asc", n)
                 n += 1
             imported_files[sample] = output_file
             self.__convert_file(input_file, output_file)
             measurement.measurement_file = output_file
 
-            percentage = 10 + (i + 1 / root_child_count) * 90
-            progress_bar.setValue(percentage)
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+            sbh.reporter.report(10 + (i + 1 / root_child_count) * 90)
 
-        progress_bar.setValue(100)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-
-        self.__statusbar.removeWidget(progress_bar)
-        progress_bar.hide()
+        sbh.reporter.report(100)
         self.imported = True
 
         self.close()
@@ -178,5 +162,5 @@ class ImportDialogBinary(QtWidgets.QDialog):
         root = self.treeWidget.invisibleRootItem()
         for item in self.treeWidget.selectedItems():
             (item.parent() or root).removeChild(item)
-            self.__files_added.pop(item.file)
+            self.files_added.pop(item.file)
         self.__check_if_import_allowed()

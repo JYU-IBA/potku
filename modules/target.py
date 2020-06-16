@@ -28,13 +28,14 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import os
-
-from modules.element import Element
 import json
 import time
 
-from modules.layer import Layer
+from pathlib import Path
+from typing import Optional
+
+from .element import Element
+from .layer import Layer
 
 
 class Target:
@@ -47,8 +48,8 @@ class Target:
 
     def __init__(self, name="Default", modification_time=None,
                  description="", target_type="AFM", image_size=(1024, 1024),
-                 image_file="", scattering_element=Element.from_string(
-                "4He 3.0"), target_theta=20.5, layers=None):
+                 image_file="", scattering_element=None, target_theta=20.5,
+                 layers=None):
         """Initialize a target.
 
         Args:
@@ -69,84 +70,87 @@ class Target:
         self.modification_time = modification_time
         self.description = description
         self.target_type = target_type
-        self.image_size = image_size
+        self.image_size = tuple(image_size)
         self.image_file = image_file
-        self.scattering_element = scattering_element
         self.target_theta = target_theta
+
+        if scattering_element is None:
+            self.scattering_element = Element.from_string("4He 3.0")
+        else:
+            self.scattering_element = scattering_element
+
         if layers is None:
-            layers = []
-        self.layers = layers
+            self.layers = []
+        else:
+            self.layers = layers
 
     @classmethod
-    def from_file(cls, target_file_path, measurement_file_path, request):
+    def from_file(cls, target_file_path: Path, measurement_file_path: Path,
+                  request):
         """Initialize target from a JSON file.
 
         Args:
             target_file_path: A file path to JSON file containing the target
-            parameters.
+                parameters.
             measurement_file_path: A file path to JSON file containing target
-            angles.
+                angles.
             request: Request object which has default target angles.
 
         Return:
             Returns a Target object with parameters read from files.
         """
 
-        obj = json.load(open(target_file_path))
+        with target_file_path.open("r") as tgt_file:
+            target = json.load(tgt_file)
 
-        # Below we do conversion from dictionary to Target object
-        name = obj["name"]
-        description = obj["description"]
-        modification_time_unix = obj["modification_time_unix"]
-        target_type = obj["target_type"]
-        scattering_element = Element.from_string(obj["scattering_element"])
-        image_size = obj["image_size"]
-        image_file = obj["image_file"]
+        target["modification_time"] = target.pop("modification_time_unix")
+        target["scattering_element"] = Element.from_string(
+            target["scattering_element"])
+        target["image_size"] = target["image_size"]
+
         layers = []
-
-        for layer in obj["layers"]:
-            elements = []
-            elements_str = layer["elements"]
-            for element_str in elements_str:
-                elements.append(Element.from_string(element_str))
-            layers.append(Layer(layer["name"],
-                                elements,
-                                layer["thickness"],
-                                layer["density"],
-                                layer["start_depth"]))
+        for layer in target.pop("layers"):
+            elements = [
+                Element.from_string(e)
+                for e in layer.pop("elements")
+            ]
+            layers.append(Layer(**layer, elements=elements))
 
         try:
-            obj = json.load(open(measurement_file_path))
-            target_theta = obj["geometry"]["target_theta"]
+            with measurement_file_path.open("r") as mesu:
+                measurement = json.load(mesu)
+            target_theta = measurement["geometry"]["target_theta"]
         # If keys do not exist or measurement_file_path is empty or file
         # doesn't exist:
-        except (KeyError, IsADirectoryError, FileNotFoundError, TypeError):
-            target_theta = request.default_target.target_theta
+        except (OSError, KeyError, AttributeError):
+            try:
+                target_theta = request.default_target.target_theta
+            except AttributeError:
+                return cls(**target, layers=layers)
 
-        return cls(name=name, description=description,
-                   modification_time=modification_time_unix,
-                   target_type=target_type,
-                   image_size=image_size, image_file=image_file,
-                   scattering_element=scattering_element,
-                   target_theta=target_theta,
-                   layers=layers)
+        # Note: this way of using kwargs does make it harder to maintain
+        # forward compatibility as there may be a need to add more fields
+        # to the json file. This could be remedied by adding **kwargs to
+        # the __init__ method.
+        return cls(**target, target_theta=target_theta, layers=layers)
 
-    def to_file(self, target_file_path, measurement_file_path):
-        """
-        Save target parameters into files.
+    def to_file(self, target_file: Path,
+                measurement_file: Optional[Path] = None):
+        """Save target parameters into files.
 
         Args:
-            target_file_path: File in which the target params will be saved.
-            measurement_file_path: File in which target angles will be saved.
+            target_file: File in which the target params will be saved.
+            measurement_file: File in which target angles will be saved.
         """
+        timestamp = time.time()
         obj = {
             "name": self.name,
             "description": self.description,
             "modification_time": time.strftime("%c %z %Z", time.localtime(
-                time.time())),
-            "modification_time_unix": time.time(),
+                timestamp)),
+            "modification_time_unix": timestamp,
             "target_type": self.target_type,
-            "scattering_element": self.scattering_element.__str__(),
+            "scattering_element": str(self.scattering_element),
             "image_size": self.image_size,
             "image_file": self.image_file,
             "layers": []
@@ -155,28 +159,26 @@ class Target:
         for layer in self.layers:
             layer_obj = {
                 "name": layer.name,
-                "elements": [element.__str__() for element in layer.elements],
+                "elements": [str(element) for element in layer.elements],
                 "thickness": layer.thickness,
                 "density": layer.density,
                 "start_depth": layer.start_depth
             }
             obj["layers"].append(layer_obj)
 
-        if target_file_path is not None:
-            with open(target_file_path, "w") as file:
-                json.dump(obj, file, indent=4)
+        with target_file.open("w") as file:
+            json.dump(obj, file, indent=4)
 
-        if measurement_file_path is not None:
+        if measurement_file is not None:
             # Read .measurement to obj to update only target angles
-            if os.path.exists(measurement_file_path):
-                obj = json.load(open(measurement_file_path))
+            try:
+                with measurement_file.open("r") as mesu:
+                    obj = json.load(mesu)
                 obj["geometry"]["target_theta"] = self.target_theta
-            else:
-                obj = {
-                    "geometry": {
+            except (OSError, KeyError):
+                obj["geometry"] = {
                         "target_theta": self.target_theta
                     }
-                }
 
-            with open(measurement_file_path, "w") as file:
+            with measurement_file.open("w") as file:
                 json.dump(obj, file, indent=4)

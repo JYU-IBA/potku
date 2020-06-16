@@ -1,0 +1,3 @@
+#Name of the file   tot Z1_min  Z1_max  Z2_min  Z2_max  format  Description
+#N.B. file names are either relative to the directory where gsto binaries are executed (not this directory!) or absolute
+../share/srim2013.tot          tot 1   83  1   83  ascii   srim2013

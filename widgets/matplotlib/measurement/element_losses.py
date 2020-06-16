@@ -29,7 +29,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import modules.masses as masses
 import os
 
 from dialogs.graph_ignore_elements import GraphIgnoreElements
@@ -90,7 +89,7 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
         self.mpl_toolbar.addSeparator()
         self.__button_scale = QtWidgets.QToolButton(self)
         self.__button_scale.clicked.connect(self.__toggle_scaling)
-        self.__button_scale.setToolTip("Toggle scaling mode for the graph " + \
+        self.__button_scale.setToolTip("Toggle scaling mode for the graph "
                                        "default, log and 100%.")
         self.__icon_manager.set_icon(self.__button_scale,
                                      self.__icons[self.__scale_mode])
@@ -108,14 +107,11 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
 
     def __sortt(self, key):
         cut_file = key.split('.')
-        element_object = Element(cut_file[0].strip())
-        element = element_object.symbol
-        isotope = element_object.isotope
-        if isotope:
-            mass = float(isotope)
-        else:
-            mass = masses.get_standard_isotope(element)
-        return mass
+        # TODO use RBS selection to sort (for example m1.35Cl.RBS_Mn.0.cut
+        #  should be sorted by Mn, not Cl)
+        # TODO provide elements as parameter instead of reinitializing them
+        #  over and over again
+        return Element.from_string(cut_file[0].strip())
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -127,6 +123,8 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
                                            key=lambda x: self.__sortt(x[0]))]
         for key in keys:
             cut_file = key.split('.')
+            # TODO provide elements as parameter rather than initializing
+            #      them here
             element_object = Element.from_string(cut_file[0].strip())
             element = element_object.symbol
             isotope = element_object.isotope
@@ -137,13 +135,13 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
             # Check RBS selection
             rbs_string = ""
             if len(cut_file) == 3:
-                if key + ".cut" in self.__rbs_list.keys():
+                if key + ".cut" in self.__rbs_list:
                     element_object = self.__rbs_list[key + ".cut"]
                     element = element_object.symbol
                     isotope = element_object.isotope
                     rbs_string = "*"
             else:
-                if key in self.__rbs_list.keys():
+                if key in self.__rbs_list:
                     element_object = self.__rbs_list[key]
                     element = element_object.symbol
                     isotope = element_object.isotope
@@ -157,10 +155,8 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
                                                   cut_file[2])
             else:
                 color_string = "{0}{1}{2}".format(isotope, element, cut_file[2])
-            if color_string not in self.selection_colors.keys():
-                color = "red"
-            else:
-                color = self.selection_colors[color_string]
+
+            color = self.selection_colors.get(color_string, "red")
 
             # Set label text
             if len(cut_file) == 3:

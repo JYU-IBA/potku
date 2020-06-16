@@ -28,14 +28,17 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
 __version__ = "2.0"
 
 import json
-import os
 import time
 
-from modules.beam import Beam
-from modules.element import Element
+from pathlib import Path
+
+from .base import Serializable
+from .base import AdjustableSettings
+from .beam import Beam
+from .element import Element
 
 
-class Run:
+class Run(Serializable, AdjustableSettings):
     """
     Class that handles parameters concerning a run.
     """
@@ -50,11 +53,12 @@ class Run:
             fluence: Fluence.
             current: Current.
             charge: Charge.
-            time: Time of the run.
+            run_time: Time of the run.
         """
-        self.beam = beam
-        if not self.beam:
+        if beam is None:
             self.beam = Beam()
+        else:
+            self.beam = beam
         self.fluence = fluence
         self.current = current
         self.charge = charge
@@ -63,12 +67,12 @@ class Run:
         # List for undoing fluence values
         self.previous_fluence = []
 
-    def to_file(self, measurement_file_path):
+    def to_file(self, measurement_file: Path):
         """
         Saves Run object and Beam object parameters into a file.
 
         Args:
-            measurement_file_path: Path to the .measurement file in which the
+            measurement_file: Path to the .measurement file in which the
                                    parameters are written.
         """
         run_obj = {
@@ -78,7 +82,7 @@ class Run:
             "time": self.time
         }
         beam_obj = {
-            "ion": self.beam.ion.__str__(),
+            "ion": str(self.beam.ion),
             "energy": self.beam.energy,
             "charge": self.beam.charge,
             "energy_distribution": self.beam.energy_distribution,
@@ -87,50 +91,65 @@ class Run:
             "profile": self.beam.profile
         }
 
-        if os.path.exists(measurement_file_path):
-            obj = json.load(open(measurement_file_path))
-            obj["general"]["modification_time"] = time.strftime("%c %z %Z",
-                                                                time.localtime(
-                                                                 time.time()))
-            obj["general"]["modification_time_unix"] = time.time()
-            obj["run"] = run_obj
-            obj["beam"] = beam_obj
-        else:
-            obj = {"run": run_obj,
-                   "beam": beam_obj}
+        try:
+            with measurement_file.open("r") as mesu:
+                obj = json.load(mesu)
+            timestamp = time.time()
+            obj["general"]["modification_time"] = time.strftime(
+                "%c %z %Z", time.localtime(timestamp))
+            obj["general"]["modification_time_unix"] = timestamp
+        except (OSError, KeyError):
+            obj = {}
 
-        with open(measurement_file_path, "w") as file:
+        obj["run"] = run_obj
+        obj["beam"] = beam_obj
+
+        with measurement_file.open("w") as file:
             json.dump(obj, file, indent=4)
 
     @classmethod
-    def from_file(cls, measurement_file_path):
+    def from_file(cls, measurement_file: Path):
         """
         Reads parameter sfrom file and makes a Run object from them.
         Args:
-             measurement_file_path: Filepath of the .measurement file.
+             measurement_file: Filepath of the .measurement file.
 
         Return:
             Returns the created Run object.
         """
-        obj = json.load(open(measurement_file_path))
-        run = obj["run"]
-        beam = obj["beam"]
+        with measurement_file.open("r") as mesu:
+            mesu = json.load(mesu)
 
-        fluence = float(run["fluence"])
-        current = float(run["current"])
-        charge = float(run["charge"])
-        time = int(run["time"])
+        try:
+            run = mesu["run"]
+            run["run_time"] = run.pop("time")
+        except KeyError:
+            run = {}
 
-        ion = Element.from_string(beam["ion"])
-        energy = beam["energy"]
-        b_charge = beam["charge"]
-        energy_distribution = beam["energy_distribution"]
-        spot_size = tuple(beam["spot_size"])
-        divergence = beam["divergence"]
-        profile = beam["profile"]
+        try:
+            beam = mesu["beam"]
+            ion = Element.from_string(beam.pop("ion"))
+            spot_size = tuple(beam.pop("spot_size"))
+            beam_object = Beam(ion=ion, spot_size=spot_size, **beam)
+        except KeyError:
+            beam_object = None
 
-        beam_object = Beam(ion, energy, b_charge, energy_distribution,
-                           spot_size, divergence, profile)
+        return cls(beam=beam_object, **run)
 
-        return cls(beam=beam_object, fluence=fluence, current=current,
-                   charge=charge, run_time=time)
+    def get_settings(self):
+        """Returns a dictionary of settings that can be adjusted.
+        """
+        d = dict(vars(self))
+        d.pop("previous_fluence")
+        d.pop("beam")
+        return d
+
+    def set_settings(self, **kwargs):
+        """Sets the values of Run settings to given keyword argument values.
+        """
+        allowed_params = self.get_settings()
+        for k, v in kwargs.items():
+            if k in allowed_params:
+                setattr(self, k, v)
+
+

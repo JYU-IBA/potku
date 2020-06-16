@@ -25,47 +25,118 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen"
+             "\n Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import copy
-import modules.masses as masses
-import os
 import time
+import os
 
+import widgets.binding as bnd
+import widgets.input_validation as iv
+import widgets.gui_utils as gutils
+from widgets.scientific_spinbox import ScientificSpinBox
+
+from pathlib import Path
+from typing import Union
+from modules.enums import Profile
 from modules.element import Element
-from modules.general_functions import set_input_field_red
-from modules.general_functions import check_text
-from modules.general_functions import validate_text_input
+from modules.simulation import Simulation
+from modules.measurement import Measurement
+from widgets.gui_utils import QtABCMeta
+from dialogs.element_selection import ElementSelectionDialog
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
+from PyQt5 import QtGui
 from PyQt5.QtCore import QLocale
 from PyQt5.QtCore import Qt
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QGuiApplication
 
 
-class MeasurementSettingsWidget(QtWidgets.QWidget):
+# Getters and setter for binding an Element object to GUI
+def element_from_gui(instance, attrs):
+    """Returns Element object from GUI.
+    """
+    symbol_btn = getattr(instance, attrs[0])
+    isotope_box = getattr(instance, attrs[1])
+    symbol = symbol_btn.text()
+    if symbol == "Select":
+        return None
+    if isotope_box.currentIndex() == -1:
+        return Element(symbol, None)
+    return isotope_box.currentData()["element"]
+
+
+def element_to_gui(instance, attrs, value: Element):
+    """Shows Element object in GUI.
+    """
+    symbol_btn = getattr(instance, attrs[0])
+    isotope_box = getattr(instance, attrs[1])
+    if value is None:
+        symbol_btn.setText("Select")
+        isotope_box.setEnabled(False)
+        isotope_box.clear()
+    else:
+        symbol_btn.setText(value.symbol)
+        gutils.load_isotopes(value.symbol, isotope_box, value.isotope)
+        isotope_box.setEnabled(isotope_box.count() > 0)
+
+
+class MeasurementSettingsWidget(QtWidgets.QWidget,
+                                bnd.PropertyTrackingWidget,
+                                metaclass=QtABCMeta):
     """Class for creating a measurement settings tab.
     """
+    # TODO fix floating point precision when checking changes in values
 
-    def __init__(self, obj):
-        """
-        Initializes the widget.
+    # Signal that indicates whether the beam selection was ok or not (i.e. can
+    # the selected element be used in measurements or simulations)
+    beam_selection_ok = pyqtSignal(bool)
+
+    measurement_setting_file_name = bnd.bind("nameLineEdit")
+    measurement_setting_file_description = bnd.bind("descriptionPlainTextEdit")
+
+    beam_ion = bnd.multi_bind(
+        ["beamIonButton", "isotopeComboBox"], fget=element_from_gui,
+        fset=element_to_gui, track_change=True
+    )
+    beam_energy = bnd.bind("energyDoubleSpinBox", track_change=True)
+    beam_energy_distribution = bnd.bind(
+        "energyDistDoubleSpinBox", track_change=True)
+    beam_charge = bnd.bind("beamChargeSpinBox")
+    beam_spot_size = bnd.multi_bind(
+        ["spotSizeXdoubleSpinBox", "spotSizeYdoubleSpinBox"], track_change=True)
+    beam_divergence = bnd.bind("divergenceDoubleSpinBox", track_change=True)
+    beam_profile = bnd.bind("profileComboBox", track_change=True)
+
+    run_fluence = bnd.bind("fluenceDoubleSpinBox")
+    run_current = bnd.bind("currentDoubleSpinBox")
+    run_time = bnd.bind("timeDoubleSpinBox")
+    run_charge = bnd.bind("runChargeDoubleSpinBox")
+
+    target_theta = bnd.bind("targetThetaDoubleSpinBox", track_change=True)
+    detector_theta = bnd.bind("detectorThetaDoubleSpinBox", track_change=True)
+
+    def __init__(self, obj: Union[Measurement, Simulation]):
+        """Initializes the widget.
 
         Args:
-            obj: Object that uses these settings.
+            obj: object that uses these settings, either a Measurement or a
+                Simulation.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_measurement_settings_tab.ui"),
-                             self)
-        self.obj = obj
+        uic.loadUi(Path("ui_files", "ui_measurement_settings_tab.ui"), self)
+        self.fluenceDoubleSpinBox = ScientificSpinBox()
+        # QPixmap does not accept Path object, so use os.path.join instead
+        pixmap = QtGui.QPixmap(os.path.join(
+            "images", "measurement_setup_angles.png"))
+        self.picture.setScaledContents(True)
+        self.picture.setPixmap(pixmap)
 
-        set_input_field_red(self.ui.nameLineEdit)
-        self.fields_are_valid = False
-        self.ui.nameLineEdit.textChanged.connect(lambda: self.check_text(
-            self.ui.nameLineEdit, self))
+        self.obj = obj
+        self.__original_property_values = {}
 
         locale = QLocale.c()
 
@@ -74,7 +145,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.spotSizeXdoubleSpinBox.setLocale(locale)
         self.spotSizeYdoubleSpinBox.setLocale(locale)
         self.divergenceDoubleSpinBox.setLocale(locale)
-        self.fluenceDoubleSpinBox.setLocale(locale)
         self.currentDoubleSpinBox.setLocale(locale)
         self.timeDoubleSpinBox.setLocale(locale)
         self.runChargeDoubleSpinBox.setLocale(locale)
@@ -84,98 +154,82 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.detectorFiiDoubleSpinBox.setLocale(locale)
         self.targetFiiDoubleSpinBox.setLocale(locale)
 
-        run_object = self.obj.run
-        if not run_object:
-            run_object = self.obj.request.default_run
+        # Fii angles are currently not used so disable their spin boxes
+        self.detectorFiiDoubleSpinBox.setEnabled(False)
+        self.targetFiiDoubleSpinBox.setEnabled(False)
+        gutils.fill_combobox(self.profileComboBox, Profile)
 
-        self.tmp_run = copy.deepcopy(run_object)  # Copy of measurement's run
-        #  or default run
+        # Copy of measurement's/simulation's run or default run
+        # TODO should default run also be copied?
+        if not self.obj.run:
+            self.tmp_run = self.obj.request.default_run
+        else:
+            self.tmp_run = copy.deepcopy(self.obj.run)
 
-        self.ui.isotopeInfoLabel.setVisible(False)
+        self.isotopeInfoLabel.setVisible(False)
+
+        self.beamIonButton.clicked.connect(self.change_element)
+
+        self.fields_are_valid = False
+        iv.set_input_field_red(self.nameLineEdit)
+        self.nameLineEdit.textChanged.connect(
+            lambda: iv.check_text(self.nameLineEdit, qwidget=self))
+        self.nameLineEdit.textEdited.connect(self.__validate)
+
+        self.run_form_layout: QtWidgets.QFormLayout
+        self.run_form_layout.insertRow(3, "Fluence", self.fluenceDoubleSpinBox)
+        self.fluenceDoubleSpinBox.scientificLineEdit.setContextMenuPolicy(
+            Qt.ActionsContextMenu)
+        self.actionMultiply = QtWidgets.QAction(
+            self.fluenceDoubleSpinBox.scientificLineEdit)
+        self.actionMultiply.triggered.connect(self.__multiply_fluence)
+        self.fluenceDoubleSpinBox.scientificLineEdit.addAction(
+            self.actionMultiply)
+
+        self.actionUndo = QtWidgets.QAction(
+            self.fluenceDoubleSpinBox.scientificLineEdit)
+        self.actionUndo.setText("Undo multiply")
+        self.actionUndo.triggered.connect(self.__undo_fluence)
+
+        self.actionUndo.setEnabled(bool(self.tmp_run.previous_fluence))
+        self.fluenceDoubleSpinBox.scientificLineEdit.addAction(self.actionUndo)
+
+        self.clipboard = QGuiApplication.clipboard()
+        self._ratio = None
+        self.clipboard.changed.connect(self.__update_multiply_action)
+        self.__update_multiply_action()
+
+        self.energyDoubleSpinBox.setToolTip("Energy set in MeV with.")
 
         self.show_settings()
 
-        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
-
-        self.clipboard = QGuiApplication.clipboard()
-        self.ratio_str = self.clipboard.text()
-        self.clipboard.changed.connect(self.__update_multiply_action)
-
-        self.fluenceDoubleSpinBox.setContextMenuPolicy(Qt.ActionsContextMenu)
-        self.actionMultiply = QtWidgets.QAction(self.fluenceDoubleSpinBox)
-        self.actionMultiply.setText("Multiply with value in clipboard\n(" +
-                                    self.ratio_str + ")")
-        self.actionMultiply.triggered.connect(self.__multiply_fluence)
-        self.fluenceDoubleSpinBox.addAction(self.actionMultiply)
-
-        self.actionUndo = QtWidgets.QAction(self.fluenceDoubleSpinBox)
-        self.actionUndo.setText("Undo multipy")
-        self.actionUndo.triggered.connect(self.__undo_fluence)
-        if self.tmp_run.previous_fluence:
-            self.actionUndo.setEnabled(True)
-        else:
-            self.actionUndo.setEnabled(False)
-        self.fluenceDoubleSpinBox.addAction(self.actionUndo)
-
-        self.energyDoubleSpinBox.setToolTip("Energy set in MeV with .")
+    def get_original_property_values(self):
+        """Returns the values of the properties when they were first set.
+        """
+        return self.__original_property_values
 
     def show_settings(self):
+        """Show measurement settings.
         """
-        Show measurement settings.
-        """
-        if self.tmp_run.beam.ion:
-            self.ui.beamIonButton.setText(
-                self.tmp_run.beam.ion.symbol)
-            # TODO Check that the isotope is also set.
-            self.isotopeComboBox.setEnabled(True)
-
-            masses.load_isotopes(self.tmp_run.beam.ion.symbol,
-                                 self.ui.isotopeComboBox,
-                                 str(self.tmp_run.beam.ion.isotope))
-        else:
-            self.beamIonButton.setText("Select")
-            self.isotopeComboBox.setEnabled(
-                False)
-
-        self.nameLineEdit.setText(
-            self.obj.measurement_setting_file_name)
-        self.descriptionPlainTextEdit.setPlainText(
-            self.obj.measurement_setting_file_description)
+        self.measurement_setting_file_name = \
+            self.obj.measurement_setting_file_name
+        self.measurement_setting_file_description = \
+            self.obj.measurement_setting_file_description
         self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
             self.obj.modification_time)))
-        self.energyDoubleSpinBox.setValue(
-            self.tmp_run.beam.energy)
-        self.energyDistDoubleSpinBox.setValue(
-            self.tmp_run.beam.energy_distribution)
-        self.beamChargeSpinBox.setValue(
-            self.tmp_run.beam.charge)
-        self.spotSizeXdoubleSpinBox.setValue(
-            self.tmp_run.beam.spot_size[0])
-        self.spotSizeYdoubleSpinBox.setValue(
-            self.tmp_run.beam.spot_size[1])
-        self.divergenceDoubleSpinBox.setValue(
-            self.tmp_run.beam.divergence)
-        self.profileComboBox.setCurrentIndex(
-            self.profileComboBox.findText(
-                self.tmp_run.beam.profile))
-        self.fluenceDoubleSpinBox.setValue(
-            self.tmp_run.fluence)
-        self.currentDoubleSpinBox.setValue(
-            self.tmp_run.current)
-        self.timeDoubleSpinBox.setValue(
-            self.tmp_run.time)
-        self.runChargeDoubleSpinBox.setValue(self.tmp_run.charge)
 
-        detector_object = self.obj.detector
-        target_object = self.obj.target
-        if not detector_object:  # Detector is an indicator whether default
-            # settings should be used.
-            detector_object = self.obj.request.default_detector
-            target_object = self.obj.request.default_target
-        self.targetThetaDoubleSpinBox.setValue(
-                target_object.target_theta)
-        self.detectorThetaDoubleSpinBox.setValue(
-            detector_object.detector_theta)
+        run_params = {
+            f"run_{key}": value
+            for key, value in self.tmp_run.get_settings().items()
+        }
+        bean_params = {
+            f"beam_{key}": value
+            for key, value in self.tmp_run.beam.get_settings().items()
+        }
+        self.set_properties(**run_params, **bean_params)
+
+        self.detector_theta = self.obj.detector.detector_theta
+        self.target_theta = self.obj.target.target_theta
 
     def check_angles(self):
         """
@@ -186,99 +240,54 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         Return:
             Whether it is ok to use current angle settings.
         """
-        det_theta = self.detectorThetaDoubleSpinBox.value()
-        target_theta = self.targetThetaDoubleSpinBox.value()
-
-        if target_theta > det_theta:
-            reply = QtWidgets.QMessageBox.question(self, "Warning",
-                                                   "Measurement cannot use a "
-                                                   "target angle that is "
-                                                   "bigger than the detector "
-                                                   "angle (for simulation "
-                                                   "this is possible).\n\n Do "
-                                                   "you want to use these "
-                                                   "settings anyway?",
-                                           QtWidgets.QMessageBox.Ok |
-                                           QtWidgets.QMessageBox.Cancel,
-                                           QtWidgets.QMessageBox.Cancel)
+        if self.target_theta > self.detector_theta:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Warning",
+                "Measurement cannot use a target angle that is "
+                "bigger than the detector angle (for simulation "
+                "this is possible).\n\n"
+                "Do you want to use these settings anyway?",
+                QtWidgets.QMessageBox.Ok |
+                QtWidgets.QMessageBox.Cancel,
+                QtWidgets.QMessageBox.Cancel)
             if reply == QtWidgets.QMessageBox.Cancel:
                 return False
         return True
 
+    def get_run_and_beam_parameters(self):
+        """Returns run and beam related properties as separate dictionaries with
+        prefixes removed from each key.
+        """
+        run_params, beam_params = {}, {}
+        for k, v in self.get_properties().items():
+            if k.startswith("run_"):
+                run_params[k[4:]] = v
+            elif k.startswith("beam_"):
+                beam_params[k[5:]] = v
+        return run_params, beam_params
+
     def update_settings(self):
+        """Update measurement settings.
         """
-        Update measurement settings.
-        """
-        isotope_index = self.isotopeComboBox. \
-            currentIndex()
+        isotope_index = self.isotopeComboBox.currentIndex()
         if isotope_index != -1:
-            isotope_data = self.isotopeComboBox.itemData(isotope_index)
-            self.obj.run.beam.ion = Element(self.beamIonButton.text(),
-                                            isotope_data[0])
-            self.obj.measurement_setting_file_name = self.nameLineEdit.text()
-            self.obj.measurement_setting_file_description = self \
-                .descriptionPlainTextEdit.toPlainText()
-            self.obj.run.beam.energy = self.energyDoubleSpinBox.value()
-            self.obj.run.beam.energy_distribution = \
-                self.energyDistDoubleSpinBox.value()
-            self.obj.run.beam.charge = self.beamChargeSpinBox.value()
-            self.obj.run.beam.spot_size = (self.spotSizeXdoubleSpinBox.value(),
-                                           self.spotSizeYdoubleSpinBox.value())
-            self.obj.run.beam.divergence = self.divergenceDoubleSpinBox.value()
-            self.obj.run.beam.profile = self.profileComboBox.currentText()
-            self.obj.run.fluence = self.fluenceDoubleSpinBox.value()
-            self.obj.run.current = self.currentDoubleSpinBox.value()
-            self.obj.run.time = self.timeDoubleSpinBox.value()
-            self.obj.run.charge = self.runChargeDoubleSpinBox.value()
+            self.obj.measurement_setting_file_name = \
+                self.measurement_setting_file_name
+            self.obj.measurement_setting_file_description = \
+                self.measurement_setting_file_description
+
+            run_params, beam_params = self.get_run_and_beam_parameters()
+            self.obj.run.set_settings(**run_params)
+            self.obj.run.beam.set_settings(**beam_params)
             self.obj.run.previous_fluence = self.tmp_run.previous_fluence
-            self.obj.detector.detector_theta = self \
-                .detectorThetaDoubleSpinBox.value()
-            self.obj.target.target_theta = self \
-                .targetThetaDoubleSpinBox.value()
+            self.obj.detector.detector_theta = self.detector_theta
+            self.obj.target.target_theta = self.target_theta
         else:
-            QtWidgets.QMessageBox.critical(self, "Warning",
-                                           "No isotope selected.\n\nPlease "
-                                           "select an isotope for the beam "
-                                           "element.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
-
-    def values_changed(self):
-        """
-        Check whether measurement settings values that trigger possible
-        rerunning of simulations have changed.
-
-        Return:
-             True or False.
-        """
-        isotope_index = self.isotopeComboBox. \
-            currentIndex()
-        if isotope_index != -1:
-            isotope_data = self.isotopeComboBox.itemData(isotope_index)
-            if self.obj.run.beam.ion != Element(self.beamIonButton.text(),
-                                                isotope_data[0]):
-                return True
-            if self.obj.run.beam.energy != self.energyDoubleSpinBox.value():
-                return True
-            if self.obj.run.beam.energy_distribution != \
-                self.energyDistDoubleSpinBox.value():
-                return True
-            if self.obj.run.beam.spot_size != (
-                self.spotSizeXdoubleSpinBox.value(),
-                                           self.spotSizeYdoubleSpinBox.value()):
-                return True
-            if self.obj.run.beam.divergence != \
-                self.divergenceDoubleSpinBox.value():
-                return True
-            if self.obj.run.beam.profile != self.profileComboBox.currentText():
-                return True
-            if self.obj.detector.detector_theta != self \
-                .detectorThetaDoubleSpinBox.value():
-                return True
-            if self.obj.target.target_theta != self \
-                .targetThetaDoubleSpinBox.value():
-                return True
-            return False
+            QtWidgets.QMessageBox.critical(
+                self, "Warning",
+                "No isotope selected.\n\n"
+                "Please select an isotope for the beam element.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def other_values_changed(self):
         """
@@ -288,21 +297,23 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         Return:
              True or False.
         """
+        # TODO make it possible to group TrackingProperties (for example into
+        #  'critical' and 'noncritical' properties)
         if self.obj.measurement_setting_file_name != \
-                self.nameLineEdit.text():
+                self.measurement_setting_file_name:
             return True
-        if self.obj.measurement_setting_file_description != self \
-                .descriptionPlainTextEdit.toPlainText():
+        if self.obj.measurement_setting_file_description != \
+                self.measurement_setting_file_description:
             return True
-        if self.obj.run.beam.charge != self.beamChargeSpinBox.value():
+        if self.obj.run.beam.charge != self.beam_charge:
             return True
-        if self.obj.run.current != self.currentDoubleSpinBox.value():
+        if self.obj.run.current != self.run_current:
             return True
-        if self.obj.run.time != self.timeDoubleSpinBox.value():
+        if self.obj.run.time != self.run_time:
             return True
-        if self.obj.run.charge != self.runChargeDoubleSpinBox.value():
+        if self.obj.run.charge != self.run_charge:
             return True
-        if self.obj.run.fluence != self.fluenceDoubleSpinBox.value():
+        if self.obj.run.fluence != self.run_fluence:
             return True
         return False
 
@@ -310,87 +321,83 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         """
         Save run and beam parameters to tmp_run object.
         """
-        isotope_index = self.isotopeComboBox. \
-            currentIndex()
+        isotope_index = self.isotopeComboBox.currentIndex()
         # TODO: Show a message box, don't just quietly do nothing
         if isotope_index != -1:
-            isotope_data = self.isotopeComboBox.itemData(isotope_index)
-            self.tmp_run.beam.ion = Element(self.beamIonButton.text(),
-                                            isotope_data[0])
-            self.tmp_run.beam.energy = self.energyDoubleSpinBox.value()
-            self.tmp_run.beam.energy_distribution = \
-                self.energyDistDoubleSpinBox.value()
-            self.tmp_run.beam.charge = self.beamChargeSpinBox.value()
-            self.tmp_run.beam.spot_size = (self.spotSizeXdoubleSpinBox.value(),
-                                           self.spotSizeYdoubleSpinBox.value())
-            self.tmp_run.beam.divergence = self.divergenceDoubleSpinBox.value()
-            self.tmp_run.beam.profile = self.profileComboBox.currentText()
-            self.tmp_run.fluence = self.fluenceDoubleSpinBox.value()
-            self.tmp_run.current = self.currentDoubleSpinBox.value()
-            self.tmp_run.time = self.timeDoubleSpinBox.value()
+            run_params, beam_params = self.get_run_and_beam_parameters()
+            self.tmp_run.set_settings(**run_params)
+            self.tmp_run.beam.set_settings(**beam_params)
         else:
-            QtWidgets.QMessageBox.critical(self, "Warning",
-                                           "No isotope selected.\n\nPlease "
-                                           "select an isotope for the beam "
-                                           "element.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
-
-    @staticmethod
-    def check_text(input_field, settings):
-        """Checks if there is text in given input field.
-
-        Args:
-            input_field: Input field the contents of which are checked.
-        """
-        settings.fields_are_valid = check_text(input_field)
+            QtWidgets.QMessageBox.critical(
+                self, "Warning",
+                "No isotope selected.\n\n"
+                "Please select an isotope for the beam element.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def __validate(self):
+        """Validate the measurement settings file name.
         """
-        Validate the measurement settings file name.
-        """
-        text = self.ui.nameLineEdit.text()
+        text = self.measurement_setting_file_name
         regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = validate_text_input(text, regex)
+        valid_text = iv.validate_text_input(text, regex)
 
-        self.ui.nameLineEdit.setText(valid_text)
+        self.measurement_setting_file_name = valid_text
 
     def __multiply_fluence(self):
-        """
-        Multiply fluence with clipboard's value.
+        """Multiply fluence with clipboard's value.
         """
         try:
-            ratio = float(self.ratio_str)
-            old_fluence = self.fluenceDoubleSpinBox.value()
-            self.tmp_run.previous_fluence.append(old_fluence)
-            new_fluence = round(ratio * old_fluence, 2)
-            self.fluenceDoubleSpinBox.setValue(new_fluence)
+            new_fluence = round(self._ratio * self.run_fluence, 2)
+            self.tmp_run.previous_fluence.append(self.run_fluence)
+            self.run_fluence = new_fluence
             self.actionUndo.setEnabled(True)
         except ValueError:
-            QtWidgets.QMessageBox.critical(self, "Error",
-                                           "Value '" + self.ratio_str +
-                                           "' is not suitable for "
-                                           "multiplying.\n\nPlease copy a "
-                                           "suitable value to clipboard.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            pass
 
     def __undo_fluence(self):
+        """Undo latest change to fluence.
         """
-        Undo latest change to fluence.
-        """
-        old_value = self.tmp_run.previous_fluence.pop()
-        self.fluenceDoubleSpinBox.setValue(old_value)
-        if not self.tmp_run.previous_fluence:
-            self.actionUndo.setEnabled(False)
-        else:
-            self.actionUndo.setEnabled(True)
+        try:
+            old_value = self.tmp_run.previous_fluence.pop()
+            self.run_fluence = old_value
+        except IndexError:
+            pass
+
+        # Enable undo if there are still previous values
+        self.actionUndo.setEnabled(bool(self.tmp_run.previous_fluence))
 
     def __update_multiply_action(self):
+        """Update the value with which the multiplication is done.
         """
-        Update the value with which the multiplication is done.
-        """
-        self.ratio_str = self.clipboard.text()
-        self.actionMultiply.setText("Multiply with value in clipboard\n(" +
-                                    self.ratio_str + ")")
+        try:
+            self._ratio = float(self.clipboard.text())
+        except ValueError:
+            if self._ratio is None:
+                self._ratio = 1.0
+        self.actionMultiply.setText(f"Multiply with value in clipboard\n"
+                                    f"({self._ratio})")
 
+    def change_element(self):
+        """Opens element selection dialog and loads selected element's isotopes
+        to the combobox.
+        """
+        dialog = ElementSelectionDialog()
+        if dialog.element:
+            self.beamIonButton.setText(dialog.element)
+            # TODO use IsotopeSelectionWidget
+            gutils.load_isotopes(dialog.element, self.isotopeComboBox)
+
+            # Check if no isotopes
+            if self.isotopeComboBox.count() == 0:
+                self.isotopeInfoLabel.setVisible(True)
+                self.fields_are_valid = False
+                iv.set_input_field_red(self.isotopeComboBox)
+                self.beam_selection_ok.emit(False)
+            else:
+                self.isotopeInfoLabel.setVisible(False)
+                iv.check_text(self.nameLineEdit, qwidget=self)
+                self.isotopeComboBox.setStyleSheet(
+                    "background-color: %s" % "None")
+                self.beam_selection_ok.emit(True)
+        else:
+            self.beam_selection_ok.emit(False)

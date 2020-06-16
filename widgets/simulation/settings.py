@@ -24,188 +24,154 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen"
+             "\n Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import os
-import time
 
-from modules.general_functions import check_text
-from modules.general_functions import set_input_field_red
-from modules.general_functions import validate_text_input
+import widgets.input_validation as iv
+import widgets.binding as bnd
+import widgets.gui_utils as gutils
+
+from pathlib import Path
+
+from modules.element_simulation import ElementSimulation
+from modules.enums import SimulationMode
+from modules.enums import SimulationType
+
+from widgets.binding import PropertyTrackingWidget
+from widgets.gui_utils import QtABCMeta
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import pyqtSignal
 
 
-class SimulationSettingsWidget(QtWidgets.QWidget):
+class SimulationSettingsWidget(QtWidgets.QWidget, PropertyTrackingWidget,
+                               metaclass=QtABCMeta):
     """Class for creating a simulation settings tab.
     """
-    def __init__(self, obj):
+    # TODO name, desc should perhaps not be tracked
+    name = bnd.bind("nameLineEdit", track_change=True)
+    description = bnd.bind("descriptionPlainTextEdit", track_change=True)
+    simulation_type = bnd.bind("typeOfSimulationComboBox", track_change=True)
+    simulation_mode = bnd.bind("modeComboBox", track_change=True)
+    number_of_ions = bnd.bind("numberOfIonsSpinBox")
+    number_of_ions_in_presimu = bnd.bind("numberOfPreIonsSpinBox")
+    number_of_scaling_ions = bnd.bind("numberOfScalingIonsSpinBox",
+                                      track_change=True)
+    number_of_recoils = bnd.bind("numberOfRecoilsSpinBox",
+                                 track_change=True)
+    minimum_scattering_angle = bnd.bind("minimumScatterAngleDoubleSpinBox",
+                                        track_change=True)
+    minimum_main_scattering_angle = bnd.bind(
+        "minimumMainScatterAngleDoubleSpinBox", track_change=True)
+    minimum_energy_of_ions = bnd.bind("minimumEnergyDoubleSpinBox",
+                                      track_change=True)
+
+    # Seed and modification time are not tracked for changes
+    seed_number = bnd.bind("seedSpinBox")
+    modification_time = bnd.bind(
+        "dateLabel", fget=bnd.unix_time_from_label, fset=bnd.unix_time_to_label)
+
+    settings_updated = pyqtSignal()
+
+    def __init__(self, element_simulation: ElementSimulation):
         """
         Initializes the widget.
 
         Args:
-            obj: Element simulation object.
+            element_simulation: Element simulation object.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_request_simulation_settings.ui"),
-                             self)
-        self.obj = obj
+        uic.loadUi(Path("ui_files", "ui_request_simulation_settings.ui"), self)
 
-        set_input_field_red(self.ui.nameLineEdit)
+        # By default, disable the widget, so caller has to enable it. Without
+        # this, name and description fields would always be enabled when the
+        # widget loads.
+        self.setEnabled(False)
+        self.element_simulation = element_simulation
+        self.set_spinbox_maximums()
+        gutils.fill_combobox(self.modeComboBox, SimulationMode)
+        gutils.fill_combobox(self.typeOfSimulationComboBox, SimulationType)
+
         self.fields_are_valid = False
-        self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
-            self.ui.nameLineEdit, self))
-
-        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
+        iv.set_input_field_red(self.nameLineEdit)
+        self.nameLineEdit.textChanged.connect(
+            lambda: iv.check_text(self.nameLineEdit, qwidget=self))
+        self.nameLineEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.nameLineEdit))
 
         locale = QLocale.c()
-        self.ui.minimumScatterAngleDoubleSpinBox.setLocale(locale)
-        self.ui.minimumMainScatterAngleDoubleSpinBox.setLocale(locale)
-        self.ui.minimumEnergyDoubleSpinBox.setLocale(locale)
+        self.minimumScatterAngleDoubleSpinBox.setLocale(locale)
+        self.minimumMainScatterAngleDoubleSpinBox.setLocale(locale)
+        self.minimumEnergyDoubleSpinBox.setLocale(locale)
 
-        self.show_settings()
+        self.__original_property_values = {}
 
-    def show_settings(self):
+        self.set_properties(
+            name=self.element_simulation.name,
+            description=self.element_simulation.description,
+            modification_time=self.element_simulation.modification_time,
+            **self.element_simulation.get_settings())
+
+    def get_original_property_values(self):
+        """Returns a dictionary of original property values.
         """
-        Show simualtion settings.
-        """
-        self.ui.nameLineEdit.setText(self.obj.name)
-        self.ui.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
-            self.obj.modification_time)))
-        self.ui.descriptionPlainTextEdit.setPlainText(self.obj.description)
-        self.ui.modeComboBox.setCurrentIndex(self.ui.modeComboBox.findText(
-            self.obj.simulation_mode, Qt.MatchFixedString))
-        if self.obj.simulation_type == "ERD":
-            self.ui.typeOfSimulationComboBox.setCurrentIndex(
-                self.ui.typeOfSimulationComboBox.findText(
-                    "REC", Qt.MatchFixedString))
-        else:
-            self.ui.typeOfSimulationComboBox.setCurrentIndex(
-                self.ui.typeOfSimulationComboBox.findText("SCT",
-                                                         Qt.MatchFixedString))
-        self.ui.minimumScatterAngleDoubleSpinBox.setValue(
-            self.obj.minimum_scattering_angle)
-        self.ui.minimumMainScatterAngleDoubleSpinBox.setValue(
-            self.obj.minimum_main_scattering_angle)
-        self.ui.minimumEnergyDoubleSpinBox.setValue(self.obj.minimum_energy)
-        self.ui.numberOfIonsSpinBox.setValue(self.obj.number_of_ions)
-        self.ui.numberOfPreIonsSpinBox.setValue(self.obj.number_of_preions)
-        self.ui.seedSpinBox.setValue(self.obj.seed_number)
-        self.ui.numberOfRecoilsSpinBox.setValue(self.obj.number_of_recoils)
-        self.ui.numberOfScalingIonsSpinBox.setValue(
-            self.obj.number_of_scaling_ions)
+        return self.__original_property_values
 
-    @staticmethod
-    def __check_text(input_field, settings):
-        """Checks if there is text in given input field.
-
-        Args:
-            input_field: Input field the contents of which are checked.
-            settings: Settings widget.
+    def setEnabled(self, b):
+        """Either enables or disables widgets input fields.
         """
-        settings.fields_are_valid = check_text(input_field)
+        super().setEnabled(b)
+        try:
+            # setEnabled is called when ui file is being loaded and these
+            # attributes do not yet exist, so we have to catch the exception.
+            self.formLayout.setEnabled(b)
+            self.generalParametersGroupBox.setEnabled(b)
+            self.physicalParametersGroupBox.setEnabled(b)
+        except AttributeError:
+            pass
 
-    def __validate(self):
+    def set_spinbox_maximums(self, int_max=2147483647,
+                             float_max=1000000000000000013287555072.00):
+        """Set maximum values to spinbox components.
         """
-        Validate the mcsimu settings file name.
-        """
-        text = self.ui.nameLineEdit.text()
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = validate_text_input(text, regex)
-
-        self.ui.nameLineEdit.setText(valid_text)
+        self.numberOfIonsSpinBox.setMaximum(int_max)
+        self.numberOfPreIonsSpinBox.setMaximum(int_max)
+        self.seedSpinBox.setMaximum(int_max)
+        self.numberOfRecoilsSpinBox.setMaximum(int_max)
+        self.numberOfScalingIonsSpinBox.setMaximum(int_max)
+        self.minimumScatterAngleDoubleSpinBox.setMaximum(float_max)
+        self.minimumMainScatterAngleDoubleSpinBox.setMaximum(float_max)
+        self.minimumEnergyDoubleSpinBox.setMaximum(float_max)
 
     def update_settings(self):
         """
         Update simulation settings.
         """
-        self.obj.name = self.ui.nameLineEdit.text()
-        self.obj.description = self.ui.descriptionPlainTextEdit.toPlainText()
-        if self.ui.typeOfSimulationComboBox.currentText() == "REC":
-            if self.obj.simulation_type != "ERD":
-                self.obj.simulation_type = "ERD"
-                for recoil in self.obj.recoil_elements:
-                    recoil.type = "rec"
-                    try:
-                        path_to_rec = os.path.join(
-                            self.obj.directory,
-                            recoil.prefix + "-" + recoil.name + ".sct")
-                        os.remove(path_to_rec)
-                    except OSError:
-                        pass
-                    self.obj.recoil_to_file(
-                        self.obj.directory, recoil)
-        else:
-            if self.obj.simulation_type != "RBS":
-                self.obj.simulation_type = "RBS"
-                for recoil in self.obj.recoil_elements:
-                    recoil.type = "sct"
-                    try:
-                        path_to_rec = os.path.join(
-                            self.obj.directory,
-                            recoil.prefix + "-" + recoil.name + ".rec")
-                        os.remove(path_to_rec)
-                    except OSError:
-                        pass
-                    self.obj.recoil_to_file(
-                        self.obj.directory, recoil)
+        params = self.get_properties()
+        self.element_simulation.name = params.pop("name")
+        self.element_simulation.description = params.pop("description")
+        params.pop("modification_time")
 
-        self.obj.simulation_mode = self.ui.modeComboBox.currentText().lower()
-        self.obj.number_of_ions = self.ui.numberOfIonsSpinBox.value()
-        self.obj.number_of_preions = self.ui.numberOfPreIonsSpinBox.value()
-        self.obj.seed_number = self.ui.seedSpinBox.value()
-        self.obj.number_of_recoils = self.ui.numberOfRecoilsSpinBox.value()
-        self.obj.number_of_scaling_ions = self.ui.numberOfScalingIonsSpinBox. \
-            value()
-        self.obj.minimum_scattering_angle = \
-            self.ui.minimumScatterAngleDoubleSpinBox.value()
-        self.obj.minimum_main_scattering_angle = \
-            self.ui.minimumMainScatterAngleDoubleSpinBox.value()
-        self.obj.minimum_energy = self.ui.minimumEnergyDoubleSpinBox.value()
+        if self.simulation_type != self.element_simulation.simulation_type:
+            if self.simulation_type == SimulationType.ERD:
+                new_type = "rec"
+                old_type = ".sct"
+            else:
+                new_type = "sct"
+                old_type = ".rec"
+            for recoil in self.element_simulation.recoil_elements:
+                recoil.type = new_type
+                try:
+                    path_to_rec = Path(self.element_simulation.directory,
+                                       f"{recoil.get_full_name()}{old_type}")
+                    os.remove(path_to_rec)
+                except OSError:
+                    pass
+                recoil.to_file(self.element_simulation.directory)
 
-    def values_changed(self):
-        """
-        Check if simulation settings have been changed. Seed number change is
-        not registered as value change.
-
-        Return:
-            True or False.
-        """
-        if self.obj.name != self.ui.nameLineEdit.text():
-            return True
-        if self.obj.description != \
-                self.ui.descriptionPlainTextEdit.toPlainText():
-            return True
-        if self.ui.typeOfSimulationComboBox.currentText() == "REC":
-            if self.obj.simulation_type != "ERD":
-                return True
-        else:
-            if self.obj.simulation_type != "RBS":
-                return True
-        if self.obj.simulation_mode != self.ui.modeComboBox.currentText().\
-           lower():
-            return True
-        if self.obj.number_of_ions != self.ui.numberOfIonsSpinBox.value():
-            return True
-        if self.obj.number_of_preions != self.ui.numberOfPreIonsSpinBox.value():
-            return True
-        if self.obj.number_of_recoils != self.ui.numberOfRecoilsSpinBox.value():
-            return True
-        if self.obj.number_of_scaling_ions != \
-                self.ui.numberOfScalingIonsSpinBox.value():
-            return True
-        if self.obj.minimum_scattering_angle != \
-            self.ui.minimumScatterAngleDoubleSpinBox.value():
-            return True
-        if self.obj.minimum_main_scattering_angle != \
-            self.ui.minimumMainScatterAngleDoubleSpinBox.value():
-            return True
-        if self.obj.minimum_energy != \
-                self.ui.minimumEnergyDoubleSpinBox.value():
-            return True
-        return False
+        self.element_simulation.set_settings(**params)
+        self.settings_updated.emit()

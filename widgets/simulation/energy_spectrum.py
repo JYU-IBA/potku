@@ -27,13 +27,20 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-from PyQt5 import QtWidgets
-from PyQt5 import uic
 import sys
 import logging
-import os
+import warnings
+
+from pathlib import Path
+from PyQt5 import QtWidgets
+from PyQt5 import uic
+
 from widgets.matplotlib.simulation.energy_spectrum \
     import MatplotlibSimulationEnergySpectrumWidget
+
+
+warnings.warn("widget.simulation.energy_spectrum module is deprecated.",
+              DeprecationWarning, stacklevel=2)
 
 
 class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
@@ -47,24 +54,20 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
         """
         try:
             super().__init__()
+            uic.loadUi(Path("ui_files", "ui_energy_spectrum_simu.ui"), self)
+
             self.parent = parent
             self.icon_manager = parent.icon_manager
-            self.ui = uic.loadUi(os.path.join("ui_files",
-                                              "ui_energy_spectrum_simu.ui"),
-                                 self)
-            self.icon_manager = parent.icon_manager
-            self.progress_bar = None
-            title = str(self.ui.windowTitle())
-            self.ui.setWindowTitle(title)
+
+            title = str(self.windowTitle())
+            self.setWindowTitle(title)
             self.simulation = parent.simulation
-            self.ui.saveSimuEnergySpectraButton.clicked.connect(
-                self.save_spectra)
+            self.saveSimuEnergySpectraButton.clicked.connect(self.save_spectra)
             self.energy_spectrum_data = data
 
             # Graph in matplotlib widget and add to window
             self.matplotlib = MatplotlibSimulationEnergySpectrumWidget(
-                self,
-                self.energy_spectrum_data)
+                self, self.energy_spectrum_data)
         except:
             import traceback
             msg = "Could not create Energy Spectrum graph. "
@@ -77,10 +80,6 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
             logging.getLogger(self.simulation.name).error(msg)
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
-        finally:
-            if self.progress_bar:
-                self.measurement.statusbar.removeWidget(self.progress_bar)
-                self.progress_bar.hide()
 
     def save_spectra(self):
         """ Save the created energy spectra.

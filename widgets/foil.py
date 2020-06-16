@@ -27,31 +27,46 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
+import widgets.binding as bnd
+
+from pathlib import Path
+
 from PyQt5 import uic
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QLocale
+from PyQt5.QtCore import pyqtSignal
 
 
 class FoilWidget(QtWidgets.QWidget):
     """Class for creating a foil widget for detector settings.
     """
-    def __init__(self, parent):
+    foil_deletion = pyqtSignal(QtWidgets.QWidget)
+
+    # Distance in nanometers from previous foil or Target if this is the first
+    # foil
+    distance_from_previous = bnd.bind("distanceDoubleSpinBox")
+    # Distance from Target in nanometers
+    cumulative_distance = bnd.bind("distanceLabel")
+
+    name = bnd.bind("foilButton")
+
+    def __init__(self, foil):
         """
         Initializes the foil widget.
 
         Args:
-            parent: Parent object.
+            foil: foil object
         """
         super().__init__()
-        self.parent = parent
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_foil_widget.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_foil_widget.ui"), self)
+
         locale = QLocale.c()
-        self.ui.distanceDoubleSpinBox.setLocale(locale)
-        self.ui.deleteButton.clicked.connect(lambda: self._delete_foil())
-        self.ui.distanceDoubleSpinBox.valueChanged.connect(
-            lambda: self.__calculate_distance())
+        self.distanceDoubleSpinBox.setLocale(locale)
+        self.deleteButton.clicked.connect(self._delete_foil)
+
+        self.name = foil.name
+        self.distance_from_previous = 0
+        self.cumulative_distance = foil.distance
 
     def _delete_foil(self):
         """
@@ -67,11 +82,4 @@ class FoilWidget(QtWidgets.QWidget):
         confirm_box.exec()
 
         if confirm_box.clickedButton() == yes_button:
-            self.parent.delete_foil(self)
-            self.parent.calculate_distance()
-
-    def __calculate_distance(self):
-        """
-        Calculate the distance between foils.
-        """
-        self.parent.calculate_distance()
+            self.foil_deletion.emit(self)

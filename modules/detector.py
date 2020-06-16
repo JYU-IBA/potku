@@ -31,14 +31,23 @@ import json
 import os
 import shutil
 import time
+from typing import Optional
+from pathlib import Path
 
-from modules.element import Element
-from modules.foil import CircularFoil
-from modules.foil import RectangularFoil
-from modules.layer import Layer
+from . import general_functions as gf
+
+from .base import Serializable
+from .base import AdjustableSettings
+from .base import MCERDParameterContainer
+from .element import Element
+from .foil import Foil
+from .foil import CircularFoil
+from .foil import RectangularFoil
+from .layer import Layer
+from .enums import DetectorType
 
 
-class Detector:
+class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
     """
     Detector class that handles all the information about a detector.
     It also can convert itself to and from JSON file.
@@ -46,24 +55,25 @@ class Detector:
     __slots__ = "name", "description", "date", "type", "foils",\
                 "tof_foils", "virtual_size", "tof_slope", "tof_offset",\
                 "angle_slope", "angle_offset", "path", "modification_time",\
-                "efficiencies", "efficiency_directory", "timeres", \
-                "detector_theta", "__measurement_settings_file_path", \
-                "efficiencies_to_remove", "save_in_creation"
+                "efficiency_directory", "timeres", "detector_theta"
 
-    def __init__(self, path, measurement_settings_file_path, name="Default",
+    EFFICIENCY_DIR = "Efficiency_files"
+    USED_EFFICIENCIES_DIR = "Used_efficiencies"
+
+    def __init__(self, path, measurement_file, name="Default",
                  description="", modification_time=None,
-                 detector_type="TOF",
+                 detector_type=DetectorType.TOF,
                  foils=None, tof_foils=None, virtual_size=(2.0, 5.0),
                  tof_slope=5.8e-11, tof_offset=-1.0e-9, angle_slope=0,
                  angle_offset=0, timeres=250.0, detector_theta=41,
-                 save_in_creation=True):
+                 save_on_creation=True):
         """Initialize a detector.
 
         Args:
             path: Path to .detector file.
             name: Detector name.
-            measurement_settings_file_path: Path to measurement settings file
-                                            which has detector angles.
+            measurement_file: Path to a .measurement file which has detector
+                angles.
             description: Detector parameters description.
             modification_time: Modification time of detector file in Unix time.
             detector_type: Type of detector.
@@ -76,18 +86,20 @@ class Detector:
             angle_offset: Angle offset.
             timeres: Time resolution.
             detector_theta: Angle of the detector.
-            save_in_creation: Whether to save created detector into a file.
+            save_on_creation: Whether to save created detector into a file.
         """
-        self.path = path
+        self.path = Path(path)
 
         self.name = name
-        self.__measurement_settings_file_path = measurement_settings_file_path
         self.description = description
-        if not modification_time:
-            modification_time = time.time()
-        self.modification_time = modification_time
-        self.type = detector_type
+        if modification_time is None:
+            self.modification_time = time.time()
+        else:
+            self.modification_time = modification_time
+
+        self.type = DetectorType(detector_type.upper())
         self.foils = foils
+
         if not self.foils:
             # Create default foils
             self.foils = [CircularFoil("Foil1", 7.0, 256.0,
@@ -109,6 +121,7 @@ class Detector:
                                                  100.0, 3.44, 0.0)])]
         self.tof_foils = tof_foils
         if not self.tof_foils:
+            # TODO make being a timing foil an attribute of a foil
             # Set default ToF foils
             self.tof_foils = [1, 2]
         self.timeres = timeres
@@ -120,295 +133,323 @@ class Detector:
         self.detector_theta = detector_theta
 
         # Efficiency file paths and directory
-        self.efficiencies = []
-        self.efficiencies_to_remove = []
         self.efficiency_directory = None
 
-        if save_in_creation:
-            self.to_file(os.path.join(self.path),
-                         self.__measurement_settings_file_path)
+        if save_on_creation:
+            self.to_file(self.path, measurement_file)
 
-    def update_directories(self, directory):
+    def update_directories(self, directory: Path):
         """Creates directories if they do not exist and updates paths.
         Args:
             directory: Path to where all the detector information goes.
         """
-        self.path = directory
+        self.path = directory / self.path.name
+        directory.mkdir(exist_ok=True)
 
-        if not os.path.exists(self.path):
-            os.makedirs(self.path)
-
-        self.efficiency_directory = os.path.join(self.path, "Efficiency_files")
-        if not os.path.exists(self.efficiency_directory):
-            os.makedirs(self.efficiency_directory)
+        self.efficiency_directory = directory / Detector.EFFICIENCY_DIR
+        self.efficiency_directory.mkdir(exist_ok=True)
 
     def update_directory_references(self, obj):
         """
         Update detector's path and efficiency folder path and efficiencies'
         paths.
         """
-        old_path_to_det, det_file = os.path.split(self.path)
-        old_path_to_obj, det_folder = os.path.split(old_path_to_det)
-        new_path = os.path.join(obj.directory, det_folder)
+        old_path_to_det, det_file = self.path.parent, self.path.name
+        old_path_to_obj, det_folder = \
+            old_path_to_det.parent, old_path_to_det.name
+        new_path = Path(obj.directory, det_folder)
 
-        self.path = os.path.join(new_path, det_file)
+        self.path = Path(new_path, det_file)
 
-        self.efficiency_directory = os.path.join(new_path, "Efficiency_files")
+        self.efficiency_directory = Path(new_path, Detector.EFFICIENCY_DIR)
 
-    def get_efficiency_files(self):
-        """Get efficiency files that are in detector's efficiency file folder
-        and return them as a list.
+    def get_efficiency_files(self, return_full_paths: bool = False):
+        """Returns efficiency files that are in detector's efficiency file
+        folder, either with full path or just the file name.
+
+        Args:
+            return_full_paths: whether full paths are returned or not
 
         Return:
             Returns a string list of efficiency files.
         """
-        files = []
-        for f in os.listdir(self.efficiency_directory):
-            if f.strip().endswith(".eff"):
-                files.append(f)
-        return files
+        def filter_func(dir_entry):
+            fp = Path(dir_entry)
+            if fp.is_file() and fp.suffix == ".eff":
+                if return_full_paths:
+                    return fp
+                return Path(fp.name)
+            return None
+        return [
+            *filter(
+                lambda f: f is not None,
+                (filter_func(file) for file in os.scandir(
+                    self.efficiency_directory)))
+        ]
 
-    def get_efficiency_files_from_list(self):
-        """Get efficiency files that are stored in detector's efficiency list,
-        i.e. that are not yet moved under any detector's efficiency folder.
+    def add_efficiency_file(self, file_path: Path):
+        """Copies efficiency file to detector's efficiency folder. Existing
+        files are overwritten.
 
-        Return:
-            List of efficiency files.
-        """
-        files = []
-        for path in self.efficiencies:
-            file = os.path.split(path)[1]
-            files.append(file)
-        return files
-
-    def save_efficiency_file_path(self, file_path):
-        """Add the efficiency file path to detector's efficiencies list.
-        """
-        self.efficiencies.append(file_path)
-
-    def add_efficiency_file(self, file_path):
-        """Copies efficiency file to detector's efficiency folder.
+        Raises OSError if the file_path points to a directory.
 
         Args:
             file_path: Path of the efficiency file.
         """
-        try:
-            shutil.copy(file_path, self.efficiency_directory)
-        except shutil.SameFileError:
-            pass
+        fp = Path(file_path)
+        if fp.suffix == ".eff":
+            try:
+                shutil.copy(fp, self.efficiency_directory)
+            except shutil.SameFileError:
+                pass
 
-    def remove_efficiency_file_path(self, file_name):
+    def get_settings(self) -> dict:
+        """Returns a dictionary of settings that can be adjusted.
         """
-        Add efficiency file to remove to the list of to be removed efficiency
-        file paths and remove it from the efficiencies list.
+        return {
+            "name": self.name,
+            "modification_time": self.modification_time,
+            "description": self.description,
+            "detector_type": self.type,
+            "angle_slope": self.angle_slope,
+            "angle_offset": self.angle_offset,
+            "tof_slope": self.tof_slope,
+            "tof_offset": self.tof_offset,
+            "timeres": self.timeres,
+            "virtual_size": self.virtual_size
+        }
+
+    def set_settings(self, detector_type=None, **kwargs):
+        """Adjusts this Detector's settings with given keyword arguments.
+        """
+        allowed = self.get_settings()
+        if detector_type is not None:
+            self.type = detector_type
+        for key, value in kwargs.items():
+            if key in allowed:
+                setattr(self, key, value)
+
+    def remove_efficiency_file(self, file_name: Path):
+        """Removes efficiency file from detector's efficiency file folder as
+        well as the used efficiencies folder.
 
         Args:
             file_name: Name of the efficiency file.
         """
-        file_path = ""
-        folder_and_file = os.path.join("Efficiency_files", file_name)
-        for f in self.efficiencies:
-            if f.endswith(folder_and_file):
-                file_path = f
-            if f.endswith(file_name):
-                self.efficiencies.remove(f)
-
-        if file_path:
-            self.efficiencies_to_remove.append(file_path)
-
-    def remove_efficiency_file(self, file_name):
-        """Removes efficiency file from detector's efficiency file folder.
-
-        Args:
-            file_name: Name of the efficiency file.
-        """
+        file_name = Path(file_name)
         try:
-            os.remove(os.path.join(self.efficiency_directory, file_name))
-            # Remove file from used efficiencies if it exists
-            element_split = file_name.split('-')
-            if len(element_split) <= 2:
-                element = element_split[0]
-            else:
-                if os.sep in element_split[-1]:
-                    element = element_split[-1]
-                else:
-                    element = element_split[len(element_split) - 2]
-            if os.sep in element:
-                element = os.path.split(element)[1]
-            if element.endswith(".eff"):
-                file_to_remove = os.path.join(self.efficiency_directory,
-                                              "Used_efficiencies", element)
-            else:
-                file_to_remove = os.path.join(self.efficiency_directory,
-                                              "Used_efficiencies", element +
-                                              ".eff")
-            if os.path.exists(file_to_remove):
-                os.remove(file_to_remove)
+            Path(self.efficiency_directory, file_name).unlink()
         except OSError:
-            # File was not found in efficiency file folder.
+            pass
+        try:
+            used_eff_file = \
+                self.get_used_efficiencies_dir() / \
+                Detector.get_used_efficiency_file_name(file_name)
+            used_eff_file.unlink()
+        except (OSError, ValueError):
+            # File was not found in efficiency file folder or the file extension
+            # was wrong.
             pass
 
     @classmethod
-    def from_file(cls, detector_file_path, measurement_file_path, request,
-                  save=True):
+    def from_file(cls, detector_file: Path, measurement_file: Path,
+                  request, save_on_creation=True):
         """Initialize Detector from a JSON file.
 
         Args:
-            detector_file_path: A file path to JSON file containing the
+            detector_file: A file path to JSON file containing the
                                 detector parameters.
-            measurement_file_path: A file path to measurement settings file
+            measurement_file: A file path to measurement settings file
                                    which has detector angles.
             request: Request object which has default detector angles.
-            save: Whether to save created detector or not.
+            save_on_creation: Whether to save created detector or not.
 
         Return:
             Detector object.
         """
-        obj = json.load(open(detector_file_path))
+        with detector_file.open("r") as dfp:
+            detector = json.load(dfp)
 
-        name = obj["name"]
-        description = obj["description"]
-        modification_time = obj["modification_time_unix"]
-        detector_type = obj["detector_type"]
-        timeres = obj["timeres"]
-        virtual_size = tuple(obj["virtual_size"])
-        tof_slope = obj["tof_slope"]
-        tof_offset = obj["tof_offset"]
-        angle_slope = obj["angle_slope"]
-        angle_offset = obj["angle_offset"]
-        tof_foils = obj["tof_foils"]
+        detector["modification_time"] = detector.pop("modification_time_unix")
+        detector["virtual_size"] = tuple(detector["virtual_size"])
+
         foils = []
 
         # Read foils
-        for foil in obj["foils"]:
-
-            distance = foil["distance"]
+        for foil in detector.pop("foils"):
             layers = []
 
             # Read layers of the foil
-            for layer in foil["layers"]:
+            for layer in foil.pop("layers"):
                 elements = []
-                elements_str = layer["elements"]
+                elements_str = layer.pop("elements")
                 # Read elements of the layer
                 for element_str in elements_str:
                     elements.append(Element.from_string(element_str))
 
-                layers.append(Layer(layer["name"],
-                                    elements,
-                                    float(layer["thickness"]),
-                                    float(layer["density"]),
-                                    float(layer["start_depth"])))
+                layers.append(Layer(**layer, elements=elements))
 
-            if foil["type"] == "circular":
-                foils.append(
-                    CircularFoil(foil["name"], foil["diameter"], distance,
-                                 layers, foil["transmission"]))
-            else:
-                foils.append(
-                    RectangularFoil(foil["name"], (foil["size"])[0],
-                                    (foil["size"])[1],
-                                    distance, layers, foil["transmission"]))
+            foils.append(Foil.generate_foil(**foil, layers=layers))
 
         try:
             # Read .measurement file and update detector angle
-            measurement_obj = json.load(open(measurement_file_path))
+            with measurement_file.open("r") as mesu_file:
+                measurement_obj = json.load(mesu_file)
             detector_theta = measurement_obj["geometry"]["detector_theta"]
-        except KeyError:
+        except (KeyError, json.JSONDecodeError, OSError, AttributeError):
             # Get default detector angle from default detector
-            detector_theta = request.default_detector.detector_theta
+            try:
+                detector_theta = request.default_detector.detector_theta
+            except AttributeError:
+                return cls(path=detector_file,
+                           measurement_file=measurement_file,
+                           foils=foils, save_on_creation=save_on_creation,
+                           **detector)
 
-        return cls(path=detector_file_path,
-                   measurement_settings_file_path=measurement_file_path,
-                   name=name, description=description,
-                   modification_time=modification_time,
-                   detector_type=detector_type,
-                   foils=foils, tof_foils=tof_foils, virtual_size=virtual_size,
-                   tof_slope=tof_slope, tof_offset=tof_offset,
-                   angle_slope=angle_slope, angle_offset=angle_offset,
-                   timeres=timeres, detector_theta=detector_theta,
-                   save_in_creation=save)
+        return cls(path=detector_file, measurement_file=measurement_file,
+                   foils=foils, detector_theta=detector_theta,
+                   save_on_creation=save_on_creation, **detector)
 
-    def to_file(self, detector_file_path, measurement_file_path):
+    def to_file(self, detector_file: Path,
+                measurement_file: Optional[Path] = None):
         """Save detector settings to a file.
 
         Args:
-            detector_file_path: File in which the detector settings will be
-                                saved.
-            measurement_file_path: File in which the detector_theta angle is
-                                   saved.
+            detector_file: File in which the detector settings will be
+                saved.
+            measurement_file: File in which the detector_theta angle is
+                saved.
         """
         # Delete possible extra .detector files
-        det_folder = os.path.split(detector_file_path)[0]
-        filename_to_remove = ""
-        for file in os.listdir(det_folder):
-            if file.endswith(".detector"):
-                filename_to_remove = file
-                break
-        if filename_to_remove:
-            os.remove(os.path.join(det_folder, filename_to_remove))
+        det_folder = detector_file.parent
+        det_folder.mkdir(parents=True, exist_ok=True)
+
+        timestamp = time.time()
 
         # Read Detector parameters to dictionary
         obj = {
-            "name": self.name,
-            "description": self.description,
-            "modification_time": time.strftime("%c %z %Z", time.localtime(
-                time.time())),
-            "modification_time_unix": time.time(),
-            "detector_type": self.type,
-            "foils": [],
+            **self.get_settings(),
+            "foils": [
+                foil.to_dict() for foil in self.foils
+            ],
             "tof_foils": self.tof_foils,
-            "timeres": self.timeres,
-            "virtual_size": self.virtual_size,
-            "tof_slope": self.tof_slope,
-            "tof_offset": self.tof_offset,
-            "angle_slope": self.angle_slope,
-            "angle_offset": self.angle_offset
+            "modification_time": time.strftime(
+                "%c %z %Z", time.localtime(timestamp)),
+            "modification_time_unix": timestamp
         }
 
-        for foil in self.foils:
-            foil_obj = {
-                "name": foil.name,
-                "distance": foil.distance,
-                "layers": [],
-                "transmission": foil.transmission,
-            }
-            if isinstance(foil, CircularFoil):
-                foil_obj["type"] = "circular"
-                foil_obj["diameter"] = foil.diameter
-            else:
-                foil_obj["type"] = "rectangular"
-                foil_obj["size"] = foil.size
-
-            for layer in foil.layers:
-                layer_obj = {
-                    "name": layer.name,
-                    "elements": [element.__str__() for element in
-                                 layer.elements],
-                    "thickness": layer.thickness,
-                    "density": layer.density,
-                    "start_depth": layer.start_depth
-                }
-                foil_obj["layers"].append(layer_obj)
-
-            obj["foils"].append(foil_obj)
-
-        with open(detector_file_path, "w") as file:
+        with detector_file.open("w") as file:
             json.dump(obj, file, indent=4)
 
-        if measurement_file_path is None:
+        if measurement_file is None:
             return
         # Read .measurement to obj to update only detector angles
         try:
-            obj = json.load(open(measurement_file_path))
+            with measurement_file.open("r") as mesu:
+                obj = json.load(mesu)
             try:
                 # Change existing detector theta
                 obj["geometry"]["detector_theta"] = self.detector_theta
             except KeyError:
                 # Add detector theta
                 obj["geometry"] = {"detector_theta": self.detector_theta}
-        except FileNotFoundError:
+        except (OSError, json.JSONDecodeError):
             # Write new .measurement file
             obj = {"geometry": {"detector_theta": self.detector_theta}}
 
-        with open(measurement_file_path, "w") as file:
+        with measurement_file.open("w") as file:
             json.dump(obj, file, indent=4)
+
+    def get_mcerd_params(self):
+        """Returns a list of strings that are passed as parameters for MCERD.
+        """
+        return [
+            f"Detector type: {self.type}",
+            f"Detector angle: {self.detector_theta}",
+            f"Virtual detector size: {'%0.1f %0.1f' % self.virtual_size}",
+            f"Timing detector numbers: {self.tof_foils[0]} {self.tof_foils[1]}"
+        ]
+
+    def calculate_solid(self):
+        """
+        Calculate the solid parameter.
+        Return:
+            Returns the solid parameter calculated.
+        """
+        try:
+            transmissions = self.foils[0].transmission
+        except IndexError:
+            return 0
+
+        for f in self.foils:
+            transmissions *= f.transmission
+
+        smallest_solid_angle = self.calculate_smallest_solid_angle()
+
+        return smallest_solid_angle * transmissions
+
+    def calculate_smallest_solid_angle(self):
+        """
+        Calculate the smallest solid angle.
+        Return:
+            Smallest solid angle. (unit millisteradian)
+        """
+        try:
+            return min(foil.get_solid_angle(units="msr")
+                       for foil in self.foils)
+        except (ZeroDivisionError, ValueError):
+            return 0
+
+    @staticmethod
+    def get_used_efficiency_file_name(file_name) -> Path:
+        """Returns an efficiency file name that can be used by tof_list.
+
+        File name should end in '.eff', otherwise ValueError is raised.
+        If the file name includes comments (indicated by a '-'), they will be
+        stripped from the output. A file named '1He-autumn2019.eff' becomes
+        '1He.eff'.
+
+        Args:
+            file_name: either a file name or path to a file
+
+        Return:
+            Path object that is only the file name.
+        """
+        file_name = Path(file_name)
+        if file_name.suffix != ".eff":
+            raise ValueError(
+                f"Efficiency file should have the extension '.eff'."
+                f"Given file was named '{file_name}'.")
+        first_part = file_name.name.split("-")[0]
+        if first_part.endswith(".eff"):
+            return Path(first_part)
+        return Path(f"{first_part}.eff")
+
+    def get_used_efficiencies_dir(self):
+        """Returns the path to efficiency folder where the files used when
+        running tof_list are located.
+        """
+        try:
+            return Path(
+                self.efficiency_directory, Detector.USED_EFFICIENCIES_DIR)
+        except TypeError:
+            # efficiency directory is None, this should also return None
+            return None
+
+    def copy_efficiency_files(self):
+        """Copies efficiency files to the directory where tof_list will be
+        looking for them. Additional comments are stripped from the files.
+        (i.e. 1H-example.eff becomes 1H.eff).
+        """
+        destination = self.get_used_efficiencies_dir()
+        destination.mkdir(exist_ok=True)
+        # Remove previous files
+        gf.remove_matching_files(destination, {".eff"})
+
+        for eff in self.get_efficiency_files(return_full_paths=True):
+            try:
+                used_file = Detector.get_used_efficiency_file_name(eff)
+            except ValueError:
+                continue
+            old_file = Path(self.efficiency_directory, eff)
+            shutil.copy(old_file, destination / used_file)

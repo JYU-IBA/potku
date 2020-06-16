@@ -10,6 +10,12 @@
     <height>200</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
   <property name="minimumSize">
    <size>
     <width>268</width>
@@ -36,7 +42,7 @@
       <widget class="QComboBox" name="comboBox">
        <item>
         <property name="text">
-         <string>Same interval</string>
+         <string>Common interval</string>
         </property>
        </item>
        <item>
@@ -63,6 +69,12 @@
    </item>
    <item>
     <widget class="QGroupBox" name="groupBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="title">
       <string>Percentages and areas</string>
      </property>

@@ -26,7 +26,7 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
-import os
+from pathlib import Path
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -46,26 +46,25 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
             area_limits: Limits for area.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_multiply_area_dialog.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_multiply_area_dialog.ui"), self)
+
         self.main_recoil = main_recoil
 
         locale = QLocale.c()
-        self.ui.fractionDoubleSpinBox.setLocale(locale)
+        self.fractionDoubleSpinBox.setLocale(locale)
 
-        self.ui.cancelButton.clicked.connect(self.close)
-        self.ui.okButton.clicked.connect(self.ok_pressed)
+        self.cancelButton.clicked.connect(self.close)
+        self.okButton.clicked.connect(self.ok_pressed)
 
-        self.ui.fractionCheckBox.stateChanged.connect(self.change_custom)
-        self.ui.fractionDoubleSpinBox.valueChanged.connect(
+        self.fractionCheckBox.stateChanged.connect(self.change_custom)
+        self.fractionDoubleSpinBox.valueChanged.connect(
             self.calculate_new_area)
 
         self.main_area = self.main_recoil.calculate_area_for_interval()
         text = str(round(self.main_area, 2))
 
-        self.ui.mainAreaLabel.setText(text)
-        self.ui.totalAreaLabel.setText(text)
+        self.mainAreaLabel.setText(text)
+        self.totalAreaLabel.setText(text)
 
         self.new_area = self.main_area
         self.reference_area = self.main_area
@@ -85,13 +84,13 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
             return
 
         # Find fraction
-        if self.ui.fractionCheckBox.isChecked():
-            fraction = self.ui.fractionDoubleSpinBox.value()
+        if self.fractionCheckBox.isChecked():
+            fraction = self.fractionDoubleSpinBox.value()
         else:
             fraction = 1.0
 
         area = ref_area * fraction
-        self.ui.totalAreaLabel.setText(str(round(area, 2)))
+        self.totalAreaLabel.setText(str(round(area, 2)))
 
         self.new_area = area
         self.reference_area = ref_area
@@ -101,9 +100,9 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
         """
         Enable or disable custom area or fraction usage.
         """
-        if self.sender() is self.ui.fractionCheckBox:
-            checked = self.ui.fractionCheckBox.isChecked()
-            self.ui.fractionDoubleSpinBox.setEnabled(checked)
+        if self.sender() is self.fractionCheckBox:
+            checked = self.fractionCheckBox.isChecked()
+            self.fractionDoubleSpinBox.setEnabled(checked)
         self.calculate_new_area()
 
     def ok_pressed(self):

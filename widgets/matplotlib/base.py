@@ -33,8 +33,8 @@ import os
 from PyQt5 import QtWidgets
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from modules.navigation_toolbar import NavigationToolBar2QTView as \
-    NavigationToolbar
+
+from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT
 
 
 class MatplotlibWidget(QtWidgets.QWidget):
@@ -60,19 +60,19 @@ class MatplotlibWidget(QtWidgets.QWidget):
         self.canvas.setParent(self.main_frame)
         self.axes = self.fig.add_subplot(111)
 
-        self.mpl_toolbar = NavigationToolbar(
+        self.mpl_toolbar = NavigationToolBar(
             self.canvas, self.main_frame)
 
-        if hasattr(self.main_frame.ui, "matplotlib_layout"):
-            self.main_frame.ui.matplotlib_layout.addWidget(self.canvas)
-            self.main_frame.ui.matplotlib_layout.addWidget(self.mpl_toolbar)
-        if hasattr(self.main_frame.ui, "stackedWidget"):
+        if hasattr(self.main_frame, "matplotlib_layout"):
+            self.main_frame.matplotlib_layout.addWidget(self.canvas)
+            self.main_frame.matplotlib_layout.addWidget(self.mpl_toolbar)
+        if hasattr(self.main_frame, "stackedWidget"):
             frame = QtWidgets.QWidget()
             layout = QtWidgets.QVBoxLayout()
             layout.addWidget(self.canvas)
             layout.addWidget(self.mpl_toolbar)
             frame.setLayout(layout)
-            self.main_frame.ui.stackedWidget.addWidget(frame)
+            self.main_frame.stackedWidget.addWidget(frame)
 
     def remove_axes_ticks(self):
         """Remove ticks from axes.
@@ -129,3 +129,39 @@ class MockManager:
         """Set file name.
         """
         self.title = title
+
+
+class NavigationToolBar(NavigationToolbar2QT):
+    """
+    Class for adding an attibute to the navigation toolbar class.
+    """
+
+    def __init__(self, canvas, main_frame):
+        """
+        Initializes the NavigationToolBar2QTView object.
+
+        Args:
+            canvas: A Canvas object
+            main_frame: Main frame for tool bar.
+        """
+        super().__init__(canvas, main_frame)
+        self._views = [[0], [0]]
+
+        """
+        NavigationToolbar.toolitems
+
+        matplotlib original toolbar items:
+        0; Home, Reset original view, home, home
+        1: Back, Back to prevous view, bac, back
+        2: Forward, Forward to next view, forward, forward
+        3: None, None, None, None
+        4: Pan, Pan axes with left mouse, zoom with right, move, pan
+        5: Zoom: Zoom to rectangle, zoom_to_rect, zoom
+        6: Subplots, Configure subplots, subplots, configure_subplots
+        7: None, None, None, None
+        8: Save, Save the figure, filesave, save_figure
+        """
+        actions = self.findChildren(QtWidgets.QAction)
+        for a in actions:
+            if a.text() == "Subplots" or a.text() == "Customize":
+                self.removeAction(a)

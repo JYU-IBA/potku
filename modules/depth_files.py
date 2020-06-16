@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 28.8.2018
+Updated on 20.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -24,320 +24,718 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 
-DepthFiles.py creates the files necessary for generating depth files.
-Also handles several tasks necessary for operating with depth files.
+depth_files.py contains classes to deal with depth files:
+    DepthFileGenerator runs c-components to generate the files
+    DepthProfile reads and calculates statistics from the files
+    DepthProfileHandler manages multiple DepthProfiles
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
-             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n " \
+             "Juhani Sundell"
 __version__ = "2.0"
 
 import math
 import os
 import platform
-import re
 import subprocess
+import logging
 
-from modules.general_functions import copy_cut_file_to_temp
+from pathlib import Path
+from functools import lru_cache
+from typing import Optional
+
+from . import math_functions as mf
+from . import comparison as comp
+from . import general_functions as gf
+from .element import Element
+from .parsing import CSVParser
+from .measurement import Measurement
 
 
-class DepthFiles(object):
+class DepthFileGenerator:
     """DepthFiles handles calling the external programs to create depth files.
     """
-
-    def __init__(self, file_paths, output_path):
+    def __init__(self, cut_files, output_directory: Path, prefix="depth",
+                 tof_in_file: Optional[Path] = None):
         """Inits DepthFiles.
 
         Args:
-            file_paths: Full paths of cut files to be used.
-            output_path: Full path of where depth files are to be created.
+            cut_files: file paths of cut files to be used.
+            output_directory: path to the directory where depth files are to be
+                created.
+            tof_in_file: path to tof.in file
         """
-        self.__new_cut_files = []
-        for cut in file_paths:
-            new = copy_cut_file_to_temp(cut)
-            self.__new_cut_files.append(new)
-
-        file_paths_str = ' '.join(self.__new_cut_files)
-
-        self.bin_dir = '%s%s%s' % ('external', os.sep, 'Potku-bin')
-        self.command_win = 'cd ' + self.bin_dir + ' && tof_list.exe ' \
-                           + file_paths_str + ' | erd_depth.exe ' \
-                           + output_path + ' tof.in'
-        self.command_linux = 'cd ' + self.bin_dir + ' && ./tof_list_linux ' \
-                             + file_paths_str + ' | ./erd_depth_linux ' \
-                             + output_path + ' tof.in'
-        self.command_mac = 'cd ' + self.bin_dir + ' && ./tof_list_mac ' \
-                           + file_paths_str + ' | ./erd_depth_mac ' \
-                           + output_path + ' tof.in'
-
-    def create_depth_files(self):
-        """Generate the files necessary for drawing the depth profile
-        """
-        used_os = platform.system()
-
-        if used_os == 'Windows':
-            subprocess.call(self.command_win, shell=True)
-        elif used_os == 'Linux':
-            subprocess.call(self.command_linux, shell=True)
-        elif used_os == 'Darwin':
-            subprocess.call(self.command_mac, shell=True)
+        self._cut_files = cut_files
+        # file_paths]
+        self._output_path = Path(output_directory, prefix)
+        if tof_in_file is None:
+            self._tof_in_file = Path("tof.in")
         else:
-            print('It appears we do no support your OS.')
+            self._tof_in_file = tof_in_file
+
+    def get_command(self):
+        """Returns the command(s) used to run both tof_list and erd_depth.
+        """
+        if platform.system() == "Windows":
+            tof_bin = str(gf.get_bin_dir() / "tof_list.exe")
+            erd_bin = str(gf.get_bin_dir() / "erd_depth.exe")
+        else:
+            tof_bin = "./tof_list"
+            erd_bin = "./erd_depth"
+
+        return (tof_bin, str(self._tof_in_file),
+                *(str(f) for f in self._cut_files)), \
+               (erd_bin, str(self._output_path), str(self._tof_in_file))
+
+    def run(self):
+        """Generate the files necessary for drawing the depth profile.
+        """
+        bin_dir = gf.get_bin_dir()
+        tof, erd = self.get_command()
+        # Pipe the output from tof_list to erd_depth
+        tof_process = subprocess.Popen(tof, cwd=bin_dir, stdout=subprocess.PIPE)
+        ret = subprocess.run(
+            erd, cwd=bin_dir, stdin=tof_process.stdout).returncode
+        if ret != 0:
+            print(f"tof_list|erd_depth pipeline returned an error code: {ret}")
 
 
-def extract_from_depth_files(files, elements, x_column, y_column):
-    """Extracts two columns from each depth file.
+def generate_depth_files(cut_files, output_dir: Path,
+                         measurement: Measurement = None,
+                         tof_in_dir: Path = None, progress=None):
+    """Generates depth files from given cut files and writes them to output
+    directory.
+
+    Deletes any previous depth files in the given directory
 
     Args:
-        files: List of depth files
-        elements: List of used elements
-        x_column: Integer of which column is to be extracted for
-        graph's x-axis
-        y_column: Integer of which column is to be extracted for
-        graph's y-axis
-
-    Return:
-        List of lists. Each of these lists contains the element
-        of the file and two lists for graph plotting.
+        cut_files: list of file paths to .cut files
+        output_dir: directory where the depth files will be generated
+        measurement: Measurement object to generate tof.in
+        tof_in_dir: directory in which the tof.in is to be generated.
+        progress: a ProgressReporter object
     """
-    read_files = []
-    elements_str = []
-    for element in elements:
-        elements_str.append(str(element))
+    # TODO this could be a method of Measurement
+    # TODO Measurment should not be an optional param
+    if measurement is not None:
+        # tof.in file needs to exists before running DepthFileGenerator
+        tof_in_file = measurement.generate_tof_in(directory=tof_in_dir)
 
-    for file in files:
-        file_element = file.split('.')[-1]
-        if file_element not in elements_str:
-            for element in elements_str:
-                if re.match('^[0-9]+' + file_element, element):
-                    file_element = element
-        axe1 = []
-        axe2 = []
-        axe3 = []
-        for line in open(file):
-            columns = re.split(' +', line.strip())
-            axe1.append(float(columns[x_column]))
+    output_dir.mkdir(exist_ok=True)
+
+    # Delete previous depth files to avoid mixup when assigning the
+    # result files back to their cut files
+    for file in os.scandir(output_dir):
+        fp = Path(file.path)
+        # TODO check that depth files are always named as 'depth.symbol'
+        #   and that there are no extra dots in the file name
+        if fp.stem == "depth":
             try:
-                axe2.append(float(columns[y_column]) * 100)
-            except ValueError:
-                axe2.append(0.0)
-            if file_element != "total":
-                try:
-                    axe3.append(int(columns[-1]))
-                except ValueError:
-                    axe3.append(0.0)
-        read_files.append([file_element, axe1, axe2, axe3])
-    return read_files
+                fp.unlink()
+            except OSError:
+                pass
+
+    if progress is not None:
+        progress.report(30)
+
+    dp = DepthFileGenerator(cut_files, output_dir, tof_in_file=tof_in_file)
+    dp.run()
+
+    if progress is not None:
+        progress.report(100)
 
 
-def create_relational_depth_files(read_files):
-    """Creates a version of the loaded depth files, which contain
-    the value of the y-axis in relation to the .total file's
-    y-axis, instead of their absolute values
+class DepthProfile:
+    """Class used in depth profile analysis and graph plotting."""
+    def __init__(self, depths, concentrations, events=None, element=None):
+        """Inits a new DepthProfile object.
 
-    Args:
-        read_files: The original files with absolute values.
+        DepthProfile contains element concentrations at each depth level. If
+        the profile represents data from a single element, it also has to have
+        event counts for each depth.
 
-    Return:
-        A list filled with relational values in accordance to the
-        .total file.
-    """
-    rel_files = []
-    total_file_axe = []
-    for file in read_files:
-        file_element, axe1, axe2, unused_axe3 = file
-        if file_element == 'total':
-            total_file_axe = axe2
-            break
-    for file in read_files:
-        file_element, axe1, axe2, axe3 = file
-        rel_axe = []
-        for i in range(0, len(total_file_axe)):
-            division = total_file_axe[i]
-            if division != 0:
-                rel_val = (axe2[i] / total_file_axe[i]) * 100
-            else:
-                rel_val = 0
-            rel_axe.append(rel_val)
-        rel_files.append([file_element, axe1, rel_axe, axe3])
-    return rel_files
+        If the profile represents multiple elements, both events must be None.
+        This is because the 'depth.total' file generated by the
+        DepthProfileGenerator does not store event counts.
 
+        Args:
+            depths: collection of depth values
+            concentrations: collection of concentrations at each depth value
+            events: collection of event counts at each depth value
+            element: Element that the depth profile belongs to. If None,
+                     the depth profile is considered an aggregation of different
+                     profiles
+        """
+        # TODO binary operations (__add__, merge, etc) could raise exception
+        #      when depths of the two DepthProfiles do not line up
+        if element is not None:
+            if not isinstance(element, Element):
+                raise TypeError("element should either be an Element or None")
 
-def merge_files_in_range(file_a, file_b, lim_a, lim_b):
-    """Merges two lists that contain n amount of [str,[x],[y]] items.
-    When within range [lim_a, lim_b] values from fil_b are used,
-    otherwise values from fil_a.
+            if events is None:
+                raise ValueError("Element DepthProfile must have event counts")
 
-    Args:
-        file_a: First file to be merged.
-        file_b: Second file to be merged.
-        lim_a: The lower limit.
-        lim_b: The higher limit.
-    Return:
-        A merged file.
-    """
-    file_c = []
-    for i in range(len(file_a)):
-        item = file_a[i]
-        new_item = [item[0], item[1], []]
-        for j in range(len(item[1])):
-            if lim_a <= item[1][j] <= lim_b:
-                new_item[2].append(file_b[i][2][j])
-            else:
-                new_item[2].append(file_a[i][2][j])
-        file_c.append(new_item)
-    return file_c
-
-
-def integrate_concentrations(depth_files, ignore_elements, lim_a, lim_b):
-    """Calculates concentration for elements
-
-    Args:
-        depth_files: List of lists containing float values, the first list
-        is the one the rest are compared to.
-        ignore_elements: A list of elements that are not counted.
-        lim_a: The lower limit.
-        lim_b: The higher limit.
-
-    Return:
-        List of lists filled with percentages.
-    """
-    # TODO TARKISTA, ETTÄ TOIMII!!!
-    concentration = {}
-    if not depth_files:
-        return concentration
-    # Extract the sum of data point within the [lim_a,lim_b]-range
-    bin_width = abs(depth_files[0][1][0] - depth_files[0][1][1])
-    for element in depth_files:
-        if element[0] == "total":
-            continue
-        concentration[element[0]] = []
-        for i in range(0, len(element[2])):
-            depth = element[1][i]
-            if lim_a <= depth <= lim_b:
-                concentration[element[0]].append(
-                    element[2][i] * bin_width / 100)
-            elif depth > lim_b:
-                concentration[element[0]].append(
-                    element[2][i] * bin_width / 100)
-                break
-    return concentration
-
-
-def integrate_lists(depth_files, ignore_elements, lim_a, lim_b,
-                    systematic_error):
-    """Calculates and returns the relative amounts of values within lists.
-
-    Args:
-        depth_files: List of lists containing float values, the first list
-        is the one the rest are compared to.
-        ignore_elements: A list of elements that are not counted.
-        lim_a: The lower limit.
-        lim_b: The higher limit.
-        systematic_error: A double representing systematic error.
-
-    Return:
-        List of lists filled with percentages.
-    """
-    percentages = {}
-    margin_of_errors = {}
-    if not depth_files:
-        return {}, {}
-    # Extract the sum of data point within the [lim_a,lim_b]-range
-    total_values = depth_files[0]
-    total_values_sum = 0
-    skip_values_sum = 0
-    for n in range(1, len(total_values[1])):
-        curr = total_values[1][n]
-        prev_val = total_values[2][n - 1]
-        curr_val = total_values[2][n]
-        if lim_a <= curr <= lim_b:
-            total_values_sum += (prev_val + curr_val) / 2
-        elif curr > lim_b:
-            total_values_sum += (prev_val + curr_val) / 2
-            break
-    for element in ignore_elements:
-        for i in range(1, len(depth_files)):
-            if depth_files[i][0] != element:
-                continue
-            for n in range(1, len(depth_files[i][1])):
-                curr = depth_files[i][1][n]
-                prev_val = depth_files[i][2][n - 1]
-                curr_val = depth_files[i][2][n]
-                if lim_a <= curr <= lim_b:
-                    skip_values_sum += (prev_val + curr_val) / 2
-                elif curr > lim_b:
-                    skip_values_sum += (prev_val + curr_val) / 2
-                    break
-    total_values_sum -= skip_values_sum
-
-    # Process all elements
-    for i in range(1, len(depth_files)):
-        element = depth_files[i][0]
-
-        if element in ignore_elements:
-            percentages[element] = None
-            margin_of_errors[element] = None
-            continue
-
-        element_x = depth_files[i][1]
-        element_y = depth_files[i][2]
-        element_e = depth_files[i][3]  # Events at profile depth
-
-        element_conc = []
-        element_event = []
-        for j in range(1, len(element_x)):
-            curr = element_x[j]
-            prev_val = element_y[j - 1]
-            curr_val = element_y[j]
-            if lim_a <= curr <= lim_b:
-                element_conc.append((prev_val + curr_val) / 2)
-                element_event.append(element_e[j])
-            elif curr > lim_b:
-                element_conc.append((prev_val + curr_val) / 2)
-                element_event.append(element_e[j])
-                break
-        if total_values_sum == 0.0:
-            percentages[element] = 0.0
+            if not (len(depths) == len(concentrations) == len(events)):
+                raise ValueError("All profile lists must have same size")
         else:
-            percentages[element] = (sum(element_conc) / total_values_sum) * 100
-        if sum(element_event) > 0:
-            stat_err = (1 / math.sqrt(sum(element_event))) * percentages[
-                element]
+            if events is not None:
+                raise ValueError("Total type depth profile does not have event"
+                                 " counts")
+
+            if not (len(depths) == len(concentrations)):
+                raise ValueError("DepthProfile must have same number of depths "
+                                 "and concentrations")
+
+        self.depths = tuple(depths)
+        self.concentrations = tuple(concentrations)
+
+        if events is not None:
+            events = tuple(events)
+        self.events = events
+        self.element = element
+
+    def __iter__(self):
+        """Iterates over depths, concentrations and event counts
+
+        Yield:
+            tuple that contains a depth value, and DepthProfile's
+            concentration and event count at that depth.
+        """
+        if self.element is None:
+            for d, c in zip(self.depths, self.concentrations):
+                # For total type profiles, event count is always 0
+                yield d, c, 0
         else:
-            stat_err = 0
-        syst_err = (systematic_error / 100) * percentages[element]
-        margin_of_errors[element] = math.sqrt(stat_err * stat_err +
-                                              syst_err * syst_err)
-    return percentages, margin_of_errors
+            for d, c, e in zip(self.depths, self.concentrations, self.events):
+                yield d, c, e
+
+    def __add__(self, other):
+        """Adds concentrations of another depth profile to self concentrations
+        and returns new DepthProfile.
+
+        Args:
+            other: another DepthProfile
+
+        Return:
+            a new total type DepthProfile.
+        """
+        if not isinstance(other, DepthProfile):
+            return NotImplemented
+
+        if len(self) != len(other):
+            raise ValueError("DepthProfile lengths must match when adding")
+
+        conc = tuple(c1 + c2 for (_, c1, _), (_, c2, _)
+                     in zip(self, other))
+
+        return DepthProfile(self.depths, conc)
+
+    def __sub__(self, other):
+        """Subtracts concentrations of other DepthProfile from
+        self.
+
+        Args:
+            other: another DepthProfile
+
+        Return:
+            a new total type DepthProfile
+        """
+        if not isinstance(other, DepthProfile):
+            return NotImplemented
+
+        if len(self) != len(other):
+            raise ValueError("DepthProfile lengths must match when subtracting")
+
+        conc = tuple(c1 - c2 for (_, c1, _), (_, c2, _)
+                     in zip(self, other))
+
+        return DepthProfile(self.depths, conc)
+
+    def __len__(self):
+        """Lengths of the DepthProfile is the length of its
+        depth values."""
+        return len(self.depths)
+
+    @classmethod
+    def from_file(cls, file_path, element=None, depth_units="nm"):
+        """Reads a depth profile from a file and returns it.
+
+        Args:
+            file_path: absolute path to a depth file
+            element: element that the depth profile belongs to. If None,
+                     the depth profile is considered to be an aggregation
+                     of multiple elements
+            depth_units: unit in which depths are measured
+
+        Return:
+            DepthProfile object
+        """
+        if depth_units == "nm":
+            x_column = 2
+        else:
+            x_column = 0
+
+        if element is not None:
+            # If element is defined, read event counts too
+            parser = CSVParser((x_column, float),
+                               (3, lambda x: float(x) * 100),
+                               (-1, int))
+            depths, conc, events = tuple(parser.parse_file(file_path,
+                                                           method="col"))
+            return cls(depths, conc, events, element=element)
+
+        # Otherwise read just depths and concentrations
+        parser = CSVParser((x_column, float),
+                           (3, lambda x: float(x) * 100))
+        depths, conc = tuple(parser.parse_file(file_path, method="col"))
+        return cls(depths, conc)
+
+    def get_profile_name(self):
+        """Returns the name of the depth profile.
+
+        Return:
+            string representation of the element or 'total' if element
+            is undefined.
+        """
+        return str(self.element) if self.element else "total"
+
+    def get_depth_range(self):
+        """Returns minimum and maximum depths of the DepthProfile
+
+        Return:
+            minimum and maximum depths as a tuple of floats or
+            (None, None) if no depth values are stored.
+        """
+        if len(self.depths) == 0:
+            return None, None
+        return self.depths[0], self.depths[-1]
+
+    def integrate_concentrations(self, depth_a=-math.inf, depth_b=math.inf):
+        """Returns sum of concentrations between depths a and b.
+
+        Args:
+            depth_a: lower limit of the integration range depth value
+            depth_b: upper limit of the integration range depth value
+
+        Return:
+            concentration per cm^2 as a float.
+        """
+        # Multiply by 0.01 to get concentration per cm^2
+        return mf.integrate_bins(
+            self.depths, self.concentrations, a=depth_a, b=depth_b) * 0.01
+
+    def sum_running_avgs(self, depth_a=-math.inf, depth_b=math.inf):
+        """Returns the sum of running concentration averages between
+        depths a and b.
+
+        Args:
+            depth_a: first depth value to include in average
+            depth_b: last depth value to include in average
+
+        Return:
+            sum of running concentration averages as a float.
+        """
+        return mf.sum_running_avgs(
+            self.depths, self.concentrations, a=depth_a, b=depth_b)
+
+    def sum_events(self, depth_a=-math.inf, depth_b=math.inf):
+        """Returns the sum of events between depths a and b.
+
+        Args:
+            depth_a: first depth value to include in sum
+            depth_b: last depth value to include in sum
+
+        Return:
+            sum of events as int.
+        """
+        return int(mf.sum_y_values(
+            self.depths, self.events, a=depth_a, b=depth_b))
+
+    def get_relative_concentrations(self, other):
+        """Calculates the concentrations relative to another DepthProfile
+
+        Args:
+            other: other DepthProfile object
+
+        Return:
+            list of relative concentrations
+        """
+        if not isinstance(other, DepthProfile):
+            return NotImplemented
+
+        if len(self) != len(other):
+            raise ValueError("DepthProfile lengths must match when "
+                             "calculating relative concentrations")
+
+        conc = tuple(c1 / c2 * 100 if c2 != 0 else 0.0
+                     for (_, c1, _), (_, c2, _) in zip(self, other))
+
+        return DepthProfile(
+            self.depths, conc, events=self.events, element=self.element)
+
+    def merge(self, other, depth_a=-math.inf, depth_b=math.inf):
+        """Merges DepthProfile with another instance of DepthProfile.
+        Concentrations outside the range between depths a and b are taken
+        from this DepthProfile, concentrations inside the range are taken
+        from other DepthProfile.
+
+        New DepthProfile is created and the merged DepthProfiles remain
+        unchanged.
+
+        Args:
+            other: another DepthProfile to merge with
+            depth_a: depth value at which merging begins
+            depth_b: depth value at which merging ends
+
+        Return:
+            new DepthProfile object.
+        """
+        if not isinstance(other, DepthProfile):
+            return NotImplemented
+
+        if len(self) != len(other):
+            raise ValueError("DepthProfile lengths must match when merging")
+
+        conc = tuple(c2 if depth_a <= d <= depth_b else c1
+                     for (d, c1, _), (_, c2, _)
+                     in zip(self, other))
+
+        if self.element and self.element == other.element:
+            events = self.events
+            elem = self.element
+        else:
+            events = None
+            elem = None
+
+        return DepthProfile(self.depths, conc, events=events, element=elem)
+
+    def calculate_margin_of_error(self, systematic_error, depth_a=-math.inf,
+                                  depth_b=math.inf, sum_of_running_avgs=None):
+        """Calculates the margin of error for given range of values and
+        systematic error.
+
+        Args:
+            systematic_error: systematic error used in calculation
+            depth_a: lowest depth value to include in calculation
+            depth_b: highest depth value to include in calculation
+            sum_of_running_avgs: if not given, DepthProfile calculates
+                                 the average itself
+
+        Return:
+            margin of error as float
+        """
+        event_count = self.sum_events(depth_a, depth_b)
+
+        if sum_of_running_avgs is None:
+            sra = self.sum_running_avgs(depth_a, depth_b)
+        else:
+            sra = sum_of_running_avgs
+
+        if event_count > 0:
+            stat_err = (1 / math.sqrt(event_count)) * sra
+        else:
+            stat_err = 0.0
+
+        syst_err = (systematic_error / 100) * sra
+        return math.sqrt(stat_err * stat_err + syst_err * syst_err)
 
 
-def get_depth_files(elements, dir_depth, cut_files):
-    """Returns a list of depth files in a directory that match the cut files.
+def validate_depth_file_names(file_names):
+    """Checks that a list of strings is in the expected
+    format of depth.[element name or total]. Valid values
+    are returned as a dictionary.
+
+    Note that the function does not check if the string
+    is actually a valid file name.
+
+    Args:
+        file_names: iterable of strings.
+
+    Return:
+        dictionary that has the element names as keys and
+        valid file names as values
+    """
+    def splitter_function(file_name):
+        # Splitter function splits the function into
+        # full name and element name, as long as the
+        # name is in format 'depth.[element]'
+        if not file_name.startswith("depth."):
+            return None, None
+        parts = file_name.split(".")
+        if len(parts) != 2 or parts[1] == "":
+            return None, None
+        return file_name, parts[-1]
+
+    # Use the function to create a file name splitting generator
+    split_generator = (splitter_function(f) for f in file_names)
+
+    # Use list comprehension to create a dict that contains only
+    # valid depth files and elements
+    return {
+        elem: fname for (fname, elem) in split_generator if fname
+    }
+
+
+def get_depth_files(elements, dir_depth):
+    """Returns a list of depth files in a directory that match the
+    elements.
 
     Args:
         elements: List of Element objects that should have a
-        corresponding depth file.
+                  corresponding depth file.
         dir_depth: Directory of the erd depth result files.
-        cut_files: List of cut files that were used.
-    Returns:
-        A list of depth files which matched the elements.
+
+    Return:
+        A list of full depth file paths which matched the given
+        elements.
     """
-    depth_files = ['depth.total']
-    orig_elements = [elem.__str__() for elem in elements]
-    strip_elements = [re.sub("\d+", "", e.__str__()) for e in elements]
-    for file in os.listdir(dir_depth):
-        file_ending = file.split('.')[-1]
-        if file_ending in orig_elements:
-            depth_files.append(file)
-            orig_elements.remove(file_ending)
-            stripped = re.sub("\d+", "", file_ending)
-            strip_elements.remove(stripped)
-        else:
-            if file_ending in strip_elements:
-                depth_files.append(file)
-                index = strip_elements.index(file_ending)
-                orig_elements.remove(orig_elements[index])
-                strip_elements.remove(file_ending)
+    # Check which file paths in the director are valid depth file paths
+    file_paths = os.listdir(dir_depth)
+    validated_filenames = validate_depth_file_names(file_paths)
+
+    # By default, add 'depth.total' to the list
+    depth_files = [Path(dir_depth, "depth.total")]
+    for s, elem in comp.match_strs_to_elements(
+            validated_filenames.keys(), elements):
+        # Add all file names that matched an element in the element collection
+        if elem:
+            depth_files.append(Path(dir_depth, validated_filenames[s]))
 
     return depth_files
+
+
+class DepthProfileHandler:
+    """Handles multiple DepthProfiles. Keeps a dictionary of absolute
+    and corresponding relative DepthProfiles."""
+    def __init__(self):
+        """Inits a new DepthProfileHandler
+        """
+        self.__absolute_profiles = {}
+        self.__relative_profiles = {}
+
+    def read_directory(self, directory_path, elements, depth_units="nm"):
+        """Reads depth files from the given directory that match the given
+        set of elements and stores them internally as DepthProfiles.
+
+        Currently stored profiles will be removed.
+
+        Args:
+            directory_path: absolute path to a directory that contains
+                            depth files
+            elements: collection of elements that will be matched to
+                      depth files
+            depth_units: unit in which depths are measured
+        """
+        file_paths = get_depth_files(elements, directory_path)
+        self.read_files(file_paths, elements, depth_units=depth_units)
+
+    def read_files(self, file_paths, elements, depth_units="nm",
+                   logger_name=None):
+        """Reads depth files from given list of file paths that
+        match the given set of elements.
+
+        Currently stored profiles will be removed.
+
+        Args:
+            file_paths: absolute paths to depth files
+            elements: collection of elements that will be matched to
+                      depth files
+            depth_units: unit in which depths are measured
+            logger_name: name of a Logger entity that will be used to create a
+                         log message if something goes wrong when reading files
+        """
+        # Clear currently stored profiles and cache for merging
+        self.merge_profiles.cache_clear()
+        self.__absolute_profiles.clear()
+        self.__relative_profiles.clear()
+
+        # Depth files are named as 'depth.[name of the element]'
+        elem_strs = (f.name.split(".")[-1] for f in file_paths)
+
+        # Match each 'depth' file to an element
+        matches = dict(comp.match_strs_to_elements(elem_strs, elements))
+
+        for file_path in file_paths:
+            # Read files and generate DepthProfiles
+            element_part = file_path.name.split('.')[-1]
+
+            try:
+                profile = DepthProfile.from_file(
+                    file_path, element=matches[element_part],
+                    depth_units=depth_units)
+
+                self.__absolute_profiles[profile.get_profile_name()] = profile
+
+            except Exception as e:
+                if logger_name is not None:
+                    logging.getLogger(logger_name).info(
+                        f"Could not create depth profiled .depth file: {e}")
+
+    def get_depth_range(self):
+        """Returns the minimum and maximum depth values in the total depth
+        profile.
+
+        Return:
+            tuple of floats or (None, None) if handler does not have total
+            depth profile
+        """
+        if "total" in self.__absolute_profiles:
+            return self.__absolute_profiles["total"].get_depth_range()
+        return None, None
+
+    def get_absolute_profiles(self):
+        """Returns DepthProfiles with absolute concentrations.
+
+        Return:
+            dictionary where keys are the names of the DepthProfiles
+            and values are DepthProfiles.
+        """
+        return self.__absolute_profiles
+
+    def get_relative_profiles(self):
+        """Returns DepthProfiles relative to the total DepthProfile.
+
+        Return:
+            dictionary where keys are the names of the DepthProfiles
+            and values are DepthProfiles.
+        """
+        # If relative profiles have not yet been calculated, they are now
+        if not self.__relative_profiles:
+            if "total" in self.__absolute_profiles:
+                # Relative profiles are created in relation to the total
+                # profile
+                total_profile = self.__absolute_profiles["total"]
+                self.__relative_profiles = {
+                    p: self.__absolute_profiles[p].get_relative_concentrations(
+                        total_profile)
+                    for p in self.__absolute_profiles if p != "total"
+                }
+
+        return self.__relative_profiles
+
+    # It is likely that this function gets called many times with same args so
+    # results are cached
+    @lru_cache(maxsize=32)
+    def merge_profiles(self, depth_a=-math.inf, depth_b=math.inf,
+                       method="abs_rel_abs"):
+        """Combines absolute and relative DepthProfiles so that
+        concentrations outside the range between depth_a and depth_b
+        are taken from one profile and concentrations inside the range
+        are taken from another profile.
+
+        Whether absolute values are outside and relative values are inside
+        the range or vice versa depends on the given method.
+
+        Args:
+            depth_a: depth value where merging begins
+            depth_b: depth value where merging ends
+            method: either 'abs_rel_abs' or 'rel_abs_rel' depending
+                    on how the profiles should be merged
+
+        Return:
+            dictionary where keys are the names of the DepthProfiles
+            and values are DepthProfiles.
+        """
+        # Do this to calculate the relative profiles first
+        rel = self.get_relative_profiles()
+
+        if method == "abs_rel_abs":
+            return {
+                p: self.__absolute_profiles[p].merge(rel[p],
+                                                     depth_a,
+                                                     depth_b)
+                for p in self.__absolute_profiles if p != "total" and p in rel
+            }
+
+        if method == "rel_abs_rel":
+            return {
+                p: rel[p].merge(self.__absolute_profiles[p],
+                                depth_a,
+                                depth_b)
+                for p in rel if p != "total" and p in self.__absolute_profiles
+            }
+
+        raise ValueError("Unknown merge method")
+
+    def calculate_ratios(self, ignored, depth_a=-math.inf, depth_b=math.inf,
+                         systematic_error=3.0):
+        """Calculates the ratios and margins of error for DepthProfiles
+        currently stored in the DepthProfileHandler.
+
+        Args:
+            ignored: set of DepthProfile names that will be ignored from
+                     calculations
+            depth_a: lowest depth value that is included in the ratio
+                     calculation
+            depth_b: highest depth value that is included in the ratio
+                     calculation
+            systematic_error: systematic error used in calculation
+
+        Return:
+            tuple of two dictionaries, first of which contains the
+            names and ratios of the DepthProfiles, second of which
+            contains the margins of error at given systematic error
+            for each ratio calculation.
+        """
+        if "total" in self.__absolute_profiles:
+            total_profile = self.__absolute_profiles["total"]
+        else:
+            return {}, {}
+
+        total_sum = total_profile.sum_running_avgs(depth_a, depth_b)
+
+        # TODO seems unnecessary to calculate the ignored values
+        ignored_profiles = {
+            p: self.__absolute_profiles[p]
+            for p in self.__absolute_profiles
+            if p in ignored and p != "total"
+        }
+        total_sum -= sum(p.sum_running_avgs(depth_a, depth_b)
+                         for p in ignored_profiles.values())
+
+        percentages = {}
+        moes = {}
+        for profile_name in self.__absolute_profiles:
+            if profile_name == "total":
+                continue
+            if profile_name in ignored_profiles:
+                percentages[profile_name] = None
+                moes[profile_name] = None
+                continue
+
+            profile = self.__absolute_profiles[profile_name]
+
+            if total_sum == 0:
+                percentages[profile_name] = 0.0
+            else:
+                percentages[profile_name] = \
+                    profile.sum_running_avgs(depth_a, depth_b) \
+                    / total_sum * 100
+
+            # Calculate margin of errors for depth profile with given
+            # systematic error
+            profile_moe = profile.calculate_margin_of_error(
+                systematic_error, depth_a, depth_b,
+                sum_of_running_avgs=percentages[profile_name])
+            moes[profile_name] = profile_moe
+
+        return percentages, moes
+
+    def integrate_concentrations(self, depth_a=-math.inf, depth_b=math.inf):
+        """Calculates an integral of the total amount of concentrations
+        between the given depth range.
+
+        Args:
+            depth_a: lowest depth value included in range
+            depth_b: highest depth value included in range
+
+        Return:
+            dictionary where keys are the names of the DepthProfiles and
+            values are integrals of their concentrations.
+        """
+        return {
+            p: self.__absolute_profiles[p].integrate_concentrations(
+                depth_a, depth_b)
+            for p in self.__absolute_profiles if p != "total"
+        }

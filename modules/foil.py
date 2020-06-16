@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 2.5.2018
+Updated on 8.2.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -24,15 +24,32 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
+import math
 
-class Foil:
+from .base import MCERDParameterContainer
+
+
+# Unit conversion values for solid angle
+#   sr: steradian
+#   msr: millisteradian
+#   usr: microsteradian ('u' is a stand-in for the lower case 'Mu')
+_UNITS = {
+    "sr": 1,
+    "msr": 1000,
+    "usr": 1000000
+}
+
+
+class Foil(MCERDParameterContainer):
     """Class for detector foil.
     """
 
     __slots__ = "name", "distance", "layers", "transmission"
+
+    TYPE = None
 
     def __init__(self, name, distance, layers, transmission):
         """ Initialize a detector foil.
@@ -44,10 +61,54 @@ class Foil:
             transmission: Value that takes into account possible grids that
                           may make penetration smaller.
         """
+        if layers is None:
+            layers = []
+
         self.name = name
         self.distance = distance
         self.layers = layers
         self.transmission = transmission
+
+    def get_solid_angle(self, units="msr"):
+        """TODO"""
+        raise NotImplementedError
+
+    def get_mcerd_params(self):
+        """Returns a list of strings that are passed as parameters for MCERD.
+        """
+        raise NotImplementedError
+
+    def to_dict(self):
+        """Returns the foil as a dict.
+        """
+        return {
+            "name": self.name,
+            "type": self.TYPE,
+            "distance": self.distance,
+            "layers": [layer.to_dict() for layer in self.layers],
+            "transmission": self.transmission
+        }
+
+    @staticmethod
+    def generate_foil(type, **kwargs):
+        """Factory method for initializing Foil objects.
+
+        Args:
+            type: type of the foil (either 'circular' or 'rectangular'
+            kwargs: keyword arguments passed down to foil
+
+        Return:
+            either a CircularFoil or RectangularFoil
+        """
+        if type == RectangularFoil.TYPE:
+            if "size" in kwargs:
+                x, y = kwargs.pop("size")
+                kwargs["size_x"] = x
+                kwargs["size_y"] = y
+            return RectangularFoil(**kwargs)
+        if type == CircularFoil.TYPE:
+            return CircularFoil(**kwargs)
+        raise ValueError(f"Unknown foil type: {type}")
 
 
 class CircularFoil(Foil):
@@ -55,6 +116,7 @@ class CircularFoil(Foil):
     """
 
     __slots__ = "diameter"
+    TYPE = "circular"
 
     def __init__(self, name="Default", diameter=0.0, distance=0.0, layers=None,
                  transmission=1.0):
@@ -68,10 +130,34 @@ class CircularFoil(Foil):
                           may make penetration smaller.
         """
 
-        if layers is None:
-            layers = []
         Foil.__init__(self, name, distance, layers, transmission)
         self.diameter = diameter
+
+    def get_radius(self):
+        """Returns the radius of the circular detector foil.
+        """
+        return self.diameter / 2
+
+    def get_solid_angle(self, units="msr"):
+        """TODO"""
+        if units not in _UNITS:
+            raise ValueError("Unexpected unit for solid angle")
+        return math.pi * self.get_radius()**2 / self.distance**2 \
+            * _UNITS[units]
+
+    def get_mcerd_params(self):
+        """Returns a list of strings that are passed as parameters for MCERD.
+        """
+        return [
+            "Foil type: circular",
+            f"Foil diameter: {self.diameter}",
+            f"Foil distance: {self.distance}"
+        ]
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["diameter"] = self.diameter
+        return d
 
 
 class RectangularFoil(Foil):
@@ -79,10 +165,10 @@ class RectangularFoil(Foil):
     """
 
     __slots__ = "size"
+    TYPE = "rectangular"
 
     def __init__(self, name="", size_x=0.0, size_y=0.0, distance=0.0,
-                 layers=None,
-                 transmission=1.0):
+                 layers=None, transmission=1.0):
         """ Initialize a rectangular detector foil.
 
         Args:
@@ -95,7 +181,26 @@ class RectangularFoil(Foil):
                           may make penetration smaller.
         """
 
-        if layers is None:
-            layers = []
         Foil.__init__(self, name, distance, layers, transmission)
         self.size = (size_x, size_y)
+
+    def get_solid_angle(self, units="msr"):
+        """TODO"""
+        if units not in _UNITS:
+            raise ValueError("Unexpected unit for solid angle")
+        return self.size[0] * self.size[1] / self.distance**2 \
+            * _UNITS[units]
+
+    def get_mcerd_params(self):
+        """Returns a list of strings that are passed as parameters for MCERD.
+        """
+        return [
+            f"Foil type: {self.TYPE}",
+            f"Foil size: {'%0.1f %0.1f' % self.size}",
+            f"Foil distance: {self.distance}"
+        ]
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["size"] = self.size
+        return d

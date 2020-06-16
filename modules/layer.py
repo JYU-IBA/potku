@@ -28,8 +28,10 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
+from .base import MCERDParameterContainer
 
-class Layer:
+
+class Layer(MCERDParameterContainer):
     """Class for a target or foil layer.
     """
 
@@ -62,4 +64,39 @@ class Layer:
             True or False.
         """
         return self.start_depth < coordinate <= self.start_depth + \
-        self.thickness
+            self.thickness
+
+    def get_mcerd_params(self):
+        """Returns a list of strings that are passed as parameters for MCERD.
+        """
+        return [
+            "",
+            f"{self.thickness} nm",
+            "ZBL",
+            "ZBL",
+            f"{self.density} g/cm3"
+        ]
+
+    def to_dict(self):
+        """Returns a dictionary representation of the Layer.
+        """
+        return {
+            "name": self.name,
+            "elements": [str(element) for element in self.elements],
+            "thickness": self.thickness,
+            "density": self.density,
+            "start_depth": self.start_depth
+        }
+
+    @classmethod
+    def get_default_mcerd_params(cls):
+        """Returns a list of strings that are passed as parameters for MCERD.
+        """
+        return [
+            "",
+            "0.01 nm ",
+            "ZBL ",
+            "ZBL ",
+            "0.000001 g/cm3 ",
+            "0 1.0 ",
+        ]

@@ -28,16 +28,19 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-from modules.element import Element
+from .base import AdjustableSettings
+from .base import MCERDParameterContainer
+from .element import Element
+from .enums import Profile
 
 
-class Beam:
+class Beam(AdjustableSettings, MCERDParameterContainer):
     """
     Class for handling beam information.
     """
     def __init__(self, ion=None, energy=10, charge=4,
                  energy_distribution=0, spot_size=(3.0, 5.0), divergence=0,
-                 profile="Uniform"):
+                 profile=Profile.UNIFORM):
         """
         Initializes the Beam object.
 
@@ -60,4 +63,31 @@ class Beam:
         self.energy_distribution = energy_distribution
         self.spot_size = spot_size
         self.divergence = divergence
-        self.profile = profile
+
+        try:
+            self.profile = Profile(profile.lower())
+        except (ValueError, AttributeError):
+            self.profile = Profile.UNIFORM
+
+    def get_mcerd_params(self):
+        """Returns a list of strings that are passed as parameters for MCERD.
+        """
+        return [
+            f"Beam ion: {self.ion.get_prefix()}",
+            f"Beam energy: {self.energy} MeV"
+        ]
+
+    def get_settings(self):
+        """Returns a dictionary of settings that can be adjusted.
+        """
+        d = dict(vars(self))
+        return d
+
+    def set_settings(self, **kwargs):
+        """Sets the values of this Beam objects adjustable settings.
+        """
+        allowed_params = self.get_settings()
+        for k, v in kwargs.items():
+            if k in allowed_params:
+                setattr(self, k, v)
+

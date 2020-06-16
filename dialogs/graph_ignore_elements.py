@@ -31,7 +31,7 @@ __author__ = "Timo Konu \n Severi Jääskeläinen \n Samuel Kaiponen \n Heta " \
              "Rekilä \n Sinikka Siironen"
 __version__ = "1.0"
 
-import os
+from pathlib import Path
 
 from PyQt5 import QtCore, uic
 from PyQt5 import QtWidgets
@@ -46,14 +46,14 @@ class GraphIgnoreElements(QtWidgets.QDialog):
         
         Args:
             elements: A list of elements in Depth Profile.
-            ignored: A list of elements ignored previously for ratio
+            ignored: A set of elements ignored previously for ratio
             calculation.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_graph_ignored_elements.ui"), self)
+
         self.__elements = elements
-        self.ignored_elements = ignored
-        uic.loadUi(os.path.join("ui_files", "ui_graph_ignored_elements.ui"),
-                   self)
+        self.ignored_elements = set(ignored)
         self.button_ok.clicked.connect(self.__ok_button)
         self.button_cancel.clicked.connect(self.close)
         self.__set_values()
@@ -80,5 +80,5 @@ class GraphIgnoreElements(QtWidgets.QDialog):
         for i in range(child_count):
             item = root.child(i)
             if not item.checkState(0):
-                self.ignored_elements.append(item.element)
+                self.ignored_elements.add(item.element)
         self.close()

@@ -539,7 +539,7 @@ simulation</string>
      <x>0</x>
      <y>0</y>
      <width>1467</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -553,8 +553,15 @@ simulation</string>
      <addaction name="actionImport_pelletron"/>
      <addaction name="actionBinary_data_lst"/>
     </widget>
+    <widget class="QMenu" name="menuOpen_recent">
+     <property name="title">
+      <string>Open recent</string>
+     </property>
+     <addaction name="actionRecentFile"/>
+    </widget>
     <addaction name="actionNew_Request_2"/>
     <addaction name="actionOpen_Request_2"/>
+    <addaction name="menuOpen_recent"/>
     <addaction name="separator"/>
     <addaction name="actionNew_measurement_2"/>
     <addaction name="menuImport"/>
@@ -786,6 +793,11 @@ simulation</string>
    </property>
    <property name="toolTip">
     <string>New simulation</string>
+   </property>
+  </action>
+  <action name="actionRecentFile">
+   <property name="text">
+    <string>empty</string>
    </property>
   </action>
  </widget>

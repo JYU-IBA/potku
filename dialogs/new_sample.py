@@ -28,14 +28,12 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import os
+import widgets.input_validation as iv
+
+from pathlib import Path
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
-
-from modules.general_functions import check_text
-from modules.general_functions import set_input_field_red
-from modules.general_functions import validate_text_input
 
 
 class NewSampleDialog(QtWidgets.QDialog):
@@ -48,30 +46,29 @@ class NewSampleDialog(QtWidgets.QDialog):
             samples: List of samples.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_new_sample.ui"), self)
 
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_new_sample.ui"), self)
-
-        set_input_field_red(self.ui.nameLineEdit)
-        self.ui.nameLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.ui.nameLineEdit))
-
-        self.ui.createButton.clicked.connect(self.__create_sample)
-        self.ui.cancelButton.clicked.connect(self.close)
+        self.createButton.clicked.connect(self.__create_sample)
+        self.cancelButton.clicked.connect(self.close)
         self.name = ""
         self.description = ""
         self.samples = samples
         self.__close = True
 
-        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
+        iv.set_input_field_red(self.nameLineEdit)
+        self.nameLineEdit.textChanged.connect(
+            lambda: iv.check_text(self.nameLineEdit))
+        self.nameLineEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.nameLineEdit))
 
         self.exec_()
 
     def __create_sample(self):
         """Read sample name from view and if it is accepted, close dialog.
         """
-        self.name = self.ui.nameLineEdit.text().replace(" ", "_")
+        self.name = self.nameLineEdit.text().replace(" ", "_")
         if not self.name:
-            self.ui.nameLineEdit.setFocus()
+            self.nameLineEdit.setFocus()
             return
         for sample in self.samples:
             if sample.name == self.name:
@@ -88,22 +85,3 @@ class NewSampleDialog(QtWidgets.QDialog):
                 self.__close = True
         if self.__close:
             self.close()
-
-    @staticmethod
-    def __check_text(input_field):
-        """Checks if there is text in given input field.
-
-        Args:
-            input_field: Input field the contents of which are checked.
-        """
-        check_text(input_field)
-
-    def __validate(self):
-        """
-        Validate the sample name.
-        """
-        text = self.ui.nameLineEdit.text()
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = validate_text_input(text, regex)
-
-        self.ui.nameLineEdit.setText(valid_text)

@@ -24,7 +24,7 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
-import os
+from pathlib import Path
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -43,59 +43,57 @@ class MultiplyCoordinateDialog(QtWidgets.QDialog):
             clipboard_ratio: Text that is in clipboard.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_multiply_coordinate_dialog.ui"), self)
 
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_multiply_coordinate_dialog.ui"),
-                             self)
         self.ratio_str = clipboard_ratio
         self.used_multiplier = None
 
         locale = QLocale.c()
-        self.ui.multiplierSpinBox.setLocale(locale)
+        self.multiplierSpinBox.setLocale(locale)
 
         try:
             float(self.ratio_str)
 
-            self.ui.ratioLabel.setText(self.ratio_str)
+            self.ratioLabel.setText(self.ratio_str)
         except ValueError:
-            self.ui.ratioLabel.setText("None")
-            self.ui.ratioLabel.setEnabled(False)
-            self.ui.clipboardButton.setChecked(False)
-            self.ui.clipboardButton.setEnabled(False)
+            self.ratioLabel.setText("None")
+            self.ratioLabel.setEnabled(False)
+            self.clipboardButton.setChecked(False)
+            self.clipboardButton.setEnabled(False)
 
-            self.ui.customButton.setChecked(True)
-            self.ui.multiplierSpinBox.setEnabled(True)
+            self.customButton.setChecked(True)
+            self.multiplierSpinBox.setEnabled(True)
 
-        self.ui.clipboardButton.clicked.connect(self.switch_to_clipboard_value)
-        self.ui.customButton.clicked.connect(self.switch_to_custom_value)
-        self.ui.okButton.clicked.connect(self.accept_params)
-        self.ui.cancelButton.clicked.connect(self.close)
+        self.clipboardButton.clicked.connect(self.switch_to_clipboard_value)
+        self.customButton.clicked.connect(self.switch_to_custom_value)
+        self.okButton.clicked.connect(self.accept_params)
+        self.cancelButton.clicked.connect(self.close)
         self.exec_()
 
     def accept_params(self):
         """
         Accept params for multiplying.
         """
-        if self.ui.customButton.isChecked():
-            self.used_multiplier = round(self.ui.multiplierSpinBox.value(), 3)
+        if self.customButton.isChecked():
+            self.used_multiplier = round(self.multiplierSpinBox.value(), 3)
         else:
-            self.used_multiplier = float(self.ui.ratioLabel.text())
+            self.used_multiplier = float(self.ratioLabel.text())
         self.close()
 
     def switch_to_clipboard_value(self):
         """
         Show clipboard value as selected.
         """
-        self.ui.clipboardButton.setChecked(True)
-        self.ui.customButton.setChecked(False)
-        self.ui.multiplierSpinBox.setEnabled(False)
-        self.ui.ratioLabel.setEnabled(True)
+        self.clipboardButton.setChecked(True)
+        self.customButton.setChecked(False)
+        self.multiplierSpinBox.setEnabled(False)
+        self.ratioLabel.setEnabled(True)
 
     def switch_to_custom_value(self):
         """
         Show custom value as selected.
         """
-        self.ui.customButton.setChecked(True)
-        self.ui.multiplierSpinBox.setEnabled(True)
-        self.ui.clipboardButton.setChecked(False)
-        self.ui.ratioLabel.setEnabled(False)
+        self.customButton.setChecked(True)
+        self.multiplierSpinBox.setEnabled(True)
+        self.clipboardButton.setChecked(False)
+        self.ratioLabel.setEnabled(False)

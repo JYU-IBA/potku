@@ -30,9 +30,10 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import os
-import pathlib
 
-from modules.element import Element
+from pathlib import Path
+
+from .element import Element
 
 
 class CutFile:
@@ -95,7 +96,7 @@ class CutFile:
             return
         # print("CutFile:load_file() : {0}".format(file))
         directory_cuts, file_name = os.path.split(file)
-        self.directory = os.path.split(directory_cuts)[0]
+        self.directory = Path(os.path.split(directory_cuts)[0])
         # os.path is not required for following.
         # Get number of element selection, i.e.
         # Two H selections -> numbers are 0 and 1
@@ -149,38 +150,34 @@ class CutFile:
         """
         element = self.element
         if element and self.directory and self.data:
-            measurement_name_with_prefix = \
-                str(pathlib.Path(self.directory).parents[1])
+            measurement_name_with_prefix = self.directory.parents[1]
             # First "-" is in sample name, second in measurement name
             # NOT IF THERE ARE - IN NAME PART!!
-            name_with_number = measurement_name_with_prefix.split(
+            name_with_number = measurement_name_with_prefix.name.split(
                 "Measurement_")[1]
             measurement_name = name_with_number.split('-', 1)[1]
             if element is not "":
-                element = element.__str__()
+                element = str(element)
             if self.type == "RBS":
-                suffix = "RBS_" + self.element_scatter.__str__()
+                suffix = f"RBS_{self.element_scatter}"
             else:
                 suffix = "ERD"
             if self.is_elem_loss:
-                if not os.path.exists(self.directory):
+                if not self.directory.exists():
                     os.makedirs(self.directory)
-                file = os.path.join(self.directory,
-                                    "{0}.{1}.{2}.{3}.{4}.cut".format(
-                                        measurement_name,
-                                        element,
-                                        suffix,
-                                        element_count,
-                                        self.split_number))
+                file = Path(
+                    self.directory,
+                    "{0}.{1}.{2}.{3}.{4}.cut".format(
+                        measurement_name, element, suffix, element_count,
+                        self.split_number))
             else:
-                if not os.path.exists(self.directory):
+                if not self.directory.exists():
                     os.makedirs(self.directory)
                 # Has to run until file that doesn't exist is found.
                 while True:
-                    file = os.path.join(self.directory,
-                                        "{0}.{1}.{2}.{3}.cut".format(
-                                            measurement_name,
-                                            element, suffix, element_count))
+                    file = Path(
+                        self.directory, "{0}.{1}.{2}.{3}.cut".format(
+                            measurement_name, element, suffix, element_count))
                     try:
                         # Using of os.path is not allowed here. 
                         # http://stackoverflow.com/questions/82831/

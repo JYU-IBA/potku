@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 27.8.2018
+Updated on 28.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -25,261 +25,356 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
-import os
+import widgets.binding as bnd
 
-from modules.general_functions import delete_simulation_results
+from typing import Optional
+from rx import operators as ops
+from pathlib import Path
+
+from modules.element_simulation import SimulationState
+from modules.element_simulation import ElementSimulation
+from modules.global_settings import GlobalSettings
+from modules.enums import IonDivision
+from widgets.gui_utils import GUIObserver
 
 from PyQt5 import QtWidgets
+from PyQt5 import QtCore
 from PyQt5.QtGui import QIcon
+from PyQt5 import uic
+from PyQt5.QtCore import Qt
 
 
-class SimulationControlsWidget(QtWidgets.QWidget):
+def _process_count_to_label(instance, attr, value):
+    """Sets the value of finished process count in GUI.
+    """
+    getattr(instance, attr).setText(f"{value[0]}/{value[1]}")
+
+
+def _process_count_from_label(instance, attr):
+    """Gets the value of finished process count from GUI.
+    """
+    fin, all_proc = getattr(instance, attr).text().split("/")
+    return int(fin), int(all_proc)
+
+
+class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
     """Class for creating simulation controls widget for the element simulation.
+    """
+    recoil_name = bnd.bind("controls_group_box")
+    process_count = bnd.bind("processes_spinbox")
+    finished_processes = bnd.bind(
+        "finished_processes_label", fget=_process_count_from_label,
+        fset=_process_count_to_label)
+    observed_atoms = bnd.bind("observed_atom_count_label")
+    simulation_state = bnd.bind("state_label")
+    mcerd_error = bnd.bind("mcerd_error_lbl")
+    ion_settings_error = bnd.bind("ion_settings_label")
 
-    Args:
-        element_simulation: ElementSimulation object.
+    # TODO these styles could use some brush up...
+    PRESIM_PROGRESS_STYLE = """
+        QProgressBar::chunk:horizontal {
+            background: #b8112a;
+        }
+    """
+    SIM_PROGRESS_STYLE = """
+        QProgressBar::chunk:horizontal {
+            background: #0ec95c;
+        }
     """
 
-    def __init__(self, element_simulation, recoil_dist_widget):
+    def __init__(self, element_simulation: ElementSimulation,
+                 recoil_dist_widget, recoil_name_changed=None,
+                 settings_updated=None, ion_division=IonDivision.BOTH,
+                 min_presim_ions=0, min_sim_ions=0):
         """
         Initializes a SimulationControlsWidget.
 
         Args:
              element_simulation: An ElementSimulation class object.
              recoil_dist_widget: RecoilAtomDistributionWidget.
+             recoil_name_changed: signal that indicates that a recoil name
+                has changed.
+            ion_division: ion division mode
         """
         super().__init__()
+        GUIObserver.__init__(self)
+        uic.loadUi(Path("ui_files", "ui_simulation_controls.ui"), self)
 
         self.element_simulation = element_simulation
-        self.element_simulation.controls = self
+        self.element_simulation.subscribe(self)
         self.recoil_dist_widget = recoil_dist_widget
+        self.progress_bars = {}
 
-        main_layout = QtWidgets.QHBoxLayout()
-        recoil_element = self.element_simulation.recoil_elements[
-            0]
-        self.controls_group_box = QtWidgets.QGroupBox(recoil_element.prefix + "-"
-                                                 + recoil_element.name)
-        self.controls_group_box.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
-                                         QtWidgets.QSizePolicy.Preferred)
+        self.recoil_name = \
+            self.element_simulation.get_main_recoil().get_full_name()
+        self.show_status(self.element_simulation.get_current_status())
+        self.finished_processes = 0, self.process_count
 
-        state_layout = QtWidgets.QHBoxLayout()
-        state_layout.setContentsMargins(0, 6, 0, 0)
-        state_layout.addWidget(QtWidgets.QLabel("State: "))
-        self.state_label = QtWidgets.QLabel("Not started")
-        state_layout.addWidget(self.state_label)
-        state_widget = QtWidgets.QWidget()
-        state_widget.setLayout(state_layout)
-
-        controls_layout = QtWidgets.QHBoxLayout()
-        controls_layout.setContentsMargins(0, 6, 0, 0)
-        self.run_button = QtWidgets.QPushButton()
+        self.run_button.clicked.connect(self.start_simulation)
         self.run_button.setIcon(QIcon("ui_icons/reinhardt/player_play.svg"))
-        self.run_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                 QtWidgets.QSizePolicy.Fixed)
-        self.run_button.setToolTip("Start simulation")
-        self.run_button.clicked.connect(self.__start_simulation)
-
-        self.stop_button = QtWidgets.QPushButton()
-        self.stop_button.setIcon(QIcon("ui_icons/reinhardt/player_stop.svg"))
-        self.stop_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                  QtWidgets.QSizePolicy.Fixed)
-        self.stop_button.setToolTip("Stop simulation")
         self.stop_button.clicked.connect(self.stop_simulation)
-        self.stop_button.setEnabled(False)
+        self.stop_button.setIcon(QIcon("ui_icons/reinhardt/player_stop.svg"))
+        self.enable_buttons()
 
-        controls_layout.addWidget(self.run_button)
-        controls_layout.addWidget(self.stop_button)
-        controls_widget = QtWidgets.QWidget()
-        controls_widget.setLayout(controls_layout)
+        self.mcerd_error_lbl.hide()
+        self.ion_settings_label.hide()
 
-        processes_layout = QtWidgets.QFormLayout()
-        processes_layout.setContentsMargins(0, 6, 0, 0)
-        processes_label = QtWidgets.QLabel("Processes: ")
-        self.processes_spinbox = QtWidgets.QSpinBox()
-        self.processes_spinbox.setValue(1)
-        self.processes_spinbox.setToolTip(
-            "Number of processes used in simulation")
-        self.processes_spinbox.setFixedWidth(50)
-        processes_layout.addRow(processes_label, self.processes_spinbox)
-        processes_widget = QtWidgets.QWidget()
-        processes_widget.setLayout(processes_layout)
+        self.__unsub = None
 
-        # Show finished processes
-        self.finished_processes_widget = QtWidgets.QWidget()
-        r_p_layout = QtWidgets.QFormLayout()
-        r_p_layout.setContentsMargins(0, 6, 0, 0)
-        l_1 = QtWidgets.QLabel("Finished processes: ")
-        self.finished_processes_label = QtWidgets.QLabel("0/1")
+        self._ion_division = ion_division
+        self._min_presim_ions = min_presim_ions
+        self._min_sim_ions = min_sim_ions
+        self.show_ion_settings_label()
 
-        # Observed atom count
-        l_2 = QtWidgets.QLabel("Observed atoms: ")
-        self.observed_atom_count_label = QtWidgets.QLabel("0")
+        self.processes_spinbox.valueChanged.connect(
+            self.show_ion_settings_label)
+        self._recoil_name_changed = recoil_name_changed
+        if self._recoil_name_changed is not None:
+            self._recoil_name_changed.connect(self._set_name)
 
-        r_p_layout.addRow(l_1, self.finished_processes_label)
-        r_p_layout.addRow(l_2, self.observed_atom_count_label)
+        self._settings_updated = settings_updated
+        if self._settings_updated is not None:
+            self._settings_updated.connect(self.settings_update_handler)
+            self._settings_updated[GlobalSettings].connect(
+                self.settings_update_handler)
 
-        self.finished_processes_widget.setLayout(r_p_layout)
-
-        state_and_controls_layout = QtWidgets.QVBoxLayout()
-        state_and_controls_layout.setContentsMargins(6, 6, 6, 6)
-        state_and_controls_layout.addWidget(processes_widget)
-        state_and_controls_layout.addWidget(self.finished_processes_widget)
-        state_and_controls_layout.addWidget(state_widget)
-        state_and_controls_layout.addWidget(controls_widget)
-
-        self.finished_processes_widget.hide()
-
-        self.controls_group_box.setLayout(state_and_controls_layout)
-
-        main_layout.addWidget(self.controls_group_box)
-
-        self.setLayout(main_layout)
-
-    def reset_controls(self):
+    def closeEvent(self, event):
+        """Disconnects self from recoil_name_changed signal and closes the
+        widget.
         """
-        Reset controls to default.
-        """
-        self.finished_processes_widget.hide()
-        self.observed_atom_count_label.setText("0")
-        self.processes_spinbox.setEnabled(True)
-        self.state_label.setText("Not started")
+        # FIXME not being called. This is a problem as there may be memory
+        #  leaks.
+        try:
+            self._recoil_name_changed.disconnect(self._set_name)
+        except (AttributeError, TypeError):
+            pass
+        try:
+            self.settings_updated.disconnect(self.settings_update_handler)
+        except (AttributeError, TypeError):
+            pass
+        super().closeEvent(event)
 
-    def find_old_biggest_seed(self):
+    def _set_name(self, _, recoil_elem):
+        """Sets the name shown in group box title to the name of the
+        given recoil element if the recoil element is the same as the
+        main recoil.
         """
-        From possible old erd files, find biggest seed number.
+        if recoil_elem is self.element_simulation.get_main_recoil():
+            self.recoil_name = recoil_elem.get_full_name()
 
-        Return:
-             Biggest seed for simulation.
+    def enable_buttons(self, starting=False):
+        """Switches the states of run and stop button depending on the state
+        of the ElementSimulation object.
         """
-        biggest_seed = 0
-        old_files = []
-        for file in os.listdir(self.element_simulation.directory):
-            start_part = self.element_simulation.recoil_elements[0].prefix + \
-                "-" + self.element_simulation.recoil_elements[0].name + "."
-            end = ".erd"
-            if file.startswith(start_part) and file.endswith(end):
-                seed = file.rsplit('.', 2)[1]
-                old_files.append(os.path.join(
-                    self.element_simulation.directory, file))
-                try:
-                    current_seed = int(seed)
-                    if current_seed > biggest_seed:
-                        biggest_seed = current_seed
-                except ValueError:
-                    continue
-        if biggest_seed > 0:
-            return biggest_seed, old_files
-        return None, old_files
+        if self.element_simulation.is_optimization_running():
+            start_enabled, stop_enabled = False, False
+        else:
+            start_enabled = not (self.element_simulation.is_simulation_running()
+                                 and starting)
+            stop_enabled = not (
+                    start_enabled or
+                    self.element_simulation.is_optimization_running())
+        self.run_button.setEnabled(start_enabled)
+        self.stop_button.setEnabled(stop_enabled)
+        self.processes_spinbox.setEnabled(start_enabled)
 
-    def __start_simulation(self):
+    def start_simulation(self):
         """ Calls ElementSimulation's start method.
         """
         # Ask the user if they want to write old simulation results over (if
         # they exist), or continue
-        start_value = None
-        old_biggest_seed, erd_flies = self.find_old_biggest_seed()
-        use_erd_files = False
-        if old_biggest_seed:
+        status = self.element_simulation.get_current_status()
+
+        if status["state"] == SimulationState.DONE:
             reply = QtWidgets.QMessageBox.question(
-                self, "Confirmation", "Do you want to continue this "
-                                      "simulation?\n\nIf you do, old simulation"
-                                      " results will be preserved.\nOtherwise "
-                                      "they will be deleted.",
-                                                   QtWidgets.QMessageBox.Yes |
-                                                   QtWidgets.QMessageBox.No |
-                                                   QtWidgets.QMessageBox.Cancel,
-                                                   QtWidgets.QMessageBox.Cancel)
+                self, "Confirmation",
+                "Do you want to continue this simulation?\n\n"
+                "If you do, old simulation results will be preserved.\n"
+                "Otherwise they will be deleted.",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
             if reply == QtWidgets.QMessageBox.Cancel:
                 return  # If clicked Cancel don't start simulation
-            if reply == QtWidgets.QMessageBox.No:
-                # Delete old simulation results
-                for recoil in self.element_simulation.recoil_elements:
-                    delete_simulation_results(self.element_simulation, recoil)
+            elif reply == QtWidgets.QMessageBox.No:
+                use_old_erd_files = False
             else:
-                start_value = old_biggest_seed + 1
-                use_erd_files = True
+                use_old_erd_files = True
+        elif status["state"] == SimulationState.NOTRUN:
+            use_old_erd_files = False
+        else:
+            self.mcerd_error = "Simulation currently running. Cannot start a " \
+                               "new one."
+            self.mcerd_error_lbl.show()
+            return
 
-        number_of_processes = self.processes_spinbox.value()
-        self.state_label.setText("Running")
-        self.run_button.setEnabled(False)
-        self.stop_button.setEnabled(True)
-        self.observed_atom_count_label.setText("0 (pre sim)")
-
-        self.finished_processes_label.setText("0/" + str(number_of_processes))
-        self.finished_processes_widget.show()
-        self.processes_spinbox.setEnabled(False)
+        self.mcerd_error_lbl.hide()
 
         # Lock full edit
+        # TODO move this to ElementSimulation's start method
         self.element_simulation.lock_edit()
         if self.recoil_dist_widget.current_element_simulation is \
            self.element_simulation:
             self.recoil_dist_widget.full_edit_on = False
-            self.recoil_dist_widget.edit_lock_push_button.setText(
-                "Unlock full edit")
             self.recoil_dist_widget.update_plot()
-        self.element_simulation.y_min = 0.0001
 
-        if use_erd_files:
-            self.element_simulation.start(number_of_processes, start_value,
-                                          erd_flies)
+        self.finished_processes = 0, self.process_count
+        self.remove_progress_bars()
+
+        observable = self.element_simulation.start(
+            self.process_count, use_old_erd_files=use_old_erd_files,
+            ion_division=self._ion_division
+        )
+        if observable is not None:
+            self.__unsub = observable.pipe(
+                ops.scan(lambda acc, x: {
+                    **x,
+                    "started":  x["is_running"] and not acc["started"]
+                }, seed={"started": False})
+            ).subscribe(self)
         else:
-            self.element_simulation.start(number_of_processes, start_value)
+            self.mcerd_error = "Could not start simulation. Check that there " \
+                               "is no other simulation running for this " \
+                               "recoil element"
+            self.mcerd_error_lbl.show()
 
-    def show_number_of_observed_atoms(self, number, add_presim):
-        """
-        Show the number of observed atoms in the coltrols.
-
-        Args:
-            number: Observed atom number.
-            add_presim: Whether to add presim indicator or not.
-        """
-        try:
-            if number == 0 or add_presim:
-                text = str(number) + " (pre sim)"
-            else:
-                text = str(number)
-            self.observed_atom_count_label.setText(text)
-        except RuntimeError:
-            pass
-
-    def update_finished_processes(self, running_processes):
-        """
-        Update the amount of finished processes.
+    def show_status(self, status):
+        """Updates the status of simulation in the GUI
 
         Args:
-            running_processes: Number of running processes.
+            status: status of the ElementSimulation object
         """
-        all_proc = self.processes_spinbox.value()
-        finished = all_proc - running_processes
+        self.observed_atoms = status["atom_count"]
+        self.simulation_state = status["state"]
 
-        self.finished_processes_label.setText(
-            str(finished) + "/" + str(all_proc))
+    def settings_update_handler(
+            self, settings: Optional[GlobalSettings] = None):
+        """Updates SimulationControlsWidget when a setting has been updated.
+        """
+        if settings is not None:
+            self._ion_division = settings.get_ion_division()
+            self._min_presim_ions = settings.get_min_presim_ions()
+            self._min_sim_ions = settings.get_min_simulation_ions()
+        self.show_ion_settings_label()
+
+    def show_ion_settings_label(self):
+        """Shows a warning label if ion counts are below the user defined
+        treshold.
+        """
+        settings, _, _ = self.element_simulation.get_mcerd_params()
+        presim_ions, sim_ions = self._ion_division.get_ion_counts(
+            settings["number_of_ions_in_presimu"], settings["number_of_ions"],
+            self.process_count
+        )
+        txt = ""
+        if self._min_presim_ions > presim_ions:
+            txt += "Not enough pre-simulation ions. "
+        if self._min_sim_ions > sim_ions:
+            txt += "Not enough simulation ions."
+        if txt:
+            self.ion_settings_error = txt
+            self.ion_settings_label.show()
+        else:
+            self.ion_settings_label.hide()
 
     def stop_simulation(self):
         """ Calls ElementSimulation's stop method.
         """
-        try:
-            self.element_simulation.stop()
-        except FileNotFoundError:
-            # Either .erd or .recoil files were not found for generating
-            # energy spectrum.
-            error_box = QtWidgets.QMessageBox()
-            error_box.setIcon(QtWidgets.QMessageBox.Warning)
-            error_box.addButton(QtWidgets.QMessageBox.Ok)
-            error_box.setText("Energy spectrum data could not be generated.")
-            error_box.setWindowTitle("Error")
-            error_box.exec()
-        self.show_stop()
-        self.state_label.setText("Stopped")
+        self.element_simulation.stop()
 
-    def show_stop(self):
+    def on_next_handler(self, status):
+        """Callback function that receives status from an
+        ElementSimulation
+
+        Args:
+            status: status update sent by ElementSimulation or observable stream
         """
-        Set controls to show that simulation has ended.
+        if status["msg"] == "Presimulation finished":
+            style = SimulationControlsWidget.SIM_PROGRESS_STYLE
+        else:
+            style = None
+        self.update_progress_bar(
+            status["seed"], status["percentage"], stylesheet=style)
+
+        self.finished_processes = (
+            status["finished_processes"], status["total_processes"])
+
+        if status["started"]:
+            self.enable_buttons(starting=True)
+
+        self.show_status(status)
+
+    def on_error_handler(self, err):
+        """Called when observable (either ElementSimulation or the rx stream
+        reports an error.
         """
-        self.state_label.setText("Finished")
-        self.run_button.setEnabled(True)
-        self.stop_button.setEnabled(False)
-        self.processes_spinbox.setEnabled(True)
+        self.mcerd_error = err
+        self.mcerd_error_lbl.show()
+
+        self.enable_buttons()
+        self.show_status(self.element_simulation.get_current_status())
+        if self.__unsub is not None:
+            self.__unsub.dispose()
+
+    @QtCore.pyqtSlot()
+    @QtCore.pyqtSlot(object)
+    def on_completed_handler(self, status=None):
+        """This method is called when the ElementSimulation has run all of
+        its simulation processes.
+
+        GUI is updated to show the status and button states are switched
+        accordingly.
+        """
+        if status is None:
+            self.show_status(self.element_simulation.get_current_status())
+            if self.__unsub is not None:
+                self.__unsub.dispose()
+        else:
+            self.show_status(status)
+        for process_bar in self.progress_bars.values():
+            # TODO this only affects the number, adjust the color too
+            process_bar.setEnabled(False)
+        self.enable_buttons()
+
+    def remove_progress_bars(self):
+        """Removes all progress bars and seed labels.
+        """
+        self.progress_bars = {}
+        for i in reversed(range(self.process_layout.count())):
+            self.process_layout.itemAt(i).widget().deleteLater()
+
+    def update_progress_bar(self, seed: int, value: int, stylesheet=None):
+        """Updates or adds a progress bar for a simulation process that uses
+        the given seed.
+
+        Args:
+            seed: seed of the simulation process
+            value: value to be shown in the progress bar.
+            stylesheet: stylesheet given to to the progress bar.
+        """
+        if seed not in self.progress_bars:
+            if stylesheet is None:
+                stylesheet = SimulationControlsWidget.PRESIM_PROGRESS_STYLE
+            progress_bar = QtWidgets.QProgressBar()
+            progress_bar.setStyleSheet(stylesheet)
+
+            # Align the percentage display to the right side of the
+            # progress bar.
+            progress_bar.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+            # Make sure it fills the horizontal space by setting size policy
+            # to expanding.
+            progress_bar.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding,
+                QtWidgets.QSizePolicy.Fixed)
+
+            self.progress_bars[seed] = progress_bar
+            self.process_layout.addRow(
+                QtWidgets.QLabel(str(seed)), progress_bar)
+        else:
+            progress_bar = self.progress_bars[seed]
+            if stylesheet is not None:
+                progress_bar.setStyleSheet(stylesheet)
+        progress_bar.setValue(value)

@@ -7,14 +7,14 @@ name = "pypi"
 numpy = "*"
 scipy = "*"
 matplotlib = "*"
-"PyQt5" = "==5.9.2"
+PyQt5 = "==5.14.2"
+Shapely = "*"
 wheel = "*"
-Shapely = "*" # Windows needs a download file {path = "C:/Users/Heta/Downloads/Shapely-1.6.4.post1-cp36-cp36m-win32.whl"}
+rx = "*"
 
 [dev-packages]
-PyInstaller = "*"
-"pypiwin32" = "*"
-"pywin32" = "*"
+pypiwin32 = {sys_platform = "== 'win32'"}
+pywin32 = {sys_platform = "== 'win32'"}
 
 [requires]
 python_version = "3.6"

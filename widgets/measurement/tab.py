@@ -29,9 +29,11 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import logging
 import os
-import sys
+
+import dialogs.dialog_functions as df
+
+from pathlib import Path
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.energy_spectrum import EnergySpectrumWidget
@@ -42,126 +44,111 @@ from dialogs.measurement.element_losses import ElementLossesWidget
 from dialogs.measurement.settings import MeasurementSettingsDialog
 
 from modules.element import Element
-from modules.ui_log_handlers import CustomLogHandler
+from modules.measurement import Measurement
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
-from widgets.log import LogWidget
+from widgets.base_tab import BaseTab
 from widgets.measurement.tofe_histogram import TofeHistogramWidget
+from widgets.gui_utils import StatusBarHandler
 
 
-class MeasurementTabWidget(QtWidgets.QWidget):
+class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
     """Tab widget where measurement stuff is added.
     """
 
     issueMaster = QtCore.pyqtSignal()
 
-    def __init__(self, tab_id, measurement, icon_manager):
+    def __init__(self, tab_id, measurement: Measurement, icon_manager,
+                 statusbar=None):
         """Init measurement tab class.
         Args:
             tab_id: An integer representing ID of the tabwidget.
             measurement: A measurement class object.
             icon_manager: An iconmanager class object.
+            statusbar: A QtGui.QMainWindow's QStatusBar.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_measurement_tab.ui"), self)
+
         self.tab_id = tab_id
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_measurement_tab.ui"), self)
         self.obj = measurement
         self.icon_manager = icon_manager
 
+        # Various widgets that are shown in the tab. These will be populated
+        # using the load_data method
         self.histogram = None
-        # self.add_histogram()
         self.elemental_losses_widget = None
         self.energy_spectrum_widget = None
         self.depth_profile_widget = None
-        # self.check_previous_state_files()  # For above three.
         self.log = None
-
-        self.ui.saveCutsButton.clicked.connect(self.measurement_save_cuts)
-        self.ui.analyzeElementLossesButton.clicked.connect(
-            lambda: self.open_element_losses(self))
-        self.ui.energySpectrumButton.clicked.connect(
-            lambda: self.open_energy_spectrum(self))
-        self.ui.createDepthProfileButton.clicked.connect(
-            lambda: self.open_depth_profile(self))
-        self.ui.command_master.clicked.connect(self.__master_issue_commands)
-        self.ui.openSettingsButton.clicked.connect(lambda:
-                                                   self.__open_settings())
-
         self.data_loaded = False
-        self.panel_shown = True
-        self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
+
+        self.saveCutsButton.clicked.connect(self.measurement_save_cuts)
+        self.analyzeElementLossesButton.clicked.connect(
+            self.open_element_losses)
+        self.energySpectrumButton.clicked.connect(self.open_energy_spectrum)
+        self.createDepthProfileButton.clicked.connect(self.open_depth_profile)
+        self.command_master.clicked.connect(self.__master_issue_commands)
+        self.openSettingsButton.clicked.connect(self.__open_settings)
+
+        df.set_up_side_panel(self, "mesu_panel_shown", "right")
 
         # Enable master button
         self.toggle_master_button()
+        self.set_icons()
+        self.statusbar = statusbar
 
-    def add_widget(self, widget, minimized=None, has_close_button=True,
-                   icon=None):
-        """Adds a new widget to current (measurement) tab.
-
-        Args:
-            widget: QWidget to be added into measurement tab widget.
-            minimized: Boolean representing if widget should be minimized.
-            has_close_button: Whether widget has close button or not.
-            icon: QtGui.QIcon for the subwindow.
+    def get_default_widget(self):
+        """Histogram will be the widget that gets activated when the tab
+        is created.
         """
-        # QtGui.QMdiArea.addSubWindow(QWidget, flags=0)
-        if has_close_button:
-            subwindow = self.ui.mdiArea.addSubWindow(widget)
-        else:
-            subwindow = self.ui.mdiArea.addSubWindow(
-                widget, QtCore.Qt.CustomizeWindowHint |
-                QtCore.Qt.WindowTitleHint |
-                QtCore.Qt.WindowMinMaxButtonsHint)
-        if icon:
-            subwindow.setWindowIcon(icon)
-        subwindow.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        widget.subwindow = subwindow
+        return self.histogram
 
-        if minimized:
-            widget.showMinimized()
-        else:
-            widget.show()
-        self.__set_icons()
+    def get_saveable_widgets(self):
+        """Returns dictionary of widgets whose geometries will be stored.
+        """
+        return {
+            "hist": self.histogram,
+            "elem_loss": self.elemental_losses_widget,
+            "espe": self.energy_spectrum_widget,
+            "depth": self.depth_profile_widget,
+            "log": self.log
+        }
 
-    def add_histogram(self, progress_bar, start=None, add=None):
+    def add_histogram(self, progress=None):
         """Adds ToF-E histogram into tab if it doesn't have one already.
 
         Args:
-            progress_bar: A progress bar.
-            start: Start value of progress bar.
-            add: Value added to progress bar.
+            progress: ProgressReporter object
         """
-        self.histogram = TofeHistogramWidget(self.obj,
-                                             self.icon_manager, self)
-        if progress_bar and not start:
-            progress_bar.setValue(40)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+        self.histogram = TofeHistogramWidget(
+            self.obj, self.icon_manager, self, statusbar=self.statusbar)
 
-        self.obj.set_axes(self.histogram.matplotlib.axes, progress_bar,
-                          start, add)
+        if progress is not None:
+            progress.report(40)
+            sub_progress = progress.get_sub_reporter(lambda x: 40 + x * 0.2)
+        else:
+            sub_progress = None
 
-        self.ui.makeSelectionsButton.clicked.connect(
+        self.obj.set_axes(self.histogram.matplotlib.axes, progress=sub_progress)
+
+        self.makeSelectionsButton.clicked.connect(
             lambda: self.histogram.matplotlib.elementSelectionButton.setChecked(
                 True))
         self.histogram.matplotlib.selectionsChanged.connect(
             self.__set_cut_button_enabled)
 
-        if progress_bar and not add:
-            progress_bar.setValue(60)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+        if progress is not None:
+            progress.report(60)
 
         # Draw after giving axes -> selections set properly
         self.histogram.matplotlib.on_draw()
 
-        if not self.obj.selector.is_empty():
-            self.histogram.matplotlib.elementSelectionSelectButton.setEnabled(
-                True)
+        self.histogram.matplotlib.elementSelectionSelectButton.setEnabled(
+            not self.obj.selector.is_empty())
         self.add_widget(self.histogram, has_close_button=False)
         self.histogram.set_cut_button_enabled()
 
@@ -169,108 +156,48 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         # button. 
         self.__set_cut_button_enabled(self.obj.selector.selections)
 
-    def add_log(self):
-        """Add the measurement log to measurement tab widget.
+        if progress is not None:
+            progress.report(100)
 
-        Checks also if there's already some logging for this measurement and
-        appends the text field of the user interface with this log.
-        """
-        self.log = LogWidget()
-        self.add_widget(self.log, minimized=True, has_close_button=False)
-        self.add_ui_logger(self.log)
-
-        # Checks for log file and appends it to the field.
-        log_default = os.path.join(self.obj.directory, 'default.log')
-        log_error = os.path.join(self.obj.directory, 'errors.log')
-        self.__read_log_file(log_default, 1)
-        self.__read_log_file(log_error, 0)
-
-    def add_ui_logger(self, log_widget):
-        """Adds handlers to measurement logger so the logger can log the events
-        to the user interface too.
-
-        log_widget specifies which ui element will handle the logging. That
-        should be the one which is added to this MeasurementTabWidget.
-        """
-        logger = logging.getLogger(self.obj.name)
-        defaultformat = logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S')
-        widgetlogger_default = CustomLogHandler(logging.INFO,
-                                                defaultformat,
-                                                log_widget)
-        logger.addHandler(widgetlogger_default)
-
-    def check_previous_state_files(self, progress_bar=None):
+    def check_previous_state_files(self, progress=None):
         """Check if saved state for Elemental Losses, Energy Spectrum or Depth
         Profile exists. If yes, load them also.
 
         Args:
-            progress_bar: A QtWidgets.QProgressBar where loading of previous
-                          graph can be shown.
+            progress: a ProgressReporter object
         """
         sample_folder_name = "Sample_" + "%02d" % \
                              self.obj.sample.serial_number + "-" + \
                              self.obj.sample.name
-        directory_c = self.obj.directory_composition_changes
-        self.make_elemental_losses(directory_c, self.obj.name,
-                                   self.obj.serial_number,
-                                   sample_folder_name)
-        progress_bar.setValue(72)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        # Mac requires event processing to show progress bar and its
-        # process.
-        directory_e = self.obj.directory_energy_spectra
-        self.make_energy_spectrum(directory_e, self.obj.name,
-                                  self.obj.serial_number,
-                                  sample_folder_name)
-        progress_bar.setValue(82)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        # Mac requires event processing to show progress bar and its
-        # process.
-        directory_d = self.obj.directory_depth_profiles
-        self.make_depth_profile(directory_d, self.obj.name,
-                                self.obj.serial_number,
-                                sample_folder_name)
-        progress_bar.setValue(98)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        # Mac requires event processing to show progress bar and its
-        # process.
+        directory_c = self.obj.get_composition_changes_dir()
+        self.make_elemental_losses(
+            directory_c, self.obj.name, self.obj.serial_number,
+            sample_folder_name)
 
-    def del_widget(self, widget):
-        """Delete a widget from current (measurement) tab.
+        if progress is not None:
+            progress.report(33)
 
-        Args:
-            widget: QWidget to be removed.
-        """
-        try:
-            self.ui.mdiArea.removeSubWindow(widget.subwindow)
-            widget.delete()
-        except:
-            # If window was manually closed, do nothing.
-            pass
+        directory_e = self.obj.get_energy_spectra_dir()
+        self.make_energy_spectrum(
+            directory_e, self.obj.name, self.obj.serial_number,
+            sample_folder_name)
 
-    def hide_panel(self, enable_hide=None):
-        """Sets the frame (including all the tool buttons) visible.
-        
-        Args:
-            enable_hide: If True, sets the frame visible and vice versa. 
-                         If not given, sets the frame visible or hidden 
-                         depending its previous state.
-        """
-        if enable_hide is not None:
-            self.panel_shown = enable_hide
+        if progress is not None:
+            progress.report(50)
+            sub_progress = progress.get_sub_reporter(lambda x: 50 + 0.4 * x)
         else:
-            self.panel_shown = not self.panel_shown
-        if self.panel_shown:
-            self.ui.hidePanelButton.setText('>')
-        else:
-            self.ui.hidePanelButton.setText('<')
+            sub_progress = None
 
-        self.ui.frame.setVisible(self.panel_shown)
+        directory_d = self.obj.get_depth_profile_dir()
+        self.make_depth_profile(
+            directory_d, self.obj.name, self.obj.serial_number,
+            sample_folder_name, progress=sub_progress)
+
+        if progress is not None:
+            progress.report(100)
 
     def make_depth_profile(self, directory, name, serial_number_m,
-                           sample_folder_name):
+                           sample_folder_name, progress=None):
         """Make depth profile from loaded lines from saved file.
         
         Args:
@@ -278,9 +205,10 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             name: A string representing measurement's name.
             serial_number_m: Measurement's serial number.
             sample_folder_name: Sample's serial number.
+            progress: a ProgressReporter object
         """
-        file = os.path.join(directory, DepthProfileWidget.save_file)
-        lines = self.__load_file(file)
+        file = Path(directory, DepthProfileWidget.save_file)
+        lines = MeasurementTabWidget._load_file(file)
         if not lines:
             return
         m_name = self.obj.name
@@ -316,14 +244,15 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             DepthProfileDialog.systerr = systerr
             self.depth_profile_widget = DepthProfileWidget(
                 self, output_dir, use_cuts, elements, x_unit, line_zero,
-                line_scale, systerr)
+                line_scale, systerr, progress=progress)
             icon = self.icon_manager.get_icon("depth_profile_icon_2_16.png")
             self.add_widget(self.depth_profile_widget, icon=icon)
-        except:  # We do not need duplicate error logs, log in widget instead
-            print(sys.exc_info())  # TODO: Remove this.
+        except Exception as e:
+            # We do not need duplicate error logs, log in widget instead
+            print(e)
 
     def make_elemental_losses(self, directory, name, serial_number,
-                              old_sample_name):
+                              old_sample_name, progress=None):
         """Make elemental losses from loaded lines from saved file.
         
         Args:
@@ -331,9 +260,10 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             name: A string representing measurement's name.
             serial_number: Measurement's serial number.
             old_sample_name: Sample folder of the measurement.
+            progress: a ProgressReporter object
         """
-        file = os.path.join(directory, ElementLossesWidget.save_file)
-        lines = self.__load_file(file)
+        file = Path(directory, ElementLossesWidget.save_file)
+        lines = MeasurementTabWidget._load_file(file)
         if not lines:
             return
         m_name = self.obj.name
@@ -344,8 +274,6 @@ class MeasurementTabWidget(QtWidgets.QWidget):
                               self.obj.sample.serial_number + "-" + \
                               self.obj.sample.name
             file_path = lines[0].strip()
-            if self.obj.directory in file_path:
-                file_path = file_path.replace(file_path + os.sep, "")
             reference_cut = self.__confirm_filepath(file_path,
                                                     name, m_name,
                                                     old_folder_prefix,
@@ -365,11 +293,12 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             ElementLossesDialog.y_scale = y_scale
             self.elemental_losses_widget = ElementLossesWidget(
                 self, reference_cut, checked_cuts, split_count, y_scale,
-                use_progress_bar=False)
+                statusbar=self.statusbar, progress=progress)
             icon = self.icon_manager.get_icon("elemental_losses_icon_16.png")
             self.add_widget(self.elemental_losses_widget, icon=icon)
-        except:  # We do not need duplicate error logs, log in widget instead
-            print(sys.exc_info())  # TODO: Remove this.
+        except Exception as e:
+            # We do not need duplicate error logs, log in widget instead
+            print(e)
 
     def make_energy_spectrum(self, directory, name, serial_number,
                              old_sample_name):
@@ -379,9 +308,10 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             directory: A string representing directory.
             name: A string representing measurement's name.
             serial_number: Measurement's serial number.
+            old_sample_name: TODO
         """
-        file = os.path.join(directory, EnergySpectrumWidget.save_file)
-        lines = self.__load_file(file)
+        file = Path(directory, EnergySpectrumWidget.save_file)
+        lines = MeasurementTabWidget._load_file(file)
         if not lines:
             return
         m_name = self.obj.name
@@ -400,17 +330,17 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             EnergySpectrumParamsDialog.checked_cuts[m_name] = cut_names
             self.energy_spectrum_widget = EnergySpectrumWidget(
                 self, spectrum_type="measurement",
-                use_cuts=use_cuts,
-                bin_width=width, use_progress_bar=False)
+                use_cuts=use_cuts, bin_width=width)
             icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
             self.add_widget(self.energy_spectrum_widget, icon=icon)
-        except:  # We do not need duplicate error logs, log in widget instead
-            print(sys.exc_info())  # TODO: Remove this.
+        except Exception as e:
+            print(e)
 
     def measurement_save_cuts(self):
         """Save measurement selections to cut files.
         """
-        self.obj.save_cuts()
+        sbh = StatusBarHandler(self.statusbar)
+        self.obj.save_cuts(progress=sbh.reporter)
         # Do for all slaves if master.
         self.obj.request.save_cuts(self.obj)
 
@@ -419,40 +349,35 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         """
         MeasurementSettingsDialog(self.obj, self.icon_manager)
 
-    def open_depth_profile(self, parent):
+    def open_depth_profile(self):
         """Opens depth profile dialog.
-
-        Args:
-            parent: MeasurementTabWidget
         """
         previous = self.depth_profile_widget
-        DepthProfileDialog(parent)
+        DepthProfileDialog(self, self.obj, self.obj.request.global_settings,
+                           statusbar=self.statusbar)
         if self.depth_profile_widget != previous and \
                 type(self.depth_profile_widget) is not None:
+            # TODO type(x) is not None???
             self.depth_profile_widget.save_to_file()
 
-    def open_energy_spectrum(self, parent):
+    def open_energy_spectrum(self):
         """Opens energy spectrum dialog.
-        
-        Args:
-            parent: MeasurementTabWidget
         """
         previous = self.energy_spectrum_widget
-        EnergySpectrumParamsDialog(parent, spectrum_type="measurement")
+        EnergySpectrumParamsDialog(self, spectrum_type="measurement",
+                                   statusbar=self.statusbar)
         if self.energy_spectrum_widget != previous and \
                 type(self.energy_spectrum_widget) is not None:
+            # TODO type(x) is not None???
             self.energy_spectrum_widget.save_to_file()
 
-    def open_element_losses(self, parent):
+    def open_element_losses(self):
         """Opens element losses dialog.
-        
-        Args:
-            parent: MeasurementTabWidget
         """
         previous = self.elemental_losses_widget
-        ElementLossesDialog(parent)
+        ElementLossesDialog(self, self.statusbar)
         if self.elemental_losses_widget != previous and \
-                type(self.elemental_losses_widget) is not None:
+                self.elemental_losses_widget is not None:
             self.elemental_losses_widget.save_to_file()
 
     def toggle_master_button(self):
@@ -465,14 +390,15 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             master_name = master.name
         else:
             master_name = None
-        self.ui.command_master.setEnabled(measurement_name == master_name)
+        self.command_master.setEnabled(measurement_name == master_name)
 
     def __confirm_filepath(self, filepath, name, m_name, old_folder_prefix,
                            new_folder_prefix, old_sample_name, new_sample_name):
-        """Confirm whether filepath exist and changes it accordingly.
+        """Confirm whether file path exist and changes it accordingly.
 
         Args:
-            filepath: A string representing a filepath.
+            filepath: A string or a collection of strings representing
+                      filepaths.
             name: A string representing origin measurement's name.
             m_name: A string representing measurement's name where graph is
             created.
@@ -482,34 +408,40 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             old_sample_name: Sample folder name of the original measurement.
             new_sample_name: Sample folder name of the measurement who will
             have the graph.
+
+        Return:
+            either a Path object or a list of Path objects depending on the
+            input type.
         """
         if type(filepath) == str:
             # Replace two for measurement and cut file's name. Not all, in case 
             # the request or directories above it have same name.
-            filepath = self.__rreplace(filepath, name, m_name,
-                                       old_folder_prefix, new_folder_prefix,
-                                       old_sample_name, new_sample_name)
-            try:
-                with open(filepath):
-                    pass
-                return filepath
-            except:
-                return os.path.join(self.obj.directory, filepath)
+            file = rreplace(
+                filepath, name, m_name, old_folder_prefix, new_folder_prefix,
+                old_sample_name, new_sample_name)
+            return self.__validate_file_path(file)
         elif type(filepath) == list:
             newfiles = []
             for file in filepath:
-                file = self.__rreplace(file, name, m_name, old_folder_prefix,
-                                       new_folder_prefix, old_sample_name,
-                                       new_sample_name)
-                try:
-                    with open(file):
-                        pass
-                    newfiles.append(file)
-                except:
-                    newfiles.append(os.path.join(self.obj.directory, file))
+                file = rreplace(
+                    file, name, m_name, old_folder_prefix, new_folder_prefix,
+                    old_sample_name, new_sample_name)
+                newfiles.append(self.__validate_file_path(file))
             return newfiles
+        raise TypeError("Expected either a string or a list")
 
-    def __load_file(self, file):
+    def __validate_file_path(self, file_path):
+        """Helper function that checks if the given file_path points to file.
+        If it does, returns the file path as it was given, otherwise treats
+        the file_path as a relative path and returns an absolute path within
+        object's directory.
+        """
+        if file_path.is_file():
+            return file_path
+        return Path(self.obj.directory, file_path)
+
+    @staticmethod
+    def _load_file(file: Path):
         """Load file
 
         Args:
@@ -517,11 +449,13 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         """
         lines = []
         try:
-            with open(file, "rt") as fp:
+            with file.open("r") as fp:
                 for line in fp:
                     lines.append(line)
-        except IOError:
-            pass
+        except (OSError, UnicodeDecodeError) as e:
+            # TODO when opening a widget_safe_file that was saved on another
+            #      platform, UnicodeDecodeError is raised. Log this.
+            print(e)
         return lines
 
     def __master_issue_commands(self):
@@ -537,55 +471,6 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         if meas_name == master_name:
             self.issueMaster.emit()
 
-    def __read_log_file(self, file, state=1):
-        """Read the log file into the log window.
-
-        Args:
-            file: A string representing log file.
-            state: An integer (0, 1) representing what sort of log we read.
-                   0 = error
-                   1 = text (default)
-        """
-        if os.path.exists(file):
-            with open(file) as log_file:
-                for line in log_file:
-                    if state == 0:
-                        self.log.add_error(line.strip())
-                    else:
-                        self.log.add_text(line.strip())
-
-    def __rreplace(self, s, old, new, old_folder_prefix, new_folder_prefix,
-                   old_sample_name, new_sample_name):
-        """Replace from last occurrence.
-        
-        http://stackoverflow.com/questions/2556108/how-to-replace-the-last-
-        occurence-of-an-expression-in-a-string
-
-        Args:
-            s: String to modify.
-            old: Old name.
-            new: New name.
-            old_folder_prefix: Folder prefix of the old name.
-            new_folder_prefix: Folder prefix of the new name.
-            old_sample_name: Name of the old sample folder.
-            new_sample_name: Name of the new sample folder.
-        """
-        li = s.rsplit(old, 2)
-        if old_folder_prefix in li[0]:
-            new_f = li[0].replace(old_folder_prefix, new_folder_prefix)
-            li[0] = new_f
-        if old_sample_name in li[0]:
-            new_f = li[0].replace(old_sample_name, new_sample_name)
-            li[0] = new_f
-        # first = s.split(old_folder_prefix, 1)[0]
-        # f_done = first + new_folder_name
-        # second = s.rsplit(old, 1)[1]
-        # s_done = new + second
-        #
-        # result = f_done + s_done
-        result = new.join(li)
-        return result
-
     def __set_cut_button_enabled(self, selections):
         """Enables save cuts button if the given selections list's lenght is
         not 0.
@@ -594,20 +479,91 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         Args:
             selections: list of Selection objects
         """
-        self.ui.saveCutsButton.setEnabled(len(selections))
+        self.saveCutsButton.setEnabled(len(selections))
 
-    def __set_icons(self):
+    def set_icons(self):
         """Adds icons to UI elements.
         """
-        self.icon_manager.set_icon(self.ui.makeSelectionsButton,
+        self.icon_manager.set_icon(self.makeSelectionsButton,
                                    "amarok_edit.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.saveCutsButton,
+        self.icon_manager.set_icon(self.saveCutsButton,
                                    "save_all.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.analyzeElementLossesButton,
+        self.icon_manager.set_icon(self.analyzeElementLossesButton,
                                    "elemental_losses_icon.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.energySpectrumButton,
+        self.icon_manager.set_icon(self.energySpectrumButton,
                                    "energy_spectrum_icon.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.createDepthProfileButton,
+        self.icon_manager.set_icon(self.createDepthProfileButton,
                                    "depth_profile.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.command_master,
+        self.icon_manager.set_icon(self.command_master,
                                    "editcut.svg", size=(30, 30))
+
+    def load_data(self, progress=None):
+        """Loads the data belonging to the Measurement into view.
+        """
+        # Check that the data is read.
+        if not self.data_loaded:
+            self.data_loaded = True
+            self.obj.load_data()
+
+            if progress is not None:
+                progress.report(25)
+                sub_progress = progress.get_sub_reporter(
+                    lambda x: 25 + 0.5 * x
+                )
+            else:
+                sub_progress = None
+
+            self.add_histogram(progress=sub_progress)
+
+            if progress is not None:
+                progress.report(75)
+                sub_progress = progress.get_sub_reporter(
+                    lambda x: 75 + 0.2 * x
+                )
+
+            # Load previous states.
+            self.check_previous_state_files(sub_progress)
+
+            self.restore_geometries()
+
+        if progress is not None:
+            progress.report(100)
+
+
+def rreplace(s, old, new, old_folder_prefix, new_folder_prefix,
+             old_sample_name, new_sample_name):
+    """Replace from last occurrence.
+
+    http://stackoverflow.com/questions/2556108/how-to-replace-the-last-
+    occurence-of-an-expression-in-a-string
+
+    Args:
+        s: String to modify.
+        old: Old name.
+        new: New name.
+        old_folder_prefix: Folder prefix of the old name.
+        new_folder_prefix: Folder prefix of the new name.
+        old_sample_name: Name of the old sample folder.
+        new_sample_name: Name of the new sample folder.
+    """
+    li = s.rsplit(old, 2)
+    if old_folder_prefix in li[0]:
+        new_f = li[0].replace(old_folder_prefix, new_folder_prefix)
+        li[0] = new_f
+    if old_sample_name in li[0]:
+        new_f = li[0].replace(old_sample_name, new_sample_name)
+        li[0] = new_f
+    # first = s.split(old_folder_prefix, 1)[0]
+    # f_done = first + new_folder_name
+    # second = s.rsplit(old, 1)[1]
+    # s_done = new + second
+    #
+    # result = f_done + s_done
+    result = new.join(li)
+    if "\\" in result and "/" not in result:
+        # This is a patch to make it possible to open .cut files made
+        # on another os.
+        # TODO it would be better to use Path when writing these paths
+        #      to file in the first place
+        result = result.replace("\\", "/")
+    return Path(result)

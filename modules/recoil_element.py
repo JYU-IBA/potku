@@ -25,38 +25,56 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import copy
+import json
+import itertools
+import time
 
-from modules.element import Element
-from modules.general_functions import calculate_new_point
+from . import file_paths as fp
+from . import math_functions as mf
 
-from shapely.geometry import Polygon
+from .base import Serializable
+from .base import MCERDParameterContainer
+from .element import Element
+from .point import Point
+from .parsing import CSVParser
 
 
-class RecoilElement:
+class RecoilElement(MCERDParameterContainer, Serializable):
     """An element that has a list of points and a widget. The points are kept
     in ascending order by their x coordinate.
     """
-    def __init__(self, element, points, color, name="Default", rec_type="rec"):
+    def __init__(self, element, points, color="red", name="Default",
+                 rec_type="rec",
+                 description="These are default recoil settings.",
+                 reference_density=4.98e22, modification_time=None,
+                 channel_width=None):
         """Inits recoil element.
 
         Args:
             element: An Element class object.
             points: A list of Point class objects.
+            color: string representation of a color
             name: Name of the RecoilElement object anf file.
             rec_type: Type recoil element (rec or sct).
         """
         self.element = element
-        self.name = name
-        self.prefix = (Element.__str__(element)).split(" ")[0]
-        self.description = "These are default recoil settings."
+        if not name:
+            self.name = "Default"
+        else:
+            self.name = name
+        self.prefix = element.get_prefix()
+        self.description = description
         self.type = rec_type
-        # This is multiplied by 1e22
-        self.reference_density = 4.98
-        self.multiplier = 1e22
+
+        self.reference_density = reference_density
+        self.channel_width = channel_width
+
+        # TODO might want to use some sort of sorted collection instead of a
+        #  list, although this depends on the number of elements in the list.
         self._points = sorted(points)
         self.points_backlog = []
         # This is out of bounds if no undo is done, telss the index of the
@@ -70,7 +88,7 @@ class RecoilElement:
         self.widgets = []
         self._edit_lock_on = False
 
-        self.modification_time = None
+        self.modification_time = modification_time
 
         # List for keeping track of intervals that are zero
         self.zero_intervals_on_x = []
@@ -78,16 +96,34 @@ class RecoilElement:
         self.zero_values_on_x = []
 
         # Area of certain limits
+        # TODO these may be removed
         self.area = None
         self.area_limits = []
-
-        self.__common_area_points = []
-        self.__individual_area_points = []
 
         # Color of the recoil
         self.color = color
 
         self.update_zero_values()
+
+    def __lt__(self, other):
+        """Comparison is delegated to Element object.
+        """
+        if not isinstance(other, RecoilElement):
+            return NotImplemented
+
+        return self.element < other.element
+
+    def get_individual_interval(self):
+        try:
+            return self.area_limits[0].get_xdata()[0], \
+                   self.area_limits[-1].get_xdata()[0]
+        except IndexError:
+            return None, None
+
+    def get_full_name(self):
+        """Returns the prefixed name of the RecoilElement.
+        """
+        return f"{self.prefix}-{self.name}"
 
     def delete_widgets(self):
         """
@@ -123,7 +159,9 @@ class RecoilElement:
         Save current points for undoing or redoing.
 
         Args:
+            full_edit_used: TODO
             exclude: A point that needs to be excluded from backlog entry.
+            save_before_undo: TODO
         """
         points = []
         if exclude:
@@ -271,8 +309,6 @@ class RecoilElement:
     def _sort_points(self):
         """Sorts the points in ascending order by their x coordinate."""
         self._points.sort()
-        self._xs = [point.get_x() for point in self._points]
-        self._ys = [point.get_y() for point in self._points]
 
     def get_xs(self):
         """Returns a list of the x coordinates of the points."""
@@ -281,6 +317,12 @@ class RecoilElement:
     def get_ys(self):
         """Returns a list of the y coordinates of the points."""
         return [point.get_y() for point in self._points]
+
+    def get_xs_and_ys(self):
+        """Returns a tuple where first one contains the values on the
+        x axis and second one contains the values on the y axis."""
+        xs, ys = zip(*(p.get_coordinates() for p in self._points))
+        return xs, ys
 
     def get_point_by_i(self, i):
         """Returns the i:th point."""
@@ -324,39 +366,154 @@ class RecoilElement:
         else:
             return self._points[ind + 1]
 
-    def write_recoil_file(self, recoil_file):
-        """Writes a file of points that is given to MCERD and get_espe.
+    def get_neighbors(self, point):
+        """Returns point's left and right neighbour.
 
         Args:
-            recoil_file: File path to recoil file that ends with ".recoil" or
-            ".scatter".
+            point: Point object
+
+        Return:
+            left and right neighbour as a tuple
         """
-        with open(recoil_file, "w") as file_rec:
-            # If there are not points all the way from 0 to 10, add this
-            # small amount
-            points = self.get_points()
-            if 0 < points[0].get_x():
-                point_x = round(points[0].get_x() - 0.01, 2)
-                if points[0].get_x() <= 10.0:
-                    file_rec.write("0.00 0.000001\n" + str(point_x) +
-                                   " 0.000001\n")
-                else:
-                    file_rec.write("0.00 0.000001\n10.00 0.000001\n" +
-                                   "10.01 0.0000\n" + str(point_x) +
-                                   " 0.0000\n")
+        ind = self._points.index(point)
 
-            for point in points:
-                file_rec.write(
-                    str(round(point.get_x(), 2)) + " " +
-                    str(round(point.get_y(), 4)) + "\n")
+        if ind == 0:
+            ln = None
+        else:
+            ln = self._points[ind - 1]
 
-            # MCERD requires the recoil atom distribution to end with these
-            # points
-            file_rec.write(
-                str(round(self.get_points()[-1].get_x() + 0.01, 2)) +
-                " 0.0\n" +
-                str(round(self.get_points()[-1].get_x() + 0.02, 2)) +
-                " 0.0\n")
+        if ind == len(self._points) - 1:
+            rn = None
+        else:
+            rn = self._points[ind + 1]
+
+        return ln, rn
+
+    def update(self, new_values):
+        """Updates the values of the RecoilElement with the given values
+
+        Raises KeyError if new_values does not contain necessary keys.
+
+        Args:
+            new_values: dictionary
+        """
+        try:
+            self.name = new_values["name"]
+            self.description = new_values["description"]
+            self.reference_density = new_values["reference_density"]
+            self.color = new_values["color"]
+        except KeyError:
+            raise
+
+    def to_file(self, simulation_folder):
+        """Save recoil settings to file.
+
+        Args:
+            simulation_folder: Path to simulation folder in which ".rec" or
+                               ".sct" files are stored.
+        """
+        # TODO is it necessary to have the recoil type ('rec' or 'sct') in the
+        #  file extension? Currently Potku always has to delete the other types
+        #  of files when the simulation type is changed.
+        recoil_file_path = fp.get_recoil_file_path(self, simulation_folder)
+
+        timestamp = time.time()
+
+        # Multiplier is saved to maintain backwards compatibility with old
+        # save files
+        obj = {
+            "name": self.name,
+            "description": self.description,
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
+                timestamp)),
+            "modification_time_unix": timestamp,
+            "simulation_type": self.type,
+            "element":  self.element.get_prefix(),
+            "reference_density": self.reference_density,
+            "multiplier": 1,
+            "profile": [
+                {
+                    "Point": str(point)
+                }
+                for point in self.get_points()
+            ],
+            "color": self.color
+        }
+
+        with open(recoil_file_path, "w") as file:
+            json.dump(obj, file, indent=4)
+
+    @classmethod
+    def from_file(cls, file_path, channel_width=None, rec_type="rec"):
+        """Returns a RecoilElement from a json file.
+
+        Args:
+            file_path: path to a file
+            channel_width: TODO
+            rec_type: type of recoil, either 'rec' or 'sct'
+
+        Return:
+            RecoilElement object
+        """
+        with open(file_path) as rec_file:
+            reco = json.load(rec_file)
+
+        # Pop the values that need conversion and/or are provided as positional
+        # arguments.
+        element = Element.from_string(reco.pop("element"))
+        reco["modification_time"] = reco.pop("modification_time_unix")
+
+        # Multiply reference density with multiplier in case the recoil file
+        # is of the old format
+        reco["reference_density"] *= reco.pop("multiplier")
+        # TODO do something with simulation_type
+        reco.pop("simulation_type")
+
+        # Profile is a list of dicts where each dict is in the form of
+        # { 'Point': 'x y' }. itertools.chain produces a flattened list of
+        # the values.
+        profile = reco.pop("profile")
+        p_iter = itertools.chain.from_iterable(p.values() for p in profile)
+
+        # Use parser to convert values to float
+        # TODO smarter parser that can parse multiple columns at once
+        parser = CSVParser((0, float), (1, float))
+        points = (
+            Point(xy)
+            for xy in parser.parse_strs(p_iter, method="row")
+        )
+
+        return cls(element, list(points), channel_width=channel_width,
+                   rec_type=rec_type, **reco)
+
+    def get_mcerd_params(self):
+        """Returns the parameters used in MCERD calculations as a list of
+        strings.
+        """
+        params = []
+
+        # If there are not points all the way from 0 to 10, add this
+        # small amount
+        points = self.get_points()
+        if 0 < points[0].get_x():
+            point_x = round(points[0].get_x() - 0.01, 2)
+            if points[0].get_x() <= 10.0:
+                params.append(f"0.00 0.000001\n{point_x} 0.000001")
+            else:
+                params.append(f"0.00 0.000001\n10.00 0.000001\n"
+                              f"10.01 0.0000\n{point_x} 0.0000")
+
+        for point in points:
+            params.append(point.get_mcerd_params())
+
+        # MCERD requires the recoil atom distribution to end with these
+        # points
+        params.append(f"{round(self.get_points()[-1].get_x() + 0.01, 2)} "
+                      f"0.0")
+        params.append(f"{round(self.get_points()[-1].get_x() + 0.02, 2)} "
+                      f"0.0\n")
+
+        return params
 
     def calculate_area_for_interval(self, start=None, end=None):
         """
@@ -369,66 +526,11 @@ class RecoilElement:
         Return:
             Area between intervals and recoil points and x axis.
         """
-        if not start and not end:
-            if not self.area_limits:
-                start = self._points[0].get_x()
-                end = self._points[-1].get_x()
-            else:
-                start = self.area_limits[0].get_xdata()[0]
-                end = self.area_limits[-1].get_xdata()[0]
-            self.__individual_area_points = []
-            area_points = self.__individual_area_points
-        else:
-            self.__common_area_points = []
-            area_points = self.__common_area_points
+        if start is None:
+            start = self._points[0].get_x()
+        if end is None:
+            end = self._points[-1].get_x()
 
-        for i, point in enumerate(self._points):
-            x = point.get_x()
-            y = point.get_y()
-            if x < start:
-                continue
-            if start <= x:
-                if i > 0:
-                    previous_point = self._points[i - 1]
-                    if previous_point.get_x() < start < x:
-                        # Calculate new point to be added
-                        calculate_new_point(previous_point, start,
-                                                   point, area_points)
-                if x <= end:
-                    area_points.append((x, y))
-                else:
-                    if i > 0:
-                        previous_point = self._points[i - 1]
-                        if previous_point.get_x() < end < x:
-                            calculate_new_point(previous_point, end,
-                                                       point, area_points)
-                    break
-
-        # If common points are empty, no recoil inside area
-        if not area_points:
-            return 0.0
-
-        if area_points[-1][0] < end:
-            area_points.append((end, 0))
-
-        polygon_points = []
-        for value in area_points:
-            polygon_points.append(value)
-
-        # Add two points that have zero y coordinate to make a rectangle
-        if not polygon_points[-1][1] == 0.0:
-            point1_x = polygon_points[-1][0]
-            point1 = (point1_x, 0.0)
-            polygon_points.append(point1)
-
-        point2_x = polygon_points[0][0]
-        point2 = (point2_x, 0.0)
-
-        polygon_points.append(point2)
-
-        # Add the first point again to close the rectangle
-        polygon_points.append(polygon_points[0])
-
-        polygon = Polygon(polygon_points)
-        area = polygon.area
-        return area
+        area_points = list(mf.get_continuous_range(*self.get_xs_and_ys(),
+                                                   a=start, b=end))
+        return mf.calculate_area(area_points)

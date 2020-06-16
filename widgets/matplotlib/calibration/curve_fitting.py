@@ -28,13 +28,12 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-from PyQt5 import QtGui
-from PyQt5 import QtWidgets
-
 from modules.calibration import TOFCalibrationPoint
 from modules.calibration import TOFCalibrationHistogram
 from widgets.matplotlib.base import MatplotlibWidget
-import modules.masses as masses
+
+from PyQt5 import QtGui
+from PyQt5 import QtWidgets
 
 
 class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
@@ -112,15 +111,15 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
         """
         tof_channel = self.tof_calibration_point.get_tof_channel()
         tof_seconds = self.tof_calibration_point.get_tof_seconds()
-        self.dialog.ui.acceptPointButton.setEnabled(True)
+        self.dialog.acceptPointButton.setEnabled(True)
         if not tof_channel:
             tof_channel = "Invalid cut file parameters."
-            self.dialog.ui.acceptPointButton.setEnabled(False)
+            self.dialog.acceptPointButton.setEnabled(False)
         if not tof_seconds:
             tof_seconds = "Invalid cut file parameters."
-            self.dialog.ui.acceptPointButton.setEnabled(False)
-        self.dialog.ui.tofChannelLineEdit.setText(str(tof_channel))
-        self.dialog.ui.tofSecondsLineEdit.setText(str(tof_seconds))
+            self.dialog.acceptPointButton.setEnabled(False)
+        self.dialog.tofChannelLineEdit.setText(str(tof_channel))
+        self.dialog.tofSecondsLineEdit.setText(str(tof_seconds))
 
     def change_cut(self, cut):
         """Changes the cut file to be drawn and analyzed
@@ -129,10 +128,11 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
             self.cut = cut
             self.selectButton.setChecked(False)
             self.selection_given_manually = False
-            self.cut_standard_mass = masses.get_standard_isotope(
-                self.cut.element.symbol)
-            self.cut_standard_scatter_mass = masses.get_standard_isotope(
-                self.cut.element_scatter.symbol)
+            self.cut_standard_mass = self.cut.element.get_st_mass()
+            # TODO check if it is ok for this to be 0 when the scatter
+            #   element is None
+            self.cut_standard_scatter_mass = \
+                self.cut.element_scatter.get_st_mass()
         self.on_draw()
 
     def change_bin_width(self, bin_width):
@@ -165,12 +165,12 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
 
             if not params:
                 self.canvas.draw()
-                self.dialog.ui.tofChannelLineEdit.setText("")
-                self.dialog.ui.tofSecondsLineEdit.setText("")
-                self.dialog.ui.acceptPointButton.setEnabled(False)
+                self.dialog.tofChannelLineEdit.setText("")
+                self.dialog.tofSecondsLineEdit.setText("")
+                self.dialog.acceptPointButton.setEnabled(False)
                 return
             else:
-                self.dialog.ui.acceptPointButton.setEnabled(True)
+                self.dialog.acceptPointButton.setEnabled(True)
 
             self.axes.plot(self.tof_histogram.histogram_x,
                            self.tof_histogram.histogram_y)

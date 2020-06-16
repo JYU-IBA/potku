@@ -28,8 +28,11 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
-import os
-from PyQt5 import uic, QtWidgets
+
+from pathlib import Path
+
+from PyQt5 import uic
+from PyQt5 import QtWidgets
 
 
 class MeasurementInfoWidget(QtWidgets.QWidget):
@@ -41,8 +44,8 @@ class MeasurementInfoWidget(QtWidgets.QWidget):
         Initializes the widget.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                  "ui_create_measurement_info_widget.ui"), self)
+        uic.loadUi(Path("ui_files", "ui_create_measurement_info_widget.ui"),
+                   self)
         bg = "url(images/background.svg)"
-        self.ui.setStyleSheet(
+        self.setStyleSheet(
             "QWidget#measurementInfoTab {border-image: " + bg + ";}")

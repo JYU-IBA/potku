@@ -29,34 +29,38 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import modules.masses as masses
 import os
+from pathlib import Path
+import modules.math_functions as mf
+import modules.general_functions as gf
 
+import widgets.gui_utils as gutils
+
+from modules.enums import ToFEColorScheme
+from modules.measurement import Measurement
 from dialogs.energy_spectrum import EnergySpectrumWidget
 from dialogs.graph_settings import TofeGraphSettingsWidget
 from dialogs.measurement.depth_profile import DepthProfileWidget
 from dialogs.measurement.element_losses import ElementLossesWidget
 from dialogs.measurement.selection import SelectionSettingsDialog
+from dialogs.file_dialogs import open_file_dialog
 
 from matplotlib import cm
 from matplotlib.colors import LogNorm
-
-from modules.general_functions import open_file_dialog
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 
 from widgets.matplotlib.base import MatplotlibWidget
+from widgets.gui_utils import StatusBarHandler
 
 
 class MatplotlibHistogramWidget(MatplotlibWidget):
     """Matplotlib histogram widget, used to graph "bananas" (ToF-E).
     """
+    MAX_BIN_COUNT = 8000
     selectionsChanged = QtCore.pyqtSignal("PyQt_PyObject")
     saveCuts = QtCore.pyqtSignal("PyQt_PyObject")
-    color_scheme = {"Default color": "jet",
-                    "Greyscale": "Greys",
-                    "Greyscale (inverted)": "gray"}
 
     tool_modes = {0: "",
                   1: "pan/zoom",  # Matplotlib's drag
@@ -65,12 +69,13 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                   4: "selection select tool"
                   }
 
-    def __init__(self, parent, measurement_data, icon_manager):
+    def __init__(self, parent, measurement: Measurement, icon_manager,
+                 statusbar=None):
         """Inits histogram widget
 
         Args:https://www.stack.nl/~dimitri/doxygen/manual/starting.html#step2
             parent: A TofeHistogramWidget class object.
-            measurement_data: A list of data points.
+            measurement: a Measurement object.
             icon_manager: IconManager class object.
             icon_manager: An iconmanager class object.
         """
@@ -80,13 +85,14 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
         self.__icon_manager = icon_manager
         self.parent = parent
+        self.statusbar = statusbar
 
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
         self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
         self.__fork_toolbar_buttons()
 
-        self.measurement = measurement_data
+        self.measurement = measurement
         self.__x_data = [x[0] for x in self.measurement.data]
         self.__y_data = [x[1] for x in self.measurement.data]
 
@@ -94,7 +100,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__inverted_Y = False
         self.__inverted_X = False
         self.__transposed = False
-        self.__inited__ = False
+        self.__inited = False
         self.__range_mode_automated = False
 
         # Get settings from global settings
@@ -103,29 +109,12 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.invert_Y = self.__global_settings.get_tofe_invert_y()
         self.invert_X = self.__global_settings.get_tofe_invert_x()
         self.transpose_axes = self.__global_settings.get_tofe_transposed()
-        self.measurement.color_scheme = self.__global_settings.get_tofe_color()
+        self.color_scheme = self.__global_settings.get_tofe_color()
         self.compression_x = self.__global_settings.get_tofe_compression_x()
         self.compression_y = self.__global_settings.get_tofe_compression_y()
         self.axes_range_mode = self.__global_settings.get_tofe_bin_range_mode()
-        x_range = self.__global_settings.get_tofe_bin_range_x()
-        y_range = self.__global_settings.get_tofe_bin_range_y()
-        self.axes_range = [x_range, y_range]
-
-        if self.__x_data:
-            self.__x_data_min, self.__x_data_max = self.__fix_axes_range(
-                (min(self.__x_data), max(self.__x_data)),
-                self.compression_x)
-        else:
-            self.__x_data_min = 0
-            self.__x_data_max = 0
-
-        if self.__y_data:
-            self.__y_data_min, self.__y_data_max = self.__fix_axes_range(
-                (min(self.__y_data), max(self.__y_data)),
-                self.compression_y)
-        else:
-            self.__y_data_min = 0
-            self.__y_data_max = 0
+        self.axes_range = (self.__global_settings.get_tofe_bin_range_x(),
+                           self.__global_settings.get_tofe_bin_range_y())
 
         self.name_y_axis = "Energy (Ch)"
         self.name_x_axis = "time of flight (Ch)"
@@ -166,51 +155,37 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             # Switch inverts
             self.invert_X, self.invert_Y = self.invert_Y, self.invert_X
 
-        self.axes.clear()  # Clear old stuff
+        # Clear old stuff
+        self.axes.clear()
 
-        # Check values for graph
-        axes_range = None
-        bin_counts = (
-            (self.__x_data_max - self.__x_data_min) / self.compression_x,
-            (self.__y_data_max - self.__y_data_min) / self.compression_y)
-        if self.axes_range_mode == 1:
-            axes_range = list(self.axes_range)
-            axes_range[0] = self.__fix_axes_range(axes_range[0],
-                                                  self.compression_x)
-            axes_range[1] = self.__fix_axes_range(axes_range[1],
-                                                  self.compression_y)
-            x_length = axes_range[0][1] - axes_range[0][0]
-            y_length = axes_range[1][1] - axes_range[1][0]
-            bin_counts = (x_length / self.compression_x,
-                          y_length / self.compression_y)
-
+        # Check bin counts and axes ranges
         # If bin count too high -> it will crash the program, use 3500
-        # If 10 000, tofe_65 example can have compression as 1, but REALLY slow
-        # Usually, bin count around 8000
-        if bin_counts[0] > 8000:
-            old_count = bin_counts[0]
-            bin_counts = (8000, bin_counts[1])
-            # TODO: Better location for message?
-            QtWidgets.QMessageBox.information(
-                self.parent, "Notice",
-                "[WARNING] {0}: X axis bin count ({2}) above 8000. {1}".format(
-                    self.measurement.name, "Limiting to prevent crash.",
-                    old_count), QtWidgets.QMessageBox.Ok,
-                QtWidgets.QMessageBox.Ok)
-        if bin_counts[1] > 8000:
-            old_count = bin_counts[1]
-            bin_counts = (bin_counts[0], 8000)
-            QtWidgets.QMessageBox.information(
-                self.parent, "Notice",
-                "[WARNING] {0}: Y axis bin count ({2}) above 8000. {1}".format(
-                    self.measurement.name,
-                    "Limiting to prevent crash.",
-                    old_count), QtWidgets.QMessageBox.Ok,
+        # If 10 000, tofe_65 example can have compression as 1, but REALLY
+        # slow. Usually, bin count around 8000
+        if self.axes_range_mode == 1:
+            # Manual axe range mode
+            bin_counts, msg = mf.calculate_bin_counts(
+                self.axes_range, self.compression_x, self.compression_y,
+                max_count=MatplotlibHistogramWidget.MAX_BIN_COUNT
+            )
+            axes_range = self.axes_range
+        else:
+            # Automatic mode
+            bin_counts, msg = mf.calculate_bin_counts(
+                [x_data, y_data], self.compression_x, self.compression_y,
+                max_count=MatplotlibHistogramWidget.MAX_BIN_COUNT)
+            axes_range = None
+
+        if msg is not None:
+            # Message is displayed when bin count was too high and had to be
+            # lowered
+            QtWidgets.QMessageBox.warning(
+                self.parent, "Warning", msg,
+                QtWidgets.QMessageBox.Ok,
                 QtWidgets.QMessageBox.Ok)
 
-        use_color_scheme = self.measurement.color_scheme
-        color_scheme = MatplotlibHistogramWidget.color_scheme[use_color_scheme]
-        colormap = cm.get_cmap(color_scheme)
+        colormap = cm.get_cmap(self.color_scheme.value)
+
         self.axes.hist2d(x_data,
                          y_data,
                          bins=bin_counts,
@@ -272,17 +247,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.remove_axes_ticks()
         self.canvas.draw()
 
-    def __fix_axes_range(self, axes_range, compression):
-        """Fixes axes' range to be divisible by compression.
-        """
-        rmin, rmax = axes_range
-        mod = (rmax - rmin) % compression
-        if mod == 0:  # Everything is fine, return.
-            return axes_range
-        # More data > less data
-        rmax += compression - mod
-        return rmin, rmax
-
     def __set_y_axis_on_right(self, yes):
         if yes:
             # self.axes.spines['left'].set_color('none')
@@ -311,14 +275,14 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.axes.legend_ = None
         if not self.measurement.selector.selections:
             return
-        if not self.__inited__:  # Do this only once.
+        if not self.__inited:  # Do this only once.
             self.fig.tight_layout(pad=0.5)
             box = self.axes.get_position()
             self.axes.set_position([box.x0,
                                     box.y0,
                                     box.width * 0.9,
                                     box.height])
-            self.__inited__ = True
+            self.__inited = True
         selection_legend = {}
 
         # Get selections for legend
@@ -331,28 +295,27 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             sel.points.set_marker(None)  # Remove markers for legend.
             dirtyinteger = 0
             key_string = "{0}{1}".format(element.symbol, dirtyinteger)
-            while key_string in selection_legend.keys():
-                key_string = "{0}{1}".format(element.symbol,
-                                             dirtyinteger)
+            while key_string in selection_legend:
+                key_string = "{0}{1}".format(element.symbol, dirtyinteger)
                 dirtyinteger += 1
 
             if element.isotope:
                 isotope_str = str(int(element.isotope))
                 add = r"$^{" + isotope_str + "}$"
             else:
-                isotope_str = str(
-                    int(masses.get_standard_isotope(element.symbol)))
+                isotope_str = str(round(element.get_st_mass()))
                 add = ""
 
             label = add + element.symbol + rbs_string
 
-            selection_legend[key_string] = (label, isotope_str, sel.points)
+            selection_legend[key_string] = (label, isotope_str, sel.points,
+                                            element)
 
         # Sort legend text
         sel_text = []
         sel_points = []
-        # keys = sorted(selection_legend.keys())
-        items = sorted(selection_legend.items(), key=lambda x: x[1][1])
+
+        items = sorted(selection_legend.items(), key=lambda x: x[1][3])
         for item in items:
             # [0] is the key of the item.
             sel_text.append(item[1][0])
@@ -527,14 +490,16 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.__on_draw_legend()
 
     def __emit_selections_changed(self):
-        """Emits a 'selectionsChanged' signal with the selections list as a parameter. 
+        """Emits a 'selectionsChanged' signal with the selections list as a
+        parameter.
         """
         # self.emit(QtCore.SIGNAL("selectionsChanged(PyQt_PyObject)"),
         # self.measurement.selector.selections)
         self.selectionsChanged.emit(self.measurement.selector.selections)
 
     def __emit_save_cuts(self):
-        """Emits a 'selectionsChanged' signal with the selections list as a parameter. 
+        """Emits a 'selectionsChanged' signal with the selections list as a
+        parameter.
         """
         # self.emit(QtCore.SIGNAL("saveCuts(PyQt_PyObject)"), self.measurement)
         self.saveCuts.emit(self.measurement.selector.selections)
@@ -589,30 +554,25 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                                     "Load Element Selection",
                                     "Selection file (*.selections)")
         if filename:
-            progress_bar = QtWidgets.QProgressBar()
-            self.measurement.statusbar.addWidget(progress_bar, 1)
-            progress_bar.show()
-            progress_bar.setValue(40)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+            sbh = StatusBarHandler(self.statusbar)
+            sbh.reporter.report(40)
 
-            self.measurement.load_selection(filename, progress_bar, 50)
+            self.measurement.load_selection(
+                filename, progress=sbh.reporter.get_sub_reporter(
+                    lambda x: 40 + 0.6 * x
+                ))
             self.on_draw()
             self.elementSelectionSelectButton.setEnabled(True)
 
-            progress_bar.setValue(100)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
-
-            self.measurement.statusbar.removeWidget(progress_bar)
-            progress_bar.hide()
+            sbh.reporter.report(100)
 
         self.__emit_selections_changed()
 
     def save_cuts(self):
         """Save measurement cuts.
         """
-        self.measurement.save_cuts()
+        sbh = StatusBarHandler(self.statusbar)
+        self.measurement.save_cuts(progress=sbh.reporter)
         self.__emit_save_cuts()
 
     def enable_element_selection(self):
@@ -691,20 +651,15 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 if not os.path.exists(cut):
                     delete_es = True
                     # Remove unnecessary tof_list and hist files
+                    # TODO check that also no_foil.hist file is removed
                     cut_file_name = os.path.split(cut)[1].rsplit('.', 1)[0]
-                    removed_files = []
-                    for file in \
-                            os.listdir(
-                                self.measurement.directory_energy_spectra):
-                        if file == cut_file_name + ".hist" or file == \
-                                cut_file_name + ".tof_list":
-                            removed_files.append(file)
-                    for f in removed_files:
-                        os.remove(os.path.join(
-                            self.measurement.directory_energy_spectra, f))
+                    gf.remove_matching_files(
+                        self.measurement.get_energy_spectra_dir(),
+                        exts={".hist", ".tof_list"},
+                        filter_func=lambda f: f.name == cut_file_name)
             if delete_es:
                 save_file = os.path.join(
-                    self.measurement.directory_energy_spectra,
+                    self.measurement.get_energy_spectra_dir(),
                     es_widget.save_file)
                 if os.path.exists(save_file):
                     os.remove(save_file)
@@ -719,11 +674,10 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                     delete_depth = True
                     # TODO: Delete depth files
             if delete_depth:
-                save_file = os.path.join(
-                    self.measurement.directory_depth_profiles,
-                    depth_widget.save_file)
-                if os.path.exists(save_file):
-                    os.remove(save_file)
+                gf.remove_files(
+                    self.measurement.get_depth_profile_dir() /
+                    depth_widget.save_file
+                )
                 self.parent.tab.del_widget(depth_widget)
 
         # Update composition changes
@@ -734,11 +688,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 if not os.path.exists(cut):
                     delete_comp = True
             if delete_comp:
-                save_file = os.path.join(
-                    self.measurement.directory_composition_changes,
+                gf.remove_files(
+                    self.measurement.get_composition_changes_dir() /
                     comp_widget.save_file)
-                if os.path.exists(save_file):
-                    os.remove(save_file)
                 self.parent.tab.del_widget(comp_widget)
 
         self.elementSelectDeleteButton.setEnabled(False)
@@ -765,42 +717,39 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
             es_widget = self.parent.tab.energy_spectrum_widget
             if es_widget:
-                save_file = os.path.join(
-                    self.measurement.directory_energy_spectra,
+                save_file = Path(
+                    self.measurement.get_energy_spectra_dir(),
                     es_widget.save_file)
                 self.parent.tab.del_widget(es_widget)
             else:
-                save_file = os.path.join(
-                    self.measurement.directory_energy_spectra,
+                save_file = Path(
+                    self.measurement.get_energy_spectra_dir(),
                     EnergySpectrumWidget.save_file)
-            if os.path.exists(save_file):
-                os.remove(save_file)
+            gf.remove_files(save_file)
 
             comp_widget = self.parent.tab.elemental_losses_widget
             if comp_widget:
-                save_file = os.path.join(
-                    self.measurement.directory_composition_changes,
+                save_file = Path(
+                    self.measurement.get_composition_changes_dir(),
                     comp_widget.save_file)
                 self.parent.tab.del_widget(comp_widget)
             else:
-                save_file = os.path.join(
-                    self.measurement.directory_composition_changes,
+                save_file = Path(
+                    self.measurement.get_composition_changes_dir(),
                     ElementLossesWidget.save_file)
-            if os.path.exists(save_file):
-                os.remove(save_file)
+            gf.remove_files(save_file)
 
             depth_widget = self.parent.tab.depth_profile_widget
             if depth_widget:
-                save_file = os.path.join(
-                    self.measurement.directory_depth_profiles,
+                save_file = Path(
+                    self.measurement.get_depth_profile_dir(),
                     depth_widget.save_file)
                 self.parent.tab.del_widget(depth_widget)
             else:
-                save_file = os.path.join(
-                    self.measurement.directory_depth_profiles,
+                save_file = Path(
+                    self.measurement.get_depth_profile_dir(),
                     DepthProfileWidget.save_file)
-            if os.path.exists(save_file):
-                os.remove(save_file)
+            gf.remove_files(save_file)
 
             self.__on_draw_legend()
             self.canvas.draw_idle()
@@ -812,34 +761,28 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.measurement.undo_point()
         self.canvas.draw_idle()
 
-    def show_yourself(self, ui):
-        """Show ToF-E histogram settings in ui.
+    def show_yourself(self, dialog):
+        """Show current ToF-E histogram settings in dialog.
 
         Args:
-            ui: A TofeGraphSettingsWidget's .ui file variable.
+            dialog: A TofeGraphSettingsWidget.
         """
-        # Populate colorbox
-        dirtyinteger = 0
-        colors = sorted(MatplotlibHistogramWidget.color_scheme.items())
-        for k, unused_v in colors:  # Get keys from color scheme
-            ui.colorbox.addItem(k)
-            if k == self.measurement.color_scheme:
-                ui.colorbox.setCurrentIndex(dirtyinteger)
-            dirtyinteger += 1
+        gutils.fill_combobox(dialog.colorbox, ToFEColorScheme)
+        dialog.color_scheme = self.color_scheme
 
         # Get values
-        ui.bin_x.setValue(self.compression_x)
-        ui.bin_y.setValue(self.compression_y)
-        ui.invert_x.setChecked(self.invert_X)
-        ui.invert_y.setChecked(self.invert_Y)
-        ui.axes_ticks.setChecked(self.show_axis_ticks)
-        ui.transposeAxesCheckBox.setChecked(self.transpose_axes)
-        ui.radio_range_auto.setChecked(self.axes_range_mode == 0)
-        ui.radio_range_manual.setChecked(self.axes_range_mode == 1)
-        ui.spin_range_x_min.setValue(self.axes_range[0][0])
-        ui.spin_range_x_max.setValue(self.axes_range[0][1])
-        ui.spin_range_y_min.setValue(self.axes_range[1][0])
-        ui.spin_range_y_max.setValue(self.axes_range[1][1])
+        dialog.bin_x.setValue(self.compression_x)
+        dialog.bin_y.setValue(self.compression_y)
+        dialog.invert_x.setChecked(self.invert_X)
+        dialog.invert_y.setChecked(self.invert_Y)
+        dialog.axes_ticks.setChecked(self.show_axis_ticks)
+        dialog.transposeAxesCheckBox.setChecked(self.transpose_axes)
+        dialog.radio_range_auto.setChecked(self.axes_range_mode == 0)
+        dialog.radio_range_manual.setChecked(self.axes_range_mode == 1)
+        dialog.spin_range_x_min.setValue(self.axes_range[0][0])
+        dialog.spin_range_x_max.setValue(self.axes_range[0][1])
+        dialog.spin_range_y_min.setValue(self.axes_range[1][0])
+        dialog.spin_range_y_max.setValue(self.axes_range[1][1])
 
     def __on_motion(self, event):
         """Function to handle hovering over matplotlib's graph.

@@ -28,17 +28,15 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
+import widgets.input_validation as iv
+import dialogs.file_dialogs as fdialogs
+
+from pathlib import Path
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
 
 from dialogs.new_sample import NewSampleDialog
-from modules.general_functions import open_file_dialog
-from modules.general_functions import check_text
-from modules.general_functions import set_input_field_red
-from modules.general_functions import set_input_field_white
-from modules.general_functions import validate_text_input
 
 
 class LoadMeasurementDialog(QtWidgets.QDialog):
@@ -52,14 +50,12 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
             directory: Directory where to open the file browser.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_new_measurement.ui"), self)
 
-        self.ui = uic.loadUi(os.path.join(
-            "ui_files", "ui_new_measurement.ui"), self)
-
-        self.ui.browseButton.clicked.connect(self.__browse_files)
-        self.ui.addSampleButton.clicked.connect(self.__add_sample)
-        self.ui.loadButton.clicked.connect(self.__load_measurement)
-        self.ui.cancelButton.clicked.connect(self.close)
+        self.browseButton.clicked.connect(self.__browse_files)
+        self.addSampleButton.clicked.connect(self.__add_sample)
+        self.loadButton.clicked.connect(self.__load_measurement)
+        self.cancelButton.clicked.connect(self.close)
         self.name = ""
         self.sample = None
         self.directory = directory
@@ -68,45 +64,44 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
 
         self.__close = True
         for sample in samples:
-            self.ui.samplesComboBox.addItem(
+            self.samplesComboBox.addItem(
                 "Sample " + "%02d" % sample.serial_number + " " + sample.name)
 
         if not samples:
-            set_input_field_red(self.ui.samplesComboBox)
+            iv.set_input_field_red(self.samplesComboBox)
 
-        set_input_field_red(self.ui.nameLineEdit)
-        self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
-            self.ui.nameLineEdit))
+        iv.set_input_field_red(self.pathLineEdit)
+        self.pathLineEdit.textChanged.connect(
+            lambda: iv.check_text(self.pathLineEdit))
 
-        set_input_field_red(self.ui.pathLineEdit)
-        self.ui.pathLineEdit.textChanged.connect(lambda: self.__check_text(
-            self.ui.pathLineEdit))
-
-        self.ui.nameLineEdit.textEdited.connect(
-            lambda: self.__validate())
+        iv.set_input_field_red(self.nameLineEdit)
+        self.nameLineEdit.textChanged.connect(
+            lambda: iv.check_text(self.nameLineEdit))
+        self.nameLineEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.nameLineEdit))
 
         self.exec_()
 
     def __add_sample(self):
         dialog = NewSampleDialog(self.samples)
         if dialog.name:
-            self.ui.samplesComboBox.addItem(dialog.name)
-            self.ui.samplesComboBox.setCurrentIndex(
-                self.ui.samplesComboBox.findText(dialog.name))
-            set_input_field_white(self.ui.samplesComboBox)
+            self.samplesComboBox.addItem(dialog.name)
+            self.samplesComboBox.setCurrentIndex(
+                self.samplesComboBox.findText(dialog.name))
+            iv.set_input_field_white(self.samplesComboBox)
 
     def __load_measurement(self):
-        self.path = self.ui.pathLineEdit.text()
-        self.name = self.ui.nameLineEdit.text().replace(" ", "_")
-        self.sample = self.ui.samplesComboBox.currentText()
+        self.path = self.pathLineEdit.text()
+        self.name = self.nameLineEdit.text().replace(" ", "_")
+        self.sample = self.samplesComboBox.currentText()
         if not self.path:
-            self.ui.browseButton.setFocus()
+            self.browseButton.setFocus()
             return
         if not self.name:
-            self.ui.nameLineEdit.setFocus()
+            self.nameLineEdit.setFocus()
             return
         if not self.sample:
-            self.ui.addSampleButton.setFocus()
+            self.addSampleButton.setFocus()
             return
 
         sample = self.__find_existing_sample()
@@ -132,14 +127,10 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
             self.close()
 
     def __browse_files(self):
-        self.filename = open_file_dialog(self, self.directory,
-                                         "Select a measurement to load",
-                                         "Raw Measurement (*.asc)")
-        self.ui.pathLineEdit.setText(self.filename)
-
-    @staticmethod
-    def __check_text(input_field):
-        check_text(input_field)
+        self.filename = fdialogs.open_file_dialog(
+            self, self.directory, "Select a measurement to load",
+            "Raw Measurement (*.asc)")
+        self.pathLineEdit.setText(self.filename)
 
     def __find_existing_sample(self):
         """
@@ -153,13 +144,3 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
                     == self.sample:
                 return sample
         return None
-
-    def __validate(self):
-        """
-        Validate measurement's name.
-        """
-        text = self.ui.nameLineEdit.text()
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = validate_text_input(text, regex)
-
-        self.ui.nameLineEdit.setText(valid_text)

@@ -29,13 +29,13 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import logging
 import os
+import logging
 import platform
 
-from modules.general_functions import check_text
-from modules.general_functions import set_input_field_red
-from modules.general_functions import validate_text_input
+import widgets.input_validation as iv
+
+from pathlib import Path
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -52,34 +52,34 @@ class RequestNewDialog(QtWidgets.QDialog):
             parent: Ibasoft class object.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_new_request.ui"), self)
+
         self.parent = parent
         self.folder = None  # Temporary for browsing folder
         self.directory = None
 
-        self.ui = uic.loadUi(
-            os.path.join("ui_files", "ui_new_request.ui"), self)
-        self.ui.requestDirectoryLineEdit.setText(
-            self.parent.settings.get_request_directory())
+        self.requestDirectoryLineEdit.setText(
+            str(self.parent.settings.get_request_directory()))
 
         # Connect buttons
-        self.ui.pushOk.clicked.connect(self.__create_request)
-        self.ui.pushCancel.clicked.connect(self.close)
-        self.ui.browseFolderButton.clicked.connect(self.__browser_folder)
+        self.pushOk.clicked.connect(self.__create_request)
+        self.pushCancel.clicked.connect(self.close)
+        self.browseFolderButton.clicked.connect(self.__browser_folder)
 
-        self.ui.requestNameLineEdit.textEdited.connect(lambda:
-                                                         self.__validate())
-        set_input_field_red(self.ui.requestNameLineEdit)
-        self.ui.requestNameLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.ui.requestNameLineEdit))
+        iv.set_input_field_red(self.requestNameLineEdit)
+        self.requestNameLineEdit.textChanged.connect(
+            lambda: iv.check_text(self.requestNameLineEdit))
+        self.requestNameLineEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.requestNameLineEdit))
 
-        self.ui.requestDirectoryLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.ui.requestDirectoryLineEdit))
+        self.requestDirectoryLineEdit.textChanged.connect(
+            lambda: iv.check_text(self.requestDirectoryLineEdit))
 
         self.__close = True
 
         if platform.system() == "Darwin":
-            self.ui.requestNameLineEdit.setMinimumWidth(310)
-            self.ui.requestDirectoryLineEdit.setMinimumWidth(234)
+            self.requestNameLineEdit.setMinimumWidth(310)
+            self.requestDirectoryLineEdit.setMinimumWidth(234)
 
         self.exec_()
 
@@ -87,50 +87,31 @@ class RequestNewDialog(QtWidgets.QDialog):
         """Open file browser and show the selected file in view.
         """
         folder = QtWidgets.QFileDialog.getExistingDirectory(
-            self, self.ui.browseFolderButton.text())
+            self, self.browseFolderButton.text())
         if folder:
             self.folder = folder
-            self.ui.requestDirectoryLineEdit.setText(folder)
-
-    def __validate(self):
-        """
-        Validate the request name.
-        """
-        text = self.ui.requestNameLineEdit.text()
-        regex = "^[A-Za-z0-9_ÖöÄäÅå-]*"
-        valid_text = validate_text_input(text, regex)
-
-        self.ui.requestNameLineEdit.setText(valid_text)
-
-    @staticmethod
-    def __check_text(input_field):
-        """Checks if there is text in given input field.
-
-        Args:
-            input_field: Input field the contents of which are checked.
-        """
-        check_text(input_field)
+            self.requestDirectoryLineEdit.setText(folder)
 
     def __create_request(self):
         """Create new request.
         """
-        self.folder = self.ui.requestDirectoryLineEdit.text()
-        self.name = self.ui.requestNameLineEdit.text()
+        self.folder = self.requestDirectoryLineEdit.text()
+        self.name = self.requestNameLineEdit.text()
 
         # TODO: Remove replace above to allow spaces in request names.
         # This does not include the actual request folder, replace below.
         # TODO: check for valid folder needed
         # TODO: Get rid of print -> message window perhaps
         if not self.folder:
-            self.ui.browseFolderButton.setFocus()
+            self.browseFolderButton.setFocus()
             return
         if not self.name:
-            self.ui.requestNameLineEdit.setFocus()
+            self.requestNameLineEdit.setFocus()
             return
         try:
             # Adding .potku gives all requests the same ending.
-            directory = os.path.join(self.folder, self.name) + ".potku"
-            if not os.path.exists(directory):
+            directory = Path(self.folder, f"{self.name}.potku")
+            if not directory.exists():
                 os.makedirs(directory)
                 self.directory = directory
                 logging.getLogger("request").info("Created the request.")

@@ -31,19 +31,21 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import logging
-import modules.masses as masses
 import os
 import shutil
-import sys
 
-from modules.cut_file import is_rbs, get_scatter_element
-from modules.element import Element
+import dialogs.dialog_functions as df
+import widgets.gui_utils as gutils
+import modules.cut_file as cut_file
+import dialogs.file_dialogs as fdialogs
+
+from pathlib import Path
+
+from widgets.gui_utils import StatusBarHandler
 from modules.energy_spectrum import EnergySpectrum
-from modules.general_functions import open_file_dialog
-from modules.general_functions import calculate_spectrum
-from modules.general_functions import read_espe_file
-from modules.general_functions import read_tof_list_file
 from modules.measurement import Measurement
+from modules.get_espe import GetEspe
+from modules.enums import OptimizationType
 
 from PyQt5 import uic
 from PyQt5 import QtCore
@@ -61,7 +63,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     checked_cuts = {}
 
     def __init__(self, parent, spectrum_type, element_simulation=None,
-                 recoil_widget=None):
+                 recoil_widget=None, statusbar=None, spectra_changed=None):
         """Inits energy spectrum dialog.
         
         Args:
@@ -71,17 +73,18 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             recoil_widget: RecoilElement widget.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_energy_spectrum_params.ui"), self)
+
         self.parent = parent
         self.element_simulation = element_simulation
         self.spectrum_type = spectrum_type
-        self.ui = uic.loadUi(
-            os.path.join("ui_files", "ui_energy_spectrum_params.ui"), self)
+        self.statusbar = statusbar
 
         locale = QLocale.c()
-        self.ui.histogramTicksDoubleSpinBox.setLocale(locale)
+        self.histogramTicksDoubleSpinBox.setLocale(locale)
 
         # Connect buttons
-        self.ui.pushButton_Cancel.clicked.connect(self.close)
+        self.pushButton_Cancel.clicked.connect(self.close)
 
         if not self.parent.obj.detector:  # Request settings are used.
             EnergySpectrumParamsDialog.bin_width = \
@@ -93,30 +96,31 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             else:
                 EnergySpectrumParamsDialog.bin_width = \
                     self.element_simulation.channel_width
-        self.ui.histogramTicksDoubleSpinBox.setValue(
+        self.histogramTicksDoubleSpinBox.setValue(
             EnergySpectrumParamsDialog.bin_width)
 
         if isinstance(self.parent.obj, Measurement):
             self.measurement = self.parent.obj
-            self.ui.pushButton_OK.clicked.connect(self.__accept_params)
+            self.pushButton_OK.clicked.connect(
+                lambda: self.__accept_params(spectra_changed=spectra_changed))
 
             m_name = self.measurement.name
-            if m_name not in EnergySpectrumParamsDialog.checked_cuts.keys():
+            if m_name not in EnergySpectrumParamsDialog.checked_cuts:
                 EnergySpectrumParamsDialog.checked_cuts[m_name] = []
-            self.measurement.fill_cuts_treewidget(
-                self.ui.treeWidget,
-                True,
+
+            gutils.fill_cuts_treewidget(
+                self.measurement, self.treeWidget, True,
                 EnergySpectrumParamsDialog.checked_cuts[m_name])
 
             self.__update_eff_files()
 
-            self.ui.importPushButton.setVisible(False)
+            self.importPushButton.setVisible(False)
             self.exec_()
 
         else:
             header_item = QtWidgets.QTreeWidgetItem()
             header_item.setText(0, "Simulated elements")
-            self.ui.treeWidget.setHeaderItem(header_item)
+            self.treeWidget.setHeaderItem(header_item)
 
             self.tof_list_tree_widget = QtWidgets.QTreeWidget()
             self.tof_list_tree_widget.setSizePolicy(
@@ -126,11 +130,11 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             header = QtWidgets.QTreeWidgetItem()
             header.setText(0, "Pre-calculated elements")
 
-            self.ui.gridLayout_2.addWidget(self.tof_list_tree_widget, 0, 1)
+            self.gridLayout_2.addWidget(self.tof_list_tree_widget, 0, 1)
 
             self.tof_list_tree_widget.setHeaderItem(header)
 
-            self.ui.pushButton_OK.clicked.connect(
+            self.pushButton_OK.clicked.connect(
                 self.__calculate_selected_spectra)
 
             # Find the corresponding recoil element to recoil widget
@@ -159,7 +163,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                                     item.setCheckState(0, QtCore.Qt.Checked)
                                 else:
                                     item.setCheckState(0, QtCore.Qt.Unchecked)
-                                self.ui.treeWidget.addTopLevelItem(item)
+                                self.treeWidget.addTopLevelItem(item)
                                 break
 
             # Add calculated tof_list files to tof_list_tree_widget by
@@ -184,10 +188,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                                     file.rsplit('.', 1)[0]
                                 all_cuts.append(file_name_without_suffix)
 
-                        for file_2 in os.listdir(
-                                os.path.join(
-                                    measurement.directory_composition_changes,
-                                    "Changes")):
+                        for file_2 in os.listdir(measurement.get_changes_dir()):
                             if file_2.endswith(".cut"):
                                 file_name_without_suffix = \
                                     file_2.rsplit('.', 1)[0]
@@ -211,7 +212,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             header = QtWidgets.QTreeWidgetItem()
             header.setText(0, "External files")
 
-            self.ui.gridLayout_2.addWidget(self.external_tree_widget, 0, 2)
+            self.gridLayout_2.addWidget(self.external_tree_widget, 0, 2)
 
             self.external_tree_widget.setHeaderItem(header)
 
@@ -229,74 +230,21 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 self.external_tree_widget.addTopLevelItem(item)
 
             # Change the bin width label text
-            self.ui.histogramTicksLabel.setText("Simulation and measurement "
-                                                "histogram bin width:")
+            self.histogramTicksLabel.setText("Simulation and measurement "
+                                             "histogram bin width:")
 
-            self.ui.importPushButton.clicked.connect(
-                self.__import_external_file)
+            self.importPushButton.clicked.connect(self.__import_external_file)
             self.exec_()
 
-    def __calculate_selected_spectra(self):
-        """Calculate selected spectra.
+    def get_selected_measurements(self):
+        """Returns a dictionary that contains selected measurements,
+        cut files belonging to each measurement, and the corresponding
+        result file.
         """
-        self.close()
-        root = self.ui.treeWidget.invisibleRootItem()
-        child_count = root.childCount()
-
-        if self.parent.obj.statusbar:
-            progress_bar = QtWidgets.QProgressBar()
-            self.parent.obj.statusbar.addWidget(progress_bar, 1)
-            progress_bar.show()
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process.
-        else:
-            progress_bar = None
-        dirtyinteger = 0
-
-        for i in range(child_count):
-            item = root.child(i)
-            if item.checkState(0):
-                for elem_sim in self.parent.obj.element_simulations:
-                    for rec_elem in elem_sim.recoil_elements:
-                        rec_elem_prefix_and_name = rec_elem.prefix + "-"\
-                                                   + rec_elem.name
-                        if rec_elem_prefix_and_name == item.text(0):
-                            elem_sim.channel_width = self.ui.\
-                                histogramTicksDoubleSpinBox.value()
-                            elem_sim.calculate_espe(rec_elem)
-                            self.result_files.append(os.path.join(
-                                self.parent.obj.directory,
-                                rec_elem_prefix_and_name + ".simu"))
-                        dirtyinteger += 1
-                        progress_bar.setValue((dirtyinteger / child_count) * 33)
-                        QtCore.QCoreApplication.processEvents(
-                            QtCore.QEventLoop.AllEvents)
-                    if elem_sim.optimization_done:
-                        for rec in elem_sim.optimization_recoils:
-                            rec_elem_prefix_and_name = rec.prefix + "-" \
-                                                       + rec.name
-                            if rec_elem_prefix_and_name == item.text(0):
-                                elem_sim.channel_width = self.ui. \
-                                    histogramTicksDoubleSpinBox.value()
-                                elem_sim.calculate_espe(rec,
-                                                        optimize_recoil=True)
-                                self.result_files.append(os.path.join(
-                                    self.parent.obj.directory,
-                                    rec_elem_prefix_and_name + ".simu"))
-
-        if child_count == 0:
-            progress_bar.setValue(33)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
-
         root_for_tof_list_files = self.tof_list_tree_widget.invisibleRootItem()
         child_count = root_for_tof_list_files.childCount()
 
-        cut_files = {}
-        item_texts = []
-        used_measurements = []
+        used_measurements = {}
 
         for i in range(child_count):
             measurement_item = root_for_tof_list_files.child(i)
@@ -305,121 +253,160 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 item = measurement_item.child(j)
                 if item.checkState(0):
                     measurement = item.parent().obj
-                    if measurement not in cut_files.keys():
-                        cut_files[measurement] = []
-                    used_measurements.append(measurement)
-                    # Calculate energy spectra for cut
-                    item_texts.append(item.text(0))
-                    if len(item.text(0).split('.')) < 5:
+                    if len(item.text(0).split(".")) < 5:
                         # Normal cut
-                        cut_file = os.path.join(measurement.directory_cuts,
-                                                item.text(0)) + ".cut"
+                        cut_file = Path(measurement.directory_cuts,
+                                        f"{item.text(0)}.cut")
                     else:
-                        cut_file = os.path.join(
-                            measurement.directory_composition_changes,
-                            "Changes", item.text(0)) + ".cut"
-                    cut_files[measurement].append(cut_file)
-            dirtyinteger += 1
-            progress_bar.setValue((dirtyinteger / child_count) * 33)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+                        cut_file = Path(
+                            measurement.get_changes_dir(),
+                            f"{item.text(0)}.cut")
+                    result_file = Path(measurement.get_energy_spectra_dir(),
+                                       f"{item.text(0)}.no_foil.hist")
+                    used_measurements.setdefault(measurement, []).append({
+                            "cut_file": cut_file,
+                            "result_file": result_file
+                        })
 
-        if child_count == 0:
-            progress_bar.setValue(66)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+        return used_measurements
 
-        length = len(used_measurements)
-        # Hist all selected cut files
-        for measurement in used_measurements:
-            es = EnergySpectrum(measurement, cut_files[measurement],
-                                self.ui.histogramTicksDoubleSpinBox.value(),
-                                None)
-            es.calculate_spectrum()
-            # Add result files
-            for name in item_texts:
-                file_path = os.path.join(
-                    measurement.directory_energy_spectra, name + ".hist")
-                if os.path.exists(file_path):
-                    if file_path in self.result_files:
-                        continue
-                    self.result_files.append(file_path)
-                    dirtyinteger += 1
-                    progress_bar.setValue((dirtyinteger / length) * 33)
-                    QtCore.QCoreApplication.processEvents(
-                        QtCore.QEventLoop.AllEvents)
+    def get_selected_simulations(self):
+        """Returns a dictionary that contains selected simulations and list
+        of recoil elements and corresponding result files.
+        """
+        root = self.treeWidget.invisibleRootItem()
+        child_count = root.childCount()
 
+        used_simulations = {}
+
+        for i in range(child_count):
+            # TODO list items should have the recoil data in user role so
+            #   we do not have iterate these all over again
+            item = root.child(i)
+            if item.checkState(0):
+                for elem_sim in self.parent.obj.element_simulations:
+                    for rec_elem in elem_sim.recoil_elements:
+                        rec_elem_name = rec_elem.get_full_name()
+                        if rec_elem_name == item.text(0):
+                            used_simulations.setdefault(elem_sim, []).append({
+                                "recoil_element": rec_elem,
+                            })
+                            break
+                    if elem_sim.is_optimization_finished():
+                        for rec_elem in elem_sim.optimization_recoils:
+                            rec_elem_name = rec_elem.get_full_name()
+                            if rec_elem_name == item.text(0):
+                                used_simulations.setdefault(
+                                    elem_sim, []).append({
+                                        "recoil_element": rec_elem,
+                                        "optimization_type":
+                                            OptimizationType.RECOIL
+                                    })
+                                break
+
+        return used_simulations
+
+    def get_selected_external_files(self):
+        """Returns a list of selected external files.
+        """
+        # Add external files to result files
+        used_external_files = []
         root_for_ext_files = self.external_tree_widget.invisibleRootItem()
         child_count = root_for_ext_files.childCount()
-
-        # Add external files to result files
         for k in range(child_count):
             item = root_for_ext_files.child(k)
             if item.checkState(0):
-                for ext in os.listdir(self.imported_files_folder):
-                    if ext == item.text(0):
-                        self.result_files.append(
-                            os.path.join(self.imported_files_folder, ext))
-                        break
+                ext_file = Path(self.imported_files_folder, item.text(0))
+                if ext_file.exists():
+                    used_external_files.append(ext_file)
 
-        progress_bar.setValue(100)
-        QtCore.QCoreApplication.processEvents(
-            QtCore.QEventLoop.AllEvents)
+        return used_external_files
 
-        if progress_bar:
-            self.parent.obj.statusbar.removeWidget(progress_bar)
-            progress_bar.hide()
+    def __calculate_selected_spectra(self):
+        """Calculate selected spectra.
+        """
+        self.close()
+        self.bin_width = self.histogramTicksDoubleSpinBox.value()
 
-        self.bin_width = self.ui.histogramTicksDoubleSpinBox.value()
+        sbh = StatusBarHandler(self.statusbar)
+
+        # Get all
+        used_simulations = self.get_selected_simulations()
+        used_measurements = self.get_selected_measurements()
+        used_externals = self.get_selected_external_files()
+
+        sbh.reporter.report(33)
+
+        # Calculate espes for simulations
+        for elem_sim, lst in used_simulations.items():
+            for d in lst:
+                _, espe_file = elem_sim.calculate_espe(**d, ch=self.bin_width)
+                self.result_files.append(espe_file)
+
+        sbh.reporter.report(66)
+
+        # Calculate espes for measurements. 'no_foil' parameter is used to
+        # make the results comparable with simulation espes. Basically
+        # this increases the calculated energy values, shifting the espe
+        # histograms to the right on the x axis.
+        for mesu, lst in used_measurements.items():
+            self.result_files.extend(d["result_file"] for d in lst)
+            # TODO use the return values instead of reading the files further
+            #   down the execution path
+            EnergySpectrum.calculate_measured_spectra(
+                mesu, [d["cut_file"] for d in lst], self.bin_width,
+                no_foil=True)
+
+        # Add external files
+        self.result_files.extend(used_externals)
+
+        sbh.reporter.report(100)
 
         simulation_name = self.element_simulation.simulation.name
-        msg = "[{0}] Created Energy Spectrum. {1} {2}".format(
-            simulation_name,
-            "Bin width: {0}".format(self.bin_width),
-            "Used files: {0}".format(", ".join(self.result_files))
-        )
-        logging.getLogger("request").info(msg)
-        logging.getLogger(simulation_name).info(
-            "Created Energy Spectrum. Bin width: {0} Used files: {1}".format(
-                self.bin_width, ", ".join(self.result_files)))
+        msg = f"Created Energy Spectrum. " \
+              f"Bin width: {self.bin_width} " \
+              f"Used files: {', '.join(str(f) for f in self.result_files)}"
 
-    def __accept_params(self):
+        logging.getLogger("request").info(f"[{simulation_name}] {msg}")
+        logging.getLogger(simulation_name).info(msg)
+
+    def __accept_params(self, spectra_changed=None):
         """Accept given parameters and cut files.
         """
-        width = self.ui.histogramTicksDoubleSpinBox.value()
+        width = self.histogramTicksDoubleSpinBox.value()
         use_cuts = []
-        root = self.ui.treeWidget.invisibleRootItem()
+        root = self.treeWidget.invisibleRootItem()
         child_count = root.childCount()
         m_name = self.measurement.name
         EnergySpectrumParamsDialog.checked_cuts[m_name].clear()
         for i in range(child_count):
             item = root.child(i)
             if item.checkState(0):
-                use_cuts.append(os.path.join(item.directory, item.file_name))
+                use_cuts.append(Path(item.directory, item.file_name))
                 EnergySpectrumParamsDialog.checked_cuts[m_name].append(
                     item.file_name)
             child_count = item.childCount()
             if child_count > 0:  # Elemental Losses
-                dir_elo = os.path.join(
-                    self.measurement.directory_composition_changes, "Changes")
+                dir_elo = self.measurement.get_changes_dir()
                 for j in range(child_count):
                     item_child = item.child(j)
                     if item_child.checkState(0):
                         use_cuts.append(
-                            os.path.join(dir_elo, item_child.file_name))
+                            Path(dir_elo, item_child.file_name))
                         EnergySpectrumParamsDialog.checked_cuts[m_name].append(
                             item_child.file_name)
                 EnergySpectrumParamsDialog.bin_width = width
         if use_cuts:
-            self.ui.label_status.setText(
-                "Please wait. Creating energy spectrum.")
+            self.label_status.setText("Please wait. Creating energy spectrum.")
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
             if self.parent.energy_spectrum_widget:
                 self.parent.del_widget(self.parent.energy_spectrum_widget)
             self.parent.energy_spectrum_widget = EnergySpectrumWidget(
                 self.parent, spectrum_type=self.spectrum_type,
                 use_cuts=use_cuts,
-                bin_width=width)
+                bin_width=width,
+                statusbar=self.statusbar,
+                spectra_changed=spectra_changed)
 
             # Check that matplotlib attribute exists after creation of energy
             # spectrum widget.
@@ -435,14 +422,12 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 msg = "[{0}] Created Energy Spectrum. {1} {2}".format(
                     measurement_name,
                     "Bin width: {0}".format(width),
-                    "Cut files: {0}".format(", ".join(use_cuts))
-                )
+                    "Cut files: {0}".format(", ".join(str(cut) for cut
+                                                      in use_cuts)))
                 logging.getLogger("request").info(msg)
                 logging.getLogger(measurement_name).info(
                     "Created Energy Spectrum. Bin width: {0} Cut files: {1}".
-                    format(
-                        width,
-                        ", ".join(use_cuts)))
+                    format(width, ", ".join(str(cut) for cut in use_cuts)))
                 log_info = "Energy Spectrum graph points:\n"
                 data = self.parent.energy_spectrum_widget.energy_spectrum_data
                 splitinfo = "\n".join(["{0}: {1}".format(key, ", ".join(
@@ -462,17 +447,15 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         """
         Import an external file that matches the format of hist and simu files.
         """
-        QtWidgets.QMessageBox.information(self, "Notice",
-                                          "The external file needs to have the "
-                                          "following format:\n\nenergy count\n"
-                                          "energy count\nenergy count\n...\n\n"
-                                          "to match the simulation and "
-                                          "measurement energy spectra files.",
-                                          QtWidgets.QMessageBox.Ok,
-                                          QtWidgets.QMessageBox.Ok)
-        file_path = open_file_dialog(
-            self, self.element_simulation.request.directory, "Select a file "
-                                                             "to import", "")
+        QtWidgets.QMessageBox.information(
+            self, "Notice",
+            "The external file needs to have the following format:\n\n"
+            "energy count\nenergy count\nenergy count\n...\n\n"
+            "to match the simulation and measurement energy spectra files.",
+            QtWidgets.QMessageBox.Ok,  QtWidgets.QMessageBox.Ok)
+        file_path = fdialogs.open_file_dialog(
+            self, self.element_simulation.request.directory,
+            "Select a file to import", "")
         if not file_path:
             return
 
@@ -487,8 +470,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     QtWidgets.QMessageBox.Ok)
                 return
 
-        shutil.copyfile(file_path, os.path.join(self.imported_files_folder,
-                                                    name))
+        shutil.copyfile(
+            file_path, os.path.join(self.imported_files_folder, name))
 
         item = QtWidgets.QTreeWidgetItem()
         item.setText(0, name)
@@ -501,39 +484,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # This is probably not the most effective way, or practical for 
         # that matter, to get all efficiency files from directory defined
         # in global settings that match the cut files of measurements.
-        if self.measurement.detector:
-            eff_files = self.measurement.detector.get_efficiency_files()
-        else:
-            eff_files = self.measurement.request.default_detector.\
-                get_efficiency_files()
-        eff_files_used = []
-        root = self.ui.treeWidget.invisibleRootItem()
-        child_count = root.childCount()
-        for eff in eff_files:
-            str_element, unused_ext = eff.split(".")
-            element = Element.from_string(str_element)
-            for i in range(child_count):
-                item = root.child(i)
-                # TODO: Perhaps make this update every time a cut file is
-                # selected so user knows exactly what files are used instead
-                # of what files match all the cut files.
-                # if not item.checkState(0): continue
-                if not hasattr(item, "file_name"):
-                    continue
-                cut_element = Element.from_string(item.file_name.split(".")[1])
-                mass = cut_element.isotope
-                if not mass:
-                    mass = round(
-                        masses.get_standard_isotope(cut_element.symbol),
-                        0)
-                if cut_element.symbol == element.symbol \
-                        and mass == element.isotope:
-                    eff_files_used.append(eff)
-        if eff_files_used:
-            self.ui.label_efficiency_files.setText(
-                "Efficiency files used: {0}".format(", ".join(eff_files_used)))
-        else:
-            self.ui.label_efficiency_files.setText("No efficiency files.")
+        detector = self.measurement.get_detector_or_default()
+        eff_files = detector.get_efficiency_files()
+        df.update_used_eff_file_label(self, eff_files)
 
 
 class EnergySpectrumWidget(QtWidgets.QWidget):
@@ -542,20 +495,24 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     save_file = "widget_energy_spectrum.save"
 
     def __init__(self, parent, spectrum_type, use_cuts=None, bin_width=0.025,
-                 save_file_int=0, use_progress_bar=True):
+                 save_file_int=0, statusbar=None, spectra_changed=None):
         """Inits widget.
         
         Args:
             parent: A TabWidget.
             use_cuts: A string list representing Cut files.
             bin_width: A float representing Energy Spectrum histogram's bin
-            width.
+                width.
             save_file_int: n integer to have unique save file names for
-            simulation energy spectra combinations.
-            use_progress_bar: Whether to add a new progress bar or not.
+                simulation energy spectra combinations.
+            spectra_changed: pyqtSignal that indicates a change in energy
+                spectra.
         """
+        sbh = None
         try:
             super().__init__()
+            uic.loadUi(Path("ui_files", "ui_energy_spectrum.ui"), self)
+
             self.parent = parent
             self.icon_manager = parent.icon_manager
             self.progress_bar = None
@@ -567,50 +524,32 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.spectrum_type = spectrum_type
             rbs_list = {}
 
-            self.ui = uic.loadUi(os.path.join("ui_files",
-                                              "ui_energy_spectrum.ui"),
-                                 self)
-            title = "{0} - Bin Width: {1}".format(self.ui.windowTitle(),
+            title = "{0} - Bin Width: {1}".format(self.windowTitle(),
                                                   bin_width)
-            self.ui.setWindowTitle(title)
+            self.setWindowTitle(title)
 
             if isinstance(self.parent.obj, Measurement):
                 self.measurement = self.parent.obj
-                if self.measurement.statusbar:
-                    if use_progress_bar:
-                        self.progress_bar = QtWidgets.QProgressBar()
-                        self.measurement.statusbar.addWidget(
-                            self.progress_bar, 1)
-                        self.progress_bar.show()
-                        QtCore.QCoreApplication.processEvents(
-                            QtCore.QEventLoop.AllEvents)
-                        # Mac requires event processing to show progress bar
-                        # and its process.
-                    else:
-                        self.progress_bar = None
-                else:
-                    self.progress_bar = None
+                # Removal is done in the finally block so autoremove
+                # is set to False
+                sbh = StatusBarHandler(statusbar, autoremove=False)
 
-                # Generate new tof.in file for external programs
-                self.measurement.generate_tof_in()
                 # Do energy spectrum stuff on this
-                self.energy_spectrum = EnergySpectrum(
-                    self.measurement,
-                    use_cuts,
-                    bin_width,
-                    progress_bar=self.progress_bar)
-                self.energy_spectrum_data = self.energy_spectrum.\
-                    calculate_spectrum()
+                self.energy_spectrum_data = \
+                    EnergySpectrum.calculate_measured_spectra(
+                        self.measurement, use_cuts, bin_width,
+                        progress=sbh.reporter
+                    )
 
                 # Check for RBS selections.
                 for cut in self.use_cuts:
                     filename = os.path.basename(cut)
                     split = filename.split(".")
-                    if is_rbs(cut):
+                    if cut_file.is_rbs(cut):
                         # This should work for regular cut and split.
                         key = "{0}.{1}.{2}.{3}".format(split[1], split[2],
-                                                    split[3], split[4])
-                        rbs_list[key] = get_scatter_element(cut)
+                                                       split[3], split[4])
+                        rbs_list[key] = cut_file.get_scatter_element(cut)
 
             else:
                 self.simulation = self.parent.obj
@@ -618,80 +557,53 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 self.save_file = "widget_energy_spectrum_" + str(
                     save_file_int) + ".save"
                 for file in use_cuts:
-                    self.energy_spectrum_data[file] = read_espe_file(
+                    self.energy_spectrum_data[file] = GetEspe.read_espe_file(
                         file)
 
             # Graph in matplotlib widget and add to window
             self.matplotlib = MatplotlibEnergySpectrumWidget(
-                self,
-                self.energy_spectrum_data,
-                rbs_list, spectrum_type)
-        except:
-            import traceback
-            msg = "Could not create Energy Spectrum graph. "
-            err_file = sys.exc_info()[2].tb_frame.f_code.co_filename
-            str_err = ", ".join([sys.exc_info()[
-                                     0].__name__ + ": " + traceback._some_str(
-                sys.exc_info()[1]), err_file,
-                                 str(sys.exc_info()[2].tb_lineno)])
-            msg += str_err
+                self, self.energy_spectrum_data, rbs_list, spectrum_type,
+                spectra_changed=spectra_changed, channel_width=bin_width
+            )
+        except (PermissionError, IsADirectoryError, FileNotFoundError) as e:
+            # If the file path points to directory, this will either raise
+            # PermissionError (Windows) or IsADirectoryError (Mac)
+            msg = f"Could not create Energy Spectrum graph: {e}"
             logging.getLogger(self.parent.obj.name).error(msg)
+
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
+            self.matplotlib = None
         finally:
-            if self.progress_bar:
-                self.measurement.statusbar.removeWidget(self.progress_bar)
-                self.progress_bar.hide()
+            if sbh is not None:
+                sbh.remove_progress_bar()
 
     def update_use_cuts(self):
+        """Update used cuts list with new Measurement cuts.
         """
-        Update used cuts list with new Measurement cuts.
-        """
-        for file in os.listdir(self.parent.obj.directory_cuts):
-            for i in range(len(self.use_cuts)):
-                cut = self.use_cuts[i]
-                cut_split = cut.split('.')  # There is one dot more (.potku)
-                file_split = file.split('.')
-                if cut_split[2] == file_split[1] and cut_split[3] == \
-                        file_split[2] and cut_split[4] == file_split[3]:
-                    cut_file = os.path.join(self.parent.obj.directory_cuts,
-                                            file)
-                    self.use_cuts[i] = cut_file
-
-        changes_dir = os.path.join(
-            self.parent.obj.directory_composition_changes, "Changes")
-        if os.path.exists(changes_dir):
-            for file in os.listdir(changes_dir):
-                for i in range(len(self.use_cuts)):
-                    cut = self.use_cuts[i]
-                    cut_split = cut.split('.')  # There is one dot more (.potku)
-                    file_split = file.split('.')
-                    if cut_split[2] == file_split[1] and cut_split[3] == \
-                            file_split[2] and cut_split[4] == file_split[3]:
-                        cut_file = os.path.join(changes_dir, file)
-                        self.use_cuts[i] = cut_file
+        changes_dir = self.measurement.get_changes_dir()
+        df.update_cuts(
+            self.use_cuts, self.measurement.directory_cuts, changes_dir)
 
     def delete(self):
         """Delete variables and do clean up.
         """
-        self.energy_spectrum = None
-        self.progress_bar = None
-        self.matplotlib.delete()
+        if self.matplotlib is not None:
+            self.matplotlib.delete()
         self.matplotlib = None
-        self.ui.close()
-        self.ui = None
         self.close()
 
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.
         """
         if self.spectrum_type == "simulation":
-            file = os.path.join(self.parent.obj.directory, self.save_file)
+            file = Path(self.parent.obj.directory, self.save_file)
             try:
                 if os.path.isfile(file):
                     os.unlink(file)
             except:
                 pass
+        self.delete()
         super().closeEvent(evnt)
 
     def save_to_file(self, measurement=True, update=False):
@@ -699,16 +611,17 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
 
         Args:
             measurement: Whether energy spectrum belong to measurement or
-            simulation.
+                         simulation.
+            update: TODO
         """
         if measurement:
-            files = "\t".join([tmp.replace(self.measurement.directory + "\\",
-                                           "")
+            files = "\t".join([os.path.relpath(tmp,
+                                               self.measurement.directory)
                                for tmp in self.use_cuts])
-            file = os.path.join(self.measurement.directory_energy_spectra,
+            file = os.path.join(self.measurement.get_energy_spectra_dir(),
                                 self.save_file)
         else:
-            files = "\t".join([tmp for tmp in self.use_cuts])
+            files = "\t".join([str(tmp) for tmp in self.use_cuts])
 
             file_name_start = "widget_energy_spectrum_"
             i = self.save_file_int
@@ -723,8 +636,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                     i += 1
                 self.save_file_int = i
             self.save_file = file_name
-            file = os.path.join(self.simulation.directory, file_name)
-        fh = open(file, "wt")
-        fh.write("{0}\n".format(files))
-        fh.write("{0}".format(self.bin_width))
-        fh.close()
+            file = Path(self.simulation.directory, file_name)
+
+        with open(file, "wt") as fh:
+            fh.write("{0}\n".format(files))
+            fh.write("{0}".format(self.bin_width))

@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-Wall -g
 LDFLAGS=
-BINDIR=../Potku-bin/
+BINDIR=../bin/
 
 OBJS=coinc.o
 PROG=coinc

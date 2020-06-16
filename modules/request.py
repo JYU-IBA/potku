@@ -36,46 +36,44 @@ import os
 import re
 import time
 
-from modules.detector import Detector
-from modules.element import Element
-from modules.element_simulation import ElementSimulation
-from modules.measurement import Measurement
-from modules.run import Run
-from modules.sample import Samples
-from modules.simulation import Simulation
-from modules.target import Target
+from pathlib import Path
+from typing import Tuple
 
-from PyQt5 import QtGui
+from .base import ElementSimulationContainer
+from .detector import Detector
+from .element import Element
+from .element_simulation import ElementSimulation
+from .measurement import Measurement
+from .run import Run
+from .sample import Samples
+from .simulation import Simulation
+from .target import Target
+from .recoil_element import RecoilElement
+from .global_settings import GlobalSettings
 
-from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 
-
-class Request:
+class Request(ElementSimulationContainer):
     """Request class to handle all measurements.
     """
 
-    def __init__(self, directory, name, statusbar, global_settings,
-                 tabs):
+    def __init__(self, directory: Path, name: str,
+                 global_settings: GlobalSettings, tabs=None,
+                 save_on_creation=True, enable_logging=True):
         """ Initializes Request class.
         
         Args:
             directory: A String representing request directory.
             name: Name of the request.
-            statusbar: A QtGui.QMainWindow's QStatusBar.
             global_settings: A GlobalSettings class object (of the program).
             tabs: A dictionary of MeasurementTabWidgets and SimulationTabWidgets
-                  of the request.
+                of the request.
         """
-        # TODO: Get rid of statusbar.
-        self.directory = directory
-        self.request_name = name
-        unused_directory, tmp_dirname = os.path.split(self.directory)
-        self.global_settings = global_settings
-        self.statusbar = statusbar
-        self.samples = Samples(self)
+        self.directory = Path(directory).resolve()
+        self.default_folder = Path(self.directory, "Default")
 
-        self.default_run = Run()
-        # self.default_target = Target()
+        self.request_name = name
+        self.global_settings = global_settings
+        self.samples = Samples(self)
 
         self.__tabs = tabs
         self.__master_measurement = None
@@ -86,54 +84,46 @@ class Request:
         self._running_int = 1  # TODO: Maybe be saved into .request file?
 
         # Check folder exists and make request file there.
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
-        # If Default folder doesn't exist, create it.
-        self.default_folder = os.path.join(self.directory, "Default")
-        if not os.path.exists(self.default_folder):
-            # Create Default folder under request folder
-            os.makedirs(self.default_folder)
+        if save_on_creation:
+            self.create_folder_structure()
 
         # Try reading default objects from Default folder.
-        self.default_measurement_file_path = os.path.join(self.default_folder,
-                                                          "Default.measurement")
+        self.default_measurement_file_path = Path(
+            self.default_folder, "Default.measurement")
 
-        self.default_detector_folder = None
-        self.default_detector = None
-        self.default_measurement = None
-        self.default_target = None
-        self.default_simulation = None
-        self.default_element_simulation = None
+        self.default_detector_folder = Path(self.default_folder, "Detector")
 
-        self.create_default_detector()
-        self.create_default_measurement()
-        self.create_default_target()
-        self.create_default_simulation()
+        self.default_run = self._create_default_run()
+        self.default_target = self._create_default_target(
+            save_on_creation=save_on_creation
+        )
+        self.default_detector = self._create_default_detector(
+            self.default_detector_folder, save_on_creation=save_on_creation
+        )
+        self.default_measurement = self._create_default_measurement(
+            save_on_creation=save_on_creation,
+            detector=self.default_detector,
+            target=self.default_target,
+            run=self.default_run
+        )
+        self.default_simulation, self.default_element_simulation = \
+            self._create_default_simulation(
+                save_on_creation=save_on_creation,
+                detector=self.default_detector,
+                target=self.default_target,
+                run=self.default_run)
 
-        self.running_simulations = []
-
-        # Set default Run, Detector and Target objects to Measurement
-        self.default_measurement.run = self.default_run
-        self.default_measurement.detector = self.default_detector
-        self.default_measurement.target = self.default_target
-
-        # Set default Run, Detector and Target objects to Simulation
-        self.default_simulation.run = self.default_run
-        self.default_simulation.detector = self.default_detector
-        self.default_simulation.target = self.default_target
-
-        self.__set_request_logger()
+        if enable_logging:
+            self.__set_request_logger()
 
         # Request file containing necessary information of the request.
         # If it exists, we assume old request is loaded.
         self.__request_information = configparser.ConfigParser()
 
-        # tmp_dirname has extra .potku in it, need to remove it for the
+        # directory name has extra .potku in it, need to remove it for the
         # .request file name
-        stripped_tmp_dirname = tmp_dirname.replace(".potku", "")
-        self.request_file = os.path.join(directory, "{0}.request".format(
-            stripped_tmp_dirname))
+        self.request_file = Path(
+            self.directory, f"{self.directory.stem}.request")
 
         # Defaults
         self.__request_information.add_section("meta")
@@ -143,164 +133,168 @@ class Request:
             time.strftime("%c %z %Z", time.localtime(time.time()))
         self.__request_information["meta"]["master"] = ""
         self.__request_information["meta"]["nonslave"] = ""
-        if not os.path.exists(self.request_file):
-            self.save()
-        else:
-            self.load()
+        if self.request_file.exists():
+            self._load()
+        elif save_on_creation:
+            self._save()
 
-    def create_default_detector(self):
-        """
-        Create default detector.
-        """
-        self.default_detector_folder = os.path.join(self.default_folder,
-                                                    "Detector")
+    def create_folder_structure(self):
+        self.directory.mkdir(exist_ok=True)
+        self.default_folder.mkdir(exist_ok=True)
 
-        detector_path = os.path.join(self.directory,
-                                     self.default_detector_folder,
-                                     "Default.detector")
-        if os.path.exists(detector_path):
+    def to_file(self):
+        self.create_folder_structure()
+        self._save()
+        self.default_measurement.to_file()
+        self.default_simulation.to_file()
+
+    @classmethod
+    def from_file(cls, file: Path, settings: GlobalSettings, tab_widgets=None):
+        """Returns a new Request from an existing .request file and folder
+        structure.
+
+        Args:
+            file: path to a .request file
+            settings: GlobalSettings object
+            tab_widgets: A dictionary of MeasurementTabWidgets and
+                SimulationTabWidgets of the request.
+        """
+        # TODO better error checking
+        file_path = Path(file).resolve()
+        if not file_path.exists():
+            raise ValueError("Request file does not exist.")
+        if not file_path.is_file():
+            raise ValueError("Expected file, got a directory")
+        if file_path.suffix != ".request":
+            raise ValueError("Expected request file")
+        return cls(file_path.parent, file_path.stem, settings, tab_widgets)
+
+    def _create_default_detector(
+            self, folder: Path, save_on_creation) -> Detector:
+        """Returns default detector.
+        """
+        detector_path = folder / "Default.detector"
+        if detector_path.exists():
             # Read detector from file
-            self.default_detector = Detector.from_file(
-                detector_path,
-                self.default_measurement_file_path, self)
-            self.default_detector.update_directories(
-                self.default_detector_folder)
+            detector = Detector.from_file(
+                detector_path, self.default_measurement_file_path, self,
+                save_on_creation=save_on_creation)
         else:
             # Create Detector folder under Default folder
-            if not os.path.exists(self.default_detector_folder):
-                os.makedirs(self.default_detector_folder)
+            if save_on_creation:
+                self.default_detector_folder.mkdir(exist_ok=True)
             # Create default detector for request
-            self.default_detector = Detector(
-                os.path.join(self.default_detector_folder,
-                             "Default.detector"),
+            detector = Detector(
+                Path(self.default_detector_folder, "Default.detector"),
                 self.default_measurement_file_path, name="Default-detector",
-                description="These are default detector settings.")
-            self.default_detector.update_directories(
-                self.default_detector_folder)
+                description="These are default detector settings.",
+                save_on_creation=save_on_creation)
 
-        self.default_detector.to_file(os.path.join(self.default_folder,
-                                                   "Detector",
-                                                   "Default.detector"),
-                                      self.default_measurement_file_path)
+        if save_on_creation:
+            detector.update_directories(self.default_detector_folder)
 
-    def create_default_measurement(self):
+            detector.to_file(
+                Path(self.default_detector_folder, "Default.detector"),
+                self.default_measurement_file_path)
+
+        return detector
+
+    def _create_default_measurement(self, save_on_creation, **kwargs) -> \
+            Measurement:
+        """Returns default measurement.
         """
-        Create default measurement.
-        """
-        measurement_info_path = os.path.join(self.default_folder,
-                                             "Default.info")
-        if os.path.exists(measurement_info_path):
+        info_path = Path(self.default_folder, "Default.info")
+        if info_path.exists():
             # Read measurement from file
-            self.default_measurement = Measurement.from_file(
-                measurement_info_path,
-                os.path.join(self.default_folder, "Default.measurement"),
-                os.path.join(self.default_folder, "Default.profile"),
-                self)
-            self.default_run = Run.from_file(self.default_measurement_file_path)
+            measurement = Measurement.from_file(
+                info_path,
+                Path(self.default_folder, "Default.measurement"),
+                Path(self.default_folder, "Default.profile"),
+                self, **kwargs)
         else:
             # Create default measurement for request
-            default_info_path = os.path.join(self.default_folder,
-                                             "Default.info")
-            self.default_measurement = Measurement(
-                self, path=default_info_path,
-                run=self.default_run,
-                detector=self.default_detector,
+            measurement = Measurement(
+                self, path=info_path, **kwargs,
                 description="This is a default measurement.",
                 profile_description="These are default profile parameters.",
                 measurement_setting_file_description="These are default "
                                                      "measurement "
                                                      "parameters.",
-                use_default_profile_settings=False)
-            self.default_measurement.info_to_file(
-                os.path.join(self.default_folder,
-                             self.default_measurement.name + ".info"))
-            self.default_measurement.measurement_to_file(os.path.join(
-                self.default_folder,
-                self.default_measurement.measurement_setting_file_name
-                + ".measurement"))
-            self.default_measurement.profile_to_file(os.path.join(
-                self.default_folder,
-                self.default_measurement.profile_name + ".profile"))
-            self.default_measurement.run.to_file(os.path.join(
-                self.default_folder,
-                self.default_measurement.measurement_setting_file_name +
-                ".measurement"))
+                use_default_profile_settings=False,
+                save_on_creation=save_on_creation)
 
-    def create_default_target(self):
+        return measurement
+
+    def _create_default_target(self, save_on_creation) -> Target:
+        """Returns default target.
         """
-        Create default target.
-        """
-        target_path = os.path.join(self.default_folder, "Default.target")
-        if os.path.exists(target_path):
+        target_path = Path(self.default_folder, "Default.target")
+        if target_path.exists():
             # Read target from file
-            self.default_target = Target.from_file(
+            target = Target.from_file(
                 target_path, self.default_measurement_file_path, self)
         else:
             # Create default target for request
-            self.default_target = Target(description="These are default "
-                                                     "target parameters.")
-            self.default_target.to_file(os.path.join(self.default_folder,
-                                                     "Default.target"),
-                                        self.default_measurement_file_path)
+            target = Target(
+                description="These are default target parameters.")
 
-        self.default_target.to_file(os.path.join(self.default_folder,
-                                                 self.default_target.name
-                                                 + ".target"),
-                                    self.default_measurement_file_path)
+        if save_on_creation:
+            target.to_file(
+                Path(self.default_folder, target.name + ".target"),
+                self.default_measurement_file_path)
 
-    def create_default_run(self):
-        """
-        Create default run.
+        return target
+
+    def _create_default_run(self) -> Run:
+        """Create default run.
         """
         try:
             # Try reading Run parameters from .measurement file.
-            self.default_run = Run.from_file(self.default_measurement_file_path)
-        except KeyError:
-            # Save new Run parameters to file.
-            self.default_run.to_file(os.path.join(
-                self.default_folder,
-                self.default_measurement.measurement_setting_file_name +
-                ".measurement"))
+            return Run.from_file(self.default_measurement_file_path)
+        except (KeyError, OSError):
+            return Run()
 
-    def create_default_simulation(self):
+    def _create_default_simulation(
+            self, save_on_creation, target=None, **kwargs) -> \
+            Tuple[Simulation, ElementSimulation]:
+        """Create default simulation and ElementSimulation
         """
-        Create default simulation.
-        """
-        simulation_path = os.path.join(self.default_folder,
-                                       "Default.simulation")
-        if os.path.exists(simulation_path):
+        simulation_path = Path(self.default_folder, "Default.simulation")
+        if simulation_path.exists():
             # Read default simulation from file
-            self.default_simulation = Simulation.from_file(
-                self, simulation_path)
+            sim = Simulation.from_file(
+                self, simulation_path, save_on_creation=save_on_creation,
+                target=target, **kwargs)
         else:
             # Create default simulation for request
-            self.default_simulation = Simulation(os.path.join(
-                self.default_folder, "Default.simulation"), self,
+            sim = Simulation(
+                Path(self.default_folder, "Default.simulation"), self,
+                save_on_creation=save_on_creation, target=target, **kwargs,
                 description="This is a default simulation.",
                 measurement_setting_file_description="These are default "
-                                                     "measurement parameters.")
+                                                     "simulation "
+                                                     "parameters.")
 
-        mcsimu_path = os.path.join(self.default_folder, "Default.mcsimu")
-        if os.path.exists(mcsimu_path):
+        mcsimu_path = Path(self.default_folder, "Default.mcsimu")
+        if mcsimu_path.exists():
             # Read default element simulation from file
-            self.default_element_simulation = \
-                ElementSimulation.from_file(self, "4He", self.default_folder,
-                                            mcsimu_path,
-                                            os.path.join(
-                                                self.default_folder,
-                                                "Default.profile"))
-            self.default_element_simulation.simulation = self.default_simulation
+            elem_sim = ElementSimulation.from_file(
+                self, "4He", self.default_folder, mcsimu_path,
+                Path(self.default_folder, "Default.profile"), sim,
+                **kwargs)
         else:
             # Create default element simulation for request
-            self.default_element_simulation = ElementSimulation(
+            elem_sim = ElementSimulation(
                 self.default_folder, self,
                 [RecoilElement(Element.from_string("4He 3.0"), [],
-                               QtGui.QColor("#0000ff"))],
-                self.default_simulation,
+                               "#0000ff")],
+                simulation=sim,
                 description="These are default simulation parameters.",
-                use_default_settings=False)
-            self.default_simulation.element_simulations.append(
-                self.default_element_simulation)
+                use_default_settings=False,
+                save_on_creation=save_on_creation, **kwargs)
+
+        sim.element_simulations.append(elem_sim)
+        return sim, elem_sim
 
     def exclude_slave(self, measurement):
         """ Exclude measurement from slave category under master.
@@ -315,7 +309,7 @@ class Request:
         paths = [m.path for m in self.__non_slaves]
         self.__request_information["meta"]["nonslave"] = "|".join(
             paths)
-        self.save()
+        self._save()
 
     def include_slave(self, measurement):
         """ Include measurement to slave category under master.
@@ -330,7 +324,7 @@ class Request:
         paths = [m.path for m in self.__non_slaves]
         self.__request_information["meta"]["nonslave"] = "|".join(
             paths)
-        self.save()
+        self._save()
 
     def get_name(self):
         """ Get the request's name.
@@ -340,7 +334,7 @@ class Request:
         """
         return self.__request_information["meta"]["request_name"]
 
-    def get_master(self):
+    def get_master(self) -> Measurement:
         """ Get master measurement of the request.
         """
         return self.__master_measurement
@@ -354,12 +348,19 @@ class Request:
         """
         samples = []
         for item in os.listdir(self.directory):
-            if os.path.isdir(os.path.join(self.directory, item)) and \
+            if os.path.isdir(Path(self.directory, item)) and \
                     item.startswith("Sample_"):
-                samples.append(os.path.join(self.directory, item))
+                samples.append(Path(self.directory, item))
                 # It is presumed that the sample numbers are of format
                 # '01', '02',...,'10', '11',...
-                match_object = re.search("\d", item)
+
+                # Python 3.6 gives DeprecationWarning for using just "\d" as
+                # regex pattern. To avoid potential future issues, the pattern
+                # is declared as a raw  string (see https://stackoverflow.com/
+                # questions/50504500/deprecationwarning-invalid-escape-sequence
+                # -what-to-use-instead-of-d
+                match_object = re.search(r"\d", item)
+
                 if match_object:
                     number_str = item[match_object.start()]
                     if number_str == "0":
@@ -422,7 +423,7 @@ class Request:
                 return measurement
         return ""
 
-    def load(self):
+    def _load(self):
         """ Load request.
         """
         self.__request_information.read(self.request_file)
@@ -433,66 +434,73 @@ class Request:
                 if path == measurement.path:
                     self.__non_slaves.append(measurement)
 
-    def save(self):
+    def _save(self):
         """ Save request.
         """
         # TODO: Saving properly.
-        with open(self.request_file, "wt+") as configfile:
+        with self.request_file.open("w") as configfile:
             self.__request_information.write(configfile)
 
-    def save_cuts(self, measurement, progress_bar=None, percentage=None,
-                  add=None):
+    def save_cuts(self, measurement, progress=None):
         """ Save cuts for all measurements except for master.
         
         Args:
             measurement: A measurement class object that issued save cuts.
-            progress_bar: A porgress bar.
-            percentage: Base percentage in progress bar.
-            add: Percentage to add.
+            progress: ProgressReporter object.
         """
         name = measurement.name
         master = self.has_master()
         if master != "" and name == master.name:
             nonslaves = self.get_nonslaves()
             tabs = self.get_measurement_tabs(measurement.tab_id)
-            start = percentage
-            added = None
-            if add:
-                added = add / len(tabs)
-            for tab in tabs:
+            for i, tab in enumerate(tabs):
+                if progress is not None:
+                    sub_progress = progress.get_sub_reporter(
+                        lambda x: (100 * i + x) / len(tabs)
+                    )
+                else:
+                    sub_progress = None
+
                 tab_name = tab.obj.name
                 if tab.data_loaded and tab.obj not in nonslaves and \
                         tab_name != name:
                     # No need to save same measurement twice.
-                    tab.obj.save_cuts(progress_bar, start, added)
-                    if added:
-                        start += added
+                    tab.obj.save_cuts(progress=sub_progress)
 
-    def save_selection(self, measurement, progress_bar, percentage):
+        if progress is not None:
+            progress.report(100)
+
+    def save_selection(self, measurement, progress=None):
         """ Save selection for all measurements except for master.
         
         Args:
             measurement: A measurement class object that issued save cuts.
-            progress_bar: A progress bar.
-            percentage: Percentage to add to progress bar.
+            progress: ProgressReporter object.
         """
         directory = measurement.directory_data
         name = measurement.name
-        selection_file = "{0}.selections".format(os.path.join(directory, name))
+        selection_file = "{0}.selections".format(Path(directory, name))
         master = self.has_master()
         if master != "" and name == master.name:
             nonslaves = self.get_nonslaves()
             tabs = self.get_measurement_tabs(measurement.tab_id)
-            start = 1
-            add = percentage / len(tabs)
-            for tab in tabs:
+
+            for i, tab in enumerate(tabs):
                 tab_name = tab.obj.name
                 if tab.data_loaded and tab.obj not in nonslaves and \
                         tab_name != name:
-                    tab.obj.selector.load(selection_file, progress_bar,
-                                          add, start)
+
+                    if progress is not None:
+                        sub_progress = progress.get_sub_reporter(
+                            lambda x: (100 * i + x) / len(tabs))
+                    else:
+                        sub_progress = None
+
+                    tab.obj.selector.load(selection_file, progress=sub_progress)
                     tab.histogram.matplotlib.on_draw()
-                    start += add
+
+        if progress is not None:
+            progress.report(100)
 
     def set_master(self, measurement=None):
         """ Set master measurement for the request.
@@ -507,60 +515,51 @@ class Request:
             # name = measurement.name
             path = measurement.path
             self.__request_information["meta"]["master"] = path
-        self.save()
+        self._save()
 
     def __set_request_logger(self):
         """ Sets the logger which is used to log everything that doesn't happen
         in measurements.
         """
+        self.create_folder_structure()
         logger = logging.getLogger("request")
         logger.setLevel(logging.DEBUG)
 
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - "
-                                      "%(message)s",
-                                      datefmt="%Y-%m-%d %H:%M:%S")
-        requestlog = logging.FileHandler(os.path.join(self.directory,
-                                                      "request.log"))
+        formatter = logging.Formatter(
+            "%(asctime)s - %(levelname)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S")
+        requestlog = logging.FileHandler(Path(self.directory, "request.log"))
         requestlog.setLevel(logging.INFO)
         requestlog.setFormatter(formatter)
 
         logger.addHandler(requestlog)
 
-    def simulations_running(self):
-        """
-        Check whether there are any simulations running that use request
-        settings.
+    def _get_simulations(self):
+        return (
+            sim for sample in self.samples.samples
+            for sim in sample.simulations.simulations.values()
+        )
 
-        Return:
-            True or False.
-        """
-        ret = False
-        if self.running_simulations:
-            ret = True
-        return ret
+    def get_running_simulations(self):
+        return list(
+            elem_sim for sim in self._get_simulations()
+            for elem_sim in sim.get_running_simulations()
+        )
 
-    def optimization_running(self):
-        ret = []
-        for sample in self.samples.samples:
-            for simulation in sample.simulations.simulations.values():
-                for elem_sim in simulation.element_simulations:
-                    if elem_sim.optimization_running and \
-                            elem_sim.use_default_settings:
-                        ret.append(elem_sim)
-        return ret
+    def get_running_optimizations(self):
+        return list(
+            elem_sim for sim in self._get_simulations()
+            for elem_sim in sim.get_running_optimizations()
+        )
 
-    def running_simulations_by_seed(self, seed):
-        """
-        Find if there are any running simulations with the given seed number.
+    def get_finished_simulations(self):
+        return list(
+            elem_sim for sim in self._get_simulations()
+            for elem_sim in sim.get_finished_simulations()
+        )
 
-        Args:
-             seed: Seed number.
-
-        Return:
-            List of running element simulations.
-        """
-        running_simulations = []
-        for elem_sim in self.running_simulations:
-            if seed in elem_sim.mcerd_objects.keys():
-                running_simulations.append(elem_sim)
-        return running_simulations
+    def get_finished_optimizations(self):
+        return list(
+            elem_sim for sim in self._get_simulations()
+            for elem_sim in sim.get_finished_optimizations()
+        )

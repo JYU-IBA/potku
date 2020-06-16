@@ -27,15 +27,19 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
 import platform
 import threading
 import time
 
+from pathlib import Path
+from modules.element_simulation import ElementSimulation
+
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
+from PyQt5.QtCore import pyqtSignal
 
+from widgets.gui_utils import StatusBarHandler
 from widgets.matplotlib.simulation.composition import TargetCompositionWidget
 from widgets.matplotlib.simulation.recoil_atom_distribution import \
     RecoilAtomDistributionWidget
@@ -45,9 +49,10 @@ class TargetWidget(QtWidgets.QWidget):
     """ Widget that can be used to define target composition and
         recoil atom distribution.
     """
+    results_accepted = pyqtSignal(ElementSimulation)
 
     def __init__(self, tab, simulation, target, icon_manager,
-                 progress_bar=None):
+                 progress=None, statusbar=None, **kwargs):
         """Initializes thw widget that can be used to define target composition
         and
         recoil atom distribution.
@@ -57,72 +62,69 @@ class TargetWidget(QtWidgets.QWidget):
             simulation: A Simulation object.
             target: A Target object.
             icon_manager: An icon manager class object.
-            progress_bar: A progress bar used when opening a simulation.
+            progress: ProgressReporter object
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_target_widget.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_target_widget.ui"), self)
 
-        if progress_bar:
-            progress_bar.setValue(0)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+        if progress is not None:
+            progress.report(0)
 
         self.tab = tab
         self.simulation = simulation
         self.target = target
+        self.statusbar = statusbar
 
-        self.target_widget = TargetCompositionWidget(self, self.target,
-                                                     icon_manager,
-                                                     self.simulation)
+        self.target_widget = TargetCompositionWidget(
+            self, self.target, icon_manager, self.simulation)
 
-        if progress_bar:
-            progress_bar.setValue(45)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+        if progress is not None:
+            progress.report(50)
 
         self.recoil_distribution_widget = RecoilAtomDistributionWidget(
-            self, self.simulation, self.target, tab, icon_manager)
+            self, self.simulation, self.target, tab, icon_manager,
+            statusbar=self.statusbar, **kwargs)
+        self.results_accepted.connect(
+            self.recoil_distribution_widget.update_element_simulation.emit)
+        self.spectra_changed = self.recoil_distribution_widget. \
+            recoil_dist_changed
 
-        icon_manager.set_icon(self.ui.editPushButton, "edit.svg")
-        self.ui.editPushButton.setIconSize(QtCore.QSize(14, 14))
-        self.ui.editPushButton.setToolTip(
+        icon_manager.set_icon(self.editPushButton, "edit.svg")
+        self.editPushButton.setIconSize(QtCore.QSize(14, 14))
+        self.editPushButton.setToolTip(
             "Edit name, description and reference density "
             "of this recoil element")
-        self.ui.recoilListWidget.hide()
-        self.ui.editLockPushButton.hide()
-        self.ui.elementInfoWidget.hide()
+        self.recoilListWidget.hide()
+        self.editLockPushButton.hide()
+        self.elementInfoWidget.hide()
 
-        icon_manager.set_icon(self.ui.editTargetInfoButton, "edit.svg")
-        self.ui.editTargetInfoButton.setIconSize(QtCore.QSize(14, 14))
-        self.ui.editTargetInfoButton.setToolTip(
+        icon_manager.set_icon(self.editTargetInfoButton, "edit.svg")
+        self.editTargetInfoButton.setIconSize(QtCore.QSize(14, 14))
+        self.editTargetInfoButton.setToolTip(
             "Edit name and description of the target")
 
         if platform.system() == "Darwin":
-            self.ui.percentButton.setText("Calculate\npercents")
+            self.percentButton.setText("Calculate\npercents")
 
-        self.ui.exportElementsButton.clicked.connect(
-            self.recoil_distribution_widget.export_elements)
+        self.exportElementsButton.clicked.connect(
+            lambda: self.recoil_distribution_widget.export_elements(**kwargs))
 
-        self.ui.targetRadioButton.clicked.connect(self.switch_to_target)
-        self.ui.recoilRadioButton.clicked.connect(self.switch_to_recoil)
+        self.targetRadioButton.clicked.connect(self.switch_to_target)
+        self.recoilRadioButton.clicked.connect(self.switch_to_recoil)
 
         if not self.target.layers:
-            self.ui.recoilRadioButton.setEnabled(False)
+            self.recoilRadioButton.setEnabled(False)
 
-        self.ui.targetRadioButton.setChecked(True)
-        self.ui.stackedWidget.setCurrentIndex(0)
+        self.targetRadioButton.setChecked(True)
+        self.stackedWidget.setCurrentIndex(0)
 
-        self.ui.saveButton.clicked.connect(lambda:
-                                           self.__save_target_and_recoils())
+        self.saveButton.clicked.connect(self.__save_target_and_recoils)
 
         self.del_points = None
 
         self.set_shortcuts()
-        if progress_bar:
-            progress_bar.setValue(50)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+        if progress is not None:
+            progress.report(100)
 
         self.stop_saving = False
         self.thread = None
@@ -142,24 +144,24 @@ class TargetWidget(QtWidgets.QWidget):
         """
         self.recoil_distribution_widget.original_x_limits = \
             self.recoil_distribution_widget.axes.get_xlim()
-        self.ui.stackedWidget.setCurrentIndex(0)
-        self.ui.recoilListWidget.hide()
-        self.ui.editLockPushButton.hide()
-        self.ui.exportElementsButton.show()
-        self.ui.elementInfoWidget.hide()
-        self.ui.instructionLabel.setText("")
-        self.ui.targetInfoWidget.show()
+        self.stackedWidget.setCurrentIndex(0)
+        self.recoilListWidget.hide()
+        self.editLockPushButton.hide()
+        self.exportElementsButton.show()
+        self.elementInfoWidget.hide()
+        self.instructionLabel.setText("")
+        self.targetInfoWidget.show()
 
     def switch_to_recoil(self):
         """
         Switch to recoil atom distribution view.
         """
-        self.ui.stackedWidget.setCurrentIndex(1)
+        self.stackedWidget.setCurrentIndex(1)
         self.recoil_distribution_widget.update_layer_borders()
-        self.ui.exportElementsButton.hide()
-        self.ui.recoilListWidget.show()
-        self.ui.editLockPushButton.show()
-        self.ui.targetInfoWidget.hide()
+        self.exportElementsButton.hide()
+        self.recoilListWidget.show()
+        self.editLockPushButton.show()
+        self.targetInfoWidget.hide()
         self.recoil_distribution_widget.recoil_element_info_on_switch()
 
         text = "You can add a new point to the distribution on a line between "\
@@ -168,13 +170,17 @@ class TargetWidget(QtWidgets.QWidget):
             text += "⌘+click."
         else:
             text += "Ctrl+click."
-        self.ui.instructionLabel.setText(text)
+        self.instructionLabel.setText(text)
 
     def timed_save(self):
         """
         Save target and recoils every 1 minute.
         """
         while True:
+            # TODO it might be better to just save when something changes
+            #  instead of automatically doing it every 60 seconds. This might
+            #  cause a situation where files are being written or read at the
+            #  same time by different threads.
             if self.stop_saving:
                 break
             if self.target:
@@ -189,36 +195,31 @@ class TargetWidget(QtWidgets.QWidget):
             thread: Whether saving happens in a thread or by pressing the
             button.
         """
-        progress_bar = None
-        if not thread:
-            # Add progress bar
-            progress_bar = QtWidgets.QProgressBar()
-            self.simulation.statusbar.addWidget(progress_bar, 1)
-            progress_bar.show()
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process.
+        if not thread and self.statusbar is not None:
+            sbh = StatusBarHandler(self.statusbar)
+            reporter = sbh.reporter
+        else:
+            reporter = None
 
-        target_name = "temp"
-        if self.target.name is not "":
+        if self.target.name:
             target_name = self.target.name
-        target_path = os.path.join(self.simulation.directory, target_name +
-                                   ".target")
+        else:
+            target_name = "temp"
+
+        target_path = Path(self.simulation.directory, f"{target_name}.target")
         self.target.to_file(target_path, None)
 
-        if not thread:
-            progress_bar.setValue(50)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process
+        if not thread and reporter is not None:
+            reporter.report(50)
+            sub_reporter = reporter.get_sub_reporter(lambda x: 50 + 0.5 * x)
+        else:
+            sub_reporter = None
 
         self.recoil_distribution_widget.save_mcsimu_rec_profile(
-            self.simulation.directory, progress_bar)
+            self.simulation.directory, progress=sub_reporter)
 
-        if not thread:
-            self.simulation.statusbar.removeWidget(progress_bar)
-            progress_bar.hide()
+        if reporter is not None:
+            reporter.report(100)
 
     def set_shortcuts(self):
         """

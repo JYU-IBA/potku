@@ -29,15 +29,13 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import os
 import platform
 
-from dialogs.new_sample import NewSampleDialog
+import widgets.input_validation as iv
 
-from modules.general_functions import check_text
-from modules.general_functions import set_input_field_red
-from modules.general_functions import set_input_field_white
-from modules.general_functions import validate_text_input
+from pathlib import Path
+
+from dialogs.new_sample import NewSampleDialog
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -53,35 +51,33 @@ class SimulationNewDialog(QtWidgets.QDialog):
             samples: Samples of request.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_new_simulation.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_new_simulation.ui"), self)
 
         # Add existing samples to view.
         self.samples = samples
         for sample in samples:
-            self.ui.samplesComboBox.addItem("Sample "
-                                            + "%02d" % sample.serial_number
-                                            + " " + sample.name)
+            self.samplesComboBox.addItem("Sample "
+                                         + "%02d" % sample.serial_number
+                                         + " " + sample.name)
 
         if not samples:
-            set_input_field_red(self.ui.samplesComboBox)
+            iv.set_input_field_red(self.samplesComboBox)
 
-        set_input_field_red(self.ui.simulationNameLineEdit)
-        self.ui.simulationNameLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.ui.simulationNameLineEdit))
-
-        self.ui.addSampleButton.clicked.connect(self.__add_sample)
-        self.ui.pushCreate.clicked.connect(self.__create_simulation)
-        self.ui.pushCancel.clicked.connect(self.close)
+        self.addSampleButton.clicked.connect(self.__add_sample)
+        self.pushCreate.clicked.connect(self.__create_simulation)
+        self.pushCancel.clicked.connect(self.close)
         self.name = None
         self.sample = None
         self.__close = True
 
-        self.ui.simulationNameLineEdit.textEdited.connect(
-            lambda: self.__validate())
+        iv.set_input_field_red(self.simulationNameLineEdit)
+        self.simulationNameLineEdit.textChanged.connect(
+            lambda: iv.check_text(self.simulationNameLineEdit))
+        self.simulationNameLineEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.simulationNameLineEdit))
 
         if platform.system() == "Darwin":
-            self.ui.samplesComboBox.setMinimumWidth(157)
+            self.samplesComboBox.setMinimumWidth(157)
 
         self.exec_()
 
@@ -90,21 +86,21 @@ class SimulationNewDialog(QtWidgets.QDialog):
         """
         dialog = NewSampleDialog(self.samples)
         if dialog.name:
-            self.ui.samplesComboBox.addItem(dialog.name)
-            self.ui.samplesComboBox.setCurrentIndex(self.ui.samplesComboBox
-                                                    .findText(dialog.name))
-            set_input_field_white(self.ui.samplesComboBox)
+            self.samplesComboBox.addItem(dialog.name)
+            self.samplesComboBox.setCurrentIndex(
+                self.samplesComboBox.findText(dialog.name))
+            iv.set_input_field_white(self.samplesComboBox)
 
     def __create_simulation(self):
         """Check given values and store them in dialog object.
         """
-        self.name = self.ui.simulationNameLineEdit.text().replace(" ", "_")
-        self.sample = self.ui.samplesComboBox.currentText()
+        self.name = self.simulationNameLineEdit.text().replace(" ", "_")
+        self.sample = self.samplesComboBox.currentText()
         if not self.name:
-            self.ui.simulationNameLineEdit.setFocus()
+            self.simulationNameLineEdit.setFocus()
             return
         if not self.sample:
-            self.ui.addSampleButton.setFocus()
+            self.addSampleButton.setFocus()
             return
 
         sample = self.__find_existing_sample()
@@ -129,15 +125,6 @@ class SimulationNewDialog(QtWidgets.QDialog):
         if self.__close:
             self.close()
 
-    @staticmethod
-    def __check_text(input_field):
-        """Checks if there is text in given input field.
-
-        Args:
-            input_field: Input field the contents of which are checked.
-        """
-        check_text(input_field)
-
     def __find_existing_sample(self):
         """
         Find existing sample that matches the sample name in dialog.
@@ -150,13 +137,3 @@ class SimulationNewDialog(QtWidgets.QDialog):
                     == self.sample:
                 return sample
         return None
-
-    def __validate(self):
-        """
-        Validate the simulation name.
-        """
-        text = self.ui.simulationNameLineEdit.text()
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = validate_text_input(text, regex)
-
-        self.ui.simulationNameLineEdit.setText(valid_text)

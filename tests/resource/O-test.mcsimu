@@ -1,0 +1,18 @@
+{
+    "name": "O-Default",
+    "description": "These are default simulation parameters.",
+    "modification_time": "Tue Feb 11 11:08:20 2020 +0200 Suomen normaaliaika",
+    "modification_time_unix": 1581412100.9494548,
+    "simulation_type": "ERD",
+    "simulation_mode": "narrow",
+    "number_of_ions": 110000,
+    "number_of_preions": 10000,
+    "seed_number": 101,
+    "number_of_recoils": 10,
+    "number_of_scaling_ions": 56,
+    "minimum_scattering_angle": 0.05,
+    "minimum_main_scattering_angle": 20.0,
+    "minimum_energy": 1.5,
+    "use_default_settings": "True",
+    "main_recoil": "Default"
+}

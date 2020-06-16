@@ -1,0 +1,19 @@
+Type of simulation: ERD
+Beam ion: 35Cl
+Beam energy: 10 MeV
+Target description file: $tgt_file
+Detector description file: $det_file
+Recoiling atom: He
+Recoiling material distribution: $rec_file
+Target angle: 20.5 deg
+Beam spot size: 3.0 5.0 mm
+Minimum angle of scattering: 5.5 deg
+Minimum main scattering angle: 6.5 deg
+Minimum energy of ions: 8.15 MeV
+Average number of recoils per primary ion: 15
+Recoil angle width (wide or narrow): narrow
+Presimulation * result file: $pre_file
+Number of real ions per each scaling ion: 14
+Number of ions: 1000
+Number of ions in the presimulation: 100
+Seed number of the random number generator: 101

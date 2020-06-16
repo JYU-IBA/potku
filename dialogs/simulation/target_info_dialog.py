@@ -24,12 +24,11 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
-import os
 import time
 
-from modules.general_functions import check_text
-from modules.general_functions import set_input_field_red
-from modules.general_functions import validate_text_input
+import widgets.input_validation as iv
+
+from pathlib import Path
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -48,28 +47,28 @@ class TargetInfoDialog(QtWidgets.QDialog):
             target: Target object.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_target_info.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_target_info.ui"), self)
+
         self.target = target
 
-        self.ui.okPushButton.clicked.connect(self.__accept_settings)
-        self.ui.cancelPushButton.clicked.connect(self.close)
+        self.okPushButton.clicked.connect(self.__accept_settings)
+        self.cancelPushButton.clicked.connect(self.close)
 
-        set_input_field_red(self.ui.nameLineEdit)
         self.fields_are_valid = False
-        self.ui.nameLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.ui.nameLineEdit, self))
+        iv.set_input_field_red(self.nameLineEdit)
+        self.nameLineEdit.textChanged.connect(
+            lambda: iv.check_text(self.nameLineEdit, qwidget=self))
+        self.nameLineEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.nameLineEdit))
 
         self.name = ""
-        self.ui.nameLineEdit.setText(target.name)
-        self.ui.descriptionLineEdit.setPlainText(target.description)
+        self.nameLineEdit.setText(target.name)
+        self.descriptionLineEdit.setPlainText(target.description)
         self.description = ""
         self.isOk = False
 
-        self.ui.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
+        self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
             target.modification_time)))
-
-        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
 
         self.__close = True
 
@@ -88,29 +87,9 @@ class TargetInfoDialog(QtWidgets.QDialog):
                                            QtWidgets.QMessageBox.Ok)
             self.__close = False
         else:
-            self.name = self.ui.nameLineEdit.text()
-            self.description = self.ui.descriptionLineEdit.toPlainText()
+            self.name = self.nameLineEdit.text()
+            self.description = self.descriptionLineEdit.toPlainText()
             self.isOk = True
             self.__close = True
         if self.__close:
             self.close()
-
-    @staticmethod
-    def __check_text(input_field, settings):
-        """Checks if there is text in given input field.
-
-        Args:
-            input_field: Input field the contents of which are checked.
-            settings: Settings dialog.
-        """
-        settings.fields_are_valid = check_text(input_field)
-
-    def __validate(self):
-        """
-        Validate the recoil name.
-        """
-        text = self.ui.nameLineEdit.text()
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = validate_text_input(text, regex)
-
-        self.ui.nameLineEdit.setText(valid_text)

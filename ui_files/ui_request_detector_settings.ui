@@ -83,7 +83,7 @@
         <x>0</x>
         <y>0</y>
         <width>462</width>
-        <height>587</height>
+        <height>584</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -147,7 +147,7 @@
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>Modification itme:</string>
+                 <string>Modification time:</string>
                 </property>
                </widget>
               </item>
@@ -327,7 +327,7 @@
             </sizepolicy>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>1</number>
            </property>
            <property name="usesScrollButtons">
             <bool>false</bool>
@@ -463,8 +463,11 @@ T</string>
                  <property name="alternatingRowColors">
                   <bool>true</bool>
                  </property>
+                 <property name="selectionMode">
+                  <enum>QAbstractItemView::MultiSelection</enum>
+                 </property>
                  <property name="selectionBehavior">
-                  <enum>QAbstractItemView::SelectRows</enum>
+                  <enum>QAbstractItemView::SelectItems</enum>
                  </property>
                 </widget>
                </item>
@@ -597,28 +600,6 @@ T</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="4" column="1">
-                  <widget class="QLineEdit" name="angleSlopeLineEdit">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>16777215</height>
-                    </size>
-                   </property>
-                  </widget>
-                 </item>
                  <item row="5" column="0">
                   <widget class="QLabel" name="label_6">
                    <property name="text">
@@ -627,26 +608,10 @@ T</string>
                   </widget>
                  </item>
                  <item row="5" column="1">
-                  <widget class="QLineEdit" name="angleOffsetLineEdit">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>16777215</height>
-                    </size>
-                   </property>
-                  </widget>
+                  <widget class="QDoubleSpinBox" name="angleOffsetLineEdit"/>
+                 </item>
+                 <item row="4" column="1">
+                  <widget class="QDoubleSpinBox" name="angleSlopeLineEdit"/>
                  </item>
                 </layout>
                </item>

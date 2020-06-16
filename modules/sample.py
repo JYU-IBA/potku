@@ -28,10 +28,13 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 __version__ = "2.0"
 
 import os
-from modules.measurement import Measurements
-from modules.measurement import Measurement
-from modules.simulation import Simulations
-from modules.simulation import Simulation
+
+from pathlib import Path
+
+from .measurement import Measurements
+from .measurement import Measurement
+from .simulation import Simulations
+from .simulation import Simulation
 
 
 class Samples:
@@ -79,7 +82,7 @@ class Samples:
         else:
             next_serial = self.request.get_running_int()
             sample_dir = "Sample_" + "%02d" % next_serial + "-" + name
-            new_path = os.path.join(self.request.directory, sample_dir)
+            new_path = Path(self.request.directory, sample_dir)
             sample = Sample(next_serial, self.request, sample_dir, name)
             self.request.increase_running_int_by_1()
             if not os.path.exists(new_path):
@@ -180,8 +183,7 @@ class Sample:
         """
         all_measurements = []
         name_prefix = "Measurement_"
-        all_dirs = os.listdir(os.path.join(self.request.directory,
-                                           self.directory))
+        all_dirs = os.listdir(Path(self.request.directory, self.directory))
         all_dirs.sort()
 
         for directory in all_dirs:
@@ -191,10 +193,10 @@ class Sample:
                     # Read measurment number from directory name
                     self._running_int_measurement = int(
                         directory[len(name_prefix):len(name_prefix) + 2])
-                    for file in os.listdir(os.path.join(
+                    for file in os.listdir(Path(
                             self.request.directory, self.directory, directory)):
                         if file.endswith(".info"):
-                            all_measurements.append(os.path.join(
+                            all_measurements.append(Path(
                                 self.request.directory, self.directory,
                                 directory, file))
                 except ValueError:
@@ -214,9 +216,8 @@ class Sample:
             A list of .simulation file paths.
         """
         all_simulations = []
-        name_prefix = "MC_simulation_"
-        all_dirs = os.listdir(os.path.join(self.request.directory,
-                                           self.directory))
+        name_prefix = Simulation.DIRECTORY_PREFIX
+        all_dirs = os.listdir(Path(self.request.directory, self.directory))
         all_dirs.sort()
 
         for directory in all_dirs:
@@ -226,10 +227,10 @@ class Sample:
                     # Read simulation number from directory name
                     self._running_int_simulation = int(
                         directory[len(name_prefix):len(name_prefix) + 2])
-                    for file in os.listdir(os.path.join(
+                    for file in os.listdir(Path(
                             self.request.directory, self.directory, directory)):
                         if file.endswith(".simulation"):
-                            all_simulations.append(os.path.join(
+                            all_simulations.append(Path(
                                 self.request.directory, self.directory,
                                 directory, file))
                 except ValueError:

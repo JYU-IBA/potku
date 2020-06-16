@@ -25,88 +25,125 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
-import os
+from pathlib import Path
+from typing import Optional
+
+from modules.element_simulation import ElementSimulation
+from modules.nsgaii import OptimizationType
+from modules.concurrency import CancellationToken
+
+from widgets.gui_utils import GUIObserver
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
+from PyQt5.QtCore import pyqtSignal
 
 from widgets.matplotlib.simulation.recoil_atom_optimization import \
     RecoilAtomOptimizationWidget
+from widgets.matplotlib.simulation.recoil_atom_optimization import \
+    RecoilAtomParetoFront
 
 
-class OptimizedRecoilsWidget(QtWidgets.QWidget):
+class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
     """
     Class to show the results of optimization. Also shows the progress.
     """
-    def __init__(self, element_simulation, measured_element, target):
+    results_accepted = pyqtSignal(ElementSimulation)
+
+    def __init__(self, element_simulation: ElementSimulation, measured_element,
+                 target,
+                 cancellation_token: Optional[CancellationToken] = None):
         """
         Initialize the widget.
         """
+        # TODO make a common base class for result widgets
+        # TODO change the push button to radio group
         super().__init__()
+        GUIObserver.__init__(self)
+        uic.loadUi(Path("ui_files", "ui_optimization_results_widget.ui"), self)
+
         self.element_simulation = element_simulation
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_optimization_results_widget.ui"),
-                             self)
+
         if self.element_simulation.run is None:
             run = self.element_simulation.request.default_run
         else:
             run = self.element_simulation.run
-        self.ui.setWindowTitle(
-            "Optimization Results: " +
-            element_simulation.recoil_elements[0].element.__str__() +
-            " - " + measured_element + " - fluence: " + str(run.fluence))
-        self.recoil_atoms = RecoilAtomOptimizationWidget(self,
-                                                         element_simulation,
-                                                         target)
+
+        self.setWindowTitle(f"Optimization Results: "
+                            f"{element_simulation.recoil_elements[0].element}"
+                            f" - {measured_element} - fluence: {run.fluence}")
+
+        self.recoil_atoms = RecoilAtomOptimizationWidget(
+            self, element_simulation, target,
+            cancellation_token=cancellation_token)
+        self.pareto_front = RecoilAtomParetoFront(self)
+
+        self.recoil_atoms.results_accepted.connect(self.results_accepted.emit)
+        self.rb_group_optim.buttonToggled.connect(self.switch_widget)
+
+    def switch_widget(self, rb: QtWidgets.QRadioButton, b: bool):
+        """Switches between Recoil distribution and Pareto front views.
+        """
+        if not b:
+            return
+        if rb.text().startswith("Recoil"):
+            self.stackedWidget.setCurrentIndex(0)
+            self.beamLabel.show()
+        else:
+            self.stackedWidget.setCurrentIndex(1)
+            self.beamLabel.hide()
 
     def delete(self):
         """Delete variables and do clean up.
         """
         self.recoil_atoms.delete()
         self.recoil_atoms = None
-        self.ui.close()
-        self.ui = None
         self.close()
 
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget. Remove existing
-        optimization files. Stop optimization if necessary.
+        optimization files. Stop optimization if necessary. Disconnect
+        results_accepted signal.
         """
-        if self.element_simulation.mcerd_objects and \
-                self.element_simulation.optimization_running:
-            self.element_simulation.stop(optimize_recoil=True)
-            self.element_simulation.optimization_running = False
-        self.element_simulation.optimization_stopped = True
-        self.element_simulation.optimization_widget = None
-
-        # Delete existing files from previous optimization
-        removed_files = []
-        for file in os.listdir(self.element_simulation.directory):
-            if "opt" in file and "optfl" not in file:
-                removed_files.append(file)
-        for rf in removed_files:
-            path = os.path.join(self.element_simulation.directory, rf)
-            if os.path.exists(path):
-                try:
-                    os.remove(path)
-                except PermissionError:
-                    pass
-
+        # TODO stop optimization
+        self.element_simulation.delete_optimization_results(
+            optim_mode=OptimizationType.RECOIL)
+        try:
+            self.results_accepted.disconnect()
+        except (TypeError, AttributeError):
+            pass
         super().closeEvent(evnt)
 
-    def update_progress(self, evaluations):
+    def update_progress(self, evaluations, state):
         """
         Show calculated solutions in the widget.
         """
-        text = str(evaluations) + " evaluations done. Running."
-        if self.element_simulation.optimization_mcerd_running:
-            text += " Simulating."
-        self.ui.progressLabel.setText(text)
+        text = f"{evaluations} evaluations left. {state}."
+        self.progressLabel.setText(text)
 
     def show_results(self, evaluations):
         """
-        Shjow optimized recoils and finished amount of evaluations.
+        Show optimized recoils and finished amount of evaluations.
         """
-        self.ui.progressLabel.setText(str(evaluations) +
-                                      " evaluations done. Finished.")
+        self.progressLabel.setText(f"{evaluations} evaluations done. Finished.")
         self.recoil_atoms.show_recoils()
+
+    def on_next_handler(self, msg):
+        if "evaluations_left" in msg:
+            self.update_progress(msg["evaluations_left"], msg["state"])
+        if "pareto_front" in msg:
+            self.pareto_front.update_pareto_front(msg["pareto_front"])
+
+    def on_error_handler(self, err):
+        try:
+            err_msg = err["error"]
+        except TypeError:
+            # rx error
+            err_msg = err
+
+        text = f"Error encountered: {err_msg} Optimization stopped."
+        self.progressLabel.setText(text)
+
+    def on_completed_handler(self, msg=None):
+        if msg is not None:
+            self.show_results(msg["evaluations_done"])

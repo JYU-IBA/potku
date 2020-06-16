@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 27.5.2019
+Updated on 8.2.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -24,38 +24,62 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import json
 import logging
-import math
-import numpy as np
 import os
-import platform
-import threading
 import time
+import itertools
+import functools
+import rx
 
-from modules.element import Element
-from modules.foil import CircularFoil
-from modules.general_functions import read_espe_file
-from modules.general_functions import rename_file
-from modules.general_functions import uniform_espe_lists
-from modules.get_espe import GetEspe
-from modules.mcerd import MCERD
+from . import file_paths as fp
+from . import general_functions as gf
 
-from PyQt5 import QtGui
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt
+from typing import Optional
+from rx import operators as ops
+from pathlib import Path
+from collections import deque
+from threading import Event
 
-from widgets.matplotlib.simulation.recoil_atom_distribution import Point
-from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
+from .concurrency import CancellationToken
+from .base import Serializable
+from .base import AdjustableSettings
+from .base import MCERDParameterContainer
+from .get_espe import GetEspe
+from .mcerd import MCERD
+from .observing import Observable
+from .recoil_element import RecoilElement
+from .enums import OptimizationType
+from .enums import SimulationState
+from .enums import IonDivision
+from .enums import SimulationType
+from .enums import SimulationMode
 
 
-class ElementSimulation:
+# Mappings between the names of the MCERD parameters (keys) and
+# ElementSimulation attributes (values)
+_SETTINGS_MAP = {
+    "simulation_type": "simulation_type",
+    "simulation_mode": "simulation_mode",
+    "number_of_ions": "number_of_ions",
+    "number_of_ions_in_presimu": "number_of_preions",
+    "number_of_scaling_ions": "number_of_scaling_ions",
+    "number_of_recoils": "number_of_recoils",
+    "minimum_scattering_angle": "minimum_scattering_angle",
+    "minimum_main_scattering_angle": "minimum_main_scattering_angle",
+    "minimum_energy_of_ions": "minimum_energy",
+    "seed_number": "seed_number"
+}
+
+
+class ElementSimulation(Observable, Serializable, AdjustableSettings,
+                        MCERDParameterContainer):
     """
     Class for handling the element specific simulation. Can have multiple
-    MCERD objects, but only one GetEspe object.
+    MCERD objects.
     """
 
     __slots__ = "directory", "request", "name_prefix", "modification_time", \
@@ -63,31 +87,28 @@ class ElementSimulation:
                 "number_of_scaling_ions", "number_of_recoils", \
                 "minimum_scattering_angle", "minimum_main_scattering_angle", \
                 "minimum_energy", "simulation_mode", "seed_number", \
-                "recoil_elements", "recoil_atoms", "mcerd_objects", \
-                "get_espe", "channel_width", "target", "detector", \
-                "__mcerd_command", "__process", "settings", "espe_settings", \
-                "description", "run", "spectra", "name", \
-                "use_default_settings", "sample", "controls", "simulation", \
-                "simulations_done", "__full_edit_on", "y_min", "main_recoil",\
-                "__erd_files", "optimization_recoils", "__previous_espe", \
-                "__opt_seed", "optimization_done", "calculated_solutions", \
-                "optimization_stopped", "optimization_widget", \
-                "optimization_running", "optimized_fluence", \
-                "optimization_mcerd_running"
+                "recoil_elements", "recoil_atoms", \
+                "channel_width", "detector", "__erd_filehandler", \
+                "description", "run", "name", \
+                "use_default_settings", "simulation", \
+                "__full_edit_on", "y_min", "main_recoil",\
+                "optimization_recoils", "optimization_widget", \
+                "_optimization_running", "optimized_fluence", \
+                "sample", "__cts", "_simulation_running", "_running_event"
 
     def __init__(self, directory, request, recoil_elements,
-                 simulation=None, name_prefix="",
-                 target=None, detector=None, run=None, name="Default",
+                 simulation=None, name_prefix="", sample=None,
+                 detector=None, run=None, name="Default",
                  description="", modification_time=None,
-                 simulation_type="ERD", number_of_ions=1000000,
-                 number_of_preions=100000, number_of_scaling_ions=5,
+                 simulation_type=SimulationType.ERD, number_of_ions=1_000_000,
+                 number_of_preions=100_000, number_of_scaling_ions=5,
                  number_of_recoils=10, minimum_scattering_angle=0.05,
-                 minimum_main_scattering_angle=20, simulation_mode="narrow",
+                 minimum_main_scattering_angle=20,
+                 simulation_mode=SimulationMode.NARROW,
                  seed_number=101, minimum_energy=1.0, channel_width=0.025,
-                 use_default_settings=True, sample=None,
-                 simulations_done=False, main_recoil=None,
-                 optimization_recoils=None, __opt_seed=None,
-                 optimized_fluence=None):
+                 use_default_settings=True, main_recoil=None,
+                 optimization_recoils=None, optimized_fluence=None,
+                 save_on_creation=True):
         """ Initializes ElementSimulation.
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
@@ -95,7 +116,6 @@ class ElementSimulation:
             recoil_elements: List of RecoilElement objects.
             simulation: Simulation object.
             name_prefix: Prefix of the name, e.g. 55Mn
-            target: Target object reference.
             detector: Detector object reference.
             run: Run object reference.
             name: Name of the element simulation.
@@ -112,25 +132,33 @@ class ElementSimulation:
             seed_number: Seed number to give unique value to one simulation.
             minimum_energy: Minimum energy.
             channel_width: Channel width.
-            sample: Sample object under which Element Simualtion belongs.
-            simulations_done: Whether any simulations have been run for this
+            sample: Sample object under which ElementSimulation belongs.
             element simulation.
             main_recoil: Main recoil element.
             optimization_recoils: List or recoils that are used for
-            optimization.
+                optimization.
             optimized_fluence: Optimized fluence value.
+            save_on_creation: Determines if the element simulation is saved to
+                    a file when initialized
         """
+        # FIXME there is an inconsistency when it comes to the return value
+        #  is_simulation_finished method. If the user starts a new simulation,
+        #  but stops it before pre-sim ends, the method will return True,
+        #  However, when the program is restarted, and the ElementSimulation is
+        #  initialized again, the method will once again return False.
+        # Call Observable's initialization to set up observer list
+        Observable.__init__(self)
+
         self.directory = directory
         self.request = request
         self.name_prefix = name_prefix
         self.simulation = simulation
         self.name = name
         self.description = description
-        if not modification_time:
-            modification_time = time.time()
-        self.modification_time = modification_time
-
-        self.sample = sample
+        if modification_time is None:
+            self.modification_time = time.time()
+        else:
+            self.modification_time = modification_time
 
         self.recoil_elements = recoil_elements
 
@@ -138,15 +166,18 @@ class ElementSimulation:
             self.main_recoil = self.recoil_elements[0]
         else:
             self.main_recoil = main_recoil
-        self.target = target
+
         if detector:
             self.detector = detector
         else:
             self.detector = self.request.default_detector
-        self.run = run
-        self.simulation_type = simulation_type
 
-        self.simulation_mode = simulation_mode
+        self.run = run
+        self.sample = sample
+
+        self.simulation_type = SimulationType(simulation_type.upper())
+        self.simulation_mode = SimulationMode(simulation_mode.lower())
+
         self.number_of_ions = number_of_ions
         self.number_of_preions = number_of_preions
         self.number_of_scaling_ions = number_of_scaling_ions
@@ -164,67 +195,63 @@ class ElementSimulation:
             prefix = self.name_prefix
         else:
             name = self.name
-            if os.sep + "Default" in self.directory:
+            if os.sep + "Default" in str(self.directory):
                 prefix = "Default" + "_element"
                 name = "Default"
             else:
                 prefix = self.name_prefix
-        self.mcsimu_to_file(os.path.join(self.directory,
-                                         name + ".mcsimu"))
-        for recoil_element in self.recoil_elements:
-            self.recoil_to_file(self.directory, recoil_element)
-        self.profile_to_file(os.path.join(self.directory,
-                                          prefix +
-                                          ".profile"))
 
-        self.__mcerd_command = os.path.join(
-            "external", "Potku-bin", "mcerd" +
-            (".exe" if platform.system() == "Windows" else ""))
-        self.__process = None
-        # This has all the mcerd objects so get_espe knows all the element
-        # simulations that belong together (with different seed numbers)
-        self.mcerd_objects = {}
-        self.get_espe = None
-        self.spectra = []
+        if save_on_creation:
+            # Write .mcsimu file, recoil file and .profile file
+            self.to_file(Path(self.directory, f"{name}.mcsimu"))
 
-        # Whether any simulations have been run or not
-        self.simulations_done = simulations_done
+            for recoil_element in self.recoil_elements:
+                recoil_element.to_file(self.directory)
 
-        self.controls = None
-        if self.simulations_done:
+            self.profile_to_file(Path(self.directory, f"{prefix}.profile"))
+
+        # Collection of CancellationTokens
+        self.__cts = set()
+
+        self.__erd_filehandler = ERDFileHandler.from_directory(
+            self.directory, self.main_recoil)
+
+        # TODO check if all optimization stuff can be moved to another module
+        if optimization_recoils is None:
+            self.optimization_recoils = []
+        else:
+            self.optimization_recoils = optimization_recoils
+
+        self._simulation_running = False
+        self._optimization_running = False
+        # Also set up an Event that will be locked during simulation
+        self._running_event = Event()
+        self._running_event.set()
+        self.optimization_widget = None
+        # Store fluence optimization results
+        self.optimized_fluence = optimized_fluence
+
+        if self.is_simulation_finished():
             self.__full_edit_on = False
             self.y_min = 0.0001
         else:
             self.__full_edit_on = True
             self.y_min = 0.0
 
-        # List for erd files to count their lines
-        self.__erd_files = []
-        self.optimization_recoils = optimization_recoils
-        if self.optimization_recoils is None:
-            self.optimization_recoils = []
-        # This is needed for optimization mcerd stopping
-        self.__previous_espe = None
-        self.__opt_seed = None
-        self.optimization_done = False
-        self.calculated_solutions = 0
-        self.optimization_stopped = False
-        self.optimization_widget = None
-        self.optimization_running = False
-        self.optimization_mcerd_running = False
-        # Store fluence optimization results
-        self.optimized_fluence = optimized_fluence
-
     def unlock_edit(self):
         """
         Unlock full edit.
+
+        Also resets ElementSimulation
         """
+        self.y_min = 0.0
         self.__full_edit_on = True
 
     def lock_edit(self):
         """
         Lock full edit.
         """
+        self.y_min = 0.0001
         self.__full_edit_on = False
 
     def get_full_edit_on(self):
@@ -236,100 +263,29 @@ class ElementSimulation:
         """
         return self.__full_edit_on
 
-    def get_points(self, recoil_element):
+    def move_optimized_recoil_to_regular_recoils(self):
+        """Moves optimized recoils to the collection that holds regular
+        recoils.
         """
-        Get recoile elemnt points.
+        for recoil in self.optimization_recoils:
+            # Ensure that the name is unique
+            new_name = recoil.name.replace("opt", "", 1)
+            full_name = new_name
+            recoil_names = {r.name for r in self.recoil_elements}
+            suffix = 1
+            while full_name in recoil_names:
+                full_name = f"{new_name}-{suffix}"
+                suffix += 1
 
-        Args:
-            recoil_element: A RecoilElement object.
-
-        Return:
-            Points list.
-        """
-        return recoil_element.get_points()
-
-    def get_xs(self, recoil_element):
-        """
-        Get x coordinates of a RecoilElement.
-
-        Args:
-            recoil_element: A RecoilElement object.
-
-        Return:
-            X coordinates in a list.
-        """
-        return recoil_element.get_xs()
-
-    def get_ys(self, recoil_element):
-        """
-        Get y coordinates of a RecoilElement.
-
-        Args:
-            recoil_element: A RecoilElement object.
-
-        Return:
-            Y coodinates in a list.
-        """
-        return recoil_element.get_ys()
-
-    def get_left_neighbor(self, recoil_element, point):
-        """
-        Get point's left neighbour.
-
-        Args:
-             recoil_element: A RecoilElement object.
-             point: A Point object.
-
-        Return:
-            A point.
-        """
-        return recoil_element.get_left_neighbor(point)
-
-    def get_right_neighbor(self, recoil_element, point):
-        """
-        Get point's right neighbour.
-
-        Args:
-             recoil_element: A RecoilElement object.
-             point: A Point object.
-
-        Return:
-            A point.
-        """
-        return recoil_element.get_right_neighbor(point)
-
-    def get_point_by_i(self, recoil_element, i):
-        """
-        Get a point by index.
-
-        Args:
-            recoil_element: A RecoilElement object.
-            i: Index.
-
-        Return:
-            A point.
-        """
-        return recoil_element.get_point_by_i(i)
-
-    def add_point(self, recoil_element, new_point):
-        """
-        Add a new point to recoil element.
-
-        Args:
-             recoil_element: A RecoilElement object.
-             new_point: Point to be added.
-        """
-        recoil_element.add_point(new_point)
-
-    def remove_point(self, recoil_element, point):
-        """
-        Remove a point from recoil element.
-
-        Args:
-            recoil_element: A RecoilElement object.
-            point: Point to be removed.
-        """
-        recoil_element.remove_point(point)
+            values = {
+                "name": full_name,
+                "description": recoil.description,
+                "reference_density": recoil.reference_density,
+                "color": recoil.color
+            }
+            self.update_recoil_element(recoil, values)
+        self.recoil_elements.extend(self.optimization_recoils)
+        self.optimization_recoils = []
 
     def update_recoil_element(self, recoil_element, new_values):
         """Updates RecoilElement object with new values.
@@ -338,764 +294,815 @@ class ElementSimulation:
             recoil_element: RecoilElement object to update.
             new_values: New values as a dictionary.
         """
-        old_name = recoil_element.name
-        try:
-            recoil_element.name = new_values["name"]
-            recoil_element.description = new_values["description"]
-            recoil_element.reference_density = new_values["reference_density"]
-            recoil_element.color = new_values["color"]
-            recoil_element.multiplier = new_values["multiplier"]
-        except KeyError:
-            raise
+        old_name = recoil_element.get_full_name()
+
+        recoil_element.update(new_values)
+
         # Delete possible extra rec files.
-        filename_to_delete = ""
-        for file in os.listdir(self.directory):
-            if file.startswith(recoil_element.prefix + "-" + old_name) and \
-                    (file.endswith(".rec") or file.endswith(".sct")):
-                filename_to_delete = file
-                break
-        if filename_to_delete:
-            os.remove(os.path.join(self.directory, filename_to_delete))
+        # TODO use name instead of startswith
+        gf.remove_matching_files(
+            self.directory, exts={".rec", ".sct"},
+            filter_func=lambda x: x.startswith(old_name))
 
-        self.recoil_to_file(self.directory, recoil_element)
+        recoil_element.to_file(self.directory)
 
-        if old_name != recoil_element.name:
+        if old_name != recoil_element.get_full_name():
             if recoil_element.type == "rec":
                 recoil_suffix = ".recoil"
             else:
                 recoil_suffix = ".scatter"
-            recoil_file = os.path.join(self.directory, recoil_element.prefix
-                                       + "-" + old_name + recoil_suffix)
-            if os.path.exists(recoil_file):
-                new_name = recoil_element.prefix + "-" + recoil_element.name \
-                           + recoil_suffix
-                rename_file(recoil_file, new_name)
+            recoil_file = Path(self.directory, f"{old_name}.{recoil_suffix}")
+            if recoil_file.exists():
+                new_name = recoil_element.get_full_name() + recoil_suffix
+                gf.rename_file(recoil_file, new_name)
 
             if recoil_element is self.main_recoil:  # Only main recoil
                 # updates erd file names
                 for file in os.listdir(self.directory):
                     if file.startswith(recoil_element.prefix) and file.endswith(
                             ".erd"):
-                        erd_file = os.path.join(self.directory, file)
+                        erd_file = Path(self.directory, file)
                         seed = file.split('.')[1]
-                        new_name = recoil_element.prefix + "-" + \
-                            recoil_element.name + "." + seed + ".erd"
-                        rename_file(erd_file, new_name)
+                        new_name = f"{recoil_element.get_full_name()}." \
+                                   f"{seed}.erd"
+                        gf.rename_file(erd_file, new_name)
                 # Write mcsimu file
-                self.mcsimu_to_file(os.path.join(self.directory,
-                                         self.name_prefix + "-" + self.name + \
-                                                          ".mcsimu"))
+                self.to_file()
+                self.__erd_filehandler.update()
 
-            simu_file = os.path.join(self.directory, recoil_element.prefix +
-                                     "-" + old_name + ".simu")
-            if os.path.exists(simu_file):
-                new_name = recoil_element.prefix + "-" + recoil_element.name \
-                           + ".simu"
-                rename_file(simu_file, new_name)
-
-    def calculate_solid(self):
-        """
-        Calculate the solid parameter.
-        Return:
-            Returns the solid parameter calculated.
-        """
-        transmissions = self.detector.foils[0].transmission
-        for f in self.detector.foils:
-            transmissions *= f.transmission
-
-        smallest_solid_angle = self.calculate_smallest_solid_angle()
-
-        return smallest_solid_angle * transmissions
-
-    def calculate_smallest_solid_angle(self):
-        """
-        Calculate the smallest solid angle.
-        Return:
-            Smallest solid angle. (unit millisteradian)
-        """
-        foil = self.detector.foils[0]
-        try:
-            if type(foil) is CircularFoil:
-                radius = foil.diameter / 2
-                smallest = math.pi * radius ** 2 / foil.distance ** 2
-            else:
-                smallest = foil.size[0] * foil.size[1] / foil.distance ** 2
-            i = 1
-            while i in range(len(self.detector.foils)):
-                foil = self.detector.foils[i]
-                if type(foil) is CircularFoil:
-                    radius = foil.diameter / 2
-                    solid_angle = math.pi * radius ** 2 / foil.distance ** 2
-                else:
-                    solid_angle = foil.size[0] * foil.size[
-                        1] / foil.distance ** 2
-                    pass
-                if smallest > solid_angle:
-                    smallest = solid_angle
-                i += 1
-            return smallest * 1000  # usually the unit is millisteradian,
-            # hence the multiplication by 1000
-        except ZeroDivisionError:
-            return 0
+            simu_file = Path(self.directory, f"{old_name}.simu")
+            if simu_file.exists():
+                new_name = recoil_element.get_full_name() + ".simu"
+                gf.rename_file(simu_file, new_name)
 
     @classmethod
-    def from_file(cls, request, prefix, simulation_folder, mcsimu_file_path,
-                  profile_file_path):
+    def from_file(cls, request, prefix: str, simulation_folder: Path,
+                  mcsimu_file_path: Path, profile_file_path: Path,
+                  sample=None, detector=None, simulation=None, run=None):
         """Initialize ElementSimulation from JSON files.
 
         Args:
             request: Request that ElementSimulation belongs to.
             prefix: String that is used to prefix ".rec" files of this
-            ElementSimulation.
+                ElementSimulation.
             simulation_folder: A file path to simulation folder that contains
-            files ending with ".rec".
+                files ending with ".rec".
             mcsimu_file_path: A file path to JSON file containing the
-            simulation parameters.
+                simulation parameters.
             profile_file_path: A file path to JSON file containing the
-            channel width.
+                channel width.
+            sample: sample under which the parent simulation belongs to
+            detector: detector that is used when simulation is not run with
+                request settings.
+            simulation: parent Simulation object of this ElementSimulation
+            run: ElementSimulation's run object
         """
+        with mcsimu_file_path.open("r") as mcsimu_file:
+            mcsimu = json.load(mcsimu_file)
 
-        obj = json.load(open(mcsimu_file_path))
+        # Pop the recoil name so it can be converted to a RecoilElement
+        main_recoil_name = mcsimu.pop("main_recoil")
 
-        use_default_settings_str = obj["use_default_settings"]
-        if use_default_settings_str == "True":
-            use_default_settings = True
-        else:
-            use_default_settings = False
+        # Convert modification_time and use_default_settings to correct
+        # types
+        mcsimu["modification_time"] = mcsimu.pop("modification_time_unix")
+        mcsimu["use_default_settings"] = \
+            mcsimu["use_default_settings"] == "True"
+        mcsimu["simulation_type"] = SimulationType(
+            mcsimu["simulation_type"].upper())
+        mcsimu["simulation_mode"] = SimulationMode(
+            mcsimu["simulation_mode"].lower())
+
+        full_name = mcsimu.pop("name")
         try:
-            name_prefix, name = obj["name"].split("-")
+            name_prefix, name = full_name.split("-")
         except ValueError:
-            name = obj["name"]
+            name = full_name
             name_prefix = ""
 
-        description = obj["description"]
-        modification_time = obj["modification_time_unix"]
-        simulation_type = obj["simulation_type"]
-        simulation_mode = obj["simulation_mode"]
-        number_of_ions = obj["number_of_ions"]
-        number_of_preions = obj["number_of_preions"]
-        seed_number = obj["seed_number"]
-        number_of_recoils = obj["number_of_recoils"]
-        number_of_scaling_ions = obj["number_of_scaling_ions"]
-        minimum_scattering_angle = obj["minimum_scattering_angle"]
-        minimum_main_scattering_angle = obj["minimum_main_scattering_angle"]
-        minimum_energy = obj["minimum_energy"]
-        main_recoil_name = obj["main_recoil"]
-
         # Read channel width from .profile file.
-        obj = json.load(open(profile_file_path))
-        channel_width = obj["energy_spectra"]["channel_width"]
+        try:
+            with profile_file_path.open("r") as prof_file:
+                prof = json.load(prof_file)
+            kwargs = {
+                "channel_width": prof["energy_spectra"]["channel_width"]
+            }
+        except (json.JSONDecodeError, OSError, KeyError) as e:
+            logging.getLogger("request").error(
+                f"Failed to read data from file {profile_file_path}: {e}."
+            )
+            kwargs = {}
 
-        # Read .rec files from simulation folder
-        recoil_elements = []
-
-        # # Read optimized (optfirst and optlast) recoil files
-        optimized_recoils = []
-
-        if simulation_type == "ERD":
-            rec_type = "rec"
-        else:
-            rec_type = "sct"
+        rec_type = mcsimu["simulation_type"].get_recoil_type()
 
         main_recoil = None
         optimized_fluence = None
+        recoil_elements = deque()
+        optimized_recoils_dict = {}
+
         for file in os.listdir(simulation_folder):
-            if file.startswith(prefix) and (file.endswith(".rec") or
-                                            file.endswith(".sct")) and not \
-                    file[file.index(prefix) + len(prefix)].isalpha():  # Check that e.g. C and Cu are handled separately
-                obj = json.load(open(os.path.join(simulation_folder, file)))
-                points = []
-                for dictionary_point in obj["profile"]:
-                    x, y = dictionary_point["Point"].split(" ")
-                    points.append(Point((float(x), float(y))))
-                # Read color
-                # color = obj["color"]
-                color = QtGui.QColor(obj["color"])
-                element = RecoilElement(Element.from_string(obj["element"]),
-                                        points, color=color, rec_type=rec_type)
-                element.name = obj["name"]
+            if fp.is_recoil_file(prefix, file):
+                # Initialize a recoil element
+                rec_elem = RecoilElement.from_file(
+                    Path(simulation_folder, file), rec_type=rec_type, **kwargs
+                )
 
-                if element.name == main_recoil_name:
-                    main_recoil = element
+                if rec_elem.name == main_recoil_name:
+                    main_recoil = rec_elem
 
-                element.description = obj["description"]
-                element.multiplier = obj["multiplier"]
-                element.reference_density = obj["reference_density"]
-                element.simulation_type = obj["simulation_type"]
-
-                element.modification_time = obj["modification_time_unix"]
-
-                element.channel_width = channel_width
-
-                # Check whether element in regualr or part of optimized recoils
-                if prefix + "-optfirst.rec" == file:
-                    optimized_recoils.insert(0, element)
-                elif prefix + "-optlast.rec" == file:
-                    optimized_recoils.append(element)
-
+                # Check whether element in regular or part of optimized recoils
+                if fp.is_optfirst(prefix, file):
+                    optimized_recoils_dict[0] = rec_elem
+                elif fp.is_optmed(prefix, file):
+                    optimized_recoils_dict[1] = rec_elem
+                elif fp.is_optlast(prefix, file):
+                    optimized_recoils_dict[2] = rec_elem
                 else:
-                    is_simulated = False
                     # Find if file has a matching erd file (=has been simulated)
                     for f in os.listdir(simulation_folder):
-                        if f.startswith(prefix + "-" + element.name) \
-                           and f.endswith(".erd"):
-                            recoil_elements.insert(0, element)
-                            main_recoil = element
-                            is_simulated = True
+                        if fp.is_erd_file(rec_elem, f):
+                            recoil_elements.appendleft(rec_elem)
+                            main_recoil = rec_elem
                             break
-                    if not is_simulated:
-                        if element is main_recoil:
-                            recoil_elements.insert(0, element)
+                    else:
+                        # No matching erd file was found
+                        if rec_elem is main_recoil:
+                            recoil_elements.appendleft(rec_elem)
                         else:
-                            recoil_elements.append(element)
-            elif file.startswith(prefix) and file.endswith("optfl.result") and \
-                not file[file.index(prefix) + len(prefix)].isalpha():
-                # Check if fluence is optimized
-                with open(os.path.join(simulation_folder, file), "r") as f:
+                            recoil_elements.append(rec_elem)
+
+            # Check if fluence has been optimized
+            elif fp.is_optfl_result(prefix, file):
+                with open(Path(simulation_folder, file), "r") as f:
                     optimized_fluence = float(f.readline())
+        optimized_recoils = [
+            val for key, val
+            in sorted(optimized_recoils_dict.items())]
+        return cls(
+            directory=simulation_folder, request=request,
+            recoil_elements=recoil_elements, name_prefix=name_prefix, name=name,
+            optimization_recoils=optimized_recoils,
+            optimized_fluence=optimized_fluence,
+            main_recoil=main_recoil, sample=sample, detector=detector,
+            **kwargs, **mcsimu, simulation=simulation, run=run)
 
-        # Check if there are any files to tell that simulations have
-        # been run previously
-        simulations_done = False
-        for f in os.listdir(simulation_folder):
-            if f.startswith(name_prefix + "-" + recoil_elements[0].name) and \
-                    f.endswith(
-                    ".erd"):
-                simulations_done = True
-                break
-            elif f.startswith(name_prefix + "-opt") and f.endswith(".result"):
-                simulations_done = True
-                break
+    def get_full_name(self):
+        """Returns the full name of the ElementSimulation object.
+        """
+        if self.name_prefix:
+            return f"{self.name_prefix}-{self.name}"
+        return self.name
 
-        return cls(directory=simulation_folder, request=request,
-                   recoil_elements=recoil_elements,
-                   name_prefix=name_prefix,
-                   description=description,
-                   simulation_type=simulation_type,
-                   modification_time=modification_time, name=name,
-                   number_of_ions=number_of_ions,
-                   number_of_preions=number_of_preions,
-                   number_of_scaling_ions=number_of_scaling_ions,
-                   number_of_recoils=number_of_recoils,
-                   minimum_scattering_angle=minimum_scattering_angle,
-                   minimum_main_scattering_angle=minimum_main_scattering_angle,
-                   simulation_mode=simulation_mode,
-                   seed_number=seed_number,
-                   minimum_energy=minimum_energy,
-                   use_default_settings=use_default_settings,
-                   channel_width=channel_width,
-                   simulations_done=simulations_done,
-                   main_recoil=main_recoil,
-                   optimization_recoils=optimized_recoils,
-                   optimized_fluence=optimized_fluence)
+    def get_json_content(self):
+        """Returns a dictionary that represents the values of the
+        ElementSimulation in json format.
+        """
+        timestamp = time.time()
 
-    def mcsimu_to_file(self, file_path):
+        return {
+            "name": self.get_full_name(),
+            "description": self.description,
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
+                timestamp)),
+            "modification_time_unix": timestamp,
+            "simulation_type": self.simulation_type,
+            "simulation_mode": self.simulation_mode,
+            "number_of_ions": self.number_of_ions,
+            "number_of_preions": self.number_of_preions,
+            "seed_number": self.seed_number,
+            "number_of_recoils": self.number_of_recoils,
+            "number_of_scaling_ions": self.number_of_scaling_ions,
+            "minimum_scattering_angle": self.minimum_scattering_angle,
+            "minimum_main_scattering_angle":
+                self.minimum_main_scattering_angle,
+            "minimum_energy": self.minimum_energy,
+            "use_default_settings": str(self.use_default_settings),
+            "main_recoil": self.main_recoil.name
+        }
+
+    def get_default_file_path(self):
+        """Returns a default file path that to_file uses.
+        """
+        return Path(self.directory, f"{self.get_full_name()}.mcsimu")
+
+    def to_file(self, file_path=None):
         """Save mcsimu settings to file.
 
         Args:
             file_path: File in which the mcsimu settings will be saved.
         """
-        if self.name_prefix != "":
-            name = self.name_prefix + "-" + self.name
-        else:
-            name = self.name
-        if not self.use_default_settings:
-            obj = {
-                "name": name,
-                "description": self.description,
-                "modification_time": time.strftime("%c %z %Z", time.localtime(
-                    time.time())),
-                "modification_time_unix": time.time(),
-                "simulation_type": self.simulation_type,
-                "simulation_mode": self.simulation_mode,
-                "number_of_ions": self.number_of_ions,
-                "number_of_preions": self.number_of_preions,
-                "seed_number": self.seed_number,
-                "number_of_recoils": self.number_of_recoils,
-                "number_of_scaling_ions": self.number_of_scaling_ions,
-                "minimum_scattering_angle": self.minimum_scattering_angle,
-                "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
-                "minimum_energy": self.minimum_energy,
-                "use_default_settings": str(self.use_default_settings),
-                "main_recoil": self.main_recoil.name
-            }
-        else:
-            elem_sim = self.request.default_element_simulation
-            obj = {
-                "name": name,
-                "description": elem_sim.description,
-                "modification_time": time.strftime("%c %z %Z", time.localtime(
-                    time.time())),
-                "modification_time_unix": time.time(),
-                "simulation_type": elem_sim.simulation_type,
-                "simulation_mode": elem_sim.simulation_mode,
-                "number_of_ions": elem_sim.number_of_ions,
-                "number_of_preions": elem_sim.number_of_preions,
-                "seed_number": elem_sim.seed_number,
-                "number_of_recoils": elem_sim.number_of_recoils,
-                "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
-                "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
-                "minimum_main_scattering_angle": elem_sim.minimum_main_scattering_angle,
-                "minimum_energy": elem_sim.minimum_energy,
-                "use_default_settings": str(self.use_default_settings),
-                "main_recoil": self.main_recoil.name
-            }
-
+        # TODO maybe it is not necessary to call this every time a request
+        #      is opened
+        if file_path is None:
+            file_path = self.get_default_file_path()
         with open(file_path, "w") as file:
-            json.dump(obj, file, indent=4)
+            json.dump(self.get_json_content(), file, indent=4)
 
-    def recoil_to_file(self, simulation_folder, recoil_element):
-        """Save recoil settings to file.
+    def remove_file(self, file_path=None):
+        """Removes the .mcsimu file.
 
         Args:
-            simulation_folder: Path to simulation folder in which ".rec" or
-            ".sct" files are stored.
-            recoil_element: RecoilElement object to write to file to.
+            file_path: path to the .mcsimu file
         """
-        if recoil_element.type == "rec":
-            suffix = ".rec"
-        else:
-            suffix = ".sct"
-        recoil_file = os.path.join(simulation_folder,
-                                   recoil_element.prefix + "-" +
-                                   recoil_element.name + suffix)
-        if recoil_element.element.isotope:
-            element_str = "{0}{1}".format(recoil_element.element.isotope,
-                                          recoil_element.element.symbol)
-        else:
-            element_str = recoil_element.element.symbol
+        try:
+            if file_path is None:
+                file_path = self.get_default_file_path()
+            file_path.unlink()
+        except (OSError, IsADirectoryError, PermissionError):
+            pass
 
-        obj = {
-            "name": recoil_element.name,
-            "description": recoil_element.description,
-            "modification_time": time.strftime("%c %z %Z", time.localtime(
-                time.time())),
-            "modification_time_unix": time.time(),
-            "simulation_type": recoil_element.type,
-            "element": element_str,
-            "reference_density": recoil_element.reference_density,
-            "multiplier": recoil_element.multiplier,
-            "profile": [],
-            "color": str(recoil_element.color.name())
-        }
-
-        for point in recoil_element.get_points():
-            point_obj = {
-                "Point": str(round(point.get_x(), 2)) + " " + str(round(
-                    point.get_y(), 4))
-            }
-            obj["profile"].append(point_obj)
-
-        with open(recoil_file, "w") as file:
-            json.dump(obj, file, indent=4)
-
-    def profile_to_file(self, file_path):
+    def profile_to_file(self, file_path: Path):
         """Save profile settings (only channel width) to file.
 
         Args:
             file_path: File in which the channel width will be saved.
         """
         # Read .profile to obj to update only channel width
-        if os.path.exists(file_path):
-            obj_profile = json.load(open(file_path))
-            obj_profile["modification_time"] = time.strftime("%c %z %Z",
-                                                             time.localtime(
-                                                                 time.time()))
-            obj_profile["modification_time_unix"] = time.time()
+        time_stamp = time.time()
+        try:
+            with file_path.open("r") as file:
+                obj_profile = json.load(file)
+
+            obj_profile["modification_time"] = time.strftime(
+                "%c %z %Z", time.localtime(time_stamp))
+            obj_profile["modification_time_unix"] = time_stamp
             obj_profile["energy_spectra"]["channel_width"] = self.channel_width
-        else:
-            obj_profile = {"energy_spectra": {},
-                           "modification_time": time.strftime("%c %z %Z",
-                                                              time.localtime(
-                                                                  time.time())),
-                           "modification_time_unix": time.time()}
+        except (OSError, json.JSONDecodeError):
+            obj_profile = {
+                "energy_spectra": {},
+                "modification_time": time.strftime(
+                    "%c %z %Z", time.localtime(time_stamp)),
+                "modification_time_unix": time_stamp}
             obj_profile["energy_spectra"]["channel_width"] = self.channel_width
 
-        with open(file_path, "w") as file:
+        with file_path.open("w") as file:
             json.dump(obj_profile, file, indent=4)
 
-    def start(self, number_of_processes, start_value, erd_files=None,
-              optimize=False, stop_p=False, check_t=False,
-              optimize_recoil=False, check_max=False, check_min=False):
+    def start(self, number_of_processes, start_value=None,
+              use_old_erd_files=True, optimization_type=None,
+              ion_division=IonDivision.NONE, cancellation_token=None,
+              start_interval=5, status_check_interval=1,
+              **kwargs) -> Optional[rx.Observable]:
         """
         Start the simulation.
 
         Args:
             number_of_processes: How many processes are started.
             start_value: Which is the first seed.
-            erd_files: List of old erd files that need to be preserved.
-            optimize: Whether mcerd run relates to optimization.
-            stop_p: Percent for stopping the MCERD run.
-            check_t: Time between checks to see whether to stop MCERD or not.
-            optimize_recoil: Whether optimization concerns recoil.
-            check_max: Maximum time to run simulation.
-            check_min: Minimum time to run simulation.
+            use_old_erd_files: whether the simulation continues using old erd
+                files or not
+            optimization_type: either recoil, fluence or None
+            ion_division: ion division mode that determines how ions are
+                divided per process
+            cancellation_token: CancellationToken that can be used to stop
+                the start process
+            start_interval: seconds between the start of each simulation
+                (ensures that MCERD's startup files are not being
+                overwritten by later processes)
+            status_check_interval: seconds between each observed atoms count.
+            kwargs: keyword arguments passed down to MCERD's run method
+
+        Return:
+            observable stream
         """
-        self.simulations_done = False
-        if self.run is None:
-            run = self.request.default_run
-        else:
-            run = self.run
-        if self.use_default_settings:
-            elem_sim = self.request.default_element_simulation
-        else:
-            elem_sim = self
-        if self.detector is None:
-            detector = self.request.default_detector
-        else:
-            detector = self.detector
+        if self.is_simulation_running() or self.is_optimization_running():
+            return None
+        self._set_flags(True, optimization_type)
+        if self.is_optimization_running():
+            # This is done to inform the controls about optimization starting
+            # so the GUI elements can be disabled.
+            self.on_completed(self.get_current_status())
 
-        self.__erd_files = []
+        if not use_old_erd_files:
+            self.__erd_filehandler.clear()
+            self.delete_simulation_results()
 
-        # Start as many processes as is given in number of processes
-        seed_number = elem_sim.seed_number
-        if start_value:
+        settings, run, detector = self.get_mcerd_params()
+
+        # Set seed to either the value provided as parameter or use the one
+        # stored in current element simulation.
+        max_seed = self.get_max_seed()
+        seed_number = settings.pop("seed_number")
+        if start_value is not None:
             seed_number = start_value
-        if erd_files:
-            self.__erd_files = self.__erd_files + erd_files
-        QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)
+        if max_seed is not None and seed_number <= max_seed:
+            seed_number = max_seed + 1
 
-        if not optimize_recoil:
-            recoil = self.recoil_elements[0]
-        else:
+        if optimization_type is OptimizationType.RECOIL:
             recoil = self.optimization_recoils[0]
-        self.__opt_seed = seed_number
-        for i in range(number_of_processes):
-            settings = {
-                "simulation_type": elem_sim.simulation_type,
-                "number_of_ions": elem_sim.number_of_ions,
-                "number_of_ions_in_presimu": elem_sim.number_of_preions,
-                "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
-                "number_of_recoils": elem_sim.number_of_recoils,
-                "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
-                "minimum_main_scattering_angle": elem_sim.
-                minimum_main_scattering_angle,
-                "minimum_energy_of_ions": elem_sim.minimum_energy,
-                "simulation_mode": elem_sim.simulation_mode,
-                "seed_number": seed_number,
-                "beam": run.beam,
-                "target": self.target,
-                "detector": detector,
-                "recoil_element": recoil,
-                "sim_dir": self.directory
-            }
-            # Delete corresponding erd file
-            optimize_fluence = False
-            if not optimize_recoil:
-                if not optimize:
-                    recoil_name = self.recoil_elements[0].name
-                else:
-                    recoil_name = "optfl"
-                    optimize_fluence = True
-                    self.optimized_fluence = 0
-                erd_file = os.path.join(
-                    self.directory, self.recoil_elements[0].prefix + "-" +
-                    recoil_name + "." + str(seed_number) + ".erd")
-            else:
-                erd_file = os.path.join(
-                    self.directory, self.optimization_recoils[0].prefix + "-" +
-                    "opt" + "." + str(seed_number) + ".erd")
-            if os.path.exists(erd_file):
-                os.remove(erd_file)
-
-            self.__erd_files.append(erd_file)
-
-            if optimize:
-                self.optimization_mcerd_running = True
-
-            self.mcerd_objects[seed_number] = MCERD(settings, self,
-                                                    optimize_fluence=optimize_fluence)
-            seed_number = seed_number + 1
-            if i + 1 < number_of_processes:
-                time.sleep(5)  # This is done to avoid having a mixup in mcerd
-                # command file content when there are more than one process
-                # (without this, Potku would crash)
-        QtWidgets.QApplication.restoreOverrideCursor()
-
-        if self.use_default_settings and not self.simulation.detector:
-            self.request.running_simulations.append(self)
         else:
-            self.simulation.running_simulations.append(self)
+            recoil = self.recoil_elements[0]
 
-        if not optimize:
-            # Start calculating the erd files' lines
-            thread = threading.Thread(target=self.calculate_erd_lines)
-            thread.daemon = True
-            thread.start()
-        else:
-            # Check the change between current and previous energy spectra (if
-            # the spectra have been calculated)
-            self.check_spectra_change(stop_p, check_t, optimize_recoil,
-                                      check_max, check_min)
+        if number_of_processes < 1:
+            number_of_processes = 1
 
-    def calculate_erd_lines(self):
+        # Update ion counts depending on the ion_division mode
+        presim_ions, sim_ions = ion_division.get_ion_counts(
+            settings["number_of_ions_in_presimu"], settings["number_of_ions"],
+            number_of_processes)
+
+        settings.update({
+            "number_of_ions_in_presimu": presim_ions,
+            "number_of_ions": sim_ions,
+            "beam": run.beam,
+            "target": self.simulation.target,
+            "detector": detector,
+            "recoil_element": recoil,
+            "sim_dir": self.directory
+        })
+
+        if cancellation_token is None:
+            cancellation_token = CancellationToken()
+
+        self.__cts.add(cancellation_token)
+
+        # New MCERD process is started every five seconds until number of
+        # processes is reached or cancellation has been requested.
+        # Seed is incremented for each new process.
+        return rx.timer(0, start_interval).pipe(
+            ops.take_while(
+                lambda _: not cancellation_token.is_cancellation_requested()),
+            ops.take(number_of_processes),
+            ops.scan(lambda acc, _: acc + 1, seed=seed_number - 1),
+            ops.map(lambda next_seed: self._start(
+                recoil, next_seed, optimization_type, dict(settings),
+                cancellation_token, **kwargs)),
+            ops.flat_map(lambda x: x),
+            ops.scan(lambda acc, x: {
+                **x,
+                "total_processes": number_of_processes,
+                "finished_processes": acc["finished_processes"] + int(
+                    not x["is_running"])
+            }, seed={"finished_processes": 0}),
+            ops.combine_latest(rx.timer(0, status_check_interval).pipe(
+                ops.map(lambda x: self.get_current_status()),
+                ops.take_while(
+                    lambda _:
+                    not cancellation_token.is_cancellation_requested(),
+                    inclusive=True),
+            )),
+            ops.map(lambda x: {**x[0], **x[1]}),
+            ops.take_while(
+                lambda x: x["finished_processes"] < x["total_processes"] and
+                not x["msg"].startswith("Simulation "),
+                inclusive=True),
+            ops.do_action(
+                on_error=lambda _: self._clean_up(cancellation_token),
+                on_completed=lambda: self._clean_up(cancellation_token)
+            )
+        )
+
+    def _start(self, recoil, seed_number, optimization_type, settings,
+               cancellation_token, **kwargs) -> rx.Observable:
+        """Inner method that creates an MCERD instance and runs it.
+
+        Returns an observable stream of MCERD output.
         """
-        Calculate the lines in the erd files.
-        """
-        while True:
-            if not self.mcerd_objects:
-                break
-            time.sleep(1)
-            lines_count = 0
-            add_presim = False
-            for f in self.__erd_files:
-                if os.path.exists(f):
-                    lines = 0
-                    with open(f, 'r') as file:
-                        lines = len(file.readlines())
-                    lines_count = lines_count + lines
-                    if f is self.__erd_files[-1]:
-                        if lines == 0:
-                            add_presim = True
-            if self.controls:
-                self.controls.show_number_of_observed_atoms(lines_count,
-                                                            add_presim)
+        new_erd_file = fp.get_erd_file_name(
+            recoil, seed_number, optim_mode=optimization_type)
 
-    def check_spectra_change(self, stop_percent, check_time, optimize_recoil,
-                             check_max, check_min):
-        """
-        If there are previous and current energy spectra, check the change in
-        distance between them. When this is smaller than the threshold,
-        mcerd can be stopped.
-
-        Args:
-            stop_percent: Percent at which to stop.
-            check_time: Time between the percentage checks.
-            optimize_recoil: Whether recoil is being optimized.
-            check_max: Maximum time until simulation is stopped.
-            check_min: Minimum time to run simulation.
-        """
-        previous_avg = None
-        sleep_beginning = True
-        check_start = time.time()
-        while True:
-            if not self.mcerd_objects:
-                self.optimization_mcerd_running = False
-                self.simulations_done = True
-                break
-            if sleep_beginning:
-                time.sleep(check_min)  # Sleep for user-defined time to
-                # ensure bigger results than just few percents
-                sleep_beginning = False
-            else:
-                time.sleep(check_time)  # Sleep for specified time
-            # Check if erd file can be found (presimulation has been
-            # finished)
-            if optimize_recoil:
-                recoils = self.optimization_recoils
-                opt = True
-                optfl = False
-                recoil_name = self.optimization_recoils[0].name
-            else:
-                recoils = self.recoil_elements
-                opt = False
-                optfl = True
-                recoil_name = "optfl"
-
-            # Check if maximum time has been used for simulation
-            current_time = time.time()
-            if current_time - check_start >= check_max:  # Max time
-                self.stop(optimize_recoil=opt)
-
-            erd_file = os.path.join(
-                self.directory, recoils[0].prefix + "-" + recoil_name +
-                "." + str(self.__opt_seed) + ".erd")
-            if os.path.exists(erd_file):
-                # Calculate new energy spectrum
-                self.calculate_espe(recoils[0], optimize_recoil=opt,
-                                    optimize_fluence=optfl)
-                espe_file = os.path.join(self.directory, recoils[0].prefix +
-                                         "-" + recoil_name + ".simu")
-                espe = read_espe_file(espe_file)
-                if espe:
-                    # Change items to float types
-                    espe = list(np.float_(espe))
-                    if self.__previous_espe:
-                        espe, self.__previous_espe = uniform_espe_lists([
-                            espe, self.__previous_espe], self.channel_width)
-                        # Calculate distance between energy spectra
-                        sum_diff = 0
-                        i = 0
-                        amount = 0
-                        for point in espe:
-                            prev_point = self.__previous_espe[i]
-                            p_y = float(point[1])
-                            pr_y = float(prev_point[1])
-                            if p_y != 0 or pr_y != 0:
-                                amount += 1
-                            diff = abs(p_y - pr_y)
-                            sum_diff += diff
-                            i += 1
-                        # Take average of sum_diff (non-zero diffs)
-                        avg = sum_diff/amount
-                        if previous_avg:
-                            avg_ratio = avg/previous_avg
-                            if avg_ratio < stop_percent:
-                                self.stop(optimize_recoil=opt)
-                                break
-                        previous_avg = avg
-                    self.__previous_espe = espe
-
-    def notify(self, sim):
-        """
-        Remove MCERD object from list that has finished.
-        If no there are no more MCERD objects, show the end of the simulation
-        in the controls.
-        """
-        key_to_delete = None
-        for key, value in self.mcerd_objects.items():
-            if value == sim:
-                key_to_delete = key
-
-        if key_to_delete:
-            self.mcerd_objects[key_to_delete].delete_unneeded_files()
-            del (self.mcerd_objects[key_to_delete])
-            if self.controls:
-                # Update finished processes count
-                self.controls.update_finished_processes(len(self.mcerd_objects))
-        if not self.mcerd_objects:
-            processes = "N/a"
-            if self.controls:
-                self.controls.show_stop()
-                processes = self.controls.processes_spinbox.value()
-            if self.use_default_settings:
-                self.request.running_simulations.remove(self)
-            else:
-                self.simulation.running_simulations.remove(self)
-
-            # Calculate erd lines for log
-            lines_count = 0
-            for f in self.__erd_files:
-                if os.path.exists(f):
-                    with open(f, 'r') as file:
-                        lines_count = lines_count + len(file.readlines())
-
-            simulation_name = self.simulation.name
-            element = self.recoil_elements[0].element
-            if element.isotope:
-                element_name = str(element.isotope) + element.symbol
-            else:
-                element_name = element.symbol
-            msg = "Simulation finished. " + "Element: " \
-                  + element_name + " Processes:" + str(processes) + \
-                  " Number of observed atoms: " + str(lines_count)
-            logging.getLogger(simulation_name).info(msg)
-
-        self.simulations_done = True
-
-    def stop(self, optimize_recoil=False):
-        """ Stop the simulation."""
-        ref_key = None
-        processes = len(self.mcerd_objects.keys())
-
-        for sim in list(self.mcerd_objects.keys()):
-            if ref_key is None:
-                ref_key = sim
-            self.mcerd_objects[sim].stop_process()
+        new_erd_file = Path(self.directory, new_erd_file)
         try:
-            # self.mcerd_objects[sim].copy_results(self.directory)
-            self.mcerd_objects[ref_key].delete_unneeded_files()
-        except (FileNotFoundError, KeyError):
+            # remove file if it exists previously
+            new_erd_file.unlink()
+        except OSError:
             pass
-        for sim in list(self.mcerd_objects.keys()):
-            del (self.mcerd_objects[sim])
-        try:
-            self.request.running_simulations.remove(self)
-        except ValueError:
-            self.simulation.running_simulations.remove(self)
-        self.simulations_done = True
-        if self.optimization_mcerd_running:
-            self.optimization_mcerd_running = False
 
-        # Calculate erd lines for log
-        lines_count = 0
-        for f in self.__erd_files:
-            if os.path.exists(f):
-                with open(f, 'r') as file:
-                    lines_count = lines_count + len(file.readlines())
+        if optimization_type is None:
+            self.__erd_filehandler.add_active_file(new_erd_file)
 
-        simulation_name = self.simulation.name
-        if not optimize_recoil:
-            element = self.recoil_elements[0].element
+        mcerd = MCERD(
+            seed_number, settings, self.get_full_name(),
+            optimize_fluence=optimization_type is OptimizationType.FLUENCE)
+
+        return mcerd.run(cancellation_token=cancellation_token, **kwargs)
+
+    def _set_flags(self, b, optim_mode=None):
+        """Sets the boolean flags that indicate the state of
+        simulation accordingly.
+        """
+        # TODO could just replace the boolean flags with the Event
+        if b:
+            self._running_event.clear()
         else:
-            element = self.optimization_recoils[0].element
-        if element.isotope:
-            element_name = str(element.isotope) + element.symbol
-        else:
-            element_name = element.symbol
-        msg = "Simulation stopped. " + "Element: " \
-              + element_name + " Processes:" + str(processes) + \
-              " Number of observed atoms: " + str(lines_count)
-        logging.getLogger(simulation_name).info(msg)
+            self._running_event.set()
+        self._simulation_running = b and optim_mode is None
+        self._optimization_running = b and optim_mode is not None
 
-    def calculate_espe(self, recoil_element, optimize_recoil=False, ch=None,
-                       fluence=None, optimize_fluence=False):
+    def get_settings(self):
+        """Returns simulation settings as a dict. Overrides base class function.
+        """
+        return {
+            key: getattr(self, value)
+            for key, value in _SETTINGS_MAP.items()
+        }
+
+    def set_settings(self, **kwargs):
+        """Sets simulation settings based on the keyword arguments. Overrides
+        base class function.
+
+        Note that the keywords must be the ones used by MCERD, rather than
+        the attribute names of the ElementSimulation object.
+        """
+        for key, value in kwargs.items():
+            try:
+                setattr(self, _SETTINGS_MAP[key], value)
+            except KeyError:
+                # keyword does not have a known mapping, nothing to do
+                pass
+
+    def get_current_status(self):
+        """Returns the number of atoms counted, number of running processes and
+        the state of simulation.
+
+        Return:
+            dictionary
+        """
+        atom_count = self.__erd_filehandler.get_total_atom_count()
+
+        if self.is_simulation_running():
+            state = SimulationState.RUNNING
+        elif self.is_simulation_finished():
+            state = SimulationState.DONE
+        else:
+            state = SimulationState.NOTRUN
+
+        # Return status as a dict
+        return {
+            "atom_count": atom_count,
+            "state": state,
+            "optimizing": self.is_optimization_running()
+        }
+
+    def get_main_recoil(self) -> Optional[RecoilElement]:
+        # TODO replace the main_recoil attribute as well as all references to
+        #   recoil_elements[0] with this function
+        if self.recoil_elements:
+            return self.recoil_elements[0]
+        else:
+            return None
+
+    def is_simulation_running(self) -> bool:
+        """Whether simulation is currently running and optimization is not
+        running.
+        """
+        return self._simulation_running
+
+    def is_simulation_finished(self) -> bool:
+        """Whether simulation is finished.
+        """
+        return not self.is_simulation_running() and \
+            self.__erd_filehandler.results_exist()
+
+    def is_optimization_running(self) -> bool:
+        """Whether optimization is running.
+        """
+        return self._optimization_running
+
+    def is_optimization_finished(self) -> bool:
+        """Whether optimization has finished.
+        """
+        return not self.is_optimization_running() and (any(
+            self.optimization_recoils) or self.optimized_fluence is not None)
+
+    def get_max_seed(self):
+        """Returns maximum seed that has been used in simulations.
+
+        Return:
+            maximum seed value used in simulation processes
+        """
+        return self.__erd_filehandler.get_max_seed()
+
+    def get_erd_files(self):
+        """Returns both active and already simulated ERD files.
+        """
+        return list(f for f, _, _ in self.__erd_filehandler)
+
+    def _clean_up(self, cancellation_token):
+        """Performs clean up after all of the simulation process have ended.
+        """
+        self._set_flags(False)
+        self.__erd_filehandler.update()
+        self.__cts.remove(cancellation_token)
+        if self.simulation is not None:
+            atom_count = self.__erd_filehandler.get_total_atom_count()
+            msg = f"Simulation finished. Element " \
+                  f"{self.get_main_recoil().get_full_name()}, " \
+                  f"observed atoms: {atom_count}."
+            logging.getLogger(self.simulation.name).info(msg)
+
+        self.on_completed(self.get_current_status())
+
+    def stop(self) -> Event:
+        """Stops all running simulation processes for this ElementSimulation.
+        Returns an Event that can be waited for until all processes have
+        stopped.
+        """
+        cts = list(self.__cts)
+        for ct in cts:
+            ct.request_cancellation()
+
+        return self._running_event
+
+    def calculate_espe(self, recoil_element, ch=None, fluence=None,
+                       optimization_type=None, write_to_file=True):
         """
         Calculate the energy spectrum from the MCERD result file.
 
         Args:
             recoil_element: Recoil element.
-            optimize_recoil: Whether recoil is optimized.
             ch: Channel width to use.
             fluence: Fluence to use.
+            optimization_type: either recoil, fluence or None
+            write_to_file: whether spectrum is written to file
+
+        Return:
+            tuple consisting of spectrum and espe file
         """
-        if self.simulation_type == "ERD":
-            suffix = ".recoil"
+        suffix = self.simulation_type.get_recoil_suffix()
+
+        if optimization_type is OptimizationType.RECOIL:
+            recoil = self.optimization_recoils[0]
         else:
-            suffix = ".scatter"
+            recoil = self.recoil_elements[0]
 
-        if not optimize_recoil:
-            recoil_elements = self.recoil_elements
-            if optimize_fluence:
-                erd_recoil_name = "optfl"
-                recoil_name = "optfl"
-            else:
-                erd_recoil_name = self.recoil_elements[0].name
-                recoil_name = recoil_element.name
+        if optimization_type is OptimizationType.FLUENCE:
+            espe_file = f"{recoil_element.prefix}-optfl.simu"
+            recoil_file = f"{recoil_element.prefix}-optfl.{suffix}"
         else:
-            recoil_elements = self.optimization_recoils
-            recoil_name = recoil_element.name
-            erd_recoil_name = "opt"
+            espe_file = f"{recoil_element.get_full_name()}.simu"
+            recoil_file = f"{recoil_element.get_full_name()}.{suffix}"
 
-        recoil_file = os.path.join(self.directory,
-                                   recoil_element.prefix + "-" +
-                                   recoil_name + suffix)
-        recoil_element.write_recoil_file(recoil_file)
+        erd_file = Path(
+            self.directory,
+            fp.get_erd_file_name(recoil, "*", optim_mode=optimization_type))
+        espe_file = Path(self.directory, espe_file)
+        recoil_file = Path(self.directory, recoil_file)
 
-        erd_file = os.path.join(self.directory, recoil_elements[0].prefix +
-                                "-" + erd_recoil_name + ".*.erd")
-        spectrum_file = os.path.join(self.directory, recoil_element.prefix +
-                                     "-" + recoil_name + ".simu")
+        with recoil_file.open("w") as rec_file:
+            rec_file.write("\n".join(recoil_element.get_mcerd_params()))
+
         if ch:
             channel_width = ch
         else:
             channel_width = self.channel_width
 
-        if self.run is None:
-            run = self.request.default_run
-        else:
-            run = self.run
-        if self.detector is None:
-            detector = self.request.default_detector
-        else:
-            detector = self.detector
+        _, run, detector = self.get_mcerd_params()
 
         if fluence is not None:
             used_fluence = fluence
         else:
             used_fluence = run.fluence
+
         espe_settings = {
             "beam": run.beam,
             "detector": detector,
-            "target": self.target,
+            "target": self.simulation.target,
             "ch": channel_width,
             "reference_density": recoil_element.reference_density,
-            "multiplier": recoil_element.multiplier,
             "fluence": used_fluence,
             "timeres": detector.timeres,
-            "solid": self.calculate_solid(),
+            "solid": detector.calculate_solid(),
             "erd_file": erd_file,
-            "spectrum_file": spectrum_file,
+            "spectrum_file": espe_file,
             "recoil_file": recoil_file
         }
-        self.get_espe = GetEspe(espe_settings)
+        # TODO returning espe_file is a bit pointless if write_to_file is
+        #   False
+        return GetEspe.calculate_simulated_spectrum(
+            write_to_file=write_to_file, **espe_settings), espe_file
+
+    def get_mcerd_params(self):
+        """Returns the parameters for MCERD simulations.
+        """
+        if self.use_default_settings:
+            settings = self.request.default_element_simulation.get_settings()
+        else:
+            settings = self.get_settings()
+
+        if self.simulation.use_request_settings:
+            run = self.request.default_run
+            detector = self.request.default_detector
+        else:
+            run = self.run
+            detector = self.detector
+
+        return settings, run, detector
+
+    def delete_optimization_results(self, optim_mode=None):
+        """Deletes optimization results. Also stops the optimization if
+        it is running.
+
+        Args:
+            optim_mode: OptimizationType
+        """
+        if self.is_optimization_running():
+            self.stop()
+
+        # FIXME ensure that these files are actually optimization results and
+        #   not just simulations with names like <something>-opt or
+        #   <something>-optfl.
+        #   Would perhaps be better if the optimization files are in their
+        #   own folder.
+        # TODO check for file name rather than startswith
+
+        if optim_mode is OptimizationType.RECOIL:
+            def filter_func(file):
+                return file.startswith(f"{self.name_prefix}-opt") and not \
+                    file.startswith(f"{self.name_prefix}-optfl")
+        elif optim_mode is OptimizationType.FLUENCE:
+            def filter_func(file):
+                return file.startswith(f"{self.name_prefix}-optfl")
+            self.optimized_fluence = None
+        elif optim_mode is None:
+            def filter_func(file):
+                return file.startswith(f"{self.name_prefix}-opt") or \
+                    file.startswith(f"{self.name_prefix}-optfl")
+            self.optimized_fluence = None
+        else:
+            raise ValueError(f"Unknown optimization type: {optim_mode}.")
+
+        gf.remove_matching_files(
+            self.directory,
+            exts={".recoil", ".erd", ".simu", ".scatter", ".rec"},
+            filter_func=filter_func)
+
+        self.optimization_recoils = []
+
+    def delete_simulation_results(self):
+        """Deletes all simulation results for this ElementSimulation.
+        """
+        prefixes = {recoil.get_full_name() for recoil in self.recoil_elements}
+
+        def filter_func(file):
+            # TODO check for file name rather than startswith
+            return any(file.startswith(pre) for pre in prefixes) and \
+                "opt" not in file
+
+        gf.remove_matching_files(
+            self.directory,
+            exts={".recoil", ".erd", ".simu", ".scatter"},
+            filter_func=filter_func)
+
+    def reset(self, remove_files=True):
+        """Function that resets the state of ElementSimulation.
+
+        Args:
+            remove_files: whether simulation result files are also removed
+        """
+        self.stop().wait(1)
+
+        if remove_files:
+            self.delete_simulation_results()
+            self.delete_optimization_results()
+            self.__erd_filehandler.clear()
+        self.unlock_edit()
+
+        self.on_completed(self.get_current_status())
+
+
+class ERDFileHandler:
+    """Helper class to handle ERD files that belong to the ElementSimulation
+
+    Handles counting atoms and getting seeds.
+    """
+    def __init__(self, old_files, recoil_element):
+        """Initializes a new ERDFileHandler that tracks old and new .erd files
+        belonging to the given recoil element
+
+        Args:
+            old_files: list of absolute paths to .erd files that contain data
+                       that has already been simulated
+            recoil_element: recoil element for which the .erd files belong to.
+        """
+        self.recoil_element = recoil_element
+        self.__active_files = {}
+
+        self.__old_files = {
+            file: seed
+            for file, seed in fp.validate_erd_file_names(
+                old_files, self.recoil_element)
+        }
+
+    @classmethod
+    def from_directory(cls, directory, recoil_element):
+        """Initializes a new ERDFileHandler by reading ERD files
+        from a directory.
+
+        Args:
+            directory: path to a directory
+            recoil_element: recoil element for which the ERD files belong
+                            to
+
+        Return:
+            new ERDFileHandler.
+        """
+        try:
+            full_paths = (Path(directory, file)
+                          for file in os.scandir(directory))
+        except OSError:
+            full_paths = []
+        return cls(full_paths, recoil_element)
+
+    def __iter__(self):
+        """Iterates over all of the ERD files, both active and old ones.
+
+        Yield:
+            tuple consisting of absolute file path, seed value and boolean
+            that tells if the ERD file is used in a running simulation or
+            not.
+        """
+        for file, seed in itertools.chain(self.__active_files.items(),
+                                          self.__old_files.items()):
+            yield file, seed, file in self.__active_files
+
+    def add_active_file(self, erd_file):
+        """Adds an active ERD file to the handler.
+
+        File must not already exist in active or old files, otherwise
+        ValueError is raised.
+
+        Args:
+            erd_file: file name of an .erd file
+        """
+        if erd_file in self.__active_files:
+            raise ValueError("Given .erd file is an already active file")
+        if erd_file in self.__old_files:
+            raise ValueError("Given .erd file is an already simulated file")
+
+        # Check that the file is valid
+        tpl = next(fp.validate_erd_file_names(
+            [erd_file], self.recoil_element), None)
+
+        if tpl is not None:
+            self.__active_files = {
+                **self.__active_files,
+                tpl[0]: tpl[1]
+            }
+        else:
+            raise ValueError("Given file was not a valid .erd file")
+
+    def get_max_seed(self):
+        """Returns the largest seed in current .erd file collection or None
+        if no .erd files are stored in the handler.
+        """
+        return max((seed for _, seed, _ in self), default=None)
+
+    def get_active_atom_count(self):
+        """Returns the number of atoms in currently active .erd files.
+        """
+        return sum(self.__get_atom_count(file)
+                   for file in self.__active_files)
+
+    def get_old_atom_count(self):
+        """Returns the number of atoms in already simulated .erd files.
+        """
+        return sum(self.__get_atom_count_cached(file)
+                   for file in self.__old_files)
+
+    def get_total_atom_count(self):
+        """Returns the total number of observed atoms.
+        """
+        return self.get_active_atom_count() + self.get_old_atom_count()
+
+    @staticmethod
+    def __get_atom_count(erd_file):
+        """Returns the number of counted atoms in given ERD file.
+        """
+        return gf.count_lines_in_file(erd_file, check_file_exists=True)
+
+    @functools.lru_cache(128)
+    def __get_atom_count_cached(self, erd_file):
+        """Cached version of the atom counter. If the atoms in the
+        ERD file have already been counted, a cached result is returned.
+        """
+        return self.__get_atom_count(erd_file)
+
+    def update(self):
+        """Moves all files from active file collection to already simulated
+        files.
+        """
+        # TODO check if the name of the RecoilElement has changed and update
+        #   file references if necessary
+        self.__old_files = {
+            **self.__old_files,
+            **self.__active_files
+        }
+        self.__active_files = {}
+
+    def clear(self):
+        """Removes existing ERD files from handler.
+        """
+        self.__active_files = {}
+        self.__old_files = {}
+        self.__get_atom_count_cached.cache_clear()
+
+    def results_exist(self):
+        """Returns True if ERD files exist.
+        """
+        return any(self.__old_files) or any(self.__active_files)
+
+    def __len__(self):
+        """Returns the number of active files and already simulated files.
+        """
+        return len(self.__active_files) + len(self.__old_files)

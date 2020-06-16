@@ -1,7 +1,7 @@
-BINDIR = ../Potku-bin/
-LIBDIR     = ../Potku-lib/
-INCDIR     = ../Potku-include/
-DATADIR = ../Potku-data/
+BINDIR = ../bin/
+LIBDIR     = ../lib/
+INCDIR     = ../include/
+DATADIR = ../share/
 
 CC = gcc
 CFLAGS = -g -Wall
@@ -26,10 +26,10 @@ libgsto.a: libgsto.o gsto_masses.o win_compat.o
 	ranlib libgsto.a
 
 srim_gen_stop: srim_gen_stop.o
-	$(CC) $(LDFLAGS) $^ -lgsto -o $@
+	$(CC) $(LDFLAGS) $^ -lgsto -o $@ $(LIB)
 
 gsto_stop: gsto_stop.o
-	$(CC) $(LDFLAGS) $^ -lgsto -o $@
+	$(CC) $(LDFLAGS) $^ -lgsto -o $@ $(LIB)
 
 clean:
 	rm -f *.a *.o $(AUX)

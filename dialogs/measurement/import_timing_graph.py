@@ -24,14 +24,19 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Timo Konu \n Severi Jääskeläinne \n Samuel Kaiponen \m Heta " \
+__author__ = "Timo Konu \n Severi Jääskeläinne \n Samuel Kaiponen \n Heta " \
              "Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
 import os
-from PyQt5 import uic, QtWidgets
 
-from modules.general_functions import coinc
+import modules.general_functions as gf
+
+from pathlib import Path
+
+from PyQt5 import uic
+from PyQt5 import QtWidgets
+
 from widgets.matplotlib.import_timing import MatplotlibImportTimingWidget
 
 
@@ -58,21 +63,21 @@ class ImportTimingGraphDialog(QtWidgets.QDialog):
                          captured from input_file.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_import_graph_dialog.ui"), self)
+
         self.parent = parent
         self.img_dir = self.parent.request.directory
         self.__input_file = input_file
         self.__output_file = output_file
         self.timing_low = adc_timing_spin[0]
         self.timing_high = adc_timing_spin[1]
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_import_graph_dialog.ui"),
-                             self)
+
         self.button_close.clicked.connect(self.close)
-        coinc(self.__input_file, self.__output_file, skip_lines=skip_lines,
-              tablesize=10, trigger=trigger, adc_count=adc_count, timing=timing,
-              nevents=coinc_count, temporary=True)
+        gf.coinc(self.__input_file, self.__output_file, skip_lines=skip_lines,
+                 tablesize=10, trigger=trigger, adc_count=adc_count,
+                 timing=timing, nevents=coinc_count, temporary=True)
         if not os.stat(self.__output_file).st_size:
-            unused_reply = QtWidgets.QMessageBox.question(
+            _ = QtWidgets.QMessageBox.question(
                 self, "Empty File", "No coincidence events were found.",
                 QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             self.close()  # Just in case.

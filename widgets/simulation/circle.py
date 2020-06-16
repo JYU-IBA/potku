@@ -38,11 +38,17 @@ class Circle(QtWidgets.QWidget):
         Initialize the class.
 
         Args:
-            color: Color of circle.
-            size:
+            color: Color of circle, either a QColor object or a string
+                   representation of the color (hex code or name)
+            size: tuple representing the size of the circle (x, y, width,
+                  height)
         """
         super().__init__()
-        self.color = color
+        if isinstance(color, QtGui.QColor):
+            self.color = color
+        else:
+            self.color = QtGui.QColor(color)
+
         if size is None:
             self.size = (1, 8, 8, 8)
         else:
@@ -53,9 +59,13 @@ class Circle(QtWidgets.QWidget):
         Set a new color for the circle.
 
         Args:
-             color: A QColor object.
+             color: Color of circle, either a QColor object or a string
+                    representation of the color (hex code or name)
         """
-        self.color = color
+        if isinstance(color, QtGui.QColor):
+            self.color = color
+        else:
+            self.color = QtGui.QColor(color)
         self.update()
 
     def paintEvent(self, event):
@@ -70,6 +80,6 @@ class Circle(QtWidgets.QWidget):
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setPen(self.color)
         painter.setBrush(self.color)
-        painter.drawEllipse(self.size[0], self.size[1], self.size[2],
-                            self.size[3])
+        painter.drawEllipse(*self.size)
+
         painter.end()

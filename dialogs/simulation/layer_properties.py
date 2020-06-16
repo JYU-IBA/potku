@@ -28,19 +28,19 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import copy
-import modules.masses as masses
-import os
 import platform
+import itertools
 
-from dialogs.element_selection import ElementSelectionDialog
+import dialogs.dialog_functions as df
+import widgets.input_validation as iv
+import widgets.gui_utils as gutils
+import widgets.binding as bnd
+
+from pathlib import Path
+
+from widgets.isotope_selection import IsotopeSelectionWidget
 
 from modules.element import Element
-from modules.general_functions import check_text
-from modules.general_functions import delete_simulation_results
-from modules.general_functions import set_input_field_red
-from modules.general_functions import set_input_field_white
-from modules.general_functions import validate_text_input
 from modules.layer import Layer
 
 from PyQt5 import QtGui
@@ -49,9 +49,13 @@ from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 
 
-class LayerPropertiesDialog(QtWidgets.QDialog):
+class LayerPropertiesDialog(QtWidgets.QDialog, bnd.PropertyTrackingWidget,
+                            metaclass=gutils.QtABCMeta):
     """Dialog for adding a new layer or editing an existing one.
     """
+    name = bnd.bind("nameEdit", track_change=True)
+    thickness = bnd.bind("thicknessEdit", track_change=True)
+    density = bnd.bind("densityEdit", track_change=True)
 
     def __init__(self, tab, layer=None, modify=False, simulation=None,
                  first_layer=False):
@@ -65,49 +69,46 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             first_layer: Whether the dialog is used to add the first layer.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_layer_dialog.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_layer_dialog.ui"), self)
+
         self.tab = tab
         self.layer = layer
         self.ok_pressed = False
         self.simulation = simulation
+        self.amount_mismatch = True
 
-        set_input_field_red(self.ui.nameEdit)
-        set_input_field_red(self.ui.thicknessEdit)
-        set_input_field_red(self.ui.densityEdit)
         self.fields_are_valid = True
-        self.amount_mismatch = False
-        self.ui.nameEdit.textChanged.connect(
-            lambda: self.check_text(self.ui.nameEdit, self))
+        iv.set_input_field_red(self.nameEdit)
+        self.nameEdit.textChanged.connect(
+            lambda: iv.check_text(self.nameEdit, self))
+        self.nameEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.nameEdit))
 
         # Connect buttons to events
-        self.ui.addElementButton.clicked.connect(self.__add_element_layout)
-        self.ui.okButton.clicked.connect(self.__save_layer)
-        self.ui.cancelButton.clicked.connect(self.close)
+        self.addElementButton.clicked.connect(self.__add_element_layout)
+        self.okButton.clicked.connect(self.__save_layer)
+        self.cancelButton.clicked.connect(self.close)
 
-        self.ui.thicknessEdit.valueChanged.connect(
-            lambda: self.validate_spinbox(self.ui.thicknessEdit))
-        self.ui.densityEdit.valueChanged.connect(lambda:
-                                                   self.validate_spinbox(
-                                                       self.ui.densityEdit))
+        self.thicknessEdit.setMinimum(0.01)
+        self.densityEdit.setMinimum(0.01)
 
-        self.__element_layouts = []
+        self.__original_properties = {}
+
         if self.layer:
             self.__show_layer_info()
         else:
             self.__add_element_layout()
 
         if first_layer:
-            self.ui.groupBox_2.hide()
+            self.groupBox_2.hide()
 
-        self.ui.nameEdit.textEdited.connect(lambda: self.__validate())
         self.__close = True
 
-        self.ui.thicknessEdit.setLocale(QLocale.c())
-        self.ui.densityEdit.setLocale(QLocale.c())
+        self.thicknessEdit.setLocale(QLocale.c())
+        self.densityEdit.setLocale(QLocale.c())
 
         if modify:
-            self.ui.groupBox_2.hide()
+            self.groupBox_2.hide()
 
         self.placement_under = True
 
@@ -118,6 +119,11 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.setMinimumWidth(470)
 
         self.exec_()
+
+    def get_original_property_values(self):
+        """Returns the original values of the properties.
+        """
+        return self.__original_properties
 
     def __save_layer(self):
         """Function for adding a new layer with given settings.
@@ -131,12 +137,20 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         """
         Show information of the current layer.
         """
-        self.ui.nameEdit.setText(self.layer.name)
-        self.ui.thicknessEdit.setValue(self.layer.thickness)
-        self.ui.densityEdit.setValue(self.layer.density)
+        self.set_properties(name=self.layer.name,
+                            thickness=self.layer.thickness,
+                            density=self.layer.density)
 
         for elem in self.layer.elements:
             self.__add_element_layout(elem)
+
+    def get_element_widgets(self):
+        """Returns all ElementLayout child objects that the widget has."""
+        return [
+            child
+            for child in self.scrollAreaWidgetContents.layout().children()
+            if isinstance(child, ElementLayout)
+        ]
 
     def __check_if_settings_ok(self):
         """Check that all the settings are okay.
@@ -145,127 +159,50 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
              True if the settings are okay and false if some required fields
              are empty.
         """
+        settings_ok = True
         help_sum = 0
-        spinboxes = []
+        elem_widgets = self.get_element_widgets()
 
         # Check if 'scrollArea' is empty (no elements).
-        if self.ui.scrollAreaWidgetContents.layout().isEmpty():
-            set_input_field_red(self.ui.scrollArea)
-            self.fields_are_valid = False
-
-        # Check if 'thicknessEdit' is empty.
-        if not self.ui.thicknessEdit.value():
-            set_input_field_red(self.ui.thicknessEdit)
-            self.fields_are_valid = False
-
-        # Check if 'densityEdit' is empty.
-        if not self.ui.densityEdit.value():
-            set_input_field_red(self.ui.densityEdit)
-            self.fields_are_valid = False
+        if not elem_widgets:
+            iv.set_input_field_red(self.scrollArea)
+            settings_ok = False
 
         # Check that the element specific settings are okay.
-        for child in self.ui.scrollAreaWidgetContents.children():
-            if type(child) is QtWidgets.QPushButton:
-                if child.text() == "Select":
-                    set_input_field_red(child)
-                    self.fields_are_valid = False
-            if type(child) is QtWidgets.QDoubleSpinBox:
-                if child.isEnabled():
-                    if child.value():
-                        help_sum += child.value()
-                        spinboxes.append(child)
-                    else:
-                        set_input_field_red(child)
-                        self.fields_are_valid = False
+        for widget in elem_widgets:
+            elem = widget.get_selected_element()
+            if elem is None:
+                settings_ok = False
+            else:
+                help_sum += elem.amount
 
         if help_sum != 1.0 and help_sum != 100.0:
-            for sb in spinboxes:
-                set_input_field_red(sb)
-            self.fields_are_valid = False
+            for widget in elem_widgets:
+                iv.set_input_field_red(widget.amount_spinbox)
+            settings_ok = False
             self.amount_mismatch = True
         else:
-            for sb in spinboxes:
-                set_input_field_white(sb)
+            for widget in elem_widgets:
+                iv.set_input_field_white(widget.amount_spinbox)
             self.amount_mismatch = False
-
-    @staticmethod
-    def check_text(input_field, dialog):
-        """Checks if there is text in given input field.
-
-        Args:
-            input_field: Input field the contents of which are checked.
-            dialog: Layer dialog.
-        """
-        dialog.fields_are_valid = check_text(input_field)
-
-    def validate_spinbox(self, spinbox):
-        """
-        Check if given spinbox has a proper value.
-
-        Args:
-            spinbox: Spinbox to check.
-        """
-        if spinbox.value() == 0.0:
-            self.fields_are_valid = False
-            set_input_field_red(spinbox)
-        else:
-            self.fields_are_valid = True
-            set_input_field_white(spinbox)
-
-    def values_changed(self):
-        """
-        Check if layer's values have been changed.
-
-        Return:
-            True or False.
-        """
-        if self.layer.name != self.ui.nameEdit.text():
-            return True
-        if self.layer.thickness != self.ui.thicknessEdit.value():
-            return True
-        if self.layer.density != self.ui.densityEdit.value():
-            return True
-        if self.elements_changed():
-            return True
-        return False
+        self.fields_are_valid = settings_ok
 
     def elements_changed(self):
         """
         Check if elements have been changed in the layer.
         """
-        new_elements = []
-        self.find_elements(new_elements)
-        if len(self.layer.elements) != len(new_elements):
-            return True
-        for i in range(len(self.layer.elements)):
-            elem1 = self.layer.elements[i]
-            elem2 = new_elements[i]
-            if elem1 != elem2:
-                return True
-        return False
+        return not all(e1 == e2 for e1, e2 in itertools.zip_longest(
+            self.find_elements(), self.layer.elements
+        ))
 
-    def find_elements(self, lst):
+    def find_elements(self):
         """
         Find all the layer's element from the dialog.
-
-        Args:
-            lst: List to append the elements to.
         """
-        children = self.ui.scrollAreaWidgetContents.children()
-
-        # TODO: Explain the following. Maybe better implementation?
-        i = 1
-        while i < len(children):
-            elem_symbol = children[i].text()
-            i += 1
-            try:
-                elem_isotope = int(children[i].currentText().split(" ")[0])
-            except ValueError:
-                elem_isotope = None
-            i += 1
-            elem_amount = children[i].value()
-            lst.append(Element(elem_symbol, elem_isotope, elem_amount))
-            i += 3
+        return [
+            child.get_selected_element()
+            for child in self.get_element_widgets()
+        ]
 
     def __accept_settings(self):
         """Function for accepting the current settings and closing the dialog
@@ -285,353 +222,39 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
             self.__close = False
-            self.fields_are_valid = True
             return
 
-        if self.layer and not self.values_changed():
+        if self.layer and not (self.are_values_changed() or
+                               self.elements_changed()):
             self.__close = True
             self.fields_are_valid = True
             self.ok_pressed = False  # No update needed
             return
 
-        simulations_run = self.check_if_simulations_run()
-        simulations_running = self.simulations_running()
-        optimization_running = self.optimization_running()
-        optimization_run = self.check_if_optimization_run()
-
-        if simulations_run and simulations_running:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Simulated and running simulations",
-                "There are simulations that use the current target, "
-                "and either have been simulated or are currently running."
-                "\nIf you save changes, the running simulations "
-                "will be stopped, and the result files of the simulated "
-                "and stopped simulations are deleted. This also applies "
-                "to possible optimization.\n\nDo you want to save changes "
-                "anyway?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
+        if self.simulation is not None:
+            if not df.delete_element_simulations(self,
+                                                 self.simulation,
+                                                 tab=self.tab,
+                                                 msg="target"):
                 self.__close = False
                 return
-            else:
-                # Stop simulations
-                tmp_sims = copy.copy(self.simulation.running_simulations)
-                for elem_sim in tmp_sims:
-                    if not elem_sim.optimization_running:
-                        elem_sim.stop()
-                        elem_sim.controls.state_label.setText("Stopped")
-                        elem_sim.controls.run_button.setEnabled(True)
-                        elem_sim.controls.stop_button.setEnabled(False)
-                        # Delete files
-                        for recoil in elem_sim.recoil_elements:
-                            delete_simulation_results(elem_sim, recoil)
-                        # Change full edit unlocked
-                        elem_sim.recoil_elements[0].widgets[0].parent. \
-                            edit_lock_push_button.setText("Full edit unlocked")
-                        elem_sim.simulations_done = False
-                        # Reset controls
-                        if elem_sim.controls:
-                            elem_sim.controls.reset_controls()
-                    else:
-                        # Handle optimization
-                        if elem_sim.optimization_recoils:
-                            elem_sim.stop(optimize_recoil=True)
-                        else:
-                            elem_sim.stop()
-                        elem_sim.optimization_stopped = True
-                        elem_sim.optimization_running = False
 
-                        if self.tab:
-                            self.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-
-                if self.tab:
-                    for energy_spectra in self.tab.energy_spectrum_widgets:
-                        self.tab.del_widget(energy_spectra)
-                        save_file_path = os.path.join(
-                            self.tab.simulation.directory,
-                            energy_spectra.save_file)
-                        if os.path.exists(save_file_path):
-                            os.remove(save_file_path)
-                    self.tab.energy_spectrum_widgets = []
-
-                for elem_sim in simulations_run:
-                    if not elem_sim.optimization_widget:
-                        for recoil in elem_sim.recoil_elements:
-                            delete_simulation_results(elem_sim, recoil)
-                        # Reset controls
-                        if elem_sim.controls:
-                            elem_sim.controls.reset_controls()
-
-                        # Change full edit unlocked
-                        elem_sim.recoil_elements[0].widgets[0].parent. \
-                            edit_lock_push_button.setText("Full edit unlocked")
-                        elem_sim.simulations_done = False
-                    else:
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-
-                for elem_sim in optimization_running:
-                    elem_sim.optimization_stopped = True
-                    elem_sim.optimization_running = False
-
-                    if self.tab:
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
-
-                for elem_sim in optimization_run:
-                    if self.tab:
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
-
-        elif simulations_running:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Simulations running",
-                "There are simulations running that use the current "
-                "target.\nIf you save changes, the running "
-                "simulations will be stopped, and their result files "
-                "deleted. This also applies to possible optimization.\n\nDo "
-                "you want to save changes anyway?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                self.__close = False
-                return
-            else:
-                # Stop simulations
-                tmp_sims = copy.copy(self.simulation.running_simulations)
-                for elem_sim in tmp_sims:
-                    if not elem_sim.optimization_running:
-                        elem_sim.stop()
-                        elem_sim.controls.state_label.setText("Stopped")
-                        elem_sim.controls.run_button.setEnabled(True)
-                        elem_sim.controls.stop_button.setEnabled(False)
-                        # Delete files
-                        for recoil in elem_sim.recoil_elements:
-                            delete_simulation_results(elem_sim, recoil)
-                        # Change full edit unlocked
-                        elem_sim.recoil_elements[0].widgets[0].parent. \
-                            edit_lock_push_button.setText("Full edit unlocked")
-                        elem_sim.simulations_done = False
-
-                        if elem_sim.controls:
-                            elem_sim.controls.reset_controls()
-                    else:
-                        # Handle optimization
-                        if elem_sim.optimization_recoils:
-                            elem_sim.stop(optimize_recoil=True)
-                        else:
-                            elem_sim.stop()
-                        elem_sim.optimization_stopped = True
-                        elem_sim.optimization_running = False
-
-                        if self.tab:
-                            self.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-
-                if self.tab:
-                    for energy_spectra in self.tab.energy_spectrum_widgets:
-                        self.tab.del_widget(energy_spectra)
-                        save_file_path = os.path.join(
-                            self.tab.simulation.directory,
-                            energy_spectra.save_file)
-                        if os.path.exists(save_file_path):
-                            os.remove(save_file_path)
-                    self.tab.energy_spectrum_widgets = []
-
-        elif simulations_run:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Simulated simulations",
-                "There are simulations that use the current target, "
-                "and have been simulated.\nIf you save changes,"
-                " the result files of the simulated simulations are "
-                "deleted. This also affects possible "
-                "optimization.\n\nDo you want to save changes anyway?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                self.__close = False
-                return
-            else:
-                # Delete files
-                for elem_sim in simulations_run:
-                    for recoil in elem_sim.recoil_elements:
-                        delete_simulation_results(elem_sim, recoil)
-                    # Change full edit unlocked
-                    elem_sim.recoil_elements[0].widgets[0].parent. \
-                        edit_lock_push_button.setText("Full edit unlocked")
-                    elem_sim.simulations_done = False
-
-                    if elem_sim.controls:
-                        elem_sim.controls.reset_controls()
-
-                for elem_sim in optimization_running:
-                    elem_sim.optimization_stopped = True
-                    elem_sim.optimization_running = False
-
-                    if self.tab:
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
-
-                if self.tab:
-                    for energy_spectra in self.tab.energy_spectrum_widgets:
-                        self.tab.del_widget(energy_spectra)
-                        save_file_path = os.path.join(
-                            self.tab.simulation.directory,
-                            energy_spectra.save_file)
-                        if os.path.exists(save_file_path):
-                            os.remove(save_file_path)
-                    self.tab.energy_spectrum_widgets = []
-
-                for elem_sim in optimization_run:
-                    if self.tab:
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
-
-        elif optimization_running:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Optimization running",
-                "There are optimizations running that use the current "
-                "target.\nIf you save changes, the running "
-                "optimizaations will be stopped, and their result files "
-                "deleted.\n\nDo you want to save changes anyway?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                self.__close = False
-                return
-            else:
-                # Stop simulations
-                tmp_sims = copy.copy(optimization_running)
-                for elem_sim in tmp_sims:
-                    elem_sim.optimization_stopped = True
-                    elem_sim.optimization_running = False
-                    if self.tab:
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
-
-                if self.tab:
-                    for energy_spectra in self.tab.energy_spectrum_widgets:
-                        self.tab.del_widget(energy_spectra)
-                        save_file_path = os.path.join(
-                            self.tab.simulation.directory,
-                            energy_spectra.save_file)
-                        if os.path.exists(save_file_path):
-                            os.remove(save_file_path)
-                    self.tab.energy_spectrum_widgets = []
-
-                for elem_sim in optimization_run:
-                    if self.tab:
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
-
-        elif optimization_run:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Optimization results",
-                "There are optimization results that use the current "
-                "target.\nIf you save changes, result files will be "
-                "deleted.\n\nDo you want to save changes anyway?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                self.__close = False
-                return
-            else:
-                tmp_sims = copy.copy(optimization_run)
-                for elem_sim in tmp_sims:
-                    if self.tab:
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
-
-                if self.tab:
-                    for energy_spectra in self.tab.energy_spectrum_widgets:
-                        self.tab.del_widget(energy_spectra)
-                        save_file_path = os.path.join(
-                            self.tab.simulation.directory,
-                            energy_spectra.save_file)
-                        if os.path.exists(save_file_path):
-                            os.remove(save_file_path)
-                    self.tab.energy_spectrum_widgets = []
-
-        name = self.ui.nameEdit.text()
-        thickness = self.ui.thicknessEdit.value()
-        density = self.ui.densityEdit.value()
-        elements = []
-        self.find_elements(elements)
+        elements = self.find_elements()
 
         if self.layer:
-            self.layer.name = name
+            self.layer.name = self.name
             self.layer.elements = elements
-            self.layer.thickness = thickness
-            self.layer.density = density
+            self.layer.thickness = self.thickness
+            self.layer.density = self.density
         else:
-            self.layer = Layer(name, elements, thickness, density)
-        if self.ui.comboBox.currentText().startswith("Under"):
+            self.layer = Layer(self.name, elements, self.thickness,
+                               self.density)
+        if self.comboBox.currentText().startswith("Under"):
             self.placement_under = True
         else:
             self.placement_under = False
         self.ok_pressed = True
         self.__close = True
-
-    def check_if_optimization_run(self):
-        """
-        Check if simulation has optimization results.
-
-        Return:
-             List of optimized element simulations.
-        """
-        if not self.simulation:
-            return False
-        opt_run = []
-        for elem_sim in self.simulation.element_simulations:
-            if elem_sim.optimization_widget and not \
-                    elem_sim.optimization_running:
-                opt_run.append(elem_sim)
-        return opt_run
-
-    def check_if_simulations_run(self):
-        """
-        Check if simulation have been run.
-
-        Return:
-             List of run element simulations.
-        """
-        if not self.simulation:
-            return False
-        simulations_run = []
-        for elem_sim in self.simulation.element_simulations:
-            if elem_sim.simulations_done:
-                simulations_run.append(elem_sim)
-        return simulations_run
-
-    def simulations_running(self):
-        """
-        Check if there are any simulations running.
-
-        Return:
-            True or False.
-        """
-        if not self.simulation:
-            return False
-        for elem_sim in self.simulation.element_simulations:
-            if elem_sim in self.simulation.request.running_simulations:
-                return True
-            elif elem_sim in self.simulation.running_simulations:
-                return True
-        return False
-
-    def optimization_running(self):
-        ret = []
-        for elem_sim in self.simulation.element_simulations:
-            if elem_sim.optimization_running:
-                ret.append(elem_sim)
-        return ret
 
     def __missing_information_message(self, empty_fields):
         """Show the user a message about missing information.
@@ -652,19 +275,10 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
     def __add_element_layout(self, element=None):
         """Add element widget into view.
         """
-        self.ui.scrollArea.setStyleSheet("")
-        self.__element_layouts.append(ElementLayout(
-            self.ui.scrollAreaWidgetContents, element, self))
-
-    def __validate(self):
-        """
-        Validate the layer name.
-        """
-        text = self.ui.nameEdit.text()
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = validate_text_input(text, regex)
-
-        self.ui.nameEdit.setText(valid_text)
+        el = ElementLayout(self.scrollAreaWidgetContents, element, self)
+        el.selection_changed.connect(self.__check_if_settings_ok)
+        self.scrollArea.setStyleSheet("")
+        self.scrollAreaWidgetContents.layout().addLayout(el)
 
 
 class ElementLayout(QtWidgets.QVBoxLayout):
@@ -681,43 +295,28 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         parent.parentWidget().setStyleSheet("")
 
         super().__init__()
-
-        if not element:
-            btn_txt = "Select"
-            enabled = False
-        else:
-            btn_txt = element.symbol
-            enabled = True
-        self.element_button = QtWidgets.QPushButton(btn_txt)
-        self.element_button.setFixedWidth(60)
-
         self.dialog = dialog
 
+        self.element_button = QtWidgets.QPushButton("")
+        self.element_button.setFixedWidth(60)
+
         self.isotope_combobox = QtWidgets.QComboBox()
-        self.isotope_combobox.setFixedWidth(120)
-        self.isotope_combobox.setEnabled(enabled)
+        self.isotope_combobox.setFixedWidth(130)
 
         if platform.system() == "Darwin" or platform.system() == "Linux":
             self.isotope_combobox.setFixedWidth(150)
 
         self.amount_spinbox = QtWidgets.QDoubleSpinBox()
+        self.amount_spinbox.setMinimum(0.001)
         self.amount_spinbox.setMaximum(9999.00)
         self.amount_spinbox.setDecimals(3)
-        self.amount_spinbox.setEnabled(enabled)
-        self.amount_spinbox.valueChanged\
-            .connect(lambda: dialog.validate_spinbox(self.amount_spinbox))
         self.amount_spinbox.setLocale(QLocale.c())
-
-        if enabled:
-            self.__load_isotopes(element.isotope)
-            self.amount_spinbox.setValue(element.amount)
 
         self.delete_button = QtWidgets.QPushButton("")
         self.delete_button.setIcon(QtGui.QIcon("ui_icons/potku/del.png"))
         self.delete_button.setFixedWidth(28)
         self.delete_button.setFixedHeight(28)
 
-        self.element_button.clicked.connect(self.__select_element)
         self.delete_button.clicked.connect(self.__delete_element_layout)
 
         self.isotope_info_label = QtWidgets.QLabel()
@@ -728,10 +327,18 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.horizontal_layout.addWidget(self.amount_spinbox)
         self.horizontal_layout.addWidget(self.delete_button)
 
+        self.isotope_selection_widget = IsotopeSelectionWidget(
+            self.element_button, self.isotope_combobox,
+            info_label=self.isotope_info_label,
+            amount_input=self.amount_spinbox,
+            parent=self.dialog
+        )
+        self.isotope_selection_widget.set_element(element)
+        self.selection_changed = self.isotope_selection_widget.selection_changed
+
         self.addLayout(self.horizontal_layout)
         self.addWidget(self.isotope_info_label)
         self.insertStretch(-1, 0)
-        parent.layout().addLayout(self)
 
     def __delete_element_layout(self):
         """Deletes element layout.
@@ -742,42 +349,7 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.delete_button.deleteLater()
         self.deleteLater()
 
-    def __select_element(self):
-        """Opens a dialog to select an element.
+    def get_selected_element(self) -> Element:
+        """Returns the selected element object.
         """
-        dialog = ElementSelectionDialog()
-
-        if dialog.element:
-            self.element_button.setStyleSheet("")
-            self.element_button.setText(dialog.element)
-            self.__load_isotopes()
-            self.isotope_combobox.setEnabled(True)
-            self.amount_spinbox.setEnabled(True)
-            if not self.amount_spinbox.value():
-                set_input_field_red(self.amount_spinbox)
-
-            # Check if no isotopes
-            if self.isotope_combobox.currentText().startswith("0.0"):
-                set_input_field_red(self.isotope_combobox)
-                self.dialog.fields_are_valid = False
-                self.isotope_info_label.setText(
-                    "If you wish to use this element, please modify masses.dat "
-                    "file\nand change the natural abundance to 100 % on your\n"
-                    "preferred isotope and restart the application.")
-            else:
-                self.dialog.check_text(self.dialog.ui.nameEdit, self.dialog)
-                self.isotope_combobox.setStyleSheet(
-                    "background-color: %s" % "None")
-                self.isotope_info_label.setText("")
-
-    def __load_isotopes(self, current_isotope=None):
-        """Loads isotopes of the element into the combobox.
-        """
-        masses.load_isotopes(self.element_button.text(), self.isotope_combobox,
-                             current_isotope)
-        standard_isotope = masses.get_standard_isotope(
-            self.element_button.text())
-        self.isotope_combobox.insertItem(0,
-                                         "{0} (st. mass)".format(
-                                             round(standard_isotope, 3)))
-        self.isotope_combobox.setCurrentIndex(0)
+        return self.isotope_selection_widget.get_element()

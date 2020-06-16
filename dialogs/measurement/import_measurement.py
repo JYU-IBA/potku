@@ -32,13 +32,16 @@ import logging
 import os
 import re
 
+import dialogs.dialog_functions as df
+import modules.general_functions as gf
+import widgets.input_validation as iv
+
+from pathlib import Path
 from collections import OrderedDict
 
+from widgets.gui_utils import StatusBarHandler
 from dialogs.measurement.import_timing_graph import ImportTimingGraphDialog
-
-from modules.general_functions import coinc
-from modules.general_functions import open_files_dialog
-from modules.general_functions import validate_text_input
+from dialogs.file_dialogs import open_files_dialog
 
 from PyQt5 import uic
 from PyQt5 import QtCore
@@ -61,18 +64,19 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             parent: A QtGui.QMainWindow of Potku.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_import_dialog.ui"), self)
+
         self.request = request
         self.__icon_manager = icon_manager
         self.statusbar = statusbar
         self.parent = parent
         self.global_settings = self.parent.settings
-        self.__files_added = {}  # Just placeholder
+        self.files_added = {}  # Just placeholder
         self.__files_preview = {}
         self.__added_timings = {}  # Placeholder for timing limits
         self.__import_row_count = 0  # Placeholder for adding/removing rows
         self.__initiated_columns = False
         self.imported = False
-        uic.loadUi(os.path.join("ui_files", "ui_import_dialog.ui"), self)
         
         self.__add_timing_labels()
 
@@ -101,20 +105,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                                   self.request.directory,
                                   "Select an event collection to be imported",
                                   "Event collection (*.evnt)")
-        if not files:
-            return
-        for file in files:
-            if file in self.__files_added:
-                continue
-            directoty, filename = os.path.split(file)
-            name, unused_ext = os.path.splitext(filename)
-            item = QtWidgets.QTreeWidgetItem([name])
-            item.file = file
-            item.name = name
-            item.filename = filename
-            item.directory = directoty
-            self.__files_added[file] = file
-            self.treeWidget.addTopLevelItem(item)
+        df.add_imported_files_to_tree(self, files)
         self.__load_files()
         self.__check_if_import_allowed()
 
@@ -150,7 +141,9 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         """Import listed files with settings defined in the dialog.
         """
         imported_files = {}
+        sbh = StatusBarHandler(self.statusbar)
         string_columns = []
+
         for i in range(self.grid_column.rowCount()):
             item = self.grid_column.itemAtPosition(i, 0)
             if not item.isEmpty():
@@ -168,19 +161,13 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         root = self.treeWidget.invisibleRootItem()
         root_child_count = root.childCount()
         timing = dict()
-        for coinc_key in self.__added_timings.keys():
-            coinc_timing = self.__added_timings[coinc_key]
+        for coinc_timing in self.__added_timings.values():
             if coinc_timing.is_not_trigger:
                 timing[coinc_timing.adc] = (coinc_timing.low.value(),
                                             coinc_timing.high.value())
         start_time = clock()
-        progress_bar = QtWidgets.QProgressBar()
-        self.statusbar.addWidget(progress_bar, 1)
-        progress_bar.show()
-        progress_bar.setValue(10)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        # Mac requires event processing to show progress bar and its
-        # process.
+
+        sbh.reporter.report(10)
         
         filename_list = []
         for i in range(root_child_count):
@@ -189,12 +176,13 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
 
             sample = self.request.samples.add_sample()
             self.parent.add_root_item_to_tree(sample)
-
             item_name = item.name.replace("_", "-")
 
             regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-            item_name = validate_text_input(item_name, regex)
-            measurement = self.parent.add_new_tab("measurement", "", sample,
+            item_name = iv.validate_text_input(item_name, regex)
+
+            measurement = self.parent.add_new_tab("measurement", "",
+                                                  sample,
                                                   object_name=item_name,
                                                   import_evnt_or_binary=True)
             output_file = os.path.join(measurement.directory_data, item_name
@@ -207,29 +195,20 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                  + os.sep + item_name, "asc", n)
                 n += 1
             imported_files[sample] = output_file
-            coinc(item.file,
-                  output_file,
-                  skip_lines=self.spin_skiplines.value(),
-                  tablesize=10,
-                  trigger=self.spin_adctrigger.value(),
-                  adc_count=self.spin_adccount.value(),
-                  timing=timing,
-                  columns=string_column,
-                  nevents=self.spin_eventcount.value())
+            gf.coinc(item.file,
+                     output_file,
+                     skip_lines=self.spin_skiplines.value(),
+                     tablesize=10,
+                     trigger=self.spin_adctrigger.value(),
+                     adc_count=self.spin_adccount.value(),
+                     timing=timing,
+                     columns=string_column,
+                     nevents=self.spin_eventcount.value())
             measurement.measurement_file = output_file
 
-            progress_bar.setValue(10 + (i + 1) / root_child_count * 90)
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process.
-        
+            sbh.reporter.report(10 + (i + 1) / root_child_count * 90)
+
         filenames = ", ".join(filename_list)
-
-        progress_bar.setValue(100)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-
-        self.statusbar.removeWidget(progress_bar)
-        progress_bar.hide()
         elapsed = clock() - start_time
         log = "Imported measurements to request: {0}".format(filenames)
         log_var = "Variables used: {0} {1} {2} {3} {4}".format(
@@ -242,6 +221,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         logging.getLogger("request").info(log)
         logging.getLogger("request").info(log_var)
         logging.getLogger("request").info(log_elapsed)
+
+        sbh.reporter.report(100)
         self.imported = True
         self.close()
 
@@ -280,7 +261,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         """
         skip_length = 10
         self.adc_occurance = {}
-        for file in self.__files_added:
+        for file in self.files_added:
             with open(file) as fp:
                 self.__files_preview[file] = []
                 reading_data = False
@@ -307,6 +288,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         sort_adc_occ = OrderedDict(sorted(self.adc_occurance.items(),
                                           reverse=True))
         adc_keys = sorted(self.adc_occurance.keys())
+
+        # FIXME crashes here if no file to import was chosen
         self.spin_skiplines.setValue(skip_length)
         self.spin_adctrigger.setMinimum(int(adc_keys[0]))
         self.spin_adctrigger.setMaximum(int(adc_keys[-1]))
@@ -339,8 +322,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
 
         timing = dict()
         timing_first = "1"
-        for coinc_key in self.__added_timings.keys():
-            coinc_timing = self.__added_timings[coinc_key]
+        for coinc_timing in self.__added_timings.values():
             if coinc_timing.is_not_trigger:
                 timing[coinc_timing.adc] = (coinc_timing.low.value(),
                                             coinc_timing.high.value())
@@ -391,7 +373,6 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             if adc in self.__added_timings:  # Do not add multiple times
                 continue
             timing = self.global_settings.get_import_timing(adc)
-
             label = QtWidgets.QLabel("{0}".format(adc))
             spin_low = self.__create_spinbox(timing[0])
             spin_high = self.__create_spinbox(timing[1])
@@ -436,7 +417,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         root = self.treeWidget.invisibleRootItem()
         for item in self.treeWidget.selectedItems():
             (item.parent() or root).removeChild(item)
-            self.__files_added.pop(item.file)
+            self.files_added.pop(item.file)
         self.__check_if_import_allowed()
         self.__load_file_preview()
 
@@ -461,8 +442,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         """Update spinboxes enabled state based on selected ADC trigger.
         """
         current_adc = str(self.spin_adctrigger.value())
-        for coinc_key in self.__added_timings.keys():
-            coinc_timing = self.__added_timings[coinc_key]
+        for coinc_timing in self.__added_timings.values():
             coinc_timing.is_not_trigger = coinc_timing.adc != current_adc
             coinc_timing.low.setEnabled(coinc_timing.is_not_trigger)
             coinc_timing.high.setEnabled(coinc_timing.is_not_trigger)

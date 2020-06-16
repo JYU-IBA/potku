@@ -31,23 +31,26 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import copy
-import modules.masses as masses
 import os
+
+import modules.general_functions as gf
+import modules.math_functions as mf
 
 from dialogs.graph_ignore_elements import GraphIgnoreElements
 
+from pathlib import Path
 from matplotlib import offsetbox
 from matplotlib.widgets import SpanSelector
 
 from modules.element import Element
-from modules.general_functions import calculate_new_point
 from modules.measurement import Measurement
+from modules.recoil_element import RecoilElement
+from modules.element_simulation import ElementSimulation
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QGuiApplication
 
 from scipy import integrate
-from shapely.geometry import Polygon
 
 from widgets.matplotlib.base import MatplotlibWidget
 
@@ -55,17 +58,26 @@ from widgets.matplotlib.base import MatplotlibWidget
 class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
     """Energy spectrum widget
     """
+    # By default, draw spectra lines with a solid line
+    default_linestyle = "-"
 
     def __init__(self, parent, histed_files, rbs_list, spectrum_type,
-                 legend=True):
+                 legend=True, spectra_changed=None, disconnect_previous=False,
+                 channel_width=None):
         """Inits Energy Spectrum widget.
 
         Args:
             parent: EnergySpectrumWidget class object.
             histed_files: List of calculated energy spectrum files.
             rbs_list: A dictionary of RBS selection elements containing
-                      scatter elements.
+                scatter elements.
             legend: Boolean representing whether to draw legend or not.
+            spectra_changed: pyQtSignal that indicates a change in spectra
+                that requires redrawing
+            disconnect_previous: whether energy spectrum widgets that were
+                previously connected to the spectra_changed signal will be
+                disconnected
+            channel_width: channel width used in spectra calculation
         """
         super().__init__(parent)
         self.parent = parent
@@ -82,7 +94,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.__selection_colors = parent.parent.obj.selector.get_colors()
 
         self.__initiated_box = False
-        self.__ignore_elements = []
+        self.__ignore_elements = set()
         self.__log_scale = False
 
         self.canvas.manager.set_title("Energy Spectrum")
@@ -124,74 +136,70 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                               button=1, span_stays=True)
             self.__used_recoils = self.__find_used_recoils()
 
-        self.limits = []
+        self.limits = {
+            "lower": None,
+            "upper": None
+        }
         self.limits_visible = False
         self.leg = None  # Original legend
         self.anchored_box = None
         self.lines_of_area = []
         self.clipboard = QGuiApplication.clipboard()
 
+        # This stores the plotted lines so we can update individual spectra
+        # separately
+        self.plots = {}
+
+        self.spectra_changed = spectra_changed
+        if self.spectra_changed is not None:
+            if disconnect_previous:
+                # Disconnect previous slots so only the last spectra graph
+                # gets updated
+                try:
+                    self.spectra_changed.disconnect()
+                except (TypeError, AttributeError):
+                    # signal had no previous connections, nothing to do
+                    pass
+            self.spectra_changed.connect(self.update_spectra)
+
+        self.channel_width = channel_width
         self.on_draw()
 
-    def __calculate_selected_area(self):
+    def closeEvent(self, evnt):
+        """Disconnects the slot from the spectra_changed signal
+        when widget is closed.
+        """
+        try:
+            self.spectra_changed.disconnect(self.update_spectra)
+        except (TypeError, AttributeError):
+            # Signal was either already disconnected or None
+            pass
+        super().closeEvent(evnt)
+
+    def __calculate_selected_area(self, start, end):
         """
         Calculate the ratio between the two spectra areas.
+
+        Return:
+            ratio, area(?) or None, None
         """
-        if not self.limits:
-            return
-        if not self.limits_visible:
-            return
-
-        start = self.limits[0].get_xdata()[0]
-        end = self.limits[1].get_xdata()[0]
-
+        # TODO move at least parts of this function to math_functions module
         all_areas = []
         for line_points in self.lines_of_area:
-            area_points = []
             points = list(line_points.values())[0]
-            for i, point in enumerate(points):
-                x = point[0]
-                y = point[1]
-                if x < start:
-                    continue
-                if start <= x:
-                    if i > 0:
-                        previous_point = points[i - 1]
-                        if previous_point[0] < start < x:
-                            # Calculate new point to be added
-                            calculate_new_point(previous_point, start,
-                                                       point, area_points)
-                    if x <= end:
-                        area_points.append((x, y))
-                    else:
-                        if i > 0:
-                            previous_point = points[i - 1]
-                            if previous_point[0] < end < x:
-                                calculate_new_point(previous_point, end,
-                                                           point, area_points)
-                        break
+            all_areas.append(list(mf.get_continuous_range(points,
+                                                          a=start,
+                                                          b=end)))
 
-            all_areas.append(area_points)
-
-        # https://stackoverflow.com/questions/25439243/find-the-area-between-
-        # two-curves-plotted-in-matplotlib-fill-between-area
-        # Create a polygon points list from limited points
-        polygon_points = []
-        for value in all_areas[0]:
-            polygon_points.append((value[0], value[1]))
-
-        for value in all_areas[1][::-1]:
-            polygon_points.append((value[0], value[1]))
-
-        # Add the first point again to close the rectangle
-        polygon_points.append(polygon_points[0])
-
-        polygon = Polygon(polygon_points)
-        area = polygon.area
+        area = mf.calculate_area(all_areas[0], all_areas[1])
 
         # Calculate also the ratio of the two curve's areas
-        x_1, y_1 = zip(*all_areas[0])
-        x_2, y_2 = zip(*all_areas[1])
+        try:
+            x_1, y_1 = zip(*all_areas[0])
+            x_2, y_2 = zip(*all_areas[1])
+        except ValueError:
+            # one of the areas contains no points
+            return None, None
 
         area_1 = integrate.simps(y_1, x_1)
         area_2 = integrate.simps(y_2, x_2)
@@ -202,12 +210,12 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         j = 0
         for line in self.lines_of_area:
             for key, values in line.items():
-                if key.endswith(".hist"):
-                    i = i + 1
+                if key.name.endswith(".hist"):
+                    i += 1
                     break
             if i != 0:
                 break
-            j = j + 1
+            j += 1
 
         if i != 0:
             if j == 1 and i == 1 and area_2 != 0:
@@ -220,22 +228,47 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             else:
                 ratio = area_1 / area_2
 
-        # Copy ratio to clipboard
-        ratio_round = 9  # Round decimal number
-        self.clipboard.setText(str(round(ratio, ratio_round)))
+        return ratio, area
 
+    def show_ratio(self):
+        """Calculates the ratio of spectra areas between the current limit
+        range and displays it on screen.
+        """
+        start, end = self.get_limit_range()
+        ratio, area = self.__calculate_selected_area(start, end)
+        self.show_ratio_box(ratio, area, start, end)
+
+    def show_ratio_box(self, ratio, area, start, end, copy_to_clipboard=True):
+        """Displays a text box that shows the ratio and of areas between two
+        spectra within start and end.
+        """
         if self.anchored_box:
             self.anchored_box.set_visible(False)
             self.anchored_box = None
 
-        text = "Difference: %s" % str(round(area, 2)) + \
-               "\nRatio: %s" % str(round(ratio, ratio_round)) + "\nInterval: [%s, %s]" % \
-               (str(round(start, 2)), str(round(end, 2)))
-        box1 = offsetbox.TextArea(text, textprops=dict(color="k", size=12))
+        child_boxes = []
 
-        text_2 = "\nRatio copied to clipboard."
-        box2 = offsetbox.TextArea(text_2, textprops=dict(color="k", size=10))
-        box = offsetbox.VPacker(children=[box1, box2], align="center", pad=0,
+        if ratio is None:
+            text = "Invalid selection, \nno ratio could \nbe calculated"
+            child_boxes.append(offsetbox.TextArea(
+                text, textprops=dict(color="k", size=12)))
+
+        else:
+            ratio_round = 9  # Round decimal number
+
+            text = f"Difference: {round(area, 2)}\n" \
+                   f"Ratio: {round(ratio, ratio_round)}\n" \
+                   f"Interval: [{round(start, 2)}, {round(end, 2)}]"
+            child_boxes.append(offsetbox.TextArea(
+                text, textprops=dict(color="k", size=12)))
+
+            if copy_to_clipboard:
+                self.clipboard.setText(str(round(ratio, ratio_round)))
+                text_2 = "\nRatio copied to clipboard."
+                child_boxes.append(offsetbox.TextArea(
+                    text_2, textprops=dict(color="k", size=10)))
+
+        box = offsetbox.VPacker(children=child_boxes, align="center", pad=0,
                                 sep=0)
 
         self.anchored_box = offsetbox.AnchoredOffsetbox(
@@ -262,7 +295,13 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             return
 
         # Limit files_to_draw to only two
-        if len(self.files_to_draw) != 2:
+
+        drawn_lines = {
+            path: self.files_to_draw[path]
+            for path, line in self.plots.items()
+            if line.get_linestyle() != "None"
+        }
+        if len(drawn_lines) != 2:
             QtWidgets.QMessageBox.critical(self.parent.parent, "Warning",
                                            "Limits can only be set when two "
                                            "elements are drawn.\n\nPlease add"
@@ -274,20 +313,17 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         low_x = round(xmin, 3)
         high_x = round(xmax, 3)
 
-        for lim in self.limits:
-            lim.set_linestyle('None')
-
         lowest = None
         highest = None
         self.lines_of_area = []
 
         # Find the min and max of the files
-        for key, val in self.files_to_draw.items():
+        for key, val in drawn_lines.items():
             first = float(val[0][0])
             last = float(val[-1][0])
 
             float_values = [(float(x[0]), float(x[1])) for x in val]
-            self.lines_of_area.append({key : float_values})
+            self.lines_of_area.append({key: float_values})
             if not lowest:
                 lowest = first
             if not highest:
@@ -303,11 +339,14 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         if highest < high_x:
             high_x = highest
 
-        self.limits = []
         ylim = self.axes.get_ylim()
-        self.limits.append(self.axes.axvline(x=low_x, linestyle="--"))
-        self.limits.append(self.axes.axvline(x=high_x, linestyle="--",
-                                             color='red'))
+        try:
+            self.limits["lower"].set_xdata((low_x, low_x))
+            self.limits["upper"].set_xdata((high_x, high_x))
+        except AttributeError:
+            self.limits["lower"] = self.axes.axvline(x=low_x, linestyle="--")
+            self.limits["upper"] = self.axes.axvline(x=high_x, linestyle="--",
+                                                     color='red')
         self.limits_visible = True
 
         self.axes.set_ybound(ylim[0], ylim[1])
@@ -315,34 +354,43 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.__button_area_calculation.setEnabled(True)
         self.canvas.draw_idle()
 
-        self.__calculate_selected_area()
+        self.show_ratio()
 
     def __toggle_area_limits(self):
         """
         Toggle the area limits on and off.
         """
         if self.limits_visible:
-            for lim in self.limits:
+            for lim in self.limits.values():
                 lim.set_linestyle('None')
             self.limits_visible = False
-            self.anchored_box.set_visible(False)
-            self.anchored_box = None
-            self.canvas.draw_idle()
         else:
-            for lim in self.limits:
+            for lim in self.limits.values():
                 lim.set_linestyle('--')
-            if self.limits:
-                self.limits_visible = True
-                self.__calculate_selected_area()
+            self.limits_visible = True
+            self.show_ratio()
+        self.canvas.draw_idle()
 
-    def __sortt(self, key):
+    def get_limit_range(self):
+        """Returns the limit range between the two limit lines or None, None
+        if no limits are displayed.
+        """
+        if not self.limits_visible:
+            return None
+
+        try:
+            start = self.limits["lower"].get_xdata()[0]
+            end = self.limits["upper"].get_xdata()[0]
+            return start, end
+        except AttributeError:
+            return None
+
+    @staticmethod
+    def __sortt(key):
         cut_file = key.split('.')
-        element_object = Element.from_string(cut_file[0].strip())
-        element = element_object.symbol
-        isotope = element_object.isotope
-        if not isotope:
-            isotope = masses.get_standard_isotope(element)
-        return isotope
+        # TODO sort by RBS selection
+        # TODO provide elements as parameters, do not initialize them here
+        return Element.from_string(cut_file[0].strip())
 
     def __find_used_recoils(self):
         """
@@ -351,7 +399,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         recoils = []
         for elem_sim in self.parent.parent.obj.element_simulations:
             for recoil in elem_sim.recoil_elements:
-                for used_file in self.histed_files.keys():
+                for used_file in self.histed_files:
                     used_file_name = os.path.split(used_file)[1]
                     if used_file_name == recoil.prefix + "-" + recoil.name + \
                             ".simu":
@@ -372,6 +420,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.axes.set_ylabel("Yield (counts)")
         self.axes.set_xlabel("Energy (MeV)")
 
+        # TODO refactor the draw function so that measurement and simulation
+        #      do not use so many lines of different code
         if isinstance(self.parent.parent.obj, Measurement):
             element_counts = {}
             keys = [item[0] for item in sorted(self.histed_files.items(),
@@ -389,24 +439,20 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 # Check RBS selection
                 rbs_string = ""
                 if len(cut_file) == 3:
-                    if key + ".cut" in self.__rbs_list.keys():
+                    if key + ".cut" in self.__rbs_list:
                         element_object = self.__rbs_list[key + ".cut"]
                         element = element_object.symbol
                         isotope = element_object.isotope
                         rbs_string = "*"
                 else:
-                    if key in self.__rbs_list.keys():
+                    if key in self.__rbs_list:
                         element_object = self.__rbs_list[key]
                         element = element_object.symbol
                         isotope = element_object.isotope
                         rbs_string = "*"
 
-                x = tuple(float(pair[0]) for pair in cut)
-                y = tuple(float(pair[1]) for pair in cut)
-
-                if x[0] < x_min:
-                    x_min = x[0]
-                    x_min_changed = True
+                x, y = get_axis_values(cut)
+                x_min, x_min_changed = fix_minimum(x, x_min)
 
                 if isotope is None:
                     isotope = ""
@@ -415,7 +461,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 dirtyinteger = 0
                 if rbs_string == "*":
                     color_string = "{0}{1}{2}{3}".format("RBS_", isotope,
-                                                      element, dirtyinteger)
+                                                         element, dirtyinteger)
                 else:
                     color_string = "{0}{1}{2}".format(isotope, element,
                                                       dirtyinteger)
@@ -441,9 +487,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 else:
                     label = r"$^{" + str(isotope) + "}$" + element \
                             + rbs_string + "$_{split: " + cut_file[2] + "}$"
-                self.axes.plot(x, y,
-                               color=color,
-                               label=label)
+                line, = self.axes.plot(x, y, color=color, label=label,
+                                       linestyle=self.default_linestyle)
+                self.plots[key] = line
 
         else:  # Simulation energy spectrum
             if self.__ignore_elements:
@@ -452,11 +498,12 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 self.files_to_draw = copy.deepcopy(self.histed_files)
             for key, data in self.files_to_draw.items():
                 # Parse the element symbol and isotope.
-                file_name = os.path.split(key)[1]
+                file_name = key.name
                 isotope = ""
                 symbol = ""
                 color = None
                 suffix = ""
+
                 if file_name.endswith(".hist"):
                     measurement_name, isotope_and_symbol, erd_or_rbs, rest = \
                         file_name.split('.', 3)
@@ -476,8 +523,14 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                         isotope = ""
                     symbol = element.symbol
 
-                    rest_split = rest.split('.')
-                    if len(rest_split)  == 2:  # regular hist file
+                    rest_split = rest.split(".")
+                    if "no_foil" in rest_split:
+                        # TODO make a function that splits all the necessary
+                        #      parts from a file name at once so there is no
+                        #      need to do these kinds of checks
+                        rest_split.remove("no_foil")
+
+                    if len(rest_split) == 2:  # regular hist file
                         label = r"$^{" + str(isotope) + "}$" + symbol + suffix \
                             + " (exp)"
                     else:  # split
@@ -498,25 +551,25 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                     label = r"$^{" + isotope + "}$" + symbol + " " + recoil_name
 
                     for used_recoil in self.__used_recoils:
-                        used_recoil_file_name = used_recoil.prefix + "-" + \
-                                                used_recoil.name + ".simu"
+                        used_recoil_file_name = \
+                            f"{used_recoil.get_full_name()}.simu"
                         if used_recoil_file_name == file_name:
-                            color = str(used_recoil.color.name())
+                            color = used_recoil.color
+                            break
 
                 else:
                     label = file_name
 
-                x = tuple(float(pair[0]) for pair in data)
-                y = tuple(float(pair[1]) for pair in data)
-
-                if x[0] < x_min:
-                    x_min = x[0]
-                    x_min_changed = True
+                x, y = get_axis_values(data)
+                x_min, x_min_changed = fix_minimum(x, x_min)
 
                 if not color:
-                    self.axes.plot(x, y, label=label)
+                    line, = self.axes.plot(x, y, label=label,
+                                           linestyle=self.default_linestyle)
                 else:
-                    self.axes.plot(x, y, label=label, color=color)
+                    line, = self.axes.plot(x, y, label=label, color=color,
+                                           linestyle=self.default_linestyle)
+                self.plots[key] = line
 
         if self.draw_legend:
             if not self.__initiated_box:
@@ -549,7 +602,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.axes.set_xlim([x_min, x_max])
 
         if self.__log_scale:
-            self.axes.set_yscale('symlog')
+            self.axes.set_yscale("symlog")
 
         # Remove axis ticks
         self.remove_axes_ticks()
@@ -576,12 +629,16 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         """Toggle log scaling for Y axis in depth profile graph.
         """
         self.__log_scale = self.__button_toggle_log.isChecked()
-        self.on_draw()
-        if self.limits:
-            self.axes.add_artist(self.limits[0])
-            self.axes.add_artist(self.limits[1])
+        if self.__log_scale:
+            self.axes.set_yscale("symlog")
+        else:
+            self.axes.set_yscale("linear")
+
+        self.canvas.draw()
+        self.canvas.flush_events()
+
         if self.limits_visible:
-            self.__calculate_selected_area()
+            self.show_ratio()
 
     def __ignore_elements_from_graph(self):
         """Ignore elements from elements ratio calculation.
@@ -606,18 +663,80 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             dialog = GraphIgnoreElements(elements, ignore_elements_for_dialog)
             for elem in dialog.ignored_elements:
                 for path in paths:
-                    if elem in path:
-                        index = path.find(elem)
-                        if path[index - 1] == os.path.sep and path[index +
-                                                                   len(elem)]\
-                                == '.':
+                    file_name = path.name
+                    if elem in file_name:
+                        index = file_name.find(elem)
+                        if file_name[index + len(elem)] == ".":
+                            # TODO this check seems a bit unnecessary
                             ignored_elements.append(path)
-            self.__ignore_elements = ignored_elements
+            self.__ignore_elements = set(ignored_elements)
         else:
             elements = [item[0] for item in sorted(self.histed_files.items(),
                                                    key=lambda x: self.__sortt(
                                                     x[0]))]
             dialog = GraphIgnoreElements(elements, self.__ignore_elements)
-            self.__ignore_elements = dialog.ignored_elements
-        self.on_draw()
-        self.limits = []
+            self.__ignore_elements = set(dialog.ignored_elements)
+
+        self.hide_plots(self.__ignore_elements)
+
+    def hide_plots(self, plots_to_hide):
+        """Hides given plots from the graph.
+
+        Args:
+            plots_to_hide: collection of plot names that will be hidden.
+        """
+        for file_name, line in self.plots.items():
+            if file_name in plots_to_hide:
+                line.set_linestyle("None")
+            else:
+                # Any other plot will use the default style
+                line.set_linestyle(self.default_linestyle)
+
+        self.canvas.draw()
+        self.canvas.flush_events()
+
+    @gf.stopwatch()
+    def update_spectra(self, rec_elem: RecoilElement,
+                       elem_sim: ElementSimulation):
+        """Updates spectra line that belongs to given recoil element.
+
+        Args:
+            rec_elem: RecoilElement object
+            elem_sim: ElementSimulation object that is used to calculate
+                the spectrum
+        """
+        # TODO this just assumes that the recoil is a simulated one,
+        #      not optimized. This should perhaps be changed.
+        # TODO add a checkbox that toggles automatic updates on and off
+        # TODO might want to prevent two widgets running this simultaneously
+        #      as they are writing/reading the same files
+        # TODO change plot range if necessary
+
+        if rec_elem is None or elem_sim is None:
+            return
+
+        espe_file = Path(elem_sim.directory, f"{rec_elem.get_full_name()}.simu")
+
+        if espe_file in self.plots:
+            espe, _ = elem_sim.calculate_espe(rec_elem, ch=self.channel_width)
+
+            data = get_axis_values(espe)
+
+            self.plots[espe_file].set_data(data)
+
+            self.canvas.draw()
+            self.canvas.flush_events()
+
+
+def get_axis_values(data):
+    """Returns the x and y axis values from given data."""
+    return (
+        tuple(float(pair[0]) for pair in data),
+        tuple(float(pair[1]) for pair in data)
+    )
+
+
+def fix_minimum(lst, minimum):
+    if lst and lst[0] < minimum:
+        return lst[0], True
+    return minimum, False

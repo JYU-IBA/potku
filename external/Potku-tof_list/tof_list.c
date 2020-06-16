@@ -3,6 +3,15 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#ifdef WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#else
+#include <libgen.h> /* for basename_r() */
+#include <sys/param.h> /* for MAXPATHLEN */
+#endif
 /* #include <dirent.h> */
 
 
@@ -72,7 +81,7 @@
 
 #define STOPSTEP    0.1
 #define CAL_ACC     0.02
-#define MAX_FACTOR  2.0
+#define MAX_FACTOR  1.2
 
 #define EFF_MEV     C_MEV
 #define EFF_KEV     C_KEV
@@ -81,11 +90,11 @@
 
 #define MAXELEMENTS 100
 
-#define INPUT_FILE  "tof.in"
 #define MASS_FILE   DATAPATH/masses.dat
 #define STOP_DATA   DATAPATH/stopping.bin
 
 #define WORD_LENGTH 256
+#define EFF_DIR_LENGTH 1024
 
 #define max(A,B)  ((A) > (B)) ? (A) : (B)
 #define min(A,B)  ((A) < (B)) ? (A) : (B)
@@ -106,18 +115,18 @@ typedef struct {
     double acalib1;
     double acalib2;
    double *ecalib;
-   char eff_dir[256];
+   char eff_dir[EFF_DIR_LENGTH];
 } Input;
 
 /*
 
-# awk '{print ($1*-0.6339980E-10 + 0.5130320E-06)}' test2.out 
-# | awk '{print (0.5*16*1.6605402e-27*(0.684/$1)^2)/1.6021773e-16}' 
+# awk '{print ($1*-0.6339980E-10 + 0.5130320E-06)}' test2.out
+# | awk '{print (0.5*16*1.6605402e-27*(0.684/$1)^2)/1.6021773e-16}'
 # | hist 50 | xgra
- 
-# cat t307vs.H |awk '{if($2>0) print $0}'| 
-# awk '{printf("%14.5e %14.5e\n",$1+(rand()-0.5),$2+(rand()-0.5))}' | 
-# awk '{printf("%15.10e\n",($1*-0.6339980E-10 + 0.5130320E-06))}' | 
+
+# cat t307vs.H |awk '{if($2>0) print $0}'|
+# awk '{printf("%14.5e %14.5e\n",$1+(rand()-0.5),$2+(rand()-0.5))}' |
+# awk '{printf("%15.10e\n",($1*-0.6339980E-10 + 0.5130320E-06))}' |
 # awk '{printf("%15.10e\n",(0.001*0.5*1.0079*1.6605402e-27*(0.684/$1)^2)
 # /1.6021773e-16)}' | hist 0.004 > t307vs.H.ene
 
@@ -128,7 +137,7 @@ Energy:                 53.0
 Detector angle:         40
 Target angle:           20
 Toflen:                 0.684
-Carbon foil thickness:  5.0 
+Carbon foil thickness:  5.0
 TOF calibration:        -0.6339980e-10 0.5130320e-06
 Efficiency:		1H 1H.eff
 
@@ -143,8 +152,9 @@ double get_mass(char *,int *);
 double get_energy(double,double,double);
 double get_eloss(double,double **);
 /* int get_step(double,double **); */
-void read_input(Input *);
+void read_input(const char *, Input *);
 double ipow(double,int);
+char *filename_extension(const char *);
 
 int main(int argc, char *argv[])
 {
@@ -153,33 +163,45 @@ int main(int argc, char *argv[])
 /* struct dirent **files; */
 
    char **symbol,*tmp;
-   int count,evnum,i,j,noweight=FALSE,stop=0,tech=ERD,tmpi,*Z,ZZ;
+   int evnum,i,noweight=FALSE,tech=ERD,tmpi,*Z,ZZ;
    int e,tof;
 /* int *step; */
    double beamM,energy,*emax,*M,*M2,tmpd,***sto,***weight;
    gsto_table_t *table;
 
-   if(argc == 1){
-      printf("Usage: tof_list [filename] [filename] ...\n");
+   if(argc < 3){
+      printf("Usage: tof_list [config_file] [filename] [filename] ...\n");
       exit(1);
    }
+   const char *tofin_filename = argv[1];
 
-   fp = (FILE **) malloc(sizeof(FILE *)*(argc-1));
-   input.ecalib = (double *) malloc(sizeof(double)*(argc-1));
-   symbol = (char **) malloc(sizeof(char *)*(argc-1));
+   fprintf(stderr, "%s: config from %s, %i cut files to process.\n", argv[0], argv[1], argc-2);
+#ifdef DEBUG
+   int argi;
+   for(argi=0; argi < argc; argi++) {
+        fprintf(stderr, "argv[%i] = \"%s\"\n", argi, argv[argi]);
+   }
+   fprintf(stderr, "\n");
+#endif
+   argv += 2;
+   argc -= 2;
+
+   fp = (FILE **) malloc(sizeof(FILE *)*(argc));
+   input.ecalib = (double *) malloc(sizeof(double)*(argc));
+   symbol = (char **) malloc(sizeof(char *)*(argc));
    tmp = (char *) malloc(sizeof(char)*WORD_LENGTH);
-/*   evnum = (int *) malloc(sizeof(int)*(argc-1)); */
-/* step = (int *) malloc(sizeof(int)*(argc-1)); */
-   Z = (int *) malloc(sizeof(int)*(argc-1));
-/*   e = (double *) malloc(sizeof(double)*(argc-1)); */
-   emax = (double *) malloc(sizeof(double)*(argc-1));
-   M = (double *) malloc(sizeof(double)*(argc-1));
-   M2 = (double *) malloc(sizeof(double)*(argc-1));
-/*   tof = (double *) malloc(sizeof(double)*(argc-1)); */
-   sto = (double ***) malloc(sizeof(double **)*(argc-1));
-   weight = (double ***) malloc(sizeof(double **)*(argc-1));
+/*   evnum = (int *) malloc(sizeof(int)*(argc)); */
+/* step = (int *) malloc(sizeof(int)*(argc)); */
+   Z = (int *) malloc(sizeof(int)*(argc));
+/*   e = (double *) malloc(sizeof(double)*(argc)); */
+   emax = (double *) malloc(sizeof(double)*(argc));
+   M = (double *) malloc(sizeof(double)*(argc));
+   M2 = (double *) malloc(sizeof(double)*(argc));
+/*   tof = (double *) malloc(sizeof(double)*(argc)); */
+   sto = (double ***) malloc(sizeof(double **)*(argc));
+   weight = (double ***) malloc(sizeof(double **)*(argc));
 
-   read_input(&input);
+   read_input(tofin_filename, &input);
 
 /* Useless filename.* feature
 
@@ -204,31 +226,38 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Error in loading stopping.\n");
         return 0;
     }
-    for(i=0; i<argc-1; i++){
+    for(i=0; i<argc; i++){
+      char *filename=argv[i];
+      fprintf(stderr, "file %i is \"%s\"\n", i, filename);
       input.ecalib[i] = 0.0;
       symbol[i] = (char *) malloc(sizeof(char)*3);
-      fp[i] = fopen(argv[i+1],"r");
+      fp[i] = fopen(filename, "r");
       if(fp[i] == NULL){
-         fprintf(stderr,"Could not open data file %s\n",argv[i+1]);
+         fprintf(stderr,"Could not open data file %s\n", filename);
          exit(2);
       }
-      while(*argv[i+1]++ != '.');
-	  Z[i]=0; /* In Windows GCC, Z[i] is initialized with a large number as it's content, so this had to be done */
-      while(isdigit(*argv[i+1])) Z[i] = Z[i]*10 + *argv[i+1]++ - '0';
-      while(isalpha(*argv[i+1])) *symbol[i]++ = *argv[i+1]++; *symbol[i] = '\0';
+      char *extension = filename_extension(filename);
+      fprintf(stderr, "extension: %s\n", extension);
+      char *extension_orig=extension;
+      Z[i]=0;
+      while(isdigit(*extension)) Z[i] = Z[i]*10 + *extension++ - '0';
+      while(isalpha(*extension)) *symbol[i]++ = *extension++; *symbol[i] = '\0';
       while(!isupper(*--symbol[i]));
       ZZ = Z[i];
+      fprintf(stderr, "ZZ=%i (mass number), symbol[%i]=%s\n", ZZ, i, symbol[i]);
       M[i] = get_mass(symbol[i],&ZZ);
+      fprintf(stderr, "ZZ=%i (the proton number corresponding to %s\n", ZZ, symbol[i]);
 	  M2[i] = 0;
       tmpi = input.beamZ;
       beamM = get_mass(input.beam,&tmpi);
-      emax[i] = input.beamE*4.0*ipow(cos(input.theta*C_DEG),2)*beamM*M[i]/ipow(beamM+M[i],2);
+      emax[i] = input.beamE;
       sto[i] = set_sto(table, (Z[i])?Z[i]:ZZ,M[i],emax[i]*MAX_FACTOR);
+      fprintf(stderr, "For stopping purposes (in carbon foil), this is Z=%i and mass is %g u\n", ZZ, M[i]/C_U);
 /*    step[i] = get_step(emax[i]*MAX_FACTOR,sto[i]); */
-      weight[i] = set_weight(symbol[i],(Z[i])?Z[i]:ZZ,&input);
+      weight[i] = set_weight(symbol[i],Z[i],&input);
       Z[i] = ZZ;
-      if(*argv[i+1] == '.'){
-         if(*++argv[i+1] == 'e'){
+      if(*extension == '.'){
+         if(*++extension == 'e'){
             tmp = strcpy(tmp,symbol[i]);
             if((fp2 = fopen(strcat(tmp,".calib"),"r")) == NULL){
                fprintf(stderr,"Could not locate calibration file %s\n",tmp);
@@ -238,53 +267,52 @@ int main(int argc, char *argv[])
             fclose(fp2);
          }
       }
+      free(extension_orig);
    }
    gsto_deallocate(table); /* Stopping data loaded in already, this is not used anymore */
-   for(i=0; i<argc-2; i++) {
-      for(j=i+1; j<argc-1; j++){
-         //if(strcmp(symbol[i],symbol[j])) noweight = TRUE;  with this, efficiencies with isotopes works
-	  }
-   }
-
-   char herp_c [100];
-   char *herp_d;
    int derp_n;
-   char herpderp_1 [10];
-   char herpderp_2 [10];
    float user_weight = 1.0;
-   
-   char herp_type [3];
-   char herp_scatter [6];
+   char *herp_c = malloc(sizeof(char)*WORD_LENGTH); 
+   char *herpderp_1=malloc(sizeof(char)*WORD_LENGTH);
+   char *herpderp_2=malloc(sizeof(char)*WORD_LENGTH);
+   char *herp_type=malloc(sizeof(char)*WORD_LENGTH);
+   char *herp_scatter=malloc(sizeof(char)*WORD_LENGTH);
+   char *herp_d = malloc(sizeof(char)*WORD_LENGTH);
    int herp_isotope=0;
-   for(i=0;i<argc-1;i++){
+   for(i=0; i < argc; i++){
+      fprintf(stderr, "Processing file %i.\n", i);
 	  tech = ERD;
-	  herp_d = (char *) malloc(sizeof(char)*WORD_LENGTH);
-      /* Don't read the first ten lines, except the one line which 
+      /* Don't read the first ten lines, except the one line which
          contains the user-specified weight factor which is memorized. */
       for(derp_n=0;derp_n<10;derp_n++){
-	     fgets(herp_c, 100, fp[i]);
+	     fgets(herp_c, 256, fp[i]);
          if(derp_n == 1){//line number2 in cut file = RBS or ERD
-            sscanf(herp_c, "%s %s", &herpderp_1, &herp_type);
-			if (strcmp(herp_type, "RBS") == 0) tech = RBS;
+            sscanf(herp_c, "%s %s", herpderp_1, herp_type);
+			if (strcmp(herp_type, "RBS") == 0) {
+                tech = RBS;
+                fprintf(stderr, "This is RBS\n");
+            }
          }
          if(derp_n == 2){ //line number3 in cut file = user weight factor
-			sscanf(herp_c, "%s %s %f", &herpderp_1, &herpderp_2, &user_weight);
+			sscanf(herp_c, "%s %s %f", herpderp_1, herpderp_2, &user_weight);
          }
-		 if(derp_n == 5 && tech == 0){ //line number6 in cut file = scatter element
-            sscanf(herp_c, "%s %s %s", &herpderp_1, &herpderp_2, herp_d);
-			
+		 if(derp_n == 5 && tech == RBS) { //line number6 in cut file = scatter element
+            sscanf(herp_c, "%s %s %s", herpderp_1, herpderp_2, herp_d);
+
 			// Parse isotope from string -separate mass from element (from line 6)
+            herp_isotope=0;
 			while(isdigit(*herp_d)) herp_isotope = herp_isotope*10 + *herp_d++ - '0';
-			
+
 			// Parse element
-			sscanf(herp_d, "%s", herp_scatter);
-			
-			//printf("Scatter element: %s\n", herp_scatter);
-			//printf("Scatter isotope: %i\n", herp_isotope);
-			//printf("Scatter isotope mass: %8.4f\n", get_mass(herp_scatter, &herp_isotope)/C_U);
-			// Get new mass and update values to scatter element.
-			M2[i] = get_mass(herp_scatter, &herp_isotope);  // herp_isotope is changed, only one call to get_mass with same second parameter is possible
+			sscanf(herp_d, "%5s", herp_scatter);
+
+			fprintf(stderr, "Scatter element: %s\n", herp_scatter);
+			fprintf(stderr, "Scatter isotope: %i\n", herp_isotope);
+			double m_scatter=get_mass(herp_scatter, &herp_isotope);
+            fprintf(stderr, "Scatter isotope mass: %8.4f\n", m_scatter/C_U);
+			M2[i] = m_scatter;
 			Z[i] = herp_isotope;  // here herp_isotope is proton number, not isotope number A
+            fprintf(stderr, "M2[%i]=%g u and Z[%i]=%i\n", i, M2[i]/C_U, i, Z[i]);
 			/*
 			emax[i] = input.beamE*4.0*ipow(cos(input.theta*C_DEG),2)*beamM*M[i]/ipow(beamM+M[i],2);
 #ifdef ZBL96
@@ -294,7 +322,7 @@ int main(int argc, char *argv[])
 #endif
 			*/
          }
-         
+
 	  }
        char *line = (char *) malloc(sizeof(char)*WORD_LENGTH);
        int ang1;
@@ -322,7 +350,7 @@ int main(int argc, char *argv[])
             if(energy > -0.1 && energy < emax[i]*MAX_FACTOR){
                printf("%e %e ",angle1,ANGLE2);
                //printf("%10.5lf %3d %8.4f ",energy/C_MEV,Z[i],M[i]/C_U); // Original
-               printf("%10.5lf %3d %8.4f ",energy/C_MEV, Z[i], (tech == 0)?M2[i]/C_U:M[i]/C_U);
+               printf("%10.5lf %3d %8.4f ",energy/C_MEV, Z[i], (tech == RBS)?M2[i]/C_U:M[i]/C_U);
                printf("%s %6.3f %5d\n",(tech)?"ERD":"RBS",(noweight)?1.0:get_weight(weight[i],energy)*user_weight,evnum);
             }
          }
@@ -363,7 +391,7 @@ int main(int argc, char *argv[])
    }
 #endif
 
-   for(i=0; i<argc-1; i++)
+   for(i=0; i < argc; i++)
       fclose(fp[i]);
 
    exit(0);
@@ -375,7 +403,7 @@ double **set_sto(gsto_table_t *table, double z, double m, double e)
     int i,n;
     double **sto;
     double E, S;
-    
+    fprintf(stderr, "set_sto(%p, z=%g, m=%g u, e=%g keV)\n", table, z, m/C_U, e/C_KEV);
     n=(int) (e/(STOPSTEP*C_MEV))+1;
     sto = malloc(sizeof(double *)*2);
     sto[0]=calloc(n, sizeof(double));
@@ -402,7 +430,7 @@ double **set_weight(char *symbol, int z, Input *input)
    yx = (char *) malloc(sizeof(char)*WORD_LENGTH);
    kax = (char *) malloc(sizeof(char)*WORD_LENGTH);
    ret = (double **) malloc(sizeof(double *)*2);
-
+   fprintf(stderr, "set_weight(%s, %i, %p)\n", symbol, z, input);
    if(z){
       for(i=1; z/(i*10)>0; i*=10);
       for(; i>0; i/=10){
@@ -412,18 +440,17 @@ double **set_weight(char *symbol, int z, Input *input)
    }
    while((*file++ = *symbol++));
    file = strcat(tmp,".eff");
-   fprintf(stderr,"Directory: %s\n", input->eff_dir);
-   //fprintf(stderr,"Directory length: %d\n", strlen(input->eff_dir));
+   //fprintf(stderr,"Directory: %s\n", input->eff_dir);
 	if (strlen(input->eff_dir) > 0) {
-		tmp = (char *) malloc(sizeof(char)*WORD_LENGTH);
+		tmp = (char *) malloc(sizeof(char)*EFF_DIR_LENGTH+strlen(file)+2);
 		strcpy(tmp, input->eff_dir);
 		strcat(tmp, "/");
 		strcat(tmp, file);
 		file = tmp;
 	}
-   fprintf(stderr,"Efficiency file: %s\n", file);
-   while((fp = fopen(file,"r")) == NULL && isdigit(*file)) file++;
+   fp = fopen(file, "r");
    if(fp != NULL){
+    fprintf(stderr,"Used efficiency file: %s\n", file);
       fscanf(fp,"%s %s",yx,kax);
       if(!strcmp(yx,"keV")) multe = EFF_KEV;
       else if(!strcmp(yx,"MeV")) multe = EFF_MEV;
@@ -439,7 +466,7 @@ double **set_weight(char *symbol, int z, Input *input)
          ret[0][i] = energy*multe;
          ret[1][i] = (multp?1.0:100.0)/pct;
       }
-      fprintf(stderr, "%i points corrected.\n",i);
+      fprintf(stderr, "Got %i points from efficiency file. Highest energy %g MeV\n",i, ret[0][i-1]/C_MEV);
       fclose(fp);
    } else {
       ret[0] = (double *) malloc(sizeof(double)*2);
@@ -468,12 +495,13 @@ double get_weight(double **table, double e)
 
 }
 
-double get_mass(char *symbol, int *z)
+double get_mass(char *symbol, int *z) /* The second parameter (int *z) is actually mass number A as an input (with *z==0 we assume natural isotopic distribution) and simultaneously this function stores the proton number (Z) into z. So the same variable acts both as an input and an output and has different meanings. Whoever programmed this will be first against the wall when the revolution comes. */
 {
    FILE *fp;
    char S[3];
    int A,N,Z;
    double C,M,MC=0.0,MM=0.0;
+   fprintf(stderr, "Trying to find mass for \"%s\" (mass number A is %i)\n", symbol, *z);
 
    fp = fopen(XSTR(MASS_FILE),"r");
    if(fp == NULL){
@@ -570,15 +598,15 @@ int get_step(double e, double **sto)
 
 */
 
-void read_input(Input *input)
+void read_input(const char *input_file, Input *input)
 {
    FILE *fp;
    char *read;
    int Z=0;
 
-   fp = fopen(INPUT_FILE,"r");
+   fp = fopen(input_file, "r");
    if(fp == NULL){
-      fprintf(stderr,"Could not open input file %s\n",INPUT_FILE);
+      fprintf(stderr,"Could not open input file %s\n", input_file);
       exit(6);
    }
     char *line = (char *) malloc(sizeof(char)*WORD_LENGTH);
@@ -586,18 +614,18 @@ void read_input(Input *input)
 
     input->acalib1=0.0;
     input->acalib2=0.0;
-    
+
     while(fgets(line, WORD_LENGTH, fp)) {
         sscanf(line, "Angle calibration: %lf %lf", &input->acalib1, &input->acalib2);
     }
     fclose(fp);
-    
-    fp = fopen(INPUT_FILE, "r");
-   /* The loop here (word by word) is rediculous. I'm not going to touch it. */ 
+
+    fp = fopen(input_file, "r");
+   /* The loop here (word by word) is rediculous. I'm not going to touch it. */
    while(fscanf(fp, "%s", read)==1) {
       if(!strcmp(read,"Beam:")){
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          while(isdigit(*read)) Z = Z*10 + *read++ - '0';
@@ -606,78 +634,78 @@ void read_input(Input *input)
       }
       else if(!strcmp(read,"Energy:")){
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          input->beamE = atof(read)*C_MEV;
       }
       else if(!strcmp(read,"Detector")){
          if(fscanf(fp,"%s",read) == 0 && strcmp(read,"angle:")){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          input->theta = atof(read);
       }
       else if(!strcmp(read,"Target")){
          if(fscanf(fp,"%s",read) == 0 && strcmp(read,"angle:")){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          input->target_angle = atof(read);
       }
       else if(!strcmp(read,"Toflen:")){
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          input->tof = atof(read);
       }
       else if(!strcmp(read,"Carbon")){
          if(fscanf(fp,"%s",read) == 0 && strcmp(read,"foil")){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          if(fscanf(fp,"%s",read) == 0 && strcmp(read,"thickness")){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          input->foil_thick = atof(read);
       }
       else if(!strcmp(read,"TOF")){
          if(fscanf(fp,"%s",read) == 0 && strcmp(read,"calibration:")){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          input->calib1 = atof(read);
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          input->calib2 = atof(read);
       }
       else if(!strcmp(read,"Efficiency")){
          if(fscanf(fp,"%s",read) == 0 && strcmp(read,"directory:")){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
          if(fscanf(fp,"%s",read) == 0){
-            fprintf(stderr,"Faulty input file %s\n",INPUT_FILE);
+            fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
 		 sscanf(read,"%s",input->eff_dir);
@@ -694,4 +722,30 @@ double ipow(double b, int e)
    while(e-->0) ret *= b;
 
    return (ret);
+}
+
+char *filename_extension(const char *path) { /*  e.g. /bla/bla/tofe2363.O.ERD.0.cut => O.ERD.0.cut */
+#ifdef WIN32
+    char *fname = malloc(_MAX_FNAME);
+    char *fname_orig = fname;
+    char *ext = malloc(_MAX_EXT);
+    _splitpath(path, NULL, NULL, fname, ext);
+    while(*fname++ != '.');
+    char *out = malloc(_MAX_FNAME+_MAX_EXT);
+    *out = '\0';
+    strcat(out, fname);
+    strcat(out, ext);
+    free(fname_orig);
+    free(ext);
+    return out;
+#else
+    char *ext;
+    char *base = malloc(MAXPATHLEN);
+    char *base_orig=base;
+    basename_r(path, base);
+    while(*base++ != '.');
+    ext = strdup(base);
+    free(base_orig);
+#endif
+    return ext;
 }

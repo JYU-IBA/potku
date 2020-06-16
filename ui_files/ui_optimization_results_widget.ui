@@ -10,6 +10,12 @@
     <height>500</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
   <property name="minimumSize">
    <size>
     <width>750</width>
@@ -26,31 +32,43 @@
    <item row="0" column="0" rowspan="2" colspan="2">
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
-      <widget class="QLabel" name="label">
+      <widget class="QRadioButton" name="rb_dist">
        <property name="text">
-        <string>Progress:</string>
+        <string>Recoil distributions</string>
        </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">rb_group_optim</string>
+       </attribute>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="rb_pareto">
+       <property name="text">
+        <string>Pareto front</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">rb_group_optim</string>
+       </attribute>
       </widget>
      </item>
      <item>
       <widget class="QLabel" name="progressLabel">
+       <property name="minimumSize">
+        <size>
+         <width>500</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string/>
        </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
       </widget>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
      </item>
     </layout>
    </item>
@@ -105,4 +123,7 @@
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
  <connections/>
+ <buttongroups>
+  <buttongroup name="rb_group_optim"/>
+ </buttongroups>
 </ui>

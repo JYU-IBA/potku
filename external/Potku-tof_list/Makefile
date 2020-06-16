@@ -1,8 +1,8 @@
 
-INSTALLDIR = ../Potku-bin
-DATADIR    = ../Potku-data
-LIBDIR     = ../Potku-lib
-INCDIR     = ../Potku-include
+INSTALLDIR = ../bin
+DATADIR    = ../share
+LIBDIR     = ../lib
+INCDIR     = ../include
 
 CC=gcc
 CFLAGS  = -g -Wall -Wmissing-prototypes # -DDEBUG

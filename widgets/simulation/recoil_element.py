@@ -25,15 +25,14 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
-import os
 import platform
+
+import dialogs.dialog_functions as df
 
 from collections import Counter
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
-from  dialogs.energy_spectrum import EnergySpectrumWidget
-
-from modules.general_functions import to_superscript
+from dialogs.energy_spectrum import EnergySpectrumWidget
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
@@ -45,41 +44,45 @@ class RecoilElementWidget(QtWidgets.QWidget):
     """
     Class that shows a recoil element that is connected to an ElementSimulation.
     """
-    def __init__(self, parent, element, parent_tab, parent_element_widget,
-                 element_simulation, color, recoil_element):
+    # TODO this class should be refactored together with simulation/element.py
+    #   module
+    def __init__(self, parent, parent_tab, parent_element_widget,
+                 element_simulation, color, recoil_element, statusbar=None,
+                 spectra_changed=None, recoil_name_changed=None):
         """
         Initialize the widget.
 
         Args:
             parent: A RecoilAtomDistributionWidget.
-            element: An Element object.
             parent_tab: A SimulationTabWidget.
             parent_element_widget: An ElementWidget.
             element_simulation: ElementSimulation object.
             color: Color for the circle.
             recoil_element: RecoilElement object.
+            statusbar: QStatusBar object
+            spectra_changed: signal that indicates that a recoil element
+                distribution has changed and spectra needs to be updated.
+            recoil_name_changed: signal that indicates that a recoil name
+                has changed.
         """
         super().__init__()
 
         self.parent = parent
-        self.parent_tab = parent_tab
+        self.tab = parent_tab
         self.element_simulation = element_simulation
         self.parent_element_widget = parent_element_widget
         self.recoil_element = recoil_element
+        self.statusbar = statusbar
 
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setContentsMargins(12, 0, 0, 0)
 
         self.radio_button = QtWidgets.QRadioButton()
 
-        if element.isotope:
-            isotope_superscript = to_superscript(
-                str(element.isotope))
-            button_text = isotope_superscript + " " + element.symbol
-        else:
-            button_text = element.symbol
-
-        self.radio_button.setText(button_text)
+        # TODO full name takes a bit too much room. They layout could use
+        #   some fixing.
+        self.radio_button.setText(self.recoil_element.get_full_name())
+        self.radio_button.setMaximumWidth(85)
 
         # Circle for showing the recoil color
         self.circle = Circle(color)
@@ -89,11 +92,13 @@ class RecoilElementWidget(QtWidgets.QWidget):
             "ui_icons/potku/energy_spectrum_icon.svg"))
         draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                            QtWidgets.QSizePolicy.Fixed)
-        draw_spectrum_button.clicked.connect(self.plot_spectrum)
+        draw_spectrum_button.clicked.connect(
+            lambda: self.plot_spectrum(spectra_changed))
         draw_spectrum_button.setToolTip("Draw energy spectra")
 
         remove_recoil_button = QtWidgets.QPushButton()
-        remove_recoil_button.setIcon(QIcon("ui_icons/reinhardt/edit_delete.svg"))
+        remove_recoil_button.setIcon(
+            QIcon("ui_icons/reinhardt/edit_delete.svg"))
         remove_recoil_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                            QtWidgets.QSizePolicy.Fixed)
         remove_recoil_button.clicked.connect(self.remove_recoil)
@@ -110,34 +115,57 @@ class RecoilElementWidget(QtWidgets.QWidget):
 
         self.setLayout(horizontal_layout)
 
-    def plot_spectrum(self):
+        self.recoil_name_changed = recoil_name_changed
+        if self.recoil_name_changed is not None:
+            self.recoil_name_changed.connect(self._set_name)
+
+    def closeEvent(self, event):
+        try:
+            self.recoil_name_changed.disconnect(self._set_name)
+        except (TypeError, ValueError):
+            pass
+        super().closeEvent(event)
+
+    def _set_name(self, _, rec_elem):
+        if rec_elem is self.recoil_element:
+            self.radio_button.setText(
+                self.recoil_element.get_full_name())
+
+    def plot_spectrum(self, spectra_changed=None):
         """
-        Plot an energy spectrum.
+        Plot an energy spectrum and show it in a widget.
         """
         previous = None
         dialog = EnergySpectrumParamsDialog(
-            self.parent_tab, spectrum_type="simulation",
-            element_simulation=self.element_simulation, recoil_widget=self)
+            self.tab,
+            spectrum_type="simulation",
+            element_simulation=self.element_simulation,
+            recoil_widget=self,
+            statusbar=self.statusbar)
         if dialog.result_files:
             energy_spectrum_widget = EnergySpectrumWidget(
-                parent=self.parent_tab, use_cuts=dialog.result_files,
-                bin_width=dialog.bin_width, spectrum_type="simulation")
+                parent=self.tab,
+                use_cuts=dialog.result_files,
+                bin_width=dialog.bin_width,
+                spectrum_type="simulation",
+                spectra_changed=spectra_changed)
 
             # Check all energy spectrum widgets, if one has the same
             # elements, delete it
-            for e_widget in self.parent_tab.energy_spectrum_widgets:
+            for e_widget in self.tab.energy_spectrum_widgets:
                 keys = e_widget.energy_spectrum_data.keys()
                 if Counter(keys) == Counter(
                         energy_spectrum_widget.energy_spectrum_data.keys()):
                     previous = e_widget
-                    self.parent_tab.energy_spectrum_widgets.remove(e_widget)
-                    self.parent_tab.del_widget(e_widget)
+                    self.tab.energy_spectrum_widgets.remove(e_widget)
+                    self.tab.del_widget(e_widget)
                     break
-            self.parent_tab.energy_spectrum_widgets.append(
+
+            self.tab.energy_spectrum_widgets.append(
                 energy_spectrum_widget)
             icon = self.parent.element_manager.icon_manager.get_icon(
                 "energy_spectrum_icon_16.png")
-            self.parent_tab.add_widget(energy_spectrum_widget, icon=icon)
+            self.tab.add_widget(energy_spectrum_widget, icon=icon)
 
             if previous and energy_spectrum_widget is not None:
                 energy_spectrum_widget.save_file_int = previous.save_file_int
@@ -169,21 +197,4 @@ class RecoilElementWidget(QtWidgets.QWidget):
         self.parent.remove_recoil_element(self)
 
         # Delete energy spectra that use recoil
-        for energy_spectra in self.parent_tab.energy_spectrum_widgets:
-            for element_path in energy_spectra. \
-                    energy_spectrum_data.keys():
-                elem = self.recoil_element.prefix + "-" + \
-                       self.recoil_element.name
-                if elem in element_path:
-                    index = element_path.find(elem)
-                    if element_path[index - 1] == os.path.sep and \
-                            element_path[index + len(elem)] == '.':
-                        self.parent_tab.del_widget(energy_spectra)
-                        self.parent_tab.energy_spectrum_widgets.remove(
-                            energy_spectra)
-                        save_file_path = os.path.join(
-                            self.element_simulation.directory, energy_spectra
-                                .save_file)
-                        if os.path.exists(save_file_path):
-                            os.remove(save_file_path)
-                        break
+        df.delete_recoil_espe(self.tab, self.recoil_element.get_full_name())
