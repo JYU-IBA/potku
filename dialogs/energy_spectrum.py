@@ -38,14 +38,18 @@ import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
 import modules.cut_file as cut_file
 import dialogs.file_dialogs as fdialogs
+import widgets.binding as bnd
 
 from pathlib import Path
+from typing import Optional
 
 from widgets.gui_utils import StatusBarHandler
 from modules.energy_spectrum import EnergySpectrum
 from modules.measurement import Measurement
 from modules.get_espe import GetEspe
 from modules.enums import OptimizationType
+from modules.detector import Detector
+from modules.element_simulation import ElementSimulation
 
 from PyQt5 import uic
 from PyQt5 import QtCore
@@ -62,7 +66,10 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     """
     checked_cuts = {}
 
-    def __init__(self, parent, spectrum_type, element_simulation=None,
+    use_efficiency = bnd.bind("use_eff_checkbox")
+
+    def __init__(self, parent, spectrum_type,
+                 element_simulation: Optional[ElementSimulation]=None,
                  recoil_widget=None, statusbar=None, spectra_changed=None):
         """Inits energy spectrum dialog.
         
@@ -79,6 +86,10 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         self.element_simulation = element_simulation
         self.spectrum_type = spectrum_type
         self.statusbar = statusbar
+        self.use_eff_checkbox.stateChanged.connect(
+            lambda *_: self.label_efficiency_files.setEnabled(
+                self.use_efficiency))
+        self.use_efficiency = True
 
         locale = QLocale.c()
         self.histogramTicksDoubleSpinBox.setLocale(locale)
@@ -86,16 +97,13 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # Connect buttons
         self.pushButton_Cancel.clicked.connect(self.close)
 
-        if not self.parent.obj.detector:  # Request settings are used.
+        if type(self.parent.obj) is Measurement:
             EnergySpectrumParamsDialog.bin_width = \
-                self.parent.obj.request.default_measurement.channel_width
+                self.parent.obj.channel_width
         else:
-            if type(self.parent.obj) is Measurement:
-                EnergySpectrumParamsDialog.bin_width = \
-                    self.parent.obj.channel_width
-            else:
-                EnergySpectrumParamsDialog.bin_width = \
-                    self.element_simulation.channel_width
+            EnergySpectrumParamsDialog.bin_width = \
+                self.element_simulation.channel_width
+
         self.histogramTicksDoubleSpinBox.setValue(
             EnergySpectrumParamsDialog.bin_width)
 
@@ -112,11 +120,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 self.measurement, self.treeWidget, True,
                 EnergySpectrumParamsDialog.checked_cuts[m_name])
 
-            self.__update_eff_files()
-
             self.importPushButton.setVisible(False)
-            self.exec_()
-
         else:
             header_item = QtWidgets.QTreeWidgetItem()
             header_item.setText(0, "Simulated elements")
@@ -178,7 +182,6 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                         tree_item = QtWidgets.QTreeWidgetItem()
                         tree_item.setText(0, measurement.name)
                         tree_item.obj = measurement
-                        tree_item.obj = measurement
                         self.tof_list_tree_widget.addTopLevelItem(tree_item)
 
                         for file in os.listdir(
@@ -216,11 +219,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
             self.external_tree_widget.setHeaderItem(header)
 
-            self.imported_files_folder = \
-                os.path.join(self.element_simulation.request.directory,
-                             "Imported_files")
-            if not os.path.exists(self.imported_files_folder):
-                os.makedirs(self.imported_files_folder)
+            self.imported_files_folder = Path(
+                self.element_simulation.request.directory, "Imported_files")
+            self.imported_files_folder.mkdir(exist_ok=True)
 
             # Add possible external files to view
             for ext_file in os.listdir(self.imported_files_folder):
@@ -230,11 +231,14 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 self.external_tree_widget.addTopLevelItem(item)
 
             # Change the bin width label text
-            self.histogramTicksLabel.setText("Simulation and measurement "
-                                             "histogram bin width:")
+            self.histogramTicksLabel.setText(
+                "Simulation and measurement histogram bin width:")
 
             self.importPushButton.clicked.connect(self.__import_external_file)
-            self.exec_()
+
+        # FIXME .eff files not shown in sim mode
+        self.__update_eff_files()
+        self.exec_()
 
     def get_selected_measurements(self):
         """Returns a dictionary that contains selected measurements,
@@ -355,7 +359,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             #   down the execution path
             EnergySpectrum.calculate_measured_spectra(
                 mesu, [d["cut_file"] for d in lst], self.bin_width,
-                no_foil=True)
+                use_efficiency=self.use_efficiency, no_foil=True)
 
         # Add external files
         self.result_files.extend(used_externals)
@@ -398,15 +402,13 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 EnergySpectrumParamsDialog.bin_width = width
         if use_cuts:
             self.label_status.setText("Please wait. Creating energy spectrum.")
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
             if self.parent.energy_spectrum_widget:
                 self.parent.del_widget(self.parent.energy_spectrum_widget)
             self.parent.energy_spectrum_widget = EnergySpectrumWidget(
                 self.parent, spectrum_type=self.spectrum_type,
-                use_cuts=use_cuts,
-                bin_width=width,
-                statusbar=self.statusbar,
-                spectra_changed=spectra_changed)
+                use_cuts=use_cuts, bin_width=width,
+                use_efficiency=self.use_efficiency,
+                statusbar=self.statusbar, spectra_changed=spectra_changed)
 
             # Check that matplotlib attribute exists after creation of energy
             # spectrum widget.
@@ -481,12 +483,18 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     def __update_eff_files(self):
         """Update efficiency files to UI which are used.
         """
-        # This is probably not the most effective way, or practical for 
-        # that matter, to get all efficiency files from directory defined
-        # in global settings that match the cut files of measurements.
-        detector = self.measurement.get_detector_or_default()
+        detector = self._get_detector()
         eff_files = detector.get_efficiency_files()
         df.update_used_eff_file_label(self, eff_files)
+
+    def _get_detector(self) -> Detector:
+        """Returns the detector used by either the ElementSimulation or
+        Measurement.
+        """
+        if self.element_simulation is not None:
+            _, _, detector = self.element_simulation.get_mcerd_params()
+            return detector
+        return self.measurement.get_detector_or_default()
 
 
 class EnergySpectrumWidget(QtWidgets.QWidget):
@@ -495,7 +503,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     save_file = "widget_energy_spectrum.save"
 
     def __init__(self, parent, spectrum_type, use_cuts=None, bin_width=0.025,
-                 save_file_int=0, statusbar=None, spectra_changed=None):
+                 use_efficiency=False, save_file_int=0, statusbar=None,
+                 spectra_changed=None):
         """Inits widget.
         
         Args:
@@ -503,6 +512,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             use_cuts: A string list representing Cut files.
             bin_width: A float representing Energy Spectrum histogram's bin
                 width.
+            use_efficiency: whether efficiency is taken into account when
+                measured spectra is calculated
             save_file_int: n integer to have unique save file names for
                 simulation energy spectra combinations.
             spectra_changed: pyqtSignal that indicates a change in energy
@@ -538,7 +549,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 self.energy_spectrum_data = \
                     EnergySpectrum.calculate_measured_spectra(
                         self.measurement, use_cuts, bin_width,
-                        progress=sbh.reporter
+                        progress=sbh.reporter, use_efficiency=use_efficiency
                     )
 
                 # Check for RBS selections.

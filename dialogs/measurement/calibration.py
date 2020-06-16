@@ -35,6 +35,8 @@ from pathlib import Path
 
 from modules.cut_file import CutFile
 from modules.calibration import TOFCalibration
+from modules.detector import Detector
+from modules.run import Run
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
@@ -50,8 +52,8 @@ from widgets.matplotlib.calibration.linear_fitting \
 class CalibrationDialog(QtWidgets.QDialog):
     """A dialog for the time of flight calibration
     """
-    def __init__(self, measurements, detector,
-                 run, parent_settings_widget=None):
+    def __init__(self, measurements, detector: Detector, run: Run,
+                 parent_settings_widget=None):
         """Inits the calibration dialog class.
         
         Args:
@@ -93,10 +95,9 @@ class CalibrationDialog(QtWidgets.QDialog):
         for column in range(0, self.cutFilesTreeWidget.columnCount()):
             self.cutFilesTreeWidget.resizeColumnToContents(column)
 
-        self.curveFittingWidget = \
-            CalibrationCurveFittingWidget(
+        self.curveFittingWidget = CalibrationCurveFittingWidget(
                 self, self.__cut_file, self.tof_calibration, self.detector,
-                self.binWidthSpinBox.value(), 1, self.run)
+                self.binWidthSpinBox.value(), 0, self.run)
         
         old_params = None
         # Get old parameters from the parent dialog
@@ -293,8 +294,8 @@ class CalibrationDialog(QtWidgets.QDialog):
 class CalibrationCurveFittingWidget(QtWidgets.QWidget):
     """Widget class for holding MatplotlibCalibrationCurveFittingWidget.
     """
-    def __init__(self, dialog, cut, tof_calibration,
-                 detector, bin_width, column, run):
+    def __init__(self, dialog, cut, tof_calibration, detector: Detector,
+                 bin_width: float, column: int, run: Run):
         """Initializes widget.
         
         Args:
@@ -314,13 +315,9 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
         elif hasattr(dialog.parent_settings_widget, "measurement") and \
                 dialog.parent_settings_widget.measurement is not None:
             self.img_dir = dialog.parent_settings_widget.measurement.directory
-        self.matplotlib = \
-            MatplotlibCalibrationCurveFittingWidget(self, detector,
-                                                    tof_calibration,
-                                                    cut, run,
-                                                    bin_width,
-                                                    column,
-                                                    dialog)
+        self.matplotlib = MatplotlibCalibrationCurveFittingWidget(
+                self, detector, tof_calibration, cut, run, bin_width, column,
+                dialog)
 
             
 class CalibrationLinearFittingWidget(QtWidgets.QWidget):

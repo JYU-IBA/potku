@@ -7,7 +7,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -31,6 +31,7 @@ import os
 import platform
 import tempfile
 import modules.comparison as comp
+import random
 
 from pathlib import Path
 
@@ -205,6 +206,69 @@ class TestGeneralFunctions(unittest.TestCase):
         self.assertEqual(12340, gf.round_value_by_four_biggest(12345))
         self.assertEqual(123500, gf.round_value_by_four_biggest(123456))
         self.assertEqual(77780, gf.round_value_by_four_biggest(77777))
+
+class TestHistogramming(unittest.TestCase):
+    def test_hist(self):
+        data = [
+            (0, 2),
+            (1, 2),
+            (1.5, 2),
+            (2, 2),
+            (3, 2),
+            (5, 2)
+        ]
+        expected = [
+            (-1, 0.0),
+            (1.0, 3.0),
+            (3.0, 2.0),
+            (5.0, 1.0)
+        ]
+        self.assertEqual(expected, gf.hist(data, x_col=0, width=2))
+
+        expected2 = [(x, 2 * y) for x, y in expected]
+        self.assertEqual(expected2, gf.hist(data, x_col=0, y_col=1, width=2))
+
+    def test_bad_inputs(self):
+        self.assertEqual([], gf.hist([]))
+        self.assertRaises(IndexError, lambda: gf.hist([[1]], x_col=1))
+
+    def test_hist_properties(self):
+        """hist function should have following properties:
+            - the sum of values on the y axis should equal the sum of values
+              in the y_col if y_col is defined
+            - the sum of values on the y axis should equal the number of rows
+              in data if y_col is undefined
+            - the distance between each bin should equal width parameter
+        """
+        n = 10
+        max_count = 1000
+        max_cols = 10
+        value_range = (-100, 100)
+
+        for _ in range(n):
+            data_count = random.randint(0, max_count)
+            col_count = random.randint(1, max_cols)
+            x_col = random.randint(0, col_count - 1)
+            y_col = random.choice([None, random.randint(0, col_count - 1)])
+            bin_width = random.uniform(0, 2)
+            data = [
+                tuple(random.uniform(*value_range) for _ in range(col_count))
+                for _ in range(data_count)
+            ]
+            res = gf.hist(data, x_col=x_col, y_col=y_col, width=bin_width)
+
+            if y_col is None:
+                expected_sum = data_count
+            else:
+                expected_sum = sum(row[y_col] for row in data)
+
+            self.assertAlmostEqual(
+                expected_sum, sum(y for x, y in res), places=5)
+
+            pairwise_iter = zip(res, res[1:])
+            self.assertTrue(
+                x2 - x1 == bin_width for (_, x1), (_, x2) in pairwise_iter
+            )
 
 
 class TestBinDir(unittest.TestCase):

@@ -28,6 +28,8 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
+from modules.detector import Detector
+from modules.run import Run
 from modules.calibration import TOFCalibrationPoint
 from modules.calibration import TOFCalibrationHistogram
 from widgets.matplotlib.base import MatplotlibWidget
@@ -40,8 +42,8 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
     """Energy spectrum widget
     """
 
-    def __init__(self, parent, detector, tof_calibration, cut, run,
-                 bin_width=2.0, column=1, dialog=None):
+    def __init__(self, parent, detector: Detector, tof_calibration, cut,
+                 run: Run, bin_width=2.0, column=0, dialog=None):
         """Inits Energy Spectrum widget.
 
         Args:
@@ -88,10 +90,8 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
 
     def __set_calibration_point(self, tof):
         self.selected_tof = tof
-        self.tof_calibration_point = TOFCalibrationPoint(self.selected_tof,
-                                                         self.cut,
-                                                         self.detector,
-                                                         self.run)
+        self.tof_calibration_point = TOFCalibrationPoint(
+            self.selected_tof, self.cut, self.detector, self.run)
         self.__update_dialog_values()
         self.on_draw()
 
@@ -152,16 +152,15 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
             self.axes.axvline(x=self.selected_tof)
 
         if self.cut.element:
-            self.tof_histogram = TOFCalibrationHistogram(self.cut,
-                                                         self.bin_width,
-                                                         self.use_column)
+            self.tof_histogram = TOFCalibrationHistogram(
+                self.cut, self.bin_width, self.use_column)
 
             # Get some value between the cut data's both edges.
             # middle = self.tof_histogram.find_middle()
             # params = self.tof_histogram.get_error_function_parameters(middle)
             err_start, err_end = self.tof_histogram.find_leading_edge_borders()
-            params = self.tof_histogram.get_error_function_parameters(err_end,
-                                                                      err_start)
+            params = self.tof_histogram.get_error_function_parameters(
+                err_end, err_start)
 
             if not params:
                 self.canvas.draw()
