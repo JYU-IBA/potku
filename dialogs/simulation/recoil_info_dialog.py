@@ -124,22 +124,22 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         Return:
             True or False.
         """
-        # TODO
-        return True
-        # return self.scientific_spinbox.is_valid()
+        try:
+            self.scientific_spinbox.get_value()
+            return True
+        except TypeError:
+            return False
 
     def __accept_settings(self):
         """Function for accepting the current settings and closing the dialog
         window.
         """
         if not self.fields_are_valid or not self.__density_valid():
-            QtWidgets.QMessageBox.critical(self, "Warning",
-                                           "Some of the setting values are "
-                                           "invalid.\n" +
-                                           "Please input values in fields "
-                                           "indicated in red.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.critical(
+                self, "Warning",
+                "Some of the setting values are invalid.\n" +
+                "Please input values in fields indicated in red.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             return
 
         if self.name != self.recoil_element.name:
@@ -148,11 +148,9 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
                              self.element_simulation.recoil_elements):
                 QtWidgets.QMessageBox.critical(
                     self, "Warning",
-                    "Name of the recoil element is "
-                    "already in use. Please use a "
-                    "different name",
-                    QtWidgets.QMessageBox.Ok,
-                    QtWidgets.QMessageBox.Ok)
+                    "Name of the recoil element is already in use. Please use "
+                    "a different name",
+                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 return
 
         # If current recoil is used in a running simulation
@@ -169,8 +167,7 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
                     "stopped.\n\n"
                     "Do you want to save changes anyway?",
                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel,
-                    QtWidgets.QMessageBox.Cancel)
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
                 if reply == QtWidgets.QMessageBox.No or reply == \
                         QtWidgets.QMessageBox.Cancel:
                     return

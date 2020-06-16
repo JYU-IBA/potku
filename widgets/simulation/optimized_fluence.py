@@ -22,7 +22,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Heta Rekilä"
+__author__ = "Heta Rekilä \n Juhani Sundell"
 __version__ = "2.0"
 
 import modules.general_functions as gf
@@ -41,8 +41,7 @@ from PyQt5 import uic
 
 
 class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
-    """
-    Class that handles showing optimized fluence in a widget.
+    """Class that handles showing optimized fluence in a widget.
     """
     def __init__(self, element_simulation: ElementSimulation,
                  cancellation_token: Optional[CancellationToken] = None):
@@ -73,8 +72,7 @@ class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
         super().closeEvent(evnt)
 
     def update_progress(self, evaluations):
-        """
-        Show calculated solutions in the widget.
+        """Show calculated solutions in the widget.
         """
         text = f"{evaluations} evaluations left. Running."
         if self.element_simulation.is_optimization_running():
@@ -87,13 +85,12 @@ class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
         """
         rounded_fluence = gf.round_value_by_four_biggest(
             self.element_simulation.optimized_fluence)
-        self.fluenceLineEdit.setText(str(int(
-            self.element_simulation.optimized_fluence)))
-        self.roundedFluenceLineEdit.setText(str(rounded_fluence))
+        self.fluenceLineEdit.setText(
+            f"{self.element_simulation.optimized_fluence:e}")
+        self.roundedFluenceLineEdit.setText(f"{rounded_fluence:e}")
 
     def show_results(self, evaluations):
-        """
-        Shjow optimized fluence and finished amount of evaluations.
+        """Show optimized fluence and finished amount of evaluations.
         """
         self.progressLabel.setText(f"{evaluations} evaluations left. Finished.")
         self.show_fluence()
@@ -106,5 +103,6 @@ class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
         self.progressLabel.setText(
             f"Error occurred: {err['error']}. Optimization stopped.")
 
-    def on_completed_handler(self, msg):
-        self.show_results(msg["evaluations_done"])
+    def on_completed_handler(self, msg=None):
+        if msg is not None:
+            self.show_results(msg["evaluations_done"])

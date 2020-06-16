@@ -35,6 +35,7 @@ import os
 import widgets.binding as bnd
 import widgets.input_validation as iv
 import widgets.gui_utils as gutils
+from widgets.scientific_spinbox import ScientificSpinBox
 
 from pathlib import Path
 from typing import Union
@@ -102,12 +103,11 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         fset=element_to_gui, track_change=True
     )
     beam_energy = bnd.bind("energyDoubleSpinBox", track_change=True)
-    beam_energy_distribution = bnd.bind("energyDistDoubleSpinBox",
-                                        track_change=True)
+    beam_energy_distribution = bnd.bind(
+        "energyDistDoubleSpinBox", track_change=True)
     beam_charge = bnd.bind("beamChargeSpinBox")
-    beam_spot_size = bnd.multi_bind(["spotSizeXdoubleSpinBox",
-                                    "spotSizeYdoubleSpinBox"],
-                                    track_change=True)
+    beam_spot_size = bnd.multi_bind(
+        ["spotSizeXdoubleSpinBox", "spotSizeYdoubleSpinBox"], track_change=True)
     beam_divergence = bnd.bind("divergenceDoubleSpinBox", track_change=True)
     beam_profile = bnd.bind("profileComboBox", track_change=True)
 
@@ -128,6 +128,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         """
         super().__init__()
         uic.loadUi(Path("ui_files", "ui_measurement_settings_tab.ui"), self)
+        self.fluenceDoubleSpinBox = ScientificSpinBox()
         # QPixmap does not accept Path object, so use os.path.join instead
         pixmap = QtGui.QPixmap(os.path.join(
             "images", "measurement_setup_angles.png"))
@@ -144,7 +145,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         self.spotSizeXdoubleSpinBox.setLocale(locale)
         self.spotSizeYdoubleSpinBox.setLocale(locale)
         self.divergenceDoubleSpinBox.setLocale(locale)
-        self.fluenceDoubleSpinBox.setLocale(locale)
         self.currentDoubleSpinBox.setLocale(locale)
         self.timeDoubleSpinBox.setLocale(locale)
         self.runChargeDoubleSpinBox.setLocale(locale)
@@ -176,20 +176,23 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
             lambda: iv.check_text(self.nameLineEdit, qwidget=self))
         self.nameLineEdit.textEdited.connect(self.__validate)
 
-        self.fluenceDoubleSpinBox.setContextMenuPolicy(Qt.ActionsContextMenu)
-        self.actionMultiply = QtWidgets.QAction(self.fluenceDoubleSpinBox)
+        self.run_form_layout: QtWidgets.QFormLayout
+        self.run_form_layout.insertRow(3, "Fluence", self.fluenceDoubleSpinBox)
+        self.fluenceDoubleSpinBox.scientificLineEdit.setContextMenuPolicy(
+            Qt.ActionsContextMenu)
+        self.actionMultiply = QtWidgets.QAction(
+            self.fluenceDoubleSpinBox.scientificLineEdit)
         self.actionMultiply.triggered.connect(self.__multiply_fluence)
-        self.fluenceDoubleSpinBox.addAction(self.actionMultiply)
+        self.fluenceDoubleSpinBox.scientificLineEdit.addAction(
+            self.actionMultiply)
 
-        self.actionUndo = QtWidgets.QAction(self.fluenceDoubleSpinBox)
+        self.actionUndo = QtWidgets.QAction(
+            self.fluenceDoubleSpinBox.scientificLineEdit)
         self.actionUndo.setText("Undo multiply")
         self.actionUndo.triggered.connect(self.__undo_fluence)
 
-        if self.tmp_run.previous_fluence:
-            self.actionUndo.setEnabled(True)
-        else:
-            self.actionUndo.setEnabled(False)
-        self.fluenceDoubleSpinBox.addAction(self.actionUndo)
+        self.actionUndo.setEnabled(bool(self.tmp_run.previous_fluence))
+        self.fluenceDoubleSpinBox.scientificLineEdit.addAction(self.actionUndo)
 
         self.clipboard = QGuiApplication.clipboard()
         self._ratio = None
@@ -206,8 +209,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         return self.__original_property_values
 
     def show_settings(self):
-        """
-        Show measurement settings.
+        """Show measurement settings.
         """
         self.measurement_setting_file_name = \
             self.obj.measurement_setting_file_name
@@ -265,8 +267,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         return run_params, beam_params
 
     def update_settings(self):
-        """
-        Update measurement settings.
+        """Update measurement settings.
         """
         isotope_index = self.isotopeComboBox.currentIndex()
         if isotope_index != -1:
@@ -282,12 +283,11 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
             self.obj.detector.detector_theta = self.detector_theta
             self.obj.target.target_theta = self.target_theta
         else:
-            QtWidgets.QMessageBox.critical(self, "Warning",
-                                           "No isotope selected.\n\nPlease "
-                                           "select an isotope for the beam "
-                                           "element.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.critical(
+                self, "Warning",
+                "No isotope selected.\n\n"
+                "Please select an isotope for the beam element.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def other_values_changed(self):
         """
@@ -328,16 +328,14 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
             self.tmp_run.set_settings(**run_params)
             self.tmp_run.beam.set_settings(**beam_params)
         else:
-            QtWidgets.QMessageBox.critical(self, "Warning",
-                                           "No isotope selected.\n\nPlease "
-                                           "select an isotope for the beam "
-                                           "element.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.critical(
+                self, "Warning",
+                "No isotope selected.\n\n"
+                "Please select an isotope for the beam element.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def __validate(self):
-        """
-        Validate the measurement settings file name.
+        """Validate the measurement settings file name.
         """
         text = self.measurement_setting_file_name
         regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
@@ -346,8 +344,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         self.measurement_setting_file_name = valid_text
 
     def __multiply_fluence(self):
-        """
-        Multiply fluence with clipboard's value.
+        """Multiply fluence with clipboard's value.
         """
         try:
             new_fluence = round(self._ratio * self.run_fluence, 2)
@@ -358,22 +355,19 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
             pass
 
     def __undo_fluence(self):
-        """
-        Undo latest change to fluence.
+        """Undo latest change to fluence.
         """
         try:
             old_value = self.tmp_run.previous_fluence.pop()
+            self.run_fluence = old_value
         except IndexError:
-            # cannot undo as the previous fluence list was empty.
-            self.actionUndo.setEnabled(False)
-            return
+            pass
 
-        self.fluenceDoubleSpinBox.setValue(old_value)
+        # Enable undo if there are still previous values
         self.actionUndo.setEnabled(bool(self.tmp_run.previous_fluence))
 
     def __update_multiply_action(self):
-        """
-        Update the value with which the multiplication is done.
+        """Update the value with which the multiplication is done.
         """
         try:
             self._ratio = float(self.clipboard.text())
@@ -384,7 +378,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
                                     f"({self._ratio})")
 
     def change_element(self):
-        """ Opens element selection dialog and loads selected element's isotopes
+        """Opens element selection dialog and loads selected element's isotopes
         to the combobox.
         """
         dialog = ElementSelectionDialog()

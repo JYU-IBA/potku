@@ -135,7 +135,7 @@ class TestRecoilParameters(unittest.TestCase):
             "lower_limits": 0.0,
             "sol_size": 1,
             "optimization_type": OptimizationType.FLUENCE,
-            "upper_limits": 10000000000.0,
+            "upper_limits": 10000000000000.0,
             "dis_c": 20,
             "dis_m": 20,
             "check_max": 900,

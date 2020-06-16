@@ -27,6 +27,7 @@ __version__ = "2.0"
 
 import math
 import widgets.input_validation as iv
+import decimal
 
 from widgets.input_validation import ScientificValidator
 
@@ -54,7 +55,7 @@ class ScientificSpinBox(QtWidgets.QWidget):
             value: value of spinbox
             minimum: minimum allowed value
             maximum: maximum allowed value
-            decimals: number of decimals to show
+            decimals: maximum number of decimals to show
             show_btns: Whether buttons that increase or decrease the value
                 are shown.
         """
@@ -63,7 +64,10 @@ class ScientificSpinBox(QtWidgets.QWidget):
         self._value = Decimal(str(value))
         self.minimum = minimum
         self.maximum = maximum
-        self.decimals = decimals
+        if 1 <= decimals <= 17:
+            self.decimals = decimals
+        else:
+            self.decimals = decimals
 
         self.scientificLineEdit: QtWidgets.QLineEdit
         self._validator = ScientificValidator(
@@ -94,7 +98,29 @@ class ScientificSpinBox(QtWidgets.QWidget):
             value = value
         else:
             value = Decimal(str(value))
-        self.scientificLineEdit.setText(f"{value:e}")
+
+        if value < self.minimum:
+            value = self.minimum
+        if value > self.maximum:
+            value = self.maximum
+
+        self.scientificLineEdit.setText(
+            self._format_value(value, self.decimals))
+
+    @staticmethod
+    def _format_value(value: Decimal, decimals: int) -> str:
+        """Helper function for formatting Decimal into string.
+        """
+        if not value:
+            return "0.0e+0"
+        s = f"{value:e}"
+        v, m = s.split("e")
+        v = v[:decimals - 2].rstrip("0")
+        if v.endswith("."):
+            v = f"{v}0"
+        elif "." not in v:
+            v = f"{v}.0"
+        return f"{v}e{m}"
 
     def _step_adjustment(self, direction):
         """Adjusts current value of the spinbox either up or down a step.
@@ -103,7 +129,10 @@ class ScientificSpinBox(QtWidgets.QWidget):
         #   So for example when stepping down, this goes
         #       10.1e10 -> 10.0e10 -> 9.0e9, instead of
         #       10.1e10 -> 10.0e10 -> 9.9e9
-        cur_val = self._get_value()
+        try:
+            cur_val = self._get_value()
+        except decimal.InvalidOperation:
+            return
         sign, digits, exp = cur_val.as_tuple()
         adj_digits = 1, *(0 for _ in range(len(digits) - 2))
         adjustment = Decimal((direction, adj_digits, exp))
@@ -112,7 +141,10 @@ class ScientificSpinBox(QtWidgets.QWidget):
     def get_value(self) -> float:
         """Returns the value of the spinbox as a float.
         """
-        return float(self._get_value())
+        try:
+            return float(self._get_value())
+        except decimal.InvalidOperation:
+            raise TypeError(f"Could not convert text into a number.")
 
     def _get_value(self) -> Decimal:
         """Returns the value of the spinbox as a Decimal. This is used

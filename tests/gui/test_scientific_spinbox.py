@@ -27,10 +27,8 @@ __version__ = "2.0"
 import sys
 import unittest
 import tests.utils as utils
-import random
 import math
 
-from decimal import Decimal
 from widgets.scientific_spinbox import ScientificSpinBox
 
 from PyQt5.QtWidgets import QApplication
@@ -56,12 +54,39 @@ class TestSciSpinbox(unittest.TestCase):
         self.click_up = lambda: QTest.mouseClick(up_btn, Qt.LeftButton)
 
     def test_display(self):
+        self.sbox.minimum = -math.inf
+
         self.sbox.set_value(5.5e+22)
         self.assertEqual("5.5e+22", self.sbox.scientificLineEdit.text())
 
-        self.sbox.set_value(math.pi)
+        self.sbox.set_value(math.pi * 1e20)
         self.assertEqual(
-            "3.141592653589793e+0", self.sbox.scientificLineEdit.text())
+            "3.1415926535897e+20", self.sbox.scientificLineEdit.text())
+
+        self.sbox.set_value(1.00000e21)
+        self.assertEqual("1.0e+21", self.sbox.scientificLineEdit.text())
+
+        self.sbox.set_value(1.00000e-21)
+        self.assertEqual("1.0e-21", self.sbox.scientificLineEdit.text())
+
+        self.sbox.set_value(-1.00000e-21)
+        self.assertEqual("-1.0e-21", self.sbox.scientificLineEdit.text())
+
+        self.sbox.set_value(0.1)
+        self.assertEqual("1.0e-1", self.sbox.scientificLineEdit.text())
+
+        self.sbox.set_value(0)
+        self.assertEqual("0.0e+0", self.sbox.scientificLineEdit.text())
+
+    def test_typed_values(self):
+        self.sbox.scientificLineEdit.setText("1.321e20")
+        self.assertEqual(1.321e20, self.sbox.get_value())
+
+        self.sbox.scientificLineEdit.setText("0")
+        self.assertEqual(0, self.sbox.get_value())
+
+        self.sbox.scientificLineEdit.setText("foo")
+        self.assertRaises(TypeError, lambda: self.sbox.get_value())
 
     def test_decrease(self):
         self.sbox.set_value(5.5e+22)
@@ -72,6 +97,10 @@ class TestSciSpinbox(unittest.TestCase):
         self.sbox.set_value(1.0001e+22)
         self.click_down()
         self.assertEqual(9.001e+21, self.sbox.get_value())
+
+        self.sbox.scientificLineEdit.setText("foo")
+        self.click_down()
+        self.assertEqual("foo", self.sbox.scientificLineEdit.text())
 
     def test_increase(self):
         self.sbox.set_value(9.81e+22)
@@ -95,5 +124,5 @@ class TestSciSpinbox(unittest.TestCase):
         self.assertEqual(self.maximum, self.sbox.get_value())
 
         # Try setting a string
-        self.assertRaises(
-            TypeError, lambda: self.sbox.set_value("5e21"))
+        self.sbox.set_value("5e21")
+        self.assertEqual(5e21, self.sbox.get_value())
