@@ -140,12 +140,15 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
         """Sets the minimum value of y spinbox depending on whether full edit
         is on or not.
         """
-        if self.parent.full_edit_on:
+        try:
+            if self.parent.full_edit_on:
+                self.y_coordinate_box.setMinimum(0.0)
+            else:
+                if self.y_coordinate_box.value() > 0:
+                    self.y_coordinate_box.setMinimum(
+                        self.parent.get_minimum_concentration())
+        except AttributeError:
             self.y_coordinate_box.setMinimum(0.0)
-        else:
-            if self.y_coordinate_box.value() > 0:
-                self.y_coordinate_box.setMinimum(
-                    self.parent.get_minimum_concentration())
 
     def __multiply_coordinate(self, spinbox):
         """Multiply the spinbox's value with the value in clipboard.

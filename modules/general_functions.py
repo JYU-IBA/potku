@@ -162,7 +162,7 @@ def find_files_by_extension(directory: Path, *exts) -> Dict[str, List[Path]]:
     return search_dict
 
 
-def hist(data, width=1.0, col=1):
+def hist(data, col=0, weight_col=None, width=1.0):
     """Format data into slices of given width.
 
     Python version of Arstila's hist code. This purpose is to format data's
@@ -170,35 +170,33 @@ def hist(data, width=1.0, col=1):
 
     Args:
         data: List representation of data.
-        width: Float defining width of data.
-        col: Integer representing what column of data is used.
+        col: column that contains the values to be histogrammed
+        weight_col: column that contains weights for each row of data
+        width: width of histogrammed bins.
 
     Return:
         Returns formatted list to use in graphs.
     """
-    col -= 1  # Same format as Arstila's code, actual column number (not index)
-    if col < 0:
-        return []
     if not data:
         return []
-    if data[0] and col >= len(data[0]):
-        return []
-    y = tuple(float(pair[col]) for pair in data)
-    y = sorted(y, reverse=False)
-    data_length = len(y)
+    data_sliced = tuple(
+        (float(row[col]), float(row[weight_col])
+         if weight_col is not None else 1)
+        for row in data)
+    data_spliced = sorted(data_sliced, key=lambda x: x[0], reverse=False)
+    data_length = len(data_sliced)
 
-    a = int(y[0] / width) * width
+    a = int(data_spliced[0][0] / width) * width
     i = 0
     hist_list = []
     while i < data_length:
         b = 0.0
-        while i < data_length and y[i] < a:
-            b += 1
+        while i < data_length and data_sliced[i][0] < a:
+            b += data_spliced[i][1]
             i += 1
         hist_list.append((a - (width / 2.0), b))
         a += width
-    # Add zero to the end.
-    # hist_list.append((a - (width / 2.0), 0))
+
     return hist_list
 
 

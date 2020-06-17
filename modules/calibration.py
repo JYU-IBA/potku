@@ -48,19 +48,20 @@ class TOFCalibrationHistogram:
     fit to histogram's front edge.
     """
 
-    def __init__(self, cut, bin_width, use_column=1):
+    def __init__(self, cut, bin_width: float, use_column=0):
         """Inits the class.
 
         Args:
             cut: CutFile that is used to make a histogram.
             bin_width: Created histograms bin width
             use_column: Which column of the CutFile's data is used to create a
-            histogram.
+                histogram.
         """
         self.cut = cut
         self.bin_width = bin_width
         self.use_column = use_column
-        histed_file = gf.hist(self.cut.data, self.bin_width, self.use_column)
+        histed_file = gf.hist(
+            self.cut.data, width=self.bin_width, col=self.use_column)
 
         self.histogram_x = [float(pair[0]) for pair in histed_file]
         self.histogram_y = [float(pair[1]) for pair in histed_file]

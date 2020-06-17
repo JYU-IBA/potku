@@ -60,8 +60,7 @@ class TestSimulationSettingsWidget(unittest.TestCase):
     def test_setting_parameters(self):
         """Test that correct values are shown in the widget.
         """
-        sim_widget = utils.run_without_warnings(
-            lambda: SimulationSettingsWidget(self.elem_sim))
+        sim_widget = SimulationSettingsWidget(self.elem_sim)
         self.assertEqual("foo", sim_widget.nameLineEdit.text())
         self.assertEqual("bar",
                          sim_widget.descriptionPlainTextEdit.toPlainText())
@@ -121,8 +120,7 @@ class TestSimulationSettingsWidget(unittest.TestCase):
 
     @utils.change_wd_to_root
     def test_value_changed(self):
-        sim_widget = utils.run_without_warnings(
-            lambda: SimulationSettingsWidget(self.elem_sim))
+        sim_widget = SimulationSettingsWidget(self.elem_sim)
         self.assertFalse(sim_widget.are_values_changed())
 
         # Seed is not taken into account

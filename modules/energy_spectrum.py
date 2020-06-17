@@ -75,7 +75,7 @@ class EnergySpectrum:
     @staticmethod
     def calculate_measured_spectra(measurement: Measurement, cut_files,
                                    spectrum_width, progress=None,
-                                   no_foil=False):
+                                   use_efficiency=False, no_foil=False):
         """Calculates the measured energy spectra for the given .cut files.
 
         Args:
@@ -84,6 +84,8 @@ class EnergySpectrum:
             cut_files: collection of .cut file paths
             spectrum_width: Float representing energy spectrum graph width.
             progress: ProgressReporter object.
+            use_efficiency: whether efficiency is taken into account when
+                spectra is calculated
             no_foil: whether foil thickness is set to 0 when running tof_list
 
         Returns:
@@ -91,12 +93,15 @@ class EnergySpectrum:
         """
         es = EnergySpectrum(measurement, cut_files, spectrum_width,
                             progress=progress, no_foil=no_foil)
-        return es.calculate_spectrum(no_foil=no_foil)
+        return es.calculate_spectrum(
+            use_efficiency=use_efficiency, no_foil=no_foil)
 
-    def calculate_spectrum(self, no_foil=False):
+    def calculate_spectrum(self, use_efficiency=False, no_foil=False):
         """Calculate energy spectrum data from cut files.
 
         Args:
+            use_efficiency: whether efficiency is taken into account when
+                spectra is calculated
             no_foil: whether foil thickness is set to 0 or original foil
                 thickness is used
         
@@ -108,7 +113,7 @@ class EnergySpectrum:
         self.__measurement.generate_tof_in(no_foil=no_foil)
         return EnergySpectrum._calculate_spectrum(
             self.__tof_listed_files, self.__spectrum_width, self.__measurement,
-            self.__directory_es, no_foil=no_foil)
+            self.__directory_es, use_efficiency=use_efficiency, no_foil=no_foil)
 
     def __load_cuts(self, no_foil=False, progress=None, tof_in_file=None):
         """Loads cut files through tof_list into list.
@@ -227,19 +232,21 @@ class EnergySpectrum:
 
     @staticmethod
     def _calculate_spectrum(tof_listed_files, spectrum_width: float,
-                            measurement: Measurement,
-                            directory_es: Path, no_foil=False):
+                            measurement: Measurement, directory_es: Path,
+                            use_efficiency=False, no_foil=False):
         """Calculate energy spectrum data from .tof_list files and writes the
         results to .hist files.
 
         Args:
             tof_listed_files: contents of .tof_list files belonging to the
-                              measurement as a dict.
-            spectrum_width: TODO
+                measurement as a dict.
+            spectrum_width: width of bins in the histogrammed spectra
             measurement: measurement which the .tof_list files belong to
             directory_es: directory
-            no_foil: whether foil thickeness was set to 0 or not. This affects
-                     the file name
+            use_efficiency: whether efficiency is taken into account when
+                spectra is calculated
+            no_foil: whether foil thickeness was set to 0 or not. This also
+                affects the file name
 
         Returns:
             contents of .hist files as a dict
@@ -247,10 +254,15 @@ class EnergySpectrum:
         histed_files = {}
         keys = tof_listed_files.keys()
         invalid_keys = set()
+        if use_efficiency:
+            y_col = 6
+        else:
+            y_col = None
 
         for key in keys:
             histed_files[key] = gf.hist(
-                tof_listed_files[key], spectrum_width, 3)
+                tof_listed_files[key], col=2, weight_col=y_col,
+                width=spectrum_width)
             if not histed_files[key]:
                 invalid_keys.add(key)
                 continue
