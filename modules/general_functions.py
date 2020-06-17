@@ -183,16 +183,16 @@ def hist(data, col=0, weight_col=None, width=1.0):
         (float(row[col]), float(row[weight_col])
          if weight_col is not None else 1)
         for row in data)
-    data_spliced = sorted(data_sliced, key=lambda x: x[0], reverse=False)
+    data_sliced = sorted(data_sliced, key=lambda x: x[0], reverse=False)
     data_length = len(data_sliced)
 
-    a = int(data_spliced[0][0] / width) * width
+    a = int(data_sliced[0][0] / width) * width
     i = 0
     hist_list = []
     while i < data_length:
         b = 0.0
         while i < data_length and data_sliced[i][0] < a:
-            b += data_spliced[i][1]
+            b += data_sliced[i][1]
             i += 1
         hist_list.append((a - (width / 2.0), b))
         a += width
