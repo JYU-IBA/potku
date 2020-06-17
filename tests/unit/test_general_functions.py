@@ -384,17 +384,24 @@ class TestFileIO(unittest.TestCase):
 
             self.assertEqual({
                 ".foo": [Path(tmp_dir, "a.foo"), Path(tmp_dir, "b.foo")]
-            }, gf.find_files_by_extension(Path(tmp_dir), ".foo"))
+            }, sorted_values(gf.find_files_by_extension(Path(tmp_dir), ".foo")))
 
             self.assertEqual({
                 ".foo": [Path(tmp_dir, "a.foo"), Path(tmp_dir, "b.foo")],
                 ".bar": [Path(tmp_dir, "d.bar")],
                 ".zip": []
-            }, gf.find_files_by_extension(
-                Path(tmp_dir), ".foo", ".bar", ".zip"))
+            }, sorted_values(gf.find_files_by_extension(
+                Path(tmp_dir), ".foo", ".bar", ".zip")))
 
-            self.assertEqual({
-            }, gf.find_files_by_extension(Path(tmp_dir)))
+            self.assertEqual({}, gf.find_files_by_extension(Path(tmp_dir)))
 
         self.assertRaises(
             OSError, lambda: gf.find_files_by_extension(Path(tmp_dir)))
+
+
+def sorted_values(dictionary):
+    """Helper function for sorting values in a dictionary.
+    """
+    return {
+        k: sorted(v) for k, v in dictionary.items()
+    }

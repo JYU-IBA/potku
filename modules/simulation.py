@@ -221,7 +221,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
                  measurement_setting_file_name="",
                  measurement_setting_file_description="", sample=None,
                  use_request_settings=True,
-                 save_on_creation=True):
+                 save_on_creation=True, enable_logging=True):
         """Initializes Simulation object.
 
         Args:
@@ -241,10 +241,11 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             use_request_settings: whether ElementSimulations under this
                 simulation use request settings or simulation settings
             save_on_creation: whether the Simulation is written to file when
-                              initialized.
+                initialized.
+            enable_logging: whether logging is enabled
         """
         # Run the base class initializer to establish logging
-        Logger.__init__(self, name, "Simulation")
+        Logger.__init__(self, name, "Simulation", enable_logging=enable_logging)
 
         self.tab_id = tab_id
         self.path = Path(path)
@@ -352,11 +353,14 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             target_file, mesu_file, res[".mcsimu"], res[".profile"],
             detector_file)
 
-    def add_element_simulation(self, recoil_element) -> ElementSimulation:
+    def add_element_simulation(
+            self, recoil_element, save_on_creation=True) -> ElementSimulation:
         """Adds ElementSimulation to Simulation.
 
         Args:
             recoil_element: RecoilElement that is simulated.
+            save_on_creation: whether ElementSimulation is saved upon
+                initialization.
         """
         element_str = recoil_element.element.get_prefix()
         name = self.request.default_element_simulation.name
@@ -370,7 +374,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             directory=self.directory, request=self.request, simulation=self,
             name_prefix=element_str, name=name, detector=self.detector,
             recoil_elements=[recoil_element], run=self.run, sample=self.sample,
-            simulation_type=simulation_type)
+            simulation_type=simulation_type, save_on_creation=save_on_creation)
 
         self.element_simulations.append(element_simulation)
         return element_simulation
@@ -379,7 +383,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
     def from_file(cls, request, simulation_file: Path,
                   measurement_file: Optional[Path] = None,
                   detector=None, target=None, run=None, sample=None,
-                  save_on_creation=True):
+                  save_on_creation=True, enable_logging=True):
         """Initialize Simulation from a JSON file.
 
         Args:
@@ -392,6 +396,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             sample: Sample under which this simulation belongs to
             save_on_creation: whether Simulation object is saved to file
                 after initialization
+            enable_logging: whether logging is enabled
         """
         with simulation_file.open("r") as file:
             simu_obj = json.load(file)
@@ -419,7 +424,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         return cls(
             simulation_file, request, detector=detector, target=target, run=run,
             sample=sample, **simu_obj, save_on_creation=save_on_creation,
-            **general)
+            enable_logging=enable_logging, **general)
 
     def to_file(self, simulation_file: Optional[Path] = None,
                 measurement_file: Optional[Path] = None):

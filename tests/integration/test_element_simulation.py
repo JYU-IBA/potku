@@ -58,6 +58,7 @@ class TestElementSimulationSettings(unittest.TestCase):
         """
         with tempfile.TemporaryDirectory() as tmp_dir:
             # File paths
+            # FIXME sometimes fails on Linux
             tmp_dir = Path(tmp_dir).resolve()
             mesu_file = tmp_dir / "mesu"
             det_dir = tmp_dir / "det"
@@ -66,9 +67,8 @@ class TestElementSimulationSettings(unittest.TestCase):
             simu_file = sim_dir / "bar.simulation"
 
             # Request
-            request = Request(tmp_dir, "test_req",
-                              GlobalSettings(),
-                              {})
+            request = Request(
+                tmp_dir, "test_req", GlobalSettings(config_dir=tmp_dir), {})
 
             self.assertEqual(tmp_dir, request.directory)
             self.assertEqual("test_req", request.request_name)
