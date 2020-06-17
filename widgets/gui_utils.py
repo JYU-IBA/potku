@@ -27,6 +27,7 @@ __version__ = "2.0"
 import abc
 import platform
 import functools
+import modules.general_functions as gf
 
 from pathlib import Path
 from typing import Sequence
@@ -104,6 +105,18 @@ def set_potku_setting(key: str, value):
     settings.setValue(key, value)
 
 
+def get_ui_dir() -> Path:
+    """Returns absolute path to directory that contains .ui files.
+    """
+    return gf.get_root_dir() / "ui_files"
+
+
+def get_icon_dir() -> Path:
+    """Returns absolute path to directory that contains Potku's icons.
+    """
+    return gf.get_root_dir() / "ui_icons"
+
+
 if platform.system() == "Darwin":
     # Mac needs event processing to display changes in the status bar
     # TODO calling processEvents may cause problems with signal handling so
@@ -112,6 +125,7 @@ if platform.system() == "Darwin":
     def _process_event_loop():
         QtCore.QCoreApplication.processEvents(
             QtCore.QEventLoop.AllEvents)
+
 else:
     def _process_event_loop():
         pass

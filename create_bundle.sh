@@ -35,7 +35,7 @@ echo
 
 # FIXME for some reason python -m pyinstaller is not working
 pip install pyinstaller
-pyinstaller -y --clean potku.spec || exit 1
+pyinstaller -y --clean --windowed potku.spec || exit 1
 
 cd dist
 echo

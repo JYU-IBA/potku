@@ -28,6 +28,7 @@ __version__ = "2.0"
 import platform
 
 import dialogs.dialog_functions as df
+import widgets.icon_manager as icons
 
 from collections import Counter
 
@@ -35,7 +36,6 @@ from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.energy_spectrum import EnergySpectrumWidget
 
 from PyQt5 import QtWidgets
-from PyQt5.QtGui import QIcon
 
 from widgets.simulation.circle import Circle
 
@@ -88,8 +88,8 @@ class RecoilElementWidget(QtWidgets.QWidget):
         self.circle = Circle(color)
 
         draw_spectrum_button = QtWidgets.QPushButton()
-        draw_spectrum_button.setIcon(QIcon(
-            "ui_icons/potku/energy_spectrum_icon.svg"))
+        draw_spectrum_button.setIcon(
+            icons.get_potku_icon("energy_spectrum_icon.svg"))
         draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                            QtWidgets.QSizePolicy.Fixed)
         draw_spectrum_button.clicked.connect(
@@ -97,8 +97,8 @@ class RecoilElementWidget(QtWidgets.QWidget):
         draw_spectrum_button.setToolTip("Draw energy spectra")
 
         remove_recoil_button = QtWidgets.QPushButton()
-        remove_recoil_button.setIcon(
-            QIcon("ui_icons/reinhardt/edit_delete.svg"))
+        remove_recoil_button.setIcon(icons.get_reinhardt_icon(
+            "edit_delete.svg"))
         remove_recoil_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                            QtWidgets.QSizePolicy.Fixed)
         remove_recoil_button.clicked.connect(self.remove_recoil)

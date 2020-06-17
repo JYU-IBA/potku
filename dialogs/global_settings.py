@@ -42,8 +42,6 @@ from modules.enums import IonDivision
 from modules.enums import CrossSection
 from modules.enums import ToFEColorScheme
 
-from pathlib import Path
-
 from PyQt5 import QtCore
 from PyQt5 import uic
 from PyQt5 import QtGui
@@ -88,7 +86,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         """Constructor for the program
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_global_settings.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_global_settings.ui", self)
 
         self.settings = settings
         self.__added_timings = {}  # Placeholder for timings

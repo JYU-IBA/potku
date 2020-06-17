@@ -93,7 +93,7 @@ class Potku(QtWidgets.QMainWindow):
         """Init main window for Potku.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_main_window.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_main_window.ui", self)
 
         self.title = self.windowTitle()
         self.treeWidget.setHeaderLabel("")
@@ -415,6 +415,8 @@ class Potku(QtWidgets.QMainWindow):
         if isinstance(widget, BaseTab):
             widget.save_geometries()
 
+        # FIXME TypeError: closeEvent(self, QCloseEvent): argument 1 has
+        #  unexpected type 'bool'
         super().closeEvent(event)
 
     def are_simulations_stopped(self):
@@ -440,6 +442,12 @@ class Potku(QtWidgets.QMainWindow):
                     return False
                 events = [sim.stop() for sim in sims]
                 for e in events:
+                    # Note: while the worst case scenario is that we'll be
+                    # stuck here for len(sims) seconds, it is likely that
+                    # all simulations have stopped within 0.2 seconds (the
+                    # default interval for checking stopping requests). Some
+                    # overhead for releasing locks and notifying listeners
+                    # is also to be expected.
                     e.wait(timeout=1)
         return True
 
@@ -852,7 +860,9 @@ class Potku(QtWidgets.QMainWindow):
         Args:
             files: list of files to be shown in the menu
         """
-        # FIXME on Mac, the list is inactive after new request is created
+        # Note: when running Potku as a Python script on Mac, the recently
+        # opened files menu becomes inactive after creating a new request.
+        # This is fixed when Potku is bundled intp an app.
         self.menuOpen_recent.clear()
 
         if files is None:

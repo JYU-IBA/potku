@@ -35,15 +35,13 @@ import dialogs.dialog_functions as df
 import widgets.input_validation as iv
 import widgets.gui_utils as gutils
 import widgets.binding as bnd
-
-from pathlib import Path
+import widgets.icon_manager as icons
 
 from widgets.isotope_selection import IsotopeSelectionWidget
 
 from modules.element import Element
 from modules.layer import Layer
 
-from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
@@ -69,7 +67,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog, bnd.PropertyTrackingWidget,
             first_layer: Whether the dialog is used to add the first layer.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_layer_dialog.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_layer_dialog.ui", self)
 
         self.tab = tab
         self.layer = layer
@@ -313,7 +311,7 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.amount_spinbox.setLocale(QLocale.c())
 
         self.delete_button = QtWidgets.QPushButton("")
-        self.delete_button.setIcon(QtGui.QIcon("ui_icons/potku/del.png"))
+        self.delete_button.setIcon(icons.get_potku_icon("del.png"))
         self.delete_button.setFixedWidth(28)
         self.delete_button.setFixedHeight(28)
 

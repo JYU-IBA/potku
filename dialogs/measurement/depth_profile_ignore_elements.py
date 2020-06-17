@@ -31,7 +31,7 @@ __author__ = "Timo Konu \n Severi Jääskeläinen \n Samuel Kaiponen \n Heta " \
              "Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-from pathlib import Path
+import widgets.gui_utils as gutils
 
 from PyQt5 import QtCore
 from PyQt5 import uic
@@ -52,7 +52,7 @@ class DepthProfileIgnoreElements(QtWidgets.QDialog):
                            calculation.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_depth_profile_ignored.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_depth_profile_ignored.ui", self)
 
         self.__elements = elements
         self.ignore_from_graph = ignored_graph

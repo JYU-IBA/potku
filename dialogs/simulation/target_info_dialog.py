@@ -27,8 +27,7 @@ __version__ = "2.0"
 import time
 
 import widgets.input_validation as iv
-
-from pathlib import Path
+import widgets.gui_utils as gutils
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -47,7 +46,7 @@ class TargetInfoDialog(QtWidgets.QDialog):
             target: Target object.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_target_info.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_target_info.ui", self)
 
         self.target = target
 

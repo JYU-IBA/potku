@@ -30,6 +30,7 @@ __version__ = "2.0"
 import os
 
 import dialogs.dialog_functions as df
+import widgets.gui_utils as gutils
 
 from collections import Counter
 from pathlib import Path
@@ -63,7 +64,7 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
             statusbar: A QtGui.QMainWindow's QStatusBar.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_simulation_tab.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_simulation_tab.ui", self)
 
         self.request = request
         self.tab_id = tab_id

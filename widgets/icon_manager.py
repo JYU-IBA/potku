@@ -27,7 +27,10 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
-from os import listdir, path
+import os
+import widgets.gui_utils as gutils
+
+from pathlib import Path
 from PyQt5 import QtGui, QtCore, QtWidgets
 
 
@@ -41,7 +44,7 @@ class IconManager:
         self.__icons = {}
         self.__load_icons()
 
-    def get_icon(self, icon_name):
+    def get_icon(self, icon_name: str) -> QtGui.QIcon:
         """Get specific icon.
 
         Args:
@@ -52,7 +55,7 @@ class IconManager:
         """
         return self.__icons.get(icon_name, QtGui.QIcon())
 
-    def set_icon(self, target, icon_name, size=(20, 20)):
+    def set_icon(self, target, icon_name: str, size=(20, 20)):
         """Set icon (icon_name) to target.
 
         Args:
@@ -68,24 +71,30 @@ class IconManager:
     def __load_icons(self):
         """Load icons from ui_icons directory.
         """
-        icon_directory = "ui_icons"
-        icon_directory_potku = path.join(icon_directory, "potku")
-        icon_directory_reinhardt = path.join(icon_directory, "reinhardt")
+        icon_directory_potku = gutils.get_icon_dir() / "potku"
+        icon_directory_reinhardt = gutils.get_icon_dir() / "reinhardt"
         self.__load_icons_from_files(icon_directory_reinhardt)
         self.__load_icons_from_files(icon_directory_potku)
 
-    def __load_icons_from_files(self, directory):
+    def __load_icons_from_files(self, directory: Path):
         """Load icons from provided icon list.
 
         Args:
             directory: String representing directory where the icons are at.
         """
-        file_list = [file for file in listdir(directory)
-                     if path.isfile(path.join(directory, file))
-                     and path.splitext(file)[1] != ".txt"]
-        for icon_file in file_list:
-            icon = QtGui.QIcon()
-            icon.addPixmap(QtGui.QPixmap(path.join(directory, icon_file)),
-                           QtGui.QIcon.Normal,
-                           QtGui.QIcon.Off)
-            self.__icons[icon_file] = icon
+        for entry in os.scandir(directory):
+            path = Path(entry.path)
+            if path.is_file() and path.suffix != ".txt":
+                icon = QtGui.QIcon()
+                icon.addPixmap(
+                    QtGui.QPixmap(str(path)), QtGui.QIcon.Normal,
+                    QtGui.QIcon.Off)
+                self.__icons[path.name] = icon
+
+
+def get_potku_icon(name: str) -> QtGui.QIcon:
+    return QtGui.QIcon(str(gutils.get_icon_dir() / "potku" / name))
+
+
+def get_reinhardt_icon(name: str) -> QtGui.QIcon:
+    return QtGui.QIcon(str(gutils.get_icon_dir() / "reinhardt" / name))

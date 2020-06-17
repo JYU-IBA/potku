@@ -31,8 +31,7 @@ __version__ = "2.0"
 import copy
 
 import widgets.input_validation as iv
-
-from pathlib import Path
+import widgets.gui_utils as gutils
 
 from modules.foil import CircularFoil
 from modules.foil import RectangularFoil
@@ -55,7 +54,7 @@ class FoilDialog(QtWidgets.QDialog):
             icon_manager: Icon manager for TargetCompositionWidget.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_composition_dialog.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_composition_dialog.ui", self)
 
         self.icon_manager = icon_manager
         self.foils = tmp_foils

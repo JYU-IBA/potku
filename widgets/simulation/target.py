@@ -31,6 +31,8 @@ import platform
 import threading
 import time
 
+import widgets.gui_utils as gutils
+
 from pathlib import Path
 from modules.element_simulation import ElementSimulation
 from modules.simulation import Simulation
@@ -69,7 +71,7 @@ class TargetWidget(QtWidgets.QWidget):
             progress: ProgressReporter object
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_target_widget.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_target_widget.ui", self)
 
         if progress is not None:
             progress.report(0)

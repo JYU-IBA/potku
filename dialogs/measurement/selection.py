@@ -37,8 +37,6 @@ import widgets.input_validation as iv
 import widgets.gui_utils as gutils
 import dialogs.dialog_functions as df
 
-from pathlib import Path
-
 from dialogs.element_selection import ElementSelectionDialog
 
 from modules.element import Element
@@ -60,7 +58,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
             selection: Selection class object.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_selection_settings.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_selection_settings.ui", self)
 
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 

@@ -28,16 +28,15 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import json
 import time
 
 import dialogs.dialog_functions as df
 import widgets.binding as bnd
 import modules.general_functions as gf
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
-from modules.run import Run
 from modules.simulation import Simulation
 
 from PyQt5 import QtCore
@@ -64,7 +63,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             icon_manager: An icon manager.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_specific_settings.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_specific_settings.ui", self)
 
         self.tab = tab
         self.simulation = simulation

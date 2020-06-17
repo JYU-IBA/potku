@@ -28,13 +28,14 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
+import widgets.icon_manager as icons
+
 from modules.detector import Detector
 from modules.run import Run
 from modules.calibration import TOFCalibrationPoint
 from modules.calibration import TOFCalibrationHistogram
 from widgets.matplotlib.base import MatplotlibWidget
 
-from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 
 
@@ -218,8 +219,6 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
         self.selectButton = QtWidgets.QToolButton(self)
         self.selectButton.clicked.connect(self.toggle_clicks)
         self.selectButton.setCheckable(True)
-        # TODO: Make this the new way
-        self.selectButton.setIcon(
-            QtGui.QIcon("ui_icons/reinhardt/amarok_edit.svg"))
+        self.selectButton.setIcon(icons.get_reinhardt_icon("amarok_edit.svg"))
         self.selectButton.setToolTip("Select the point manually.")
         self.mpl_toolbar.addWidget(self.selectButton)

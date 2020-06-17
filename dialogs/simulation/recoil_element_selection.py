@@ -36,8 +36,6 @@ import widgets.input_validation as iv
 import widgets.gui_utils as gutils
 import dialogs.dialog_functions as df
 
-from pathlib import Path
-
 from dialogs.element_selection import ElementSelectionDialog
 
 from PyQt5 import QtCore
@@ -55,8 +53,8 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         """Inits simulation element selection dialog.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_recoil_element_selection_dialog.ui"),
-                   self)
+        uic.loadUi(
+            gutils.get_ui_dir() / "ui_recoil_element_selection_dialog.ui", self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.recoil_atom_distribution = recoil_atom_distribution
 

@@ -37,7 +37,6 @@ import widgets.input_validation as iv
 import widgets.gui_utils as gutils
 from widgets.scientific_spinbox import ScientificSpinBox
 
-from pathlib import Path
 from typing import Union
 from modules.enums import Profile
 from modules.element import Element
@@ -127,7 +126,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
                 Simulation.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_measurement_settings_tab.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_measurement_settings_tab.ui", self)
         self.fluenceDoubleSpinBox = ScientificSpinBox()
         # QPixmap does not accept Path object, so use os.path.join instead
         pixmap = QtGui.QPixmap(os.path.join(

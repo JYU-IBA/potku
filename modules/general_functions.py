@@ -40,6 +40,7 @@ import subprocess
 import tempfile
 import time
 import functools
+import sys
 
 from timeit import default_timer as timer
 from pathlib import Path
@@ -586,8 +587,7 @@ def combine_files(file_paths, destination):
 def _get_external_dir() -> Path:
     """Returns absolute path to 'external' folder
     """
-    root_dir = Path(__file__).parent.parent
-    return (root_dir / "external").resolve()
+    return get_root_dir() / "external"
 
 
 def get_bin_dir() -> Path:
@@ -600,3 +600,13 @@ def get_data_dir() -> Path:
     """Returns absolute path to Potku's data directory.
     """
     return _get_external_dir() / "share"
+
+
+_ROOT_DIR = Path(
+    getattr(sys, "_MEIPASS", Path(__file__).parent.parent)
+).resolve()
+
+def get_root_dir() -> Path:
+    """Returns the absolute path to Potku's root directory.
+    """
+    return _ROOT_DIR

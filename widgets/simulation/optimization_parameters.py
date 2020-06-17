@@ -29,10 +29,9 @@ __version__ = "2.0"
 import abc
 
 import widgets.binding as bnd
+import widgets.gui_utils as gutils
 
 from modules.nsgaii import OptimizationType
-
-from pathlib import Path
 
 from widgets.binding import PropertyBindingWidget
 from widgets.gui_utils import QtABCMeta
@@ -88,8 +87,6 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
     """Abstract base class for recoil and fluence optimization parameter
     widgets.
     """
-    # TODO fix the layout so that the rows in different QLayoutForms match each
-    #  other
     # Common properties
     gen = bnd.bind("generationSpinBox")
     pop_size = bnd.bind("populationSpinBox")
@@ -163,7 +160,7 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
         Args:
             kwargs: property values to be shown in the widget.
         """
-        ui_file = Path("ui_files", "ui_optimization_recoil_params.ui")
+        ui_file = gutils.get_ui_dir() / "ui_optimization_recoil_params.ui"
         super().__init__(ui_file, **kwargs)
 
         locale = QLocale.c()
@@ -201,7 +198,7 @@ class OptimizationFluenceParameterWidget(OptimizationParameterWidget):
         Args:
             kwargs: property values to be shown in the widget.
         """
-        ui_file = Path("ui_files", "ui_optimization_fluence_params.ui")
+        ui_file = gutils.get_ui_dir() / "ui_optimization_fluence_params.ui"
         self.fluenceDoubleSpinBox = ScientificSpinBox(10e12)
         super().__init__(ui_file, **kwargs)
         self.fluence_form_layout.addRow(

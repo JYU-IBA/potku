@@ -80,7 +80,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             recoil_widget: RecoilElement widget.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_energy_spectrum_params.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_energy_spectrum_params.ui", self)
 
         self.parent = parent
         self.element_simulation = element_simulation
@@ -522,7 +522,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
         sbh = None
         try:
             super().__init__()
-            uic.loadUi(Path("ui_files", "ui_energy_spectrum.ui"), self)
+            uic.loadUi(gutils.get_ui_dir() / "ui_energy_spectrum.ui", self)
 
             self.parent = parent
             self.icon_manager = parent.icon_manager

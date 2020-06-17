@@ -28,7 +28,6 @@ import unittest
 import tempfile
 
 import tests.mock_objects as mo
-import tests.utils as utils
 import tests.gui
 
 from modules.enums import SimulationType
@@ -56,7 +55,6 @@ class TestSimulationSettingsWidget(unittest.TestCase):
 
         self.elem_sim = elem_sim
 
-    @utils.change_wd_to_root
     def test_setting_parameters(self):
         """Test that correct values are shown in the widget.
         """
@@ -84,7 +82,6 @@ class TestSimulationSettingsWidget(unittest.TestCase):
 
     @patch("os.remove")
     @patch("modules.recoil_element.RecoilElement.to_file")
-    @utils.change_wd_to_root
     def test_update_elementsimulation(self, mock_remove, mock_rec_to_file):
         """Tests if updating properties also updates ElementSimulation
         object.
@@ -118,7 +115,6 @@ class TestSimulationSettingsWidget(unittest.TestCase):
         mock_remove.assert_called()
         mock_rec_to_file.assert_called()
 
-    @utils.change_wd_to_root
     def test_value_changed(self):
         sim_widget = SimulationSettingsWidget(self.elem_sim)
         self.assertFalse(sim_widget.are_values_changed())
