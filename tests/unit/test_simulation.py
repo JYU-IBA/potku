@@ -56,13 +56,12 @@ class TestSimulation(unittest.TestCase):
         # Just in case make sure that the temp_dir got deleted
         self.assertFalse(os.path.exists(temp_dir))
 
-    @patch("modules.mcerd.MCERD")
     @patch("modules.mcerd.MCERD.run")
-    @patch("modules.mcerd.MCERD.stop_process")
-    def test_get_active_simulation(self, mock1, mock2, mock3):
+    def test_get_active_simulation(self, mock_run):
         sim = mo.get_simulation()
 
-        sim.add_element_simulation(mo.get_recoil_element())
+        sim.add_element_simulation(
+            mo.get_recoil_element(), save_on_creation=False)
         self.assertEqual(([], [], [], []), sim.get_active_simulations())
 
         elem_sim = sim.element_simulations[0]
@@ -86,19 +85,18 @@ class TestSimulation(unittest.TestCase):
     def test_serialization(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             fp = Path(tmp_dir, "test.simu")
-            sim = Simulation(tmp_dir, mo.get_request(), name="foo",
-                             description="bar", save_on_creation=False,
-                             run=mo.get_run(), detector=mo.get_detector(),
-                             target=mo.get_target())
+            sim = Simulation(
+                Path(tmp_dir, "foo.simulation"), mo.get_request(), name="foo",
+                description="bar", save_on_creation=False, run=mo.get_run(),
+                detector=mo.get_detector(), target=mo.get_target(),
+                enable_logging=False)
 
             sim.to_file(fp)
 
-            sim2 = Simulation.from_file(mo.get_request(), fp,
-                                        detector=mo.get_detector(),
-                                        target=mo.get_target(),
-                                        run=mo.get_run())
-
-            utils.disable_logging()
+            sim2 = Simulation.from_file(
+                mo.get_request(), fp, detector=mo.get_detector(),
+                target=mo.get_target(), run=mo.get_run(), enable_logging=False,
+                save_on_creation=False)
 
             self.assertEqual(sim.name, sim2.name)
             self.assertEqual(sim.description, sim2.description)

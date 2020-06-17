@@ -265,7 +265,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
                  measurement_setting_file_description="",
                  measurement_setting_modification_time=None,
                  use_default_profile_settings=True, sample=None,
-                 save_on_creation=True):
+                 save_on_creation=True, enable_logging=True):
         """Initializes a measurement.
 
         Args:
@@ -273,7 +273,8 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             path: Full path to measurement's .info file.
         """
         # Run the base class initializer to establish logging
-        Logger.__init__(self, name, "Measurement")
+        Logger.__init__(
+            self, name, "Measurement", enable_logging=enable_logging)
         # FIXME path should be to info file
         self.tab_id = tab_id
 

@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -51,17 +51,17 @@ from modules.request import Request
 # This module can be used to generate various helper objects for testing
 # purposes.
 
+_TEMP_DIR = Path(tempfile.TemporaryDirectory().name).resolve()
+
 
 def get_detector() -> Detector:
     """Returns a Detector object that has the default foils (3 circular,
     1 rectangular).
     """
-    path = Path(tempfile.gettempdir(), ".detector")
-    mesu = Path(tempfile.gettempdir(), "mesu")
-    eff = Path(tempfile.gettempdir(), "efficiencies")
+    path = Path(_TEMP_DIR, ".detector")
+    mesu = Path(_TEMP_DIR, "mesu")
 
     d = Detector(path, mesu, save_on_creation=False)
-    d.efficiency_directory = eff
     return d
 
 
@@ -127,8 +127,8 @@ def get_element_simulation(request=None) -> ElementSimulation:
     if request is None:
         request = get_request()
 
-    return ElementSimulation(tempfile.gettempdir(), request,
-                             [get_recoil_element()], save_on_creation=False)
+    return ElementSimulation(
+        _TEMP_DIR, request, [get_recoil_element()], save_on_creation=False)
 
 
 def get_simulation(request=None) -> Simulation:
@@ -137,8 +137,9 @@ def get_simulation(request=None) -> Simulation:
     if request is None:
         request = get_request()
 
-    return Simulation(Path(tempfile.gettempdir(), "foo.simulation"),
-                      request)
+    return Simulation(
+        _TEMP_DIR / "foo.simulation", request, save_on_creation=False,
+        enable_logging=False)
 
 
 def get_measurement(request=None) -> Measurement:
@@ -148,7 +149,8 @@ def get_measurement(request=None) -> Measurement:
         request = get_request()
 
     return Measurement(
-        request, Path(tempfile.gettempdir(), "mesu"), save_on_creation=False)
+        request, _TEMP_DIR / "mesu", save_on_creation=False,
+        enable_logging=False)
 
 
 def get_layer(element_count=1, randomize=False) -> Layer:
@@ -161,17 +163,17 @@ def get_layer(element_count=1, randomize=False) -> Layer:
     Return:
         Layer object
     """
-    return Layer("layer1",
-                 [get_element(randomize=randomize, amount_p=1.0)
-                  for _ in range(element_count)],
-                 1, 2)
+    return Layer(
+        "layer1",
+        [get_element(randomize=randomize, amount_p=1.0)
+         for _ in range(element_count)], 1, 2)
 
 
 def get_global_settings() -> GlobalSettings:
     """Returns a GlobalSettings object.
     """
     return GlobalSettings(
-        config_dir=tempfile.gettempdir(), save_on_creation=False)
+        config_dir=_TEMP_DIR, save_on_creation=False)
 
 
 def get_request() -> Request:
@@ -180,7 +182,7 @@ def get_request() -> Request:
     This is done to avoid lengthy file writing operations when a real
     Request is initialized
     """
-    return Request(tempfile.gettempdir(), "request", get_global_settings(),
+    return Request(_TEMP_DIR, "request", get_global_settings(),
                    save_on_creation=False, enable_logging=False)
 
 

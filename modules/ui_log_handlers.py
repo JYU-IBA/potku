@@ -105,9 +105,11 @@ class CustomLogHandler(logging.Handler):
 class Logger:
     """Common base class for Measurements and Simulations to enable logging.
     """
-    __slots__ = "logger_name", "category", "datefmt", "defaultlog", "errorlog"
+    __slots__ = "logger_name", "category", "datefmt", "defaultlog", \
+                "errorlog", "enable_logging"
 
-    def __init__(self, logger_name, category, datefmt="%Y-%m-%d %H:%M:%S"):
+    def __init__(self, logger_name, category, datefmt="%Y-%m-%d %H:%M:%S",
+                 enable_logging=True):
         """Initializes a new Logger
 
         Args:
@@ -120,6 +122,7 @@ class Logger:
         self.datefmt = datefmt
         self.defaultlog = None
         self.errorlog = None
+        self.enable_logging = enable_logging
 
     def set_loggers(self, directory, request_directory):
         """Sets the loggers for this Logger object.
@@ -128,6 +131,9 @@ class Logger:
         After this, the logger can be called from anywhere of the
         program, using logging.getLogger([name]).
         """
+        if not self.enable_logging:
+            return
+
         # Initializes the logger for this simulation.
         logger = logging.getLogger(self.logger_name)
         logger.setLevel(logging.DEBUG)

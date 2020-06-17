@@ -53,8 +53,9 @@ class TestFolderStructure(unittest.TestCase):
                 "Composition_changes": {
                     "Changes": {}
                 },
-                "default.log": None,
-                "errors.log": None
+                # TODO
+                # "default.log": None,
+                # "errors.log": None
             }
         }
         self.after_to_file = copy.deepcopy(self.folder_structure)
@@ -75,8 +76,8 @@ class TestFolderStructure(unittest.TestCase):
                 mo.get_request(), path / f"{self.mesu_name}.info",
                 name=self.mesu_name,
                 measurement_setting_file_name=self.settings_file,
-                profile_name=self.profile_name, save_on_creation=False)
-            utils.disable_logging()
+                profile_name=self.profile_name, save_on_creation=False,
+                enable_logging=False)
 
             # No files or folders should be created...
             utils.assert_folder_structure_equal({}, Path(tmp_dir))
@@ -99,8 +100,8 @@ class TestFolderStructure(unittest.TestCase):
             mesu = Measurement(
                 mo.get_request(), path / "mesu.info",
                 measurement_setting_file_name=self.mesu_name,
-                profile_name=self.profile_name, save_on_creation=False)
-            utils.disable_logging()
+                profile_name=self.profile_name, save_on_creation=False,
+                enable_logging=False)
             mesu.create_folder_structure(path)
             mesu.to_file()
 
