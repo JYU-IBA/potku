@@ -194,7 +194,7 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
                 #   copied elsewhere, as the '.save' file has the old file
                 #   paths saved
                 file_path = Path(self.simulation.directory, file)
-                save_file_int = file.rsplit('_', 1)[1].split(".save")[0]
+                save_file_int = int(file.rsplit('_', 1)[1].split(".save")[0])
                 with open(file_path, 'r') as save_file:
                     lines = save_file.readlines()
                 if not lines:
@@ -210,16 +210,16 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
                 icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
                 energy_spectrum_widget = EnergySpectrumWidget(
                     self, "simulation",
-                    used_files_confirmed,
-                    bin_width,
-                    save_file_int,
+                    use_cuts=used_files_confirmed,
+                    bin_width=bin_width,
+                    save_file_int=save_file_int,
                     spectra_changed=spectra_changed)
                 self.energy_spectrum_widgets.append(energy_spectrum_widget)
                 self.add_widget(energy_spectrum_widget, icon=icon)
 
                 if save_energy_spectrum:
-                    energy_spectrum_widget.save_to_file(measurement=False,
-                                                        update=True)
+                    energy_spectrum_widget.save_to_file(
+                        measurement=False, update=True)
 
     def __open_settings(self):
         SimulationSettingsDialog(self, self.simulation, self.icon_manager)

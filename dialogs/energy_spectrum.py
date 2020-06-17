@@ -520,10 +520,9 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 spectra.
         """
         sbh = None
+        super().__init__()
+        uic.loadUi(gutils.get_ui_dir() / "ui_energy_spectrum.ui", self)
         try:
-            super().__init__()
-            uic.loadUi(gutils.get_ui_dir() / "ui_energy_spectrum.ui", self)
-
             self.parent = parent
             self.icon_manager = parent.icon_manager
             self.progress_bar = None
@@ -541,6 +540,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
 
             if isinstance(self.parent.obj, Measurement):
                 self.measurement = self.parent.obj
+
                 # Removal is done in the finally block so autoremove
                 # is set to False
                 sbh = StatusBarHandler(statusbar, autoremove=False)
@@ -565,8 +565,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             else:
                 self.simulation = self.parent.obj
                 self.save_file_int = save_file_int
-                self.save_file = "widget_energy_spectrum_" + str(
-                    save_file_int) + ".save"
+                self.save_file = f"widget_energy_spectrum_{save_file_int}.save"
                 for file in use_cuts:
                     self.energy_spectrum_data[file] = GetEspe.read_espe_file(
                         file)
@@ -610,9 +609,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
         if self.spectrum_type == "simulation":
             file = Path(self.parent.obj.directory, self.save_file)
             try:
-                if os.path.isfile(file):
-                    os.unlink(file)
-            except:
+                file.unlink()
+            except OSError:
                 pass
         self.delete()
         super().closeEvent(evnt)
@@ -626,29 +624,28 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             update: TODO
         """
         if measurement:
-            files = "\t".join([os.path.relpath(tmp,
-                                               self.measurement.directory)
-                               for tmp in self.use_cuts])
-            file = os.path.join(self.measurement.get_energy_spectra_dir(),
-                                self.save_file)
+            files = "\t".join([
+                os.path.relpath(tmp, self.measurement.directory)
+                for tmp in self.use_cuts])
+            file = Path(
+                self.measurement.get_energy_spectra_dir(), self.save_file)
         else:
             files = "\t".join([str(tmp) for tmp in self.use_cuts])
 
-            file_name_start = "widget_energy_spectrum_"
-            i = self.save_file_int
-            file_name_end = ".save"
-            file_name = file_name_start + str(i) + file_name_end
+            file_name = f"widget_energy_spectrum_{self.save_file_int}.save"
             if self.save_file_int == 0 or not update:
                 i = 1
-                file_name = file_name_start + str(i) + file_name_end
-                while os.path.exists(os.path.join(self.simulation.directory,
-                                                  file_name)):
-                    file_name = file_name_start + str(i) + file_name_end
+                file_name = f"widget_energy_spectrum_{i}.save"
+                while Path(self.simulation.directory, file_name).exists():
                     i += 1
+                    file_name = f"widget_energy_spectrum_{i}.save"
                 self.save_file_int = i
             self.save_file = file_name
             file = Path(self.simulation.directory, file_name)
 
-        with open(file, "wt") as fh:
-            fh.write("{0}\n".format(files))
-            fh.write("{0}".format(self.bin_width))
+        try:
+            with file.open("w") as fh:
+                fh.write("{0}\n".format(files))
+                fh.write("{0}".format(self.bin_width))
+        except OSError:
+            pass
