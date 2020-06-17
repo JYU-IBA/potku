@@ -162,7 +162,7 @@ def find_files_by_extension(directory: Path, *exts) -> Dict[str, List[Path]]:
     return search_dict
 
 
-def hist(data, x_col=0, y_col=None, width=1.0):
+def hist(data, col=0, weight_col=None, width=1.0):
     """Format data into slices of given width.
 
     Python version of Arstila's hist code. This purpose is to format data's
@@ -170,8 +170,8 @@ def hist(data, x_col=0, y_col=None, width=1.0):
 
     Args:
         data: List representation of data.
-        x_col: column index for x axis values
-        y_col: column index for y axis values
+        col: column that contains the values to be histogrammed
+        weight_col: column that contains weights for each row of data
         width: width of histogrammed bins.
 
     Return:
@@ -180,7 +180,8 @@ def hist(data, x_col=0, y_col=None, width=1.0):
     if not data:
         return []
     data_sliced = tuple(
-        (float(row[x_col]), float(row[y_col]) if y_col is not None else 1)
+        (float(row[col]), float(row[weight_col])
+         if weight_col is not None else 1)
         for row in data)
     data_spliced = sorted(data_sliced, key=lambda x: x[0], reverse=False)
     data_length = len(data_sliced)

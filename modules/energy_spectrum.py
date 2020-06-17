@@ -261,7 +261,7 @@ class EnergySpectrum:
 
         for key in keys:
             histed_files[key] = gf.hist(
-                tof_listed_files[key], x_col=2, y_col=y_col,
+                tof_listed_files[key], col=2, weight_col=y_col,
                 width=spectrum_width)
             if not histed_files[key]:
                 invalid_keys.add(key)

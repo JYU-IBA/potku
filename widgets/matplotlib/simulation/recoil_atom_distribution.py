@@ -1480,10 +1480,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if self.__save_points:
             # Make entry for backlog
             self.current_recoil_element.save_current_points(self.full_edit_on)
-        if not x:
+        if x is None:
             x = self.coordinates_widget.x_coordinate_box.value()
-        if not clicked:
+        if clicked is None and self.clicked_point is not None:
             clicked = self.clicked_point
+        else:
+            return
 
         left_neighbor, right_neighbor = \
             self.current_recoil_element.get_neighbors(clicked)
@@ -1511,21 +1513,21 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.update_plot()
 
     def set_selected_point_y(self, y=None, clicked=None):
-        """Sets the selected point's y coordinate
-        to the value of the y spinbox.
+        """Sets the selected point's y coordinate to the value of the y spinbox.
 
         Args:
             y: New y coordinate.
             clicked: Clicked point.
         """
         if self.__save_points:
-            # MAke entry for backlog
+            # Make entry for backlog
             self.current_recoil_element.save_current_points(self.full_edit_on)
-        if not y:
+        if y is None:
             y = self.coordinates_widget.y_coordinate_box.value()
-        if not clicked:
-            clicked = self.clicked_point
-        clicked.set_y(y)
+        if clicked is not None:
+            clicked.set_y(y)
+        elif self.clicked_point is not None:
+            self.clicked_point.set_y(y)
         self.update_plot()
 
     def on_click(self, event):

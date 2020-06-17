@@ -223,14 +223,14 @@ class TestHistogramming(unittest.TestCase):
             (3.0, 2.0),
             (5.0, 1.0)
         ]
-        self.assertEqual(expected, gf.hist(data, x_col=0, width=2))
+        self.assertEqual(expected, gf.hist(data, col=0, width=2))
 
         expected2 = [(x, 2 * y) for x, y in expected]
-        self.assertEqual(expected2, gf.hist(data, x_col=0, y_col=1, width=2))
+        self.assertEqual(expected2, gf.hist(data, col=0, weight_col=1, width=2))
 
     def test_bad_inputs(self):
         self.assertEqual([], gf.hist([]))
-        self.assertRaises(IndexError, lambda: gf.hist([[1]], x_col=1))
+        self.assertRaises(IndexError, lambda: gf.hist([[1]], col=1))
 
     def test_hist_properties(self):
         """hist function should have following properties:
@@ -255,7 +255,7 @@ class TestHistogramming(unittest.TestCase):
                 tuple(random.uniform(*value_range) for _ in range(col_count))
                 for _ in range(data_count)
             ]
-            res = gf.hist(data, x_col=x_col, y_col=y_col, width=bin_width)
+            res = gf.hist(data, col=x_col, weight_col=y_col, width=bin_width)
 
             if y_col is None:
                 expected_sum = data_count

@@ -61,7 +61,7 @@ class TOFCalibrationHistogram:
         self.bin_width = bin_width
         self.use_column = use_column
         histed_file = gf.hist(
-            self.cut.data, width=self.bin_width, x_col=self.use_column)
+            self.cut.data, width=self.bin_width, col=self.use_column)
 
         self.histogram_x = [float(pair[0]) for pair in histed_file]
         self.histogram_y = [float(pair[1]) for pair in histed_file]

@@ -45,9 +45,8 @@ class TestRecoilParameters(unittest.TestCase):
     @utils.change_wd_to_root
     def test_kwargs(self):
         # Tests for settings parameters with kwargs
-        widget = utils.run_without_warnings(
-            lambda: OptimizationRecoilParameterWidget(check_max=100.7,
-                                                      upper_limits=(1, 2)))
+        widget = OptimizationRecoilParameterWidget(
+            check_max=100.7, upper_limits=(1, 2))
         self.assertEqual(1, widget.upperXDoubleSpinBox.value())
         self.assertEqual(2, widget.upperYDoubleSpinBox.value())
         self.assertEqual(QTime(0, 1, 40), widget.maxTimeEdit.time())
@@ -55,7 +54,7 @@ class TestRecoilParameters(unittest.TestCase):
     @utils.change_wd_to_root
     def test_recoil_combobox(self):
         # Tests for recoil combobox that has custom binding functions
-        widget = utils.run_without_warnings(OptimizationRecoilParameterWidget)
+        widget = OptimizationRecoilParameterWidget()
         self.assertEqual(5, widget.sol_size)
         self.assertEqual("box", widget.recoil_type)
         self.assertEqual("4-point box",
@@ -70,8 +69,7 @@ class TestRecoilParameters(unittest.TestCase):
         # recoil_type is not two-way bound, so setting it raises an error
         def set_val():
             widget.recoil_type = "box"
-        self.assertRaises(TypeError,
-                          lambda: set_val())
+        self.assertRaises(TypeError, lambda: set_val())
 
         # Previously set values remain the same
         self.assertEqual(9, widget.sol_size)
@@ -83,8 +81,7 @@ class TestRecoilParameters(unittest.TestCase):
     def test_bad_inputs(self):
         # Widget should be able to handle bad inputs by retaining previous
         # or default values
-        widget = utils.run_without_warnings(
-            lambda: OptimizationRecoilParameterWidget(foo=1))
+        widget = OptimizationRecoilParameterWidget(foo=1)
         self.assertFalse(hasattr(widget, "foo"))
 
         widget.sol_size = "foo"
@@ -112,8 +109,7 @@ class TestRecoilParameters(unittest.TestCase):
 
         # Providing the value as kwargs does nothing as the exception is
         # handled in the set_properties method
-        widget = utils.run_without_warnings(
-            lambda: OptimizationRecoilParameterWidget(optimize_recoil=False))
+        widget = OptimizationRecoilParameterWidget(optimize_recoil=False)
         self.assertIs(widget.optimization_type, OptimizationType.RECOIL)
 
     @utils.change_wd_to_root
@@ -156,13 +152,11 @@ class TestRecoilParameters(unittest.TestCase):
         }
         recoil_expected.update(common)
 
-        fluence_widget = utils.run_without_warnings(
-            OptimizationFluenceParameterWidget)
+        fluence_widget = OptimizationFluenceParameterWidget()
         self.assertEqual(fluence_expected,
                          fluence_widget.get_properties())
 
-        recoil_widget = utils.run_without_warnings(
-            OptimizationRecoilParameterWidget)
+        recoil_widget = OptimizationRecoilParameterWidget()
         self.assertEqual(recoil_expected,
                          recoil_widget.get_properties())
 

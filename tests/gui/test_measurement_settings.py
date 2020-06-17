@@ -43,8 +43,7 @@ app = QApplication(sys.argv)
 class MyTestCase(unittest.TestCase):
     @utils.change_wd_to_root
     def setUp(self):
-        self.mesu_widget = utils.run_without_warnings(
-            lambda: MeasurementSettingsWidget(mo.get_measurement()))
+        self.mesu_widget = MeasurementSettingsWidget(mo.get_measurement())
 
     def test_ion_binding(self):
         # This is the default beam ion
