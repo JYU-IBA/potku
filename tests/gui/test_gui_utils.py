@@ -25,8 +25,8 @@ __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 import unittest
-import sys
 import random
+import tests.gui
 
 import widgets.gui_utils as gutils
 
@@ -36,9 +36,6 @@ from modules.element import Element
 from widgets.gui_utils import GUIReporter
 
 from PyQt5 import QtWidgets
-from PyQt5.Qt import QApplication
-
-app = QApplication(sys.argv)
 
 
 class TestGUIReporter(unittest.TestCase):

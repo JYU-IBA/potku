@@ -24,19 +24,15 @@ along with this program (file named 'LICENCE').
 __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
-import sys
 import unittest
 import tests.utils as utils
+import tests.gui
 import math
 
 from widgets.scientific_spinbox import ScientificSpinBox
 
-from PyQt5.QtWidgets import QApplication
 from PyQt5.QtTest import QTest
 from PyQt5.QtCore import Qt
-
-
-app = QApplication(sys.argv)
 
 
 class TestSciSpinbox(unittest.TestCase):

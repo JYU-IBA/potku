@@ -25,11 +25,11 @@ __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 import unittest
-import sys
 import random
 import time
 
 import tests.utils as utils
+import tests
 import numpy as np
 
 import widgets.binding as bnd
@@ -37,11 +37,8 @@ import widgets.gui_utils as gutils
 
 from widgets.scientific_spinbox import ScientificSpinBox
 
-from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTime
 from PyQt5 import QtWidgets
-
-app = QApplication(sys.argv)
 
 
 class BWidget(QtWidgets.QWidget, bnd.PropertyBindingWidget,

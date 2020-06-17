@@ -4,15 +4,13 @@ block_cipher = None
 
 
 a = Analysis(['potku.py'],
-             pathex=[
-			 'C:\\Users\\localadmin\\.virtualenvs\\potku-s0gTnhB1\\Lib\\site-packages\\scipy\\extra-dll'],
-             binaries=[('external\\bin\\*', 'external\\bin')],
-             datas=[('external\\Potku-data\\*', 'external\\Potku-data'),
-                    ('external\\share\\jibal\\*', 'external\\share\\jibal'),
-                    ('ui_files\\*', 'ui_files'),
-                    ('ui_icons\\reinhardt\\*', 'ui_icons\\reinhardt'),
-                    ('ui_icons\\potku\\*', 'ui_icons\\potku'),
-                    ('images\\*', 'images')
+             pathex=[],
+             binaries=[('external/bin/', 'external/bin')],
+             datas=[('external/lib', 'external/lib'),
+                    ('external/share', 'external/share'),
+                    ('ui_files', 'ui_files'),
+                    ('ui_icons', 'ui_icons'),
+                    ('images', 'images')
 					],
              hiddenimports=['scipy._lib.messagestream', 'pkg_resources.py2_warn'],
              hookspath=[],
@@ -30,7 +28,8 @@ exe = EXE(pyz,
           debug=False,
           strip=False,
           upx=True,
-          console=True)
+          console=True,
+          icon='ui_icons/potku/potku_logo_icons/potku_icon.ico')
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,

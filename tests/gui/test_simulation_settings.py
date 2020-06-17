@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,20 +25,16 @@ __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 import unittest
-import sys
 import tempfile
 
 import tests.mock_objects as mo
 import tests.utils as utils
+import tests.gui
 
 from modules.enums import SimulationType
 from modules.enums import SimulationMode
 from unittest.mock import patch
 from widgets.simulation.settings import SimulationSettingsWidget
-
-from PyQt5.QtWidgets import QApplication
-
-app = QApplication(sys.argv)
 
 
 class TestSimulationSettingsWidget(unittest.TestCase):
