@@ -50,3 +50,8 @@ Pipfile.lock
 # Directories created by pyinstaller
 /dist
 /build
+
+# Directories used for bundling Mac version
+# (TODO remove these once Mac bundling is sorted out)
+/tk
+/tcl

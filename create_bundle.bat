@@ -10,6 +10,7 @@ cd %cur_dir%
 echo(
 echo [92mInstalling and updating Python dependencies[0m
 echo(
+pip install pipenv
 pipenv install || (echo [91mInstalling dependencies failed[0m && goto :error)
 
 cd %cur_dir%
@@ -23,7 +24,7 @@ echo(
 echo [92mInstalling and running PyInstaller[0m
 echo(
 pip install pyinstaller
-pyinstaller -y --clean potku_win.spec || (echo [91mPyInstaller failed[0m && goto :error)
+pyinstaller -y --clean potku.spec || (echo [91mPyInstaller failed[0m && goto :error)
 
 cd dist
 echo(

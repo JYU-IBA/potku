@@ -116,14 +116,32 @@ activated, they can be run from the root directory of the project with:
 $ python -m unittest discover
 ````
 
-## Packaging Potku into an executable (work in progress)
+## Packaging Potku into a standalone executable (work in progress)
 
+Potku can be packaged into a standalone executable using [PyInstaller](https://www.pyinstaller.org/). 
+For quick deployment, run these commands:
 ````
 $ pipenv shell
 $ pip install pyinstaller
-$ pyinstaller potku_[win or unix].spec
+$ pyinstaller potku.spec
 ````
+This creates a `dist/potku` folder which contains the executable and all 
+necessary libraries.
 
+For a more comprehensive packaging process, run the `create_bundle` script. 
+This script compiles all external programs, installs and updates Python 
+dependencies, runs tests and compresses the `dist/potku` folder into a .zip 
+archive.
+
+`````
+$ pipenv run create_bundle.bat
+`````
+
+or
+
+`````
+$ pipenv run ./create_bundle.sh
+`````
 
 ## Licence
 
