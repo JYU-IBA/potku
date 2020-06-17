@@ -542,7 +542,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.clipboard.changed.connect(self.__update_multiply_action)
 
         self.__button_individual_limits = None
-        self.coordinates_widget = None
+        self.coordinates_widget: Optional[PointCoordinatesWidget] = None
         self.coordinates_action = None
         self.point_remove_action = None
 
@@ -1481,7 +1481,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             # Make entry for backlog
             self.current_recoil_element.save_current_points(self.full_edit_on)
         if x is None:
-            x = self.coordinates_widget.x_coordinate_box.value()
+            x = self.coordinates_widget.x_coord
         if clicked is None and self.clicked_point is not None:
             clicked = self.clicked_point
         else:
@@ -1523,7 +1523,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             # Make entry for backlog
             self.current_recoil_element.save_current_points(self.full_edit_on)
         if y is None:
-            y = self.coordinates_widget.y_coordinate_box.value()
+            y = self.coordinates_widget.y_coord
         if clicked is not None:
             clicked.set_y(y)
         elif self.clicked_point is not None:
@@ -1549,8 +1549,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if marker_contains:  # If clicked a point
                 self.point_clicked = True
                 self.span_selector.set_active(False)
-                self.coordinates_widget.x_coordinate_box.setVisible(True)
-                self.coordinates_widget.y_coordinate_box.setVisible(True)
+                self.coordinates_widget.setVisible(True)
                 i = marker_info['ind'][0]  # The clicked point's index
                 clicked_point = self.current_recoil_element.get_point_by_i(i)
 
@@ -1618,10 +1617,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             self.dragged_points = [new_point]
                             self.clicked_point = new_point
 
-                            self.coordinates_widget.x_coordinate_box.setVisible(
-                                True)
-                            self.coordinates_widget.y_coordinate_box.setVisible(
-                                True)
+                            self.coordinates_widget.setVisible(True)
 
                             if new_point.get_y() == 0.0:
                                 if not self.full_edit_on or \
@@ -1768,10 +1764,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if self.clicked_point:
                 old_save_value = self.__save_points
                 self.__save_points = False
-                self.coordinates_widget.x_coordinate_box.setValue(
-                    self.clicked_point.get_x())
-                self.coordinates_widget.y_coordinate_box.setValue(
-                    self.clicked_point.get_y())
+                self.coordinates_widget.x_coord = self.clicked_point.get_x()
+                self.coordinates_widget.set_y_min(self.clicked_point)
+                self.coordinates_widget.y_coord = self.clicked_point.get_y()
                 self.__save_points = old_save_value
                 # Disable y coordinate if it's zero and full edit is not on
                 if self.clicked_point.get_y() == 0.0:
@@ -2199,12 +2194,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.click_locations = []
         self.selected_points = []
         self.point_clicked = False
-        self.coordinates_widget.x_coordinate_box.setVisible(False)
-        self.coordinates_widget.y_coordinate_box.setVisible(False)
+        self.coordinates_widget.setVisible(False)
         self.update_plot()
 
-        self.recoil_dist_changed.emit(self.current_recoil_element,
-                                      self.current_element_simulation)
+        self.recoil_dist_changed.emit(
+            self.current_recoil_element, self.current_element_simulation)
 
     def redo_recoil_changes(self):
         """

@@ -27,6 +27,10 @@ __version__ = "2.0"
 
 import platform
 
+import widgets.binding as bnd
+
+from typing import Optional
+from modules.point import Point
 from dialogs.simulation.multiply_coordinate import MultiplyCoordinateDialog
 
 from PyQt5 import QtWidgets
@@ -37,6 +41,8 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
     """
     Class for handling point coordinates spin boxes.
     """
+    x_coord = bnd.bind("x_coordinate_box")
+    y_coord = bnd.bind("y_coordinate_box")
 
     def __init__(self, parent, optimize=False, full_edit_changed=None):
         """
@@ -92,8 +98,8 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
         self.y_coordinate_box.setDecimals(4)
         self.y_coordinate_box.setMaximum(1000000000000)
         self.y_coordinate_box.setMaximumWidth(62)
-        self.y_coordinate_box.setValue(0.0001)
-        self._set_y_min()
+        self.y_coord = 1.0
+        self.set_y_min()
         self.y_coordinate_box.setKeyboardTracking(False)
         if not optimize:
             self.y_coordinate_box.valueChanged.connect(
@@ -127,26 +133,29 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
 
         self._full_edit_changed = full_edit_changed
         if full_edit_changed is not None:
-            full_edit_changed.connect(self._set_y_min)
+            full_edit_changed.connect(self.set_y_min)
 
     def closeEvent(self, event):
         try:
-            self._full_edit_changed.disconnect(self._set_y_min)
+            self._full_edit_changed.disconnect(self.set_y_min)
         except AttributeError:
             pass
         super().closeEvent(event)
 
-    def _set_y_min(self):
+    def set_y_min(self, point: Optional[Point] = None):
         """Sets the minimum value of y spinbox depending on whether full edit
         is on or not.
         """
         try:
             if self.parent.full_edit_on:
-                self.y_coordinate_box.setMinimum(0.0)
+                minimum = 0.0
             else:
-                if self.y_coordinate_box.value() > 0:
-                    self.y_coordinate_box.setMinimum(
-                        self.parent.get_minimum_concentration())
+                minimum = min(
+                    self.parent.get_minimum_concentration(),
+                    self.y_coord,
+                    point.get_y() if point is not None else self.y_coord
+                )
+            self.y_coordinate_box.setMinimum(minimum)
         except AttributeError:
             self.y_coordinate_box.setMinimum(0.0)
 
