@@ -7,6 +7,8 @@ system = platform.system()
 if system == "Darwin":
     ADD_TK_AND_TCL = False
     extras = [("external/lib/*.dylib", ".")]
+    icon = "ui_icons/potku/potku_logo_icons/potku_logo_icon.icns"
+    console = False
 
     if ADD_TK_AND_TCL:
         # PyInstaller has issues with building Mac apps. By default it does not
@@ -28,6 +30,14 @@ if system == "Darwin":
             open(os.path.join(folder, ".ignore"), "w").close()
 
         extras += extras2
+elif system == "Windows":
+    extras = [("external/bin/*.dll", "external/bin/")]
+    icon = "ui_icons/potku/potku_logo_icons/potku_icon.ico"
+    console = True
+else:
+    extras = []
+    icon = "ui_icons/potku/potku_logo_icons/potku_icon.ico"
+    console = True
 
 block_cipher = None
 
@@ -73,8 +83,8 @@ exe = EXE(
     debug=False,
     strip=False,
     upx=True,
-    console=False,
-    icon="ui_icons/potku/potku_logo_icons/potku_icon.ico"
+    console=console,
+    icon=icon
 )
 
 coll = COLLECT(
@@ -87,11 +97,11 @@ coll = COLLECT(
     name="potku"
 )
 
-if platform.system() == "Darwin":
+if system == "Darwin":
     app = BUNDLE(
         coll,
         name="potku.app",
-        icon="ui_icons/potku/potku_logo_icons/potku_logo_icon.icns",
+        icon=icon,
         bundle_identifier=None,
         info_plist={
             'NSPrincipalClass': 'NSApplication',
