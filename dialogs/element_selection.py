@@ -31,7 +31,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-from pathlib import Path
+import widgets.gui_utils as gutils
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -48,7 +48,7 @@ class ElementSelectionDialog(QtWidgets.QDialog):
         # TODO this could show the elements with same color scheme as defined in
         #      global settings
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_element_selection.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_element_selection.ui", self)
         buttons = self.findChild(QtWidgets.QButtonGroup, "elementButtons")
         buttons.buttonClicked.connect(self.__set_element)
         self.pushButton_Cancel.clicked.connect(self.close)

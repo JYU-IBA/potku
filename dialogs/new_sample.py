@@ -29,8 +29,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 __version__ = "2.0"
 
 import widgets.input_validation as iv
-
-from pathlib import Path
+import widgets.gui_utils as gutils
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -46,7 +45,7 @@ class NewSampleDialog(QtWidgets.QDialog):
             samples: List of samples.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_new_sample.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_new_sample.ui", self)
 
         self.createButton.clicked.connect(self.__create_sample)
         self.cancelButton.clicked.connect(self.close)

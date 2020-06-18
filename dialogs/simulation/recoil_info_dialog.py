@@ -33,13 +33,10 @@ import time
 import widgets.binding as bnd
 import widgets.input_validation as iv
 import dialogs.dialog_functions as df
+import widgets.gui_utils as gutils
 
 from modules.element_simulation import ElementSimulation
 from modules.recoil_element import RecoilElement
-
-from pathlib import Path
-
-from widgets.gui_utils import QtABCMeta
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -49,7 +46,7 @@ from widgets.scientific_spinbox import ScientificSpinBox
 
 
 class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
-                       metaclass=QtABCMeta):
+                       metaclass=gutils.QtABCMeta):
     """Dialog for editing the name, description and reference density
     of a recoil element.
     """
@@ -80,9 +77,9 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
 
         value = self.recoil_element.reference_density
         self.scientific_spinbox = ScientificSpinBox(
-            value=value, minimum=0.01, maximum=99.99e22)
+            value=value, minimum=0.01, maximum=9.99e23)
 
-        uic.loadUi(Path("ui_files", "ui_recoil_info_dialog.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_recoil_info_dialog.ui", self)
 
         self.okPushButton.clicked.connect(self.__accept_settings)
         self.cancelPushButton.clicked.connect(self.close)

@@ -24,7 +24,7 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
-from pathlib import Path
+import widgets.gui_utils as gutils
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -43,7 +43,8 @@ class MultiplyCoordinateDialog(QtWidgets.QDialog):
             clipboard_ratio: Text that is in clipboard.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_multiply_coordinate_dialog.ui"), self)
+        uic.loadUi(
+            gutils.get_ui_dir() / "ui_multiply_coordinate_dialog.ui", self)
 
         self.ratio_str = clipboard_ratio
         self.used_multiplier = None

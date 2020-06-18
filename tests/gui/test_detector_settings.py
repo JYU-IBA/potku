@@ -29,7 +29,6 @@ import tempfile
 import shutil
 
 import tests.mock_objects as mo
-import tests.utils as utils
 import tests.gui
 
 from pathlib import Path
@@ -59,7 +58,6 @@ class TestDetectorSettings(unittest.TestCase):
             self.DETECTOR_DIR.exists(),
             msg=f"Temporary directory {self.DETECTOR_DIR} was not removed.")
 
-    @utils.change_wd_to_root
     def test_initialization(self):
         """Upon initialization the widget should load the values from the
         Detector object.

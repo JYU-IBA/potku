@@ -28,8 +28,6 @@ import unittest
 import random
 import time
 
-import tests.utils as utils
-import tests
 import numpy as np
 
 import widgets.binding as bnd
@@ -85,7 +83,6 @@ class BWidget(QtWidgets.QWidget, bnd.PropertyBindingWidget,
 
 
 class TestBinding(unittest.TestCase):
-    @utils.change_wd_to_root
     def setUp(self):
         self.widget = BWidget()
 

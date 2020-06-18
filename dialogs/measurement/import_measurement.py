@@ -35,8 +35,8 @@ import re
 import dialogs.dialog_functions as df
 import modules.general_functions as gf
 import widgets.input_validation as iv
+import widgets.gui_utils as gutils
 
-from pathlib import Path
 from collections import OrderedDict
 
 from widgets.gui_utils import StatusBarHandler
@@ -64,7 +64,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             parent: A QtGui.QMainWindow of Potku.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_import_dialog.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_import_dialog.ui", self)
 
         self.request = request
         self.__icon_manager = icon_manager

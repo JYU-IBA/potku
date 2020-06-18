@@ -30,8 +30,7 @@ __version__ = "2.0"
 
 import widgets.input_validation as iv
 import dialogs.file_dialogs as fdialogs
-
-from pathlib import Path
+import widgets.gui_utils as gutils
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -50,7 +49,7 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
             directory: Directory where to open the file browser.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_new_measurement.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_new_measurement.ui", self)
 
         self.browseButton.clicked.connect(self.__browse_files)
         self.addSampleButton.clicked.connect(self.__add_sample)

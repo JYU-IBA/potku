@@ -29,8 +29,7 @@ import platform
 
 import widgets.binding as bnd
 import modules.math_functions as mf
-
-from pathlib import Path
+import widgets.gui_utils as gutils
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -60,7 +59,7 @@ class PercentageWidget(QtWidgets.QWidget):
             icon_manager: Icon manager.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_percentage_widget.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_percentage_widget.ui", self)
 
         # Stores the PercentageRow objects for each recoil
         self._percentage_rows = {

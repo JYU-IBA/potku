@@ -32,6 +32,7 @@ __version__ = "2.0"
 import os
 
 import dialogs.dialog_functions as df
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
@@ -71,7 +72,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             statusbar: A QtGui.QMainWindow's QStatusBar.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_measurement_tab.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_measurement_tab.ui", self)
 
         self.tab_id = tab_id
         self.obj = measurement

@@ -22,18 +22,19 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Heta Rekilä"
+__author__ = "Heta Rekilä \n Juhani Sundell"
 __version__ = "2.0"
 
 import math
-import widgets.input_validation as iv
 import decimal
+
+import widgets.input_validation as iv
+import widgets.gui_utils as gutils
 
 from widgets.input_validation import ScientificValidator
 
 from decimal import Decimal
 from typing import Union
-from pathlib import Path
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -60,7 +61,8 @@ class ScientificSpinBox(QtWidgets.QWidget):
                 are shown.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_scientific_spinbox_widget.ui"), self)
+        uic.loadUi(
+            gutils.get_ui_dir() / "ui_scientific_spinbox_widget.ui", self)
         self._value = Decimal(str(value))
         self.minimum = minimum
         self.maximum = maximum

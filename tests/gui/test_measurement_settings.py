@@ -28,7 +28,6 @@ import unittest
 
 import tests.gui
 import tests.mock_objects as mo
-import tests.utils as utils
 
 from modules.element import Element
 from modules.enums import Profile
@@ -36,7 +35,6 @@ from widgets.measurement.settings import MeasurementSettingsWidget
 
 
 class MyTestCase(unittest.TestCase):
-    @utils.change_wd_to_root
     def setUp(self):
         self.mesu_widget = MeasurementSettingsWidget(mo.get_measurement())
 

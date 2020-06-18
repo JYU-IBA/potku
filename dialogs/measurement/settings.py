@@ -33,6 +33,7 @@ import time
 
 import dialogs.dialog_functions as df
 import modules.general_functions as gf
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
@@ -61,7 +62,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             icon_manager: An icon manager.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_specific_settings.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_specific_settings.ui", self)
 
         self.measurement = measurement
         self.icon_manager = icon_manager

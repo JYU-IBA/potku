@@ -25,7 +25,6 @@ __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 import unittest
-import tests.utils as utils
 import tests.gui
 
 from modules.nsgaii import OptimizationType
@@ -39,7 +38,6 @@ from PyQt5.QtCore import QTime
 
 
 class TestRecoilParameters(unittest.TestCase):
-    @utils.change_wd_to_root
     def test_kwargs(self):
         # Tests for settings parameters with kwargs
         widget = OptimizationRecoilParameterWidget(
@@ -48,7 +46,6 @@ class TestRecoilParameters(unittest.TestCase):
         self.assertEqual(2, widget.upperYDoubleSpinBox.value())
         self.assertEqual(QTime(0, 1, 40), widget.maxTimeEdit.time())
 
-    @utils.change_wd_to_root
     def test_recoil_combobox(self):
         # Tests for recoil combobox that has custom binding functions
         widget = OptimizationRecoilParameterWidget()
@@ -74,7 +71,6 @@ class TestRecoilParameters(unittest.TestCase):
         self.assertEqual("8-point two-peak",
                          widget.recoilTypeComboBox.currentText())
 
-    @utils.change_wd_to_root
     def test_bad_inputs(self):
         # Widget should be able to handle bad inputs by retaining previous
         # or default values
@@ -109,7 +105,6 @@ class TestRecoilParameters(unittest.TestCase):
         widget = OptimizationRecoilParameterWidget(optimize_recoil=False)
         self.assertIs(widget.optimization_type, OptimizationType.RECOIL)
 
-    @utils.change_wd_to_root
     def test_get_properties(self):
         """Test that get_properties returns the default values of each type
         of optimization widget after initialization.

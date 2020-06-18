@@ -31,8 +31,6 @@ import widgets.binding as bnd
 import widgets.gui_utils as gutils
 from modules.measurement import Measurement
 
-from pathlib import Path
-
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
@@ -77,7 +75,7 @@ class ProfileSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             measurement: Measurement object.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_profile_settings_tab.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_profile_settings_tab.ui", self)
         self.measurement = measurement
         self._original_properties = {}
 

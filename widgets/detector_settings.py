@@ -88,7 +88,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
               run: Run object. None if detector is default detector.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_request_detector_settings.ui"), self)
+        uic.loadUi(
+            gutils.get_ui_dir() / "ui_request_detector_settings.ui", self)
 
         self.obj = obj
         self.request = request

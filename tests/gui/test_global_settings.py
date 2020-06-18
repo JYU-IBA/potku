@@ -32,12 +32,10 @@ import tests.gui
 from modules.enums import CrossSection
 from modules.enums import IonDivision
 from modules.enums import ToFEColorScheme
-from tests.utils import change_wd_to_root
 from dialogs.global_settings import GlobalSettingsDialog
 
 
 class TestGlobalSettings(unittest.TestCase):
-    @change_wd_to_root
     def setUp(self):
         self.settings = mo.get_global_settings()
         self.gsd = GlobalSettingsDialog(self.settings)

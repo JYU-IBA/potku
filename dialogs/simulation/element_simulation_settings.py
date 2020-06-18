@@ -32,7 +32,6 @@ import widgets.binding as bnd
 import dialogs.dialog_functions as df
 
 from widgets.simulation.settings import SimulationSettingsWidget
-from pathlib import Path
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -60,7 +59,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
             tab: A SimulationTabWidget.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_specific_settings.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_specific_settings.ui", self)
         self.setWindowTitle("Element Settings")
 
         self.element_simulation = element_simulation

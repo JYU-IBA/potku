@@ -29,7 +29,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-from pathlib import Path
+import widgets.gui_utils as gutils
 
 from PyQt5 import uic
 from PyQt5 import QtCore
@@ -47,7 +47,7 @@ class LogWidget(QtWidgets.QWidget):
         """Initializes the LogHandler widget.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_log_widget.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_log_widget.ui", self)
         # This is used to ensure that the window can't be closed.        
         self.want_to_close = False
         self.hideButton.clicked.connect(self.minimize_window)
