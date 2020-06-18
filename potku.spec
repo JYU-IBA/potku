@@ -1,38 +1,53 @@
 # -*- mode: python -*-
 
 import platform
-if platform.system() == "Darwin":
-    import os
-    # FIXME there are few issues when bundling an app on Mac
-    #   - pyinstaller does not bundle tk/tcl, but the executable still requires
-    #     them.
-    #       - Solution: either make changes to hook-_tkinter.py file
-    #       (https://github.com/pyinstaller/pyinstaller/issues/3753)
-    #       or uncomment the contents in the extras list below.
-    #  - when bundled with --windowed parameter and console=False,
-    #    potku.app starts and exits briefly after. Possibly an issue
-    #    with file paths (for example .ui files)
-    #    https://github.com/pyinstaller/pyinstaller/issues/1804
-    extras = [
-        #("tcl", "tcl"),
-        #("tk", "tk")
-    ]
-    for folder, _ in extras:
-        os.makedirs(folder, exist_ok=True)
-        open(os.path.join(folder, ".ignore"), "w").close()
+
+system = platform.system()
+
+if system == "Darwin":
+    ADD_TK_AND_TCL = False
+    extras = [("external/lib/*.dylib", ".")]
+    icon = "ui_icons/potku/potku_logo_icons/potku_logo_icon.icns"
+    console = False
+
+    if ADD_TK_AND_TCL:
+        # PyInstaller has issues with building Mac apps. By default it does not
+        # bundle tk and tcl with the app even though those are required.
+        # There are two workarounds:
+        #     1. it should be enough to just add empty 'tk' and 'tcl' folders
+        #        to the bundle. Just set ADD_TK_AND_TCL to true to achieve this.
+        #     2. edit the hook-_tkinter.py module of the PyInstaller
+        #        installation that is used for bundling. For more info, see
+        #        https://github.com/pyinstaller/pyinstaller/issues/3753
+
+        import os
+        extras2 = [
+            ("tcl", "tcl"),
+            ("tk", "tk")
+        ]
+        for folder, _ in extras2:
+            os.makedirs(folder, exist_ok=True)
+            open(os.path.join(folder, ".ignore"), "w").close()
+
+        extras += extras2
+elif system == "Windows":
+    extras = [("external/bin/*.dll", "external/bin/")]
+    icon = "ui_icons/potku/potku_logo_icons/potku_icon.ico"
+    console = True
 else:
     extras = []
+    icon = "ui_icons/potku/potku_logo_icons/potku_icon.ico"
+    console = True
 
 block_cipher = None
 
 a = Analysis(
-    ['potku.py'],
+    ["potku.py"],
      pathex=[],
      binaries=[
-        ('external/bin/[!jibal.conf]*', 'external/bin/')
+        ("external/bin/[!jibal.conf]*", "external/bin/")
      ],
      datas=[
-        ("external/lib", "external/lib"),
         ("external/bin/jibal.conf", "external/bin/"),
         ("external/share", "external/share"),
         ("ui_files", "ui_files"),
@@ -68,8 +83,8 @@ exe = EXE(
     debug=False,
     strip=False,
     upx=True,
-    console=False,
-    icon="ui_icons/potku/potku_logo_icons/potku_icon.ico"
+    console=console,
+    icon=icon
 )
 
 coll = COLLECT(
@@ -82,11 +97,11 @@ coll = COLLECT(
     name="potku"
 )
 
-if platform.system() == "Darwin":
+if system == "Darwin":
     app = BUNDLE(
         coll,
         name="potku.app",
-        icon="ui_icons/potku/potku_logo_icons/potku_logo_icon.icns",
+        icon=icon,
         bundle_identifier=None,
         info_plist={
             'NSPrincipalClass': 'NSApplication',

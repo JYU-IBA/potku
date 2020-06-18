@@ -31,8 +31,7 @@ __version__ = "2.0"
 import os
 
 import modules.general_functions as gf
-
-from pathlib import Path
+import widgets.gui_utils as gutils
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -63,7 +62,7 @@ class ImportTimingGraphDialog(QtWidgets.QDialog):
                          captured from input_file.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_import_graph_dialog.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_import_graph_dialog.ui", self)
 
         self.parent = parent
         self.img_dir = self.parent.request.directory

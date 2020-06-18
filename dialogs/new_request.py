@@ -34,6 +34,7 @@ import logging
 import platform
 
 import widgets.input_validation as iv
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
@@ -52,7 +53,7 @@ class RequestNewDialog(QtWidgets.QDialog):
             parent: Ibasoft class object.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_new_request.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_new_request.ui", self)
 
         self.parent = parent
         self.folder = None  # Temporary for browsing folder

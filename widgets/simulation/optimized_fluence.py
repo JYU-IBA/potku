@@ -26,9 +26,9 @@ __author__ = "Heta Rekilä \n Juhani Sundell"
 __version__ = "2.0"
 
 import modules.general_functions as gf
+import widgets.gui_utils as gutils
 
 from typing import Optional
-from pathlib import Path
 
 from modules.element_simulation import ElementSimulation
 from modules.nsgaii import OptimizationType
@@ -47,7 +47,7 @@ class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
                  cancellation_token: Optional[CancellationToken] = None):
         # TODO common base class for optim result widgets
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_optimized_fluence_widget.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_optimized_fluence_widget.ui", self)
 
         self.element_simulation = element_simulation
         if self.element_simulation.optimized_fluence:

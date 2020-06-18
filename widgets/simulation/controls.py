@@ -29,10 +29,11 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 __version__ = "2.0"
 
 import widgets.binding as bnd
+import widgets.gui_utils as gutils
+import widgets.icon_manager as icons
 
 from typing import Optional
 from rx import operators as ops
-from pathlib import Path
 
 from modules.element_simulation import SimulationState
 from modules.element_simulation import ElementSimulation
@@ -42,7 +43,6 @@ from widgets.gui_utils import GUIObserver
 
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
-from PyQt5.QtGui import QIcon
 from PyQt5 import uic
 from PyQt5.QtCore import Qt
 
@@ -101,7 +101,7 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         """
         super().__init__()
         GUIObserver.__init__(self)
-        uic.loadUi(Path("ui_files", "ui_simulation_controls.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_simulation_controls.ui", self)
 
         self.element_simulation = element_simulation
         self.element_simulation.subscribe(self)
@@ -114,9 +114,9 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         self.finished_processes = 0, self.process_count
 
         self.run_button.clicked.connect(self.start_simulation)
-        self.run_button.setIcon(QIcon("ui_icons/reinhardt/player_play.svg"))
+        self.run_button.setIcon(icons.get_reinhardt_icon("player_play.svg"))
         self.stop_button.clicked.connect(self.stop_simulation)
-        self.stop_button.setIcon(QIcon("ui_icons/reinhardt/player_stop.svg"))
+        self.stop_button.setIcon(icons.get_reinhardt_icon("player_stop.svg"))
         self.enable_buttons()
 
         self.mcerd_error_lbl.hide()

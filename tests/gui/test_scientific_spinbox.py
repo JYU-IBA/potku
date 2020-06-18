@@ -25,7 +25,6 @@ __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 import unittest
-import tests.utils as utils
 import tests.gui
 import math
 
@@ -36,8 +35,6 @@ from PyQt5.QtCore import Qt
 
 
 class TestSciSpinbox(unittest.TestCase):
-    # Change working directory to root so the Spinbox can load ui-files
-    @utils.change_wd_to_root
     def setUp(self):
         self.minimum = 1.0e20
         self.maximum = 9.9e23

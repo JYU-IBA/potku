@@ -28,9 +28,11 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 __version__ = "2.0"
 
 import copy
-import modules.general_functions as general
 import platform
 
+import modules.general_functions as general
+
+from widgets.icon_manager import IconManager
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.energy_spectrum import EnergySpectrumWidget
 from dialogs.simulation.element_simulation_settings import \
@@ -40,7 +42,6 @@ from collections import Counter
 
 from modules.recoil_element import RecoilElement
 
-from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 
 from widgets.simulation.circle import Circle
@@ -52,8 +53,9 @@ class ElementWidget(QtWidgets.QWidget):
     """
 
     def __init__(self, parent, element, parent_tab, element_simulation,
-                 color, icon_manager, statusbar=None, spectra_changed=None,
-                 recoil_name_changed=None, settings_updated=None):
+                 color, icon_manager: IconManager, statusbar=None,
+                 spectra_changed=None, recoil_name_changed=None,
+                 settings_updated=None):
         """
         Initializes the ElementWidget.
 
@@ -94,8 +96,8 @@ class ElementWidget(QtWidgets.QWidget):
         self.circle = Circle(color)
 
         draw_spectrum_button = QtWidgets.QPushButton()
-        draw_spectrum_button.setIcon(QtGui.QIcon(
-            "ui_icons/potku/energy_spectrum_icon.svg"))
+        draw_spectrum_button.setIcon(icon_manager.get_icon(
+            "energy_spectrum_icon.svg"))
         draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                            QtWidgets.QSizePolicy.Fixed)
 
@@ -104,7 +106,7 @@ class ElementWidget(QtWidgets.QWidget):
         draw_spectrum_button.setToolTip("Draw energy spectra")
 
         settings_button = QtWidgets.QPushButton()
-        settings_button.setIcon(QtGui.QIcon("ui_icons/reinhardt/gear.svg"))
+        settings_button.setIcon(icon_manager.get_icon("gear.svg"))
         settings_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                       QtWidgets.QSizePolicy.Fixed)
         settings_button.clicked.connect(
@@ -113,8 +115,7 @@ class ElementWidget(QtWidgets.QWidget):
         settings_button.setToolTip("Edit element simulation settings")
 
         add_recoil_button = QtWidgets.QPushButton()
-        add_recoil_button.setIcon(QtGui.QIcon(
-            "ui_icons/reinhardt/edit_add.svg"))
+        add_recoil_button.setIcon(icon_manager.get_icon("edit_add.svg"))
         add_recoil_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                         QtWidgets.QSizePolicy.Fixed)
         add_recoil_button.clicked.connect(lambda: self.add_new_recoil(

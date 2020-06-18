@@ -32,8 +32,7 @@ __version__ = "2.0"
 import platform
 
 import widgets.input_validation as iv
-
-from pathlib import Path
+import widgets.gui_utils as gutils
 
 from dialogs.new_sample import NewSampleDialog
 
@@ -51,7 +50,7 @@ class SimulationNewDialog(QtWidgets.QDialog):
             samples: Samples of request.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_new_simulation.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_new_simulation.ui", self)
 
         # Add existing samples to view.
         self.samples = samples

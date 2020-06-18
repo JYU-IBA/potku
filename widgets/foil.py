@@ -28,8 +28,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 __version__ = "2.0"
 
 import widgets.binding as bnd
-
-from pathlib import Path
+import widgets.gui_utils as gutils
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -58,7 +57,7 @@ class FoilWidget(QtWidgets.QWidget):
             foil: foil object
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_foil_widget.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_foil_widget.ui", self)
 
         locale = QLocale.c()
         self.distanceDoubleSpinBox.setLocale(locale)

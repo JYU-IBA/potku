@@ -29,7 +29,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-from pathlib import Path
+import widgets.gui_utils as gutils
 
 from PyQt5 import QtCore
 from PyQt5 import uic
@@ -52,7 +52,7 @@ class TofeHistogramWidget(QtWidgets.QWidget):
             tab: A MeasurementTabWidget.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_histogram_widget.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_histogram_widget.ui", self)
 
         self.measurement = measurement
         self.tab = tab

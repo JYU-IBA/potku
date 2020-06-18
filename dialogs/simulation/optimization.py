@@ -23,7 +23,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 
-__author__ = "Heta Rekilä"
+__author__ = "Heta Rekilä \n Juhani Sundell"
 __version__ = "2.0"
 
 import os
@@ -31,6 +31,7 @@ import threading
 
 import dialogs.dialog_functions as df
 import widgets.binding as bnd
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
@@ -94,7 +95,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         self._recoil_parameters = {}
         self.current_mode = "recoil"
 
-        uic.loadUi(Path("ui_files", "ui_optimization_params.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_optimization_params.ui", self)
 
         self.load_properties_from_file()
 

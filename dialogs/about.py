@@ -32,7 +32,8 @@ __version__ = "2.0"
 
 import os
 
-from pathlib import Path
+import widgets.gui_utils as gutils
+
 from math import sin
 
 from PyQt5 import QtWidgets
@@ -50,7 +51,7 @@ class AboutDialog(QtWidgets.QDialog):
         """
 
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_about.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_about.ui", self)
 
         self.OKButton.clicked.connect(self.close)
         self.DiscoButton.clicked.connect(self.__disco)

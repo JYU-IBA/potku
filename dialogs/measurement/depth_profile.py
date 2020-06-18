@@ -73,7 +73,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
             statusbar: a QStatusBar object
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_depth_profile_params.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_depth_profile_params.ui", self)
 
         self.parent = parent
         self.measurement = measurement
@@ -329,7 +329,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
         """
         try:
             super().__init__()
-            uic.loadUi(Path("ui_files", "ui_depth_profile.ui"), self)
+            uic.loadUi(gutils.get_ui_dir() / "ui_depth_profile.ui", self)
 
             self.parent = parent
             self.icon_manager = parent.icon_manager

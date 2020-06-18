@@ -31,7 +31,7 @@ __author__ = "Timo Konu \n Severi Jääskeläinen \n Samuel Kaiponen \n Heta " \
              "Rekilä \n Sinikka Siironen"
 __version__ = "1.0"
 
-from pathlib import Path
+import widgets.gui_utils as gutils
 
 from PyQt5 import QtCore, uic
 from PyQt5 import QtWidgets
@@ -50,7 +50,8 @@ class GraphIgnoreElements(QtWidgets.QDialog):
             calculation.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_graph_ignored_elements.ui"), self)
+        uic.loadUi(
+            gutils.get_ui_dir() / "ui_graph_ignored_elements.ui", self)
 
         self.__elements = elements
         self.ignored_elements = set(ignored)

@@ -32,8 +32,6 @@ __version__ = "2.0"
 import widgets.binding as bnd
 import widgets.gui_utils as gutils
 
-from pathlib import Path
-
 from PyQt5 import QtCore
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -51,7 +49,8 @@ class TofeGraphSettingsWidget(QtWidgets.QDialog):
             parent: MatplotlibHistogramWidget which settings are being changed.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_tofe_graph_settings.ui"), self)
+        uic.loadUi(
+            gutils.get_ui_dir() / "ui_files", "ui_tofe_graph_settings.ui", self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         self.parent = parent

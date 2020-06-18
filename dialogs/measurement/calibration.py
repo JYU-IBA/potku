@@ -29,7 +29,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import platform
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
@@ -63,7 +63,7 @@ class CalibrationDialog(QtWidgets.QDialog):
             parent_settings_widget: A widget this dialog was opened from.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_calibration_dialog.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_calibration_dialog.ui", self)
 
         self.measurements = measurements
         self.run = run
@@ -308,7 +308,7 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
             run: Run object.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_tof_curve_fitting_widget.ui"), self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_tof_curve_fitting_widget.ui", self)
         # NOTE: One of these should always be there. Could probably use "else"
         if hasattr(dialog.parent_settings_widget, "request"):
             self.img_dir = dialog.parent_settings_widget.request.directory
@@ -332,7 +332,8 @@ class CalibrationLinearFittingWidget(QtWidgets.QWidget):
             old_params: Old calibration parameters in tuple (slope, offset).
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_tof_linear_fitting_widget.ui"), self)
+        uic.loadUi(
+            gutils.get_ui_dir() / "ui_tof_linear_fitting_widget.ui", self)
         # NOTE: One of these should always be there. Could probably use "else"
         if hasattr(dialog.parent_settings_widget, "request"):
             self.img_dir = dialog.parent_settings_widget.request.directory

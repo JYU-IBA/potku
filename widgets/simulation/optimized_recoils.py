@@ -25,7 +25,8 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
-from pathlib import Path
+import widgets.gui_utils as gutils
+
 from typing import Optional
 
 from modules.element_simulation import ElementSimulation
@@ -60,7 +61,8 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
         # TODO change the push button to radio group
         super().__init__()
         GUIObserver.__init__(self)
-        uic.loadUi(Path("ui_files", "ui_optimization_results_widget.ui"), self)
+        uic.loadUi(
+            gutils.get_ui_dir() / "ui_optimization_results_widget.ui", self)
 
         self.element_simulation = element_simulation
 
