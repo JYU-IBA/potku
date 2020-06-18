@@ -1,4 +1,7 @@
 @echo off
+
+if "%PIPENV_ACTIVE%"== "" echo [91mcreate_bundle must be run within pipenv shell ('pipenv run script')[0m && exit /b 1
+
 set cur_dir=%cd%
 
 echo(
@@ -36,7 +39,7 @@ set zip="C:\Program Files\7-Zip\7z.exe"
 set archive=potku_win.zip
 rem TODO add version number to bundle
 del /q %archive%
-%zip% a -r %archive% potku || (echo [91mFailed to create an archive[0m)
+%zip% a -r %archive% potku || echo [91mFailed to create an archive[0m
 
 echo(
 echo [92mBundle created[0m
