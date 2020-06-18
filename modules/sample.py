@@ -30,6 +30,10 @@ __version__ = "2.0"
 import os
 
 from pathlib import Path
+from typing import Optional
+from typing import Union
+from typing import Dict
+from typing import List
 
 from .measurement import Measurements
 from .measurement import Measurement
@@ -38,11 +42,10 @@ from .simulation import Simulation
 
 
 class Samples:
-    """
-    Class for handling multiple samples.
+    """Class for handling multiple samples.
     """
 
-    def __init__(self, request):
+    def __init__(self, request: "Request"):
         """
         Initialize the Samples.
 
@@ -56,16 +59,16 @@ class Samples:
         self.measurements = Measurements(self.request)
         self.simulations = Simulations(self.request)
 
-    def add_sample(self, sample_path=None, name=""):
-        """
-        Create and add a Sample to the samples.
+    def add_sample(self, sample_path: Optional[Path] = None,
+                   name: str = "") -> Optional["Sample"]:
+        """Create and add a Sample to the samples.
 
         Args:
             sample_path: The path of the sample to be added to the samples.
             name: Optional name for the sample.
         """
-        if sample_path:
-            sample_path, sample_dir = os.path.split(sample_path)
+        if sample_path is not None:
+            sample_path, sample_dir = sample_path.parent, sample_path.name
             dir_split = sample_dir.split("-")
             prefix = dir_split[0].split("_")
             serial_string = prefix[1]
@@ -76,23 +79,20 @@ class Samples:
                 sample = Sample(serial_number, self.request, sample_dir, name)
             except Exception as e:
                 # Couldn't read sample's serial number from file path.
-                print("Couldn't read sample's serial number from path. " +
-                      str(e))
-                return
+                print(f"Couldn't read sample's serial number from path: {e}")
+                return None
         else:
             next_serial = self.request.get_running_int()
-            sample_dir = "Sample_" + "%02d" % next_serial + "-" + name
+            sample_dir = f"Sample_{next_serial:02d}-{name}"
             new_path = Path(self.request.directory, sample_dir)
             sample = Sample(next_serial, self.request, sample_dir, name)
             self.request.increase_running_int_by_1()
-            if not os.path.exists(new_path):
-                os.makedirs(new_path)
+            new_path.mkdir(exist_ok=True)
         self.samples.append(sample)
         return sample
 
-    def get_samples_and_measurements(self):
-        """
-        Collects all the samples and the measurement files under them into a
+    def get_samples_and_measurements(self) -> Dict["Sample", List[Path]]:
+        """Collects all the samples and the measurement files under them into a
         dictionary.
 
         Return:
@@ -104,9 +104,8 @@ class Samples:
                 sample.get_measurements_files()
         return all_samples_and_measurements
 
-    def get_samples_and_simulations(self):
-        """
-        Collects all the samples and the simulation files under them into a
+    def get_samples_and_simulations(self) -> Dict["Sample", List[Path]]:
+        """Collects all the samples and the simulation files under them into a
         dictionary.
 
         Return:
@@ -119,24 +118,24 @@ class Samples:
 
 
 class Sample:
+    """Class for a sample.
     """
-    Class for a sample.
-    """
-
-    def __init__(self, serial_number, request, directory, name=""):
+    def __init__(self, serial_number: int, request: "Request", dir_name: str,
+                 name: str = ""):
         """
         Initialize the Sample.
 
         Args:
             serial_number: Serial number for sample.
             request: Which request the sample belongs to.
+            dir_name: name of the sample directory
             name: Optional name for the sample.
         """
         self.name = name
         self.serial_number = serial_number
         self.request = request
 
-        self.directory = directory
+        self.directory = dir_name
 
         self.measurements = Measurements(request)
         self.simulations = Simulations(request)
@@ -144,9 +143,8 @@ class Sample:
         self._running_int_measurement = 1
         self._running_int_simulation = 1
 
-    def get_running_int_measurement(self):
-        """
-        Get running int for measurements,
+    def get_running_int_measurement(self) -> int:
+        """Get running int for measurements,
 
         Return:
             Integer.
@@ -154,14 +152,12 @@ class Sample:
         return self._running_int_measurement
 
     def increase_running_int_measurement_by_1(self):
+        """Increase running int for measurement by one.
         """
-        Increase running int for measurement by one.
-        """
-        self._running_int_measurement = self._running_int_measurement + 1
+        self._running_int_measurement += 1
 
-    def get_running_int_simulation(self):
-        """
-        Get running int for simulations,
+    def get_running_int_simulation(self) -> int:
+        """Get running int for simulations,
 
         Return:
             Integer.
@@ -169,20 +165,19 @@ class Sample:
         return self._running_int_simulation
 
     def increase_running_int_simulation_by_1(self):
+        """Increase running int for simulation by one.
         """
-            Increase running int for simulation by one.
-        """
-        self._running_int_simulation = self._running_int_simulation + 1
+        self._running_int_simulation += 1
 
-    def get_measurements_files(self):
+    def get_measurements_files(self) -> List[Path]:
         """
         Get measurements files inside sample folder.
 
         Return:
-            A list of measurement file names.
+            A list of full paths to measurement files.
         """
-        all_measurements = []
-        name_prefix = "Measurement_"
+        all_measurements = []   # TODO refactor
+        name_prefix = Measurement.DIRECTORY_PREFIX
         all_dirs = os.listdir(Path(self.request.directory, self.directory))
         all_dirs.sort()
 
@@ -195,7 +190,7 @@ class Sample:
                         directory[len(name_prefix):len(name_prefix) + 2])
                     for file in os.listdir(Path(
                             self.request.directory, self.directory, directory)):
-                        if file.endswith(".info"):
+                        if file.endswith(".info"):  # TODO break?
                             all_measurements.append(Path(
                                 self.request.directory, self.directory,
                                 directory, file))
@@ -209,16 +204,16 @@ class Sample:
             self.increase_running_int_measurement_by_1()
         return all_measurements
 
-    def get_simulation_files(self):
+    def get_simulation_files(self) -> List[Path]:
         """Get .simulation files inside simulation directories.
 
         Return:
-            A list of .simulation file paths.
+            A list of full paths to .simulation files.
         """
-        all_simulations = []
+        all_simulations = []    # TODO refactor
         name_prefix = Simulation.DIRECTORY_PREFIX
         all_dirs = os.listdir(Path(self.request.directory, self.directory))
-        all_dirs.sort()
+        all_dirs.sort()     # TODO why sort here?
 
         for directory in all_dirs:
             # Only handle directories that start with name_prefix
@@ -243,8 +238,9 @@ class Sample:
             self.increase_running_int_simulation_by_1()
         return all_simulations
 
-    def remove_obj(self, obj_removed):
+    def remove_obj(self, obj_removed: Union[Measurement, Simulation]):
         """Removes given object from sample.
+
         Args:
             obj_removed: Object to remove.
         """

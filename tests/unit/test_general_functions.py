@@ -1,8 +1,5 @@
 # coding=utf-8
 """
-Created on TODO
-Updated on 29.1.2020
-
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
@@ -32,27 +29,21 @@ import platform
 import tempfile
 import modules.comparison as comp
 import random
+import tests.utils as utils
 
 from pathlib import Path
 
 from modules import general_functions as gf
 from modules.element import Element
-from tests.utils import get_sample_data_dir, verify_files
 
-_DIR_PATH = Path(get_sample_data_dir(), "Ecaart-11-mini", "Tof-E_65-mini",
-                 "cuts")
-_FILE_PATHS = [
+_DIR_PATH = Path(
+    utils.get_sample_data_dir(), "Ecaart-11-mini", "Tof-E_65-mini", "cuts"
+)
+
+_FILE_PATHS = (
     Path(_DIR_PATH, "Tof-E_65-mini.1H.0.cut"),
     Path(_DIR_PATH, "Tof-E_65-mini.1H.1.cut")
-]
-
-_os = platform.system()
-if _os == "Windows":
-    _CHECKSUM = "bfb9d1593ba77ab5f431c78ba23257e1"
-elif _os == "Linux" or _os == "Darwin":
-    _CHECKSUM = "2255a3a27026bc12bffc341c82c04ef3"
-else:
-    _CHECKSUM = None
+)
 
 
 class TestMatchingFunctions(unittest.TestCase):
@@ -137,8 +128,6 @@ class TestMatchingFunctions(unittest.TestCase):
 
 class TestGeneralFunctions(unittest.TestCase):
 
-    @verify_files(_FILE_PATHS, _CHECKSUM,
-                  msg="testing counting lines in a file")
     def test_file_line_counting(self):
         """Tests for counting lines in two files that are in the sample_data
         directory.
@@ -160,14 +149,14 @@ class TestGeneralFunctions(unittest.TestCase):
                                    check_file_exists=True))
 
         # Test what happens, when file path points to a folder
-        if _os == "Windows":
+        if platform.system() == "Windows":
             self.assertRaises(
                 PermissionError,
-                lambda: gf.count_lines_in_file(get_sample_data_dir()))
+                lambda: gf.count_lines_in_file(utils.get_sample_data_dir()))
         else:
             self.assertRaises(
                 IsADirectoryError,
-                lambda: gf.count_lines_in_file(get_sample_data_dir()))
+                lambda: gf.count_lines_in_file(utils.get_sample_data_dir()))
 
     def test_tmp_files(self):
         # Test with an empty file
@@ -206,6 +195,7 @@ class TestGeneralFunctions(unittest.TestCase):
         self.assertEqual(12340, gf.round_value_by_four_biggest(12345))
         self.assertEqual(123500, gf.round_value_by_four_biggest(123456))
         self.assertEqual(77780, gf.round_value_by_four_biggest(77777))
+
 
 class TestHistogramming(unittest.TestCase):
     def test_hist(self):

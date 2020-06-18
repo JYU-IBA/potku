@@ -27,7 +27,7 @@ Simulation.py runs the MCERD simulation with a command file.
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen"
+             "\n Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import json
@@ -42,6 +42,7 @@ from typing import List
 
 from . import general_functions as gf
 
+from .recoil_element import RecoilElement
 from .base import ElementSimulationContainer
 from .base import Serializable
 from .enums import SimulationType
@@ -56,7 +57,7 @@ class Simulations:
     """Simulations class handles multiple simulations.
     """
 
-    def __init__(self, request):
+    def __init__(self, request: "Request"):
         """Inits simulations class.
         Args:
             request: Request class object.
@@ -64,7 +65,7 @@ class Simulations:
         self.request = request
         self.simulations = {}
 
-    def is_empty(self):
+    def is_empty(self) -> bool:
         """Check if there are any simulations.
 
         Return:
@@ -73,19 +74,20 @@ class Simulations:
         """
         return len(self.simulations) == 0
 
-    def get_key_value(self, key):
+    def get_key_value(self, key: int) -> Optional["Simulation"]:
         """
         Args:
             key: Key of simulation dictionary.
 
         Return:
-            VReturns value corresponding to key.
+            Returns value corresponding to key.
         """
         if key not in self.simulations:
             return None
         return self.simulations[key]
 
-    def add_simulation_file(self, sample, simulation_file: Path, tab_id):
+    def add_simulation_file(self, sample: "Sample", simulation_file: Path,
+                            tab_id: int) -> Optional["Simulation"]:
         """Add a new file to simulations.
 
         Args:
@@ -177,7 +179,7 @@ class Simulations:
             sample.simulations.simulations[tab_id] = simulation
         return simulation
 
-    def remove_obj(self, removed_obj):
+    def remove_obj(self, removed_obj: "Simulation"):
         """Removes given simulation.
 
         Args:
@@ -185,7 +187,7 @@ class Simulations:
         """
         self.simulations.pop(removed_obj.tab_id)
 
-    def remove_by_tab_id(self, tab_id):
+    def remove_by_tab_id(self, tab_id: int):
         """Removes simulation from simulations by tab id
         Args:
             tab_id: Integer representing tab identifier.
@@ -313,7 +315,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
                     f"{self.measurement_setting_file_name}.measurement")
 
     def rename_simulation_file(self):
-        """Renames the simulation files with self.simulatio_file.
+        """Renames the simulation files with self.simulation_file.
         """
         for file in os.listdir(self.directory):
             if file.endswith(".simulation"):
@@ -322,7 +324,9 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
                     self.simulation_file)
 
     @staticmethod
-    def find_simulation_files(simulation_dir: Path):
+    def find_simulation_files(simulation_dir: Path) -> namedtuple:
+        """Returns a tuple of all simulation files.
+        """
         res = gf.find_files_by_extension(
             simulation_dir, ".mcsimu", ".target", ".measurement", ".profile")
         try:
@@ -353,8 +357,8 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             target_file, mesu_file, res[".mcsimu"], res[".profile"],
             detector_file)
 
-    def add_element_simulation(
-            self, recoil_element, save_on_creation=True) -> ElementSimulation:
+    def add_element_simulation(self, recoil_element: RecoilElement,
+                               save_on_creation=True) -> ElementSimulation:
         """Adds ElementSimulation to Simulation.
 
         Args:
@@ -380,10 +384,10 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         return element_simulation
 
     @classmethod
-    def from_file(cls, request, simulation_file: Path,
+    def from_file(cls, request: "Request", simulation_file: Path,
                   measurement_file: Optional[Path] = None,
                   detector=None, target=None, run=None, sample=None,
-                  save_on_creation=True, enable_logging=True):
+                  save_on_creation=True, enable_logging=True) -> "Simulation":
         """Initialize Simulation from a JSON file.
 
         Args:
