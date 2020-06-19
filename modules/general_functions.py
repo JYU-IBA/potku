@@ -47,6 +47,9 @@ from pathlib import Path
 from decimal import Decimal
 from typing import Dict
 from typing import List
+from typing import Set
+from typing import Callable
+from typing import Optional
 
 
 # TODO this could still be organized into smaller modules
@@ -108,34 +111,34 @@ def remove_files(*file_paths):
             pass
 
 
-def remove_matching_files(directory, exts=None, filter_func=None):
+def remove_matching_files(directory: Path, exts: Optional[Set[str]] = None,
+                          filter_func: Optional[Callable] = None):
     """Removes all files in a directory that match given conditions.
 
     Args:
         directory: directory where the files are located
         exts: collection of file extensions. Files with these extensions will
             be deleted.
-        filter_func: additional filter function applied to the file name. If
-            provided, only the files that have the correct extension and match
-            the filter_func condition will be deleted.
+        filter_func: additional filter function applied to the file name.
     """
-    # TODO should also allow deleting files while not declaring extensions
-    if not exts:
-        return
-    if filter_func is None:
-        def filter_func(_):
-            return True
+    def _filter_func(fp: Path):
+        if exts is not None and filter_func is None:
+            return fp.suffix in exts
+        if exts is None:
+            return filter_func(fp.name)
+        return fp.suffix in exts and filter_func(fp.name)
 
     try:
-        for file in os.scandir(directory):
-            fp = Path(file)
-            if fp.suffix in exts and filter_func(file.name):
-                try:
-                    fp.unlink()
-                except OSError:
-                    # fp could be a directory, or permissions may prevent
-                    # deletion
-                    pass
+        with os.scandir(directory) as sdir:
+            for entry in sdir:
+                path = Path(entry.path)
+                if _filter_func(path):
+                    try:
+                        path.unlink()
+                    except OSError:
+                        # fp could be a directory, or permissions may prevent
+                        # deletion
+                        pass
     except OSError:
         # Directory not found (or directory is a file), nothing to do
         pass

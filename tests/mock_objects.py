@@ -27,6 +27,7 @@ __version__ = "2.0"
 
 import tempfile
 import random
+import rx
 
 import modules.masses as masses
 
@@ -65,7 +66,8 @@ def get_detector() -> Detector:
     return d
 
 
-def get_element(randomize=False, isotope_p=0.5, amount_p=0.5) -> Element:
+def get_element(randomize=False, isotope_p=0.5, amount_p=0.5,
+                symbol="He", **kwargs) -> Element:
     """Returns either a random Element or a Helium element.
 
     Args:
@@ -73,6 +75,8 @@ def get_element(randomize=False, isotope_p=0.5, amount_p=0.5) -> Element:
         isotope_p: the likelihood of the random Element having an isotope
         amount_p: likelihood that the Element is provided a random amount
             argument.
+        symbol: element's symbol as a string for a non-randomized element
+        kwargs: keyword arguments passed down to non-randomized element
 
     Return:
         Element object.
@@ -91,7 +95,8 @@ def get_element(randomize=False, isotope_p=0.5, amount_p=0.5) -> Element:
             amount = 0
 
         return Element(symbol, isotope=isotope, amount=amount)
-    return Element("He")
+
+    return Element(symbol, **kwargs)
 
 
 def get_beam() -> Beam:
@@ -186,6 +191,20 @@ def get_request() -> Request:
                    save_on_creation=False, enable_logging=False)
 
 
+class MockSelection:
+    # Selection class should be refactored so that it contains no Qt or
+    # matplotlib references. Until then, this class is used
+    def __init__(self):
+        self.element = get_element()
+        self.element_scatter = get_element(symbol="Cl")
+        self.type = "RBS"
+        self.weight_factor = 1.0
+
+
+def get_selection() -> "MockSelection":
+    return MockSelection()
+
+
 class TestObserver(Observer):
     """Observer that appends messages it receives to its collections.
     """
@@ -202,4 +221,10 @@ class TestObserver(Observer):
 
     def on_completed(self, msg="done"):
         self.compl.append(msg)
+
+
+def get_mcerd_stream() -> rx.Observable:
+    """Returns a single item stream.
+    """
+    return rx.from_iterable([{"is_running": False, "msg": ""}])
 

@@ -197,12 +197,12 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         if progress is not None:
             progress.report(100)
 
-    def make_depth_profile(self, directory, name, serial_number_m,
-                           sample_folder_name, progress=None):
+    def make_depth_profile(self, directory: Path, name: str, serial_number_m:
+                           int, sample_folder_name: str, progress=None):
         """Make depth profile from loaded lines from saved file.
         
         Args:
-            directory: A string representing directory to depth files.
+            directory: A path to depth files directory.
             name: A string representing measurement's name.
             serial_number_m: Measurement's serial number.
             sample_folder_name: Sample's serial number.
@@ -219,15 +219,13 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             new_sample_name = "Sample_" + "%02d" % \
                               self.obj.sample.serial_number + "-" + \
                               self.obj.sample.name
-            output_dir = self.__confirm_filepath(lines[0].strip(), name,
-                                                 m_name, old_folder_prefix,
-                                                 new_folder_prefix,
-                                                 sample_folder_name,
-                                                 new_sample_name)
+            output_dir = self.__confirm_filepath(
+                lines[0].strip(), name, m_name, old_folder_prefix,
+                new_folder_prefix, sample_folder_name, new_sample_name)
             use_cuts = self.__confirm_filepath(
                 lines[2].strip().split("\t"), name, m_name, old_folder_prefix,
                 new_folder_prefix, sample_folder_name, new_sample_name)
-            cut_names = [os.path.basename(cut) for cut in use_cuts]
+            cut_names = [cut.name for cut in use_cuts]
             elements_string = lines[1].strip().split("\t")
             elements = [Element.from_string(element)
                         for element in elements_string]
@@ -431,7 +429,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             return newfiles
         raise TypeError("Expected either a string or a list")
 
-    def __validate_file_path(self, file_path):
+    def __validate_file_path(self, file_path: Path):
         """Helper function that checks if the given file_path points to file.
         If it does, returns the file path as it was given, otherwise treats
         the file_path as a relative path and returns an absolute path within

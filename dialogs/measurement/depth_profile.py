@@ -29,20 +29,24 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
 import logging
 
 import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
+import widgets.binding as bnd
 import modules.depth_files as depth_files
 import modules.cut_file as cut_file
 
 from pathlib import Path
+from typing import List
+from typing import Optional
 
 from widgets.gui_utils import StatusBarHandler
+from widgets.base_tab import BaseTab
 from modules.element import Element
 from modules.measurement import Measurement
 from modules.global_settings import GlobalSettings
+from modules.observing import ProgressReporter
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -61,9 +65,12 @@ class DepthProfileDialog(QtWidgets.QDialog):
     line_zero = False
     line_scale = False
     systerr = 0.0
+
+    status_msg = bnd.bind("label_status")
     
-    def __init__(self, parent, measurement: Measurement, global_settings:
-                 GlobalSettings, statusbar: QtWidgets.QStatusBar = None):
+    def __init__(self, parent: BaseTab, measurement: Measurement,
+                 global_settings: GlobalSettings, statusbar:
+                 QtWidgets.QStatusBar = None):
         """Inits depth profile dialog.
         
         Args:
@@ -95,7 +102,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.radioButtonAtPerCm2.clicked.connect(
             self.__remove_reference_density)
 
-        m_name = self.parent.obj.name
+        m_name = self.measurement.name
         if m_name not in DepthProfileDialog.checked_cuts:
             DepthProfileDialog.checked_cuts[m_name] = []
 
@@ -121,10 +128,15 @@ class DepthProfileDialog(QtWidgets.QDialog):
 
         self.__show_important_settings()
         self.exec_()
-        
-    def __accept_params(self):
+
+    @gutils.disable_widget
+    def __accept_params(self, *_):
         """Accept given parameters.
+
+        Args:
+            *_: unused event args
         """
+        self.status_msg = ""
         sbh = StatusBarHandler(self.statusbar)
 
         try:
@@ -179,18 +191,16 @@ class DepthProfileDialog(QtWidgets.QDialog):
             
             # If items are selected, proceed to generating the depth profile
             if use_cut:
-                self.label_status.setText(
-                    "Please wait. Creating depth profile.")
+                self.status_msg = "Please wait. Creating depth profile."
                 if self.parent.depth_profile_widget:
                     self.parent.del_widget(self.parent.depth_profile_widget)
 
                 # If reference density changed, update value to measurement
-                if self.__reference_density_spinbox:
-                    self.measurement.reference_density = \
-                        self.__reference_density_spinbox.value()
+                if self.__reference_density_spinbox is not None:
                     if self.measurement.reference_density != \
-                            self.measurement.request.default_measurement\
-                                    .reference_density:
+                            self.__reference_density_spinbox.value():
+                        self.measurement.reference_density = \
+                            self.__reference_density_spinbox.value()
                         self.measurement.to_file()
                 
                 self.parent.depth_profile_widget = DepthProfileWidget(
@@ -209,9 +219,11 @@ class DepthProfileDialog(QtWidgets.QDialog):
                                        icon=icon)
                 self.close()
             else:
-                print("No cuts have been selected for depth profile.")
+                self.status_msg = "Please select .cut file[s] to create " \
+                                  "depth profiles."
         except Exception as e:
-            error_log = f"Unexpected error: {e}"
+            error_log = f"Exception occurred when trying to create depth " \
+                        f"profiles: {e}"
             logging.getLogger(self.measurement.name).error(error_log)
         finally:
             sbh.reporter.report(100)
@@ -311,14 +323,15 @@ class DepthProfileWidget(QtWidgets.QWidget):
     """
     save_file = "widget_depth_profile.save"
     
-    def __init__(self, parent, output_dir, use_cuts, elements, x_units,
-                 line_zero, line_scale, systematic_error, progress=None):
+    def __init__(self, parent: BaseTab, output_dir: Path, use_cuts: List[Path],
+                 elements: List[Element], x_units: str, line_zero: bool,
+                 line_scale: bool, systematic_error: float,
+                 progress: Optional[ProgressReporter] = None):
         """Inits widget.
         
         Args:
-            parent: A MeasurementTabWidget.
-            output_dir: A string representing directory in which the depth files
-                        are located.
+            parent: a MeasurementTabWidget.
+            output_dir: full path to depth file location
             use_cuts: A string list representing Cut files.
             elements: A list of Element objects that are used in depth profile.
             x_units: Units to be used for x-axis of depth profile.
@@ -349,37 +362,30 @@ class DepthProfileWidget(QtWidgets.QWidget):
             else:
                 sub_progress = None
 
-            depth_files.generate_depth_files(self.use_cuts,
-                                             self.output_dir,
-                                             measurement=self.measurement,
-                                             progress=sub_progress)
+            # TODO do this in thread
+            depth_files.generate_depth_files(
+                self.use_cuts, self.output_dir, self.measurement,
+                progress=sub_progress
+            )
 
             if progress is not None:
                 progress.report(50)
             
             # Check for RBS selections.
-            rbs_list = {}
-            for cut in self.use_cuts:
-                filename = Path(cut).name
-                split = filename.split(".")
-                element = Element.from_string(split[1])
-                if cut_file.is_rbs(cut):
-                    # This should work for regular cut and split.
-                    key = "{0}.{1}.{2}".format(split[1], split[2], split[3])
-                    scatter_element = cut_file.get_scatter_element(cut)
-                    rbs_list[key] = scatter_element
-                    index = 0
-                    found_scatter = False
-                    for elm in elements:  # Makeshift
-                        if elm == element:
-                            found_scatter = True
-                            break
-                        index += 1
-                    # When loading request, the scatter element is already
-                    # replaced. This is essentially done only when creating 
-                    # a new Depth Profile graph.
-                    if found_scatter:
-                        elements[index] = scatter_element
+            rbs_list = cut_file.get_rbs_selections(self.use_cuts)
+
+            for rbs in rbs_list:
+                # Search and replace instances of Beam element with scatter
+                # elements.
+                # When loading request, the scatter element is already
+                # replaced. This is essentially done only when creating
+                # a new Depth Profile graph.
+                # TODO seems overly complicated. This stuff should be sorted
+                #  before initializing the widget
+                element = Element.from_string(rbs.split(".")[0])
+                for i, elem in enumerate(elements):
+                    if elem == element:
+                        elements[i] = rbs_list[rbs]
 
             depth_scale = self.measurement.depth_for_concentration_from, \
                 self.measurement.depth_for_concentration_to
@@ -426,17 +432,17 @@ class DepthProfileWidget(QtWidgets.QWidget):
     def save_to_file(self):
         """Save object information to file.
         """
-        output_dir = os.path.relpath(self.output_dir,
-                                     self.parent.obj.directory)
+        output_dir = Path.relative_to(
+            self.output_dir, self.measurement.directory)
 
-        file = Path(self.parent.obj.get_depth_profile_dir(), self.save_file)
+        file = Path(self.measurement.get_depth_profile_dir(), self.save_file)
 
-        with open(file, "wt") as fh:
-            fh.write("{0}\n".format(output_dir))
-            fh.write("{0}\n".format("\t".join([str(element)
-                                               for element in self.elements])))
-            fh.write("{0}\n".format("\t".join([str(cut) for cut in
-                                               self.use_cuts])))
+        with file.open("w") as fh:
+            fh.write("{0}\n".format(str(output_dir)))
+            fh.write("{0}\n".format("\t".join([
+                str(element) for element in self.elements])))
+            fh.write("{0}\n".format("\t".join([
+                str(cut) for cut in self.use_cuts])))
             fh.write("{0}\n".format(self.x_units))
             fh.write("{0}\n".format(self.__line_zero))
             fh.write("{0}\n".format(self.__line_scale))
@@ -447,8 +453,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
         Update used cuts list with new Measurement cuts.
         """
         changes_dir = self.measurement.get_changes_dir()
-        df.update_cuts(self.use_cuts,
-                       self.measurement.directory_cuts,
-                       changes_dir)
+        df.update_cuts(
+            self.use_cuts, self.measurement.directory_cuts, changes_dir)
 
         self.output_dir = self.measurement.get_depth_profile_dir()

@@ -26,8 +26,9 @@ __version__ = "2.0"
 
 import unittest
 import os
-import tests.utils as utils
 import sys
+import tests.utils as utils
+import modules.general_functions as gf
 
 from pathlib import Path
 
@@ -35,11 +36,11 @@ from pathlib import Path
 class TestImports(unittest.TestCase):
     @utils.change_wd_to_root
     @unittest.skipIf(
-        utils.get_root_folder().name != "potku",
+        gf.get_root_dir().name != "potku",
         reason="In order to run the import test, Potku's root directory must "
                "be called 'potku'")
     @unittest.skipIf(
-        utils.get_root_folder().parent == Path("/"),
+        gf.get_root_dir().parent == Path("/"),
         reason="Cannot run import test as Potku is located in the root folder "
                "of the file system.")
     def test_importing_modules(self):
@@ -47,8 +48,11 @@ class TestImports(unittest.TestCase):
         imported from a working directory above Potku's root directory.
         """
         # Remove Potku root from sys.path and add its parent
-        potku_root = utils.get_root_folder()
-        sys.path.remove(str(potku_root))
+        potku_root = gf.get_root_dir()
+        try:
+            sys.path.remove(str(potku_root))
+        except ValueError:
+            pass
         sys.path.append(str(potku_root.parent))
 
         os.chdir(potku_root.parent)
@@ -58,9 +62,9 @@ class TestImports(unittest.TestCase):
         from potku.modules.element import masses as m2
         self.assertIs(m1, m2)
 
-        from potku.modules.base import MCERDParameterContainer as mpc1
-        from potku.modules.element import MCERDParameterContainer as mpc2
-        self.assertIs(mpc1, mpc2)
+        from potku.modules.base import MCERDParameterContainer as Mpc1
+        from potku.modules.element import MCERDParameterContainer as Mpc2
+        self.assertIs(Mpc1, Mpc2)
 
 
 if __name__ == '__main__':

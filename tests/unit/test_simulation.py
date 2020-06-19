@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -45,7 +45,7 @@ class TestSimulation(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp_dir:
             req = mo.get_request()
-            sim = Simulation(os.path.join(temp_dir, "test.simu"), req)
+            sim = Simulation(Path(temp_dir, "test.simu"), req)
 
             # Logging needs to be disabled, otherwise loggers retain file
             # handlers that prevent removing the temp_dir
@@ -56,7 +56,7 @@ class TestSimulation(unittest.TestCase):
         # Just in case make sure that the temp_dir got deleted
         self.assertFalse(os.path.exists(temp_dir))
 
-    @patch("modules.mcerd.MCERD.run")
+    @patch("modules.mcerd.MCERD.run", return_value=mo.get_mcerd_stream())
     def test_get_active_simulation(self, mock_run):
         sim = mo.get_simulation()
 
@@ -66,19 +66,12 @@ class TestSimulation(unittest.TestCase):
 
         elem_sim = sim.element_simulations[0]
         elem_sim.use_default_settings = False
-        elem_sim.start(1, 1).subscribe(Mock())
-        self.assertEqual(([elem_sim], [], [], []), sim.get_active_simulations())
-
-        elem_sim._set_flags(False)
-        self.assertEqual(
-            ([], [elem_sim], [], []), sim.get_active_simulations())
+        elem_sim.start(1, 1).run()
+        self.assertEqual(([], [elem_sim], [], []), sim.get_active_simulations())
+        mock_run.assert_called_once()
 
         elem_sim.optimization_recoils = [mo.get_recoil_element()]
-        elem_sim.start(1, 1, optimization_type=OptimizationType.RECOIL)
-        self.assertEqual(
-            ([], [elem_sim], [elem_sim], []), sim.get_active_simulations())
-
-        elem_sim._set_flags(False)
+        elem_sim.start(1, 1, optimization_type=OptimizationType.RECOIL).run()
         self.assertEqual(
             ([], [elem_sim], [], [elem_sim]), sim.get_active_simulations())
 

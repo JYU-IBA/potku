@@ -40,10 +40,11 @@ import os
 import platform
 import subprocess
 import logging
+import functools
 
 from pathlib import Path
-from functools import lru_cache
 from typing import Optional
+from typing import List
 
 from . import math_functions as mf
 from . import comparison as comp
@@ -51,13 +52,14 @@ from . import general_functions as gf
 from .element import Element
 from .parsing import CSVParser
 from .measurement import Measurement
+from .observing import ProgressReporter
 
 
 class DepthFileGenerator:
     """DepthFiles handles calling the external programs to create depth files.
     """
-    def __init__(self, cut_files, output_directory: Path, prefix="depth",
-                 tof_in_file: Optional[Path] = None):
+    def __init__(self, cut_files: List[Path], output_directory: Path,
+                 prefix: str = "depth", tof_in_file: Optional[Path] = None):
         """Inits DepthFiles.
 
         Args:
@@ -67,7 +69,6 @@ class DepthFileGenerator:
             tof_in_file: path to tof.in file
         """
         self._cut_files = cut_files
-        # file_paths]
         self._output_path = Path(output_directory, prefix)
         if tof_in_file is None:
             self._tof_in_file = Path("tof.in")
@@ -101,9 +102,9 @@ class DepthFileGenerator:
             print(f"tof_list|erd_depth pipeline returned an error code: {ret}")
 
 
-def generate_depth_files(cut_files, output_dir: Path,
-                         measurement: Measurement = None,
-                         tof_in_dir: Path = None, progress=None):
+def generate_depth_files(cut_files: List[Path], output_dir: Path,
+                         measurement: Measurement, tof_in_dir: Optional[Path]
+                         = None, progress: Optional[ProgressReporter] = None):
     """Generates depth files from given cut files and writes them to output
     directory.
 
@@ -117,24 +118,14 @@ def generate_depth_files(cut_files, output_dir: Path,
         progress: a ProgressReporter object
     """
     # TODO this could be a method of Measurement
-    # TODO Measurment should not be an optional param
-    if measurement is not None:
-        # tof.in file needs to exists before running DepthFileGenerator
-        tof_in_file = measurement.generate_tof_in(directory=tof_in_dir)
+    tof_in_file = measurement.generate_tof_in(directory=tof_in_dir)
 
     output_dir.mkdir(exist_ok=True)
 
     # Delete previous depth files to avoid mixup when assigning the
     # result files back to their cut files
-    for file in os.scandir(output_dir):
-        fp = Path(file.path)
-        # TODO check that depth files are always named as 'depth.symbol'
-        #   and that there are no extra dots in the file name
-        if fp.stem == "depth":
-            try:
-                fp.unlink()
-            except OSError:
-                pass
+    gf.remove_matching_files(
+        output_dir, filter_func=lambda fn: Path(fn).stem == "stem")
 
     if progress is not None:
         progress.report(30)
@@ -616,7 +607,7 @@ class DepthProfileHandler:
 
     # It is likely that this function gets called many times with same args so
     # results are cached
-    @lru_cache(maxsize=32)
+    @functools.lru_cache(maxsize=32)
     def merge_profiles(self, depth_a=-math.inf, depth_b=math.inf,
                        method="abs_rel_abs"):
         """Combines absolute and relative DepthProfiles so that

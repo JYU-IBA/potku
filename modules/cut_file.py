@@ -29,9 +29,11 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
-
 from pathlib import Path
+from typing import List
+from typing import Dict
+from typing import Optional
+from typing import Any
 
 from .element import Element
 
@@ -40,19 +42,19 @@ class CutFile:
     """
     Cut file_path object for when reading cut files is necessary.
     """
-    def __init__(self, directory=None, elem_loss=False, weight_factor=1.0,
-                 split_number=0, split_count=1):
-        """ Inits cut file_path object.
+    def __init__(self, directory: Optional[Path] = None, elem_loss=False,
+                 weight_factor=1.0, split_number=0, split_count=1):
+        """Inits CutFile object.
         
         Args:
             directory: String representing cut directory.
             elem_loss: Boolean representing whether cut file_path is made from
-                       elemental losses splits.
+                elemental losses splits.
             weight_factor: Float representing element weight factor. 
             split_number: Integer. Required for Elemental Losses, do not
-            overwrite splits.
+                overwrite splits.
             split_count: Integer. Required for Elemental Losses, total count of 
-                         splits.
+                splits.
         """
         self.directory = directory
         self.element = None  # If RBS, this holds beam ion
@@ -61,15 +63,15 @@ class CutFile:
         self.is_elem_loss = elem_loss
         self.split_number = split_number
         self.split_count = split_count
-        self.type = "ERD"
+        self.type = "ERD"   # TODO type should be an enum
         self.weight_factor = weight_factor
         self.energy = None
         self.detector_angle = None
         self.data = []
         self.element_number = None
     
-    def set_info(self, selection, data):
-        """ Set selection information and data into CutFile.
+    def set_info(self, selection, data: List[Any]):
+        """Set selection information and data into CutFile.
         
         Args:
             selection: Selection class object.
@@ -86,33 +88,31 @@ class CutFile:
         self.energy = 0
         self.detector_angle = 0
 
-    def load_file(self, file):
+    def load_file(self, file: Path):
         """Load and parse cut file_path.
         
         Args:
-            file: String representing cut file.
+            file: absolute path to .cut file
         """
         if not file:
             return
-        # print("CutFile:load_file() : {0}".format(file))
-        directory_cuts, file_name = os.path.split(file)
-        self.directory = Path(os.path.split(directory_cuts)[0])
+        directory_cuts, file_name = file.parent, file.name
+        self.directory = directory_cuts     # TODO .parent
         # os.path is not required for following.
         # Get number of element selection, i.e.
         # Two H selections -> numbers are 0 and 1
         # self.element_number = file.split('/')[-1].split('.')[1]
         # tof_e_01048.Pm.0 << Element count: 0, element_information: Pm
         # tof_e_01048.1H.0.2 << Element count: 0, element_information: 1H
-        element_information = file_name.split('.')[1]
-        self.element_number = file_name.split('.')[3]
+        element_information = file_name.split(".")[1]
+        self.element_number = int(file_name.split(".")[3])
 
         self.element = Element.from_string(element_information)
 
         # print("Load cut: {0} {1}".format(self.element, self.isotope))
-        with open(file) as fp:
-            dirtyinteger = 0
-            for line in fp:
-                if dirtyinteger < 10:  # Probably not the best way.
+        with file.open("r") as fp:
+            for i, line in enumerate(fp):
+                if i < 10:  # Probably not the best way.
                     line_split = line.strip().split(':')
                     if len(line_split) > 1: 
                         key = line_split[0].strip()
@@ -130,12 +130,11 @@ class CutFile:
                         elif key == "Scatter Element":
                             self.element_scatter = Element(value)
                         elif key == "Element losses":
-                            self.is_elem_loss = bool(value)
+                            self.is_elem_loss = value == "True"
                         elif key == "Split count":
                             self.split_count = int(value)
                 else:
                     self.data.append([int(i) for i in line.split()])
-                dirtyinteger += 1
     
     def save(self, element_count=0):
         """Save cut file_path.
@@ -162,50 +161,43 @@ class CutFile:
                 suffix = f"RBS_{self.element_scatter}"
             else:
                 suffix = "ERD"
+
+            self.directory.mkdir(exist_ok=True, parents=True)
+
             if self.is_elem_loss:
-                if not self.directory.exists():
-                    os.makedirs(self.directory)
                 file = Path(
                     self.directory,
                     "{0}.{1}.{2}.{3}.{4}.cut".format(
                         measurement_name, element, suffix, element_count,
                         self.split_number))
             else:
-                if not self.directory.exists():
-                    os.makedirs(self.directory)
                 # Has to run until file that doesn't exist is found.
                 while True:
                     file = Path(
                         self.directory, "{0}.{1}.{2}.{3}.cut".format(
                             measurement_name, element, suffix, element_count))
-                    try:
-                        # Using of os.path is not allowed here. 
-                        # http://stackoverflow.com/questions/82831/
-                        # how-do-i-check-if-a-file-exists-using-python
-                        with open(file): 
-                            pass
+                    if file.exists() and file.is_file():
                         element_count += 1
-                    except IOError:
+                    else:
                         break
             if self.element_scatter is not "":
-                element_scatter = self.element_scatter.__str__()
+                element_scatter = str(self.element_scatter)
             else:
                 element_scatter = ""
-            my_file = open(file, 'wt')
-            my_file.write("Count: {0}\n".format(self.count))
-            my_file.write("Type: {0}\n".format(self.type))
-            my_file.write("Weight Factor: {0}\n".format(self.weight_factor))
-            my_file.write("Energy: {0}\n".format(0))
-            my_file.write("Detector Angle: {0}\n".format(0))
-            my_file.write("Scatter Element: {0}\n".format(element_scatter))
-            my_file.write("Element losses: {0}\n".format(self.is_elem_loss))
-            my_file.write("Split count: {0}\n".format(self.split_count))
-            my_file.write("\n")
-            my_file.write("ToF, Energy, Event number\n")
-            for p in self.data:  # Write all points
-                my_file.write(' '.join(map(str, p)))
-                my_file.write('\n')
-            my_file.close()
+            with open(file, "w") as my_file:
+                my_file.write(f"Count: {self.count}\n")
+                my_file.write(f"Type: {self.type}\n")
+                my_file.write(f"Weight Factor: {self.weight_factor}\n")
+                my_file.write("Energy: 0\n")
+                my_file.write("Detector Angle: 0\n")
+                my_file.write(f"Scatter Element: {element_scatter}\n")
+                my_file.write(f"Element losses: {self.is_elem_loss}\n")
+                my_file.write(f"Split count: {self.split_count}\n")
+                my_file.write("\n")
+                my_file.write("ToF, Energy, Event number\n")
+                for p in self.data:  # Write all points
+                    my_file.write(" ".join(map(str, p)))
+                    my_file.write("\n")
          
     def split(self, reference_cut, splits=10, save=True):
         """Splits cut file into X splits based on reference cut.
@@ -222,7 +214,7 @@ class CutFile:
         split_size = int(len(reference_cut.data) / splits)  
         self_size = len(self.data)
         row_index, split = 0, 0
-        cut_splits = [[] for unused_i in range(splits)]
+        cut_splits = [[] for _ in range(splits)]
         while split < splits and row_index < self_size:
             # Get last event number in first split
             max_event = reference_cut.data[((split + 1) * split_size) - 1][-1]  
@@ -239,8 +231,8 @@ class CutFile:
         """Save splits into new CutFiles.
         
         Args:
-            splits: Integer determining how many splits is cut splitted to.
-            cut_splits: List of splitted data.
+            splits: Integer determining how many splits is cut split to.
+            cut_splits: List of split data.
         """
         split_number = 0
         for split in cut_splits:
@@ -271,7 +263,7 @@ class CutFile:
         self.element_scatter = cut_file.element_scatter
 
 
-def is_rbs(file):
+def is_rbs(file: Path) -> bool:
     """Check if cut file is RBS.
     
     Args:
@@ -280,22 +272,19 @@ def is_rbs(file):
     Return:
         Returns True if cut file is RBS and False if not.
     """
-    with open(file) as fp:
-        dirtyinteger = 0
-        for line in fp:
-            if dirtyinteger >= 10:
-                break
+    with file.open("r") as fp:
+        for i, line in enumerate(fp):
+            if i >= 10:
+                return False
             line_split = line.strip().split(':')
             if len(line_split) > 1: 
                 key = line_split[0].strip()
                 value = line_split[1].strip()
                 if key == "Type":
                     return value == "RBS"
-            dirtyinteger += 1
-    return False
 
 
-def get_scatter_element(file):
+def get_scatter_element(file: Path) -> Optional[Element]:
     """Check if cut file is RBS.
     
     Args:
@@ -305,15 +294,35 @@ def get_scatter_element(file):
         Returns an Element class object of scatter element. Returns an empty 
         Element class object if there is no scatter element (in case of ERD).
     """
-    with open(file) as fp:
-        dirtyinteger = 0
-        for line in fp:
-            if dirtyinteger >= 10:
-                break
+    with file.open("r") as fp:
+        for i, line in enumerate(fp):
+            if i >= 10:
+                return None
             line_split = line.strip().split(':')
             if len(line_split) > 1: 
                 key = line_split[0].strip()
                 value = line_split[1].strip()
                 if key == "Scatter Element":
                     return Element.from_string(value)
-    return None
+
+
+def get_rbs_selections(cut_files: List[Path]) -> Dict[str, Element]:
+    """Returns a dictionary where keys are cut file names without
+    measurement name and values are Elements.
+
+    Args:
+        cut_files: list of absolute paths to cut files
+
+    Return:
+        dictionary
+    """
+    rbs_dict = {}
+    for cut in cut_files:
+        filename = cut.name
+        split = filename.split(".")
+        if is_rbs(cut):
+            # This should work for regular cut and split.
+            key = "{0}.{1}.{2}.{3}".format(
+                split[1], split[2], split[3], split[4])
+            rbs_dict[key] = get_scatter_element(cut)
+    return rbs_dict
