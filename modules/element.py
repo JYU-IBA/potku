@@ -149,7 +149,7 @@ class Element(MCERDParameterContainer):
         """Returns a human readable representation of the Element object.
         """
         return f"Element(symbol={self.symbol}, isotope={self.isotope}, " \
-               f"amound={self.amount})"
+               f"amount={self.amount})"
 
     def get_prefix(self):
         """Returns a string representation of an element without amount.

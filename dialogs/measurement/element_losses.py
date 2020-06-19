@@ -236,16 +236,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
             )
 
             # Check for RBS selections.
-            rbs_list = {}
-            for cut in self.checked_cuts:
-                filename = os.path.basename(cut)
-                split = filename.split(".")
-                if cut_file.is_rbs(cut):
-                    # This should work for regular cut and split.
-                    key = "{0}.{1}.{2}.{3}".format(split[1], split[2],
-                                                   split[3], split[4])
-                    rbs_list[key] = cut_file.get_scatter_element(cut)
-
+            rbs_list = cut_file.get_rbs_selections(self.checked_cuts)
             # Connect buttons
             self.splitSaveButton.clicked.connect(self.__save_splits)
 

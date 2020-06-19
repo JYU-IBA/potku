@@ -69,7 +69,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     use_efficiency = bnd.bind("use_eff_checkbox")
 
     def __init__(self, parent, spectrum_type,
-                 element_simulation: Optional[ElementSimulation]=None,
+                 element_simulation: Optional[ElementSimulation] = None,
                  recoil_widget=None, statusbar=None, spectra_changed=None):
         """Inits energy spectrum dialog.
         
@@ -553,15 +553,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                     )
 
                 # Check for RBS selections.
-                for cut in self.use_cuts:
-                    filename = os.path.basename(cut)
-                    split = filename.split(".")
-                    if cut_file.is_rbs(cut):
-                        # This should work for regular cut and split.
-                        key = "{0}.{1}.{2}.{3}".format(split[1], split[2],
-                                                       split[3], split[4])
-                        rbs_list[key] = cut_file.get_scatter_element(cut)
-
+                rbs_list = cut_file.get_rbs_selections(self.use_cuts)
             else:
                 self.simulation = self.parent.obj
                 self.save_file_int = save_file_int

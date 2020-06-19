@@ -207,6 +207,7 @@ class TestGeneralFunctions(unittest.TestCase):
         self.assertEqual(123500, gf.round_value_by_four_biggest(123456))
         self.assertEqual(77780, gf.round_value_by_four_biggest(77777))
 
+
 class TestHistogramming(unittest.TestCase):
     def test_hist(self):
         data = [
@@ -328,7 +329,8 @@ class TestFileIO(unittest.TestCase):
             open(no_ext, "a").close()
             self.assertTrue(no_ext.exists())
 
-            gf.remove_matching_files(tmp_dir)
+            self.assertRaises(
+                TypeError, lambda: gf.remove_matching_files(tmp_dir))
             gf.remove_matching_files(tmp_dir, exts=[])
 
             self.assertTrue(no_ext.exists())
@@ -353,12 +355,20 @@ class TestFileIO(unittest.TestCase):
             self.assertTrue(foo_file.exists())
             self.assertTrue(foo2_file.exists())
 
-            gf.remove_matching_files(tmp_dir, exts={".bar"},
-                                     filter_func=lambda f: f.startswith("bar."))
+            gf.remove_matching_files(
+                tmp_dir, exts={".bar"},
+                filter_func=lambda f: f.startswith("bar."))
 
             self.assertTrue(bar_file.exists())
             self.assertFalse(bar2_file.exists())
             self.assertTrue(foo_file.exists())
+            self.assertTrue(foo2_file.exists())
+
+            gf.remove_matching_files(
+                tmp_dir, filter_func=lambda f: f.startswith("bar."))
+
+            self.assertTrue(bar_file.exists())
+            self.assertFalse(foo_file.exists())
             self.assertTrue(foo2_file.exists())
 
     def test_remove_files_with_bad_inputs(self):
