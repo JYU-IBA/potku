@@ -143,7 +143,7 @@ class Potku(QtWidgets.QMainWindow):
         self.actionOpen_Request_2.triggered.connect(self.open_request)
 
         # Should save changes
-        self.actionExit.triggered.connect(self.closeEvent)
+        self.actionExit.triggered.connect(self.close)
 
         self.menuImport.setEnabled(False)
 
@@ -415,8 +415,6 @@ class Potku(QtWidgets.QMainWindow):
         if isinstance(widget, BaseTab):
             widget.save_geometries()
 
-        # FIXME TypeError: closeEvent(self, QCloseEvent): argument 1 has
-        #  unexpected type 'bool'
         super().closeEvent(event)
 
     def are_simulations_stopped(self):
