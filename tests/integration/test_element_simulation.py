@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -26,9 +26,9 @@ __version__ = "2.0"
 
 import unittest
 import tempfile
-import os
 
 import tests.utils as utils
+import tests.mock_objects as mo
 
 from pathlib import Path
 from unittest.mock import patch
@@ -37,68 +37,59 @@ from unittest.mock import Mock
 from modules.request import Request
 from modules.element_simulation import ElementSimulation
 from modules.detector import Detector
-from modules.foil import CircularFoil
-from modules.layer import Layer
 from modules.element import Element
 from modules.simulation import Simulation
 from modules.global_settings import GlobalSettings
 from modules.recoil_element import RecoilElement
 from modules.point import Point
 from modules.run import Run
-from modules.beam import Beam
+from modules.sample import Sample
 
 
 class TestElementSimulationSettings(unittest.TestCase):
-    @patch("modules.mcerd.MCERD.__init__", return_value=None)
-    @patch("modules.mcerd.MCERD.run")
-    def test_elementsimulation_settings(self, mock_mcerd_run, mock_mcerd):
+    def test_elementsimulation_settings(self):
         """This tests that ElementSimulation is run with the correct settings
         depending on how 'use_default_settings' and 'use_request_settings'
         have been set.
         """
         with tempfile.TemporaryDirectory() as tmp_dir:
             # File paths
-            # FIXME sometimes fails on Linux
             tmp_dir = Path(tmp_dir).resolve()
-            mesu_file = tmp_dir / "mesu"
-            det_dir = tmp_dir / "det"
+            req_dir = tmp_dir / "req"
             sim_dir = tmp_dir / "Sample_01-foo" / \
                 f"{Simulation.DIRECTORY_PREFIX}01-bar"
             simu_file = sim_dir / "bar.simulation"
 
             # Request
             request = Request(
-                tmp_dir, "test_req", GlobalSettings(config_dir=tmp_dir), {})
+                req_dir, "test_req", GlobalSettings(config_dir=tmp_dir), {})
 
-            self.assertEqual(tmp_dir, request.directory)
+            self.assertEqual(req_dir, request.directory)
             self.assertEqual("test_req", request.request_name)
 
             # Sample
-            request.samples.add_sample(name="foo")
-            sample = request.samples.samples[0]
+            sample = request.samples.add_sample(name="foo")
+            self.assertIs(sample, request.samples.samples[0])
+            self.assertIsInstance(sample, Sample)
             self.assertEqual("foo", sample.name)
             self.assertEqual(request, sample.request)
+            self.assertEqual("Sample_01-foo", sample.directory)
 
             # Simulation
-            sample.simulations.add_simulation_file(
+            sim = sample.simulations.add_simulation_file(
                 sample, simu_file, 0)
-            sim_foils = [CircularFoil("Foil1", 7.0, 256.0,
-                                      [Layer("Layer_12C",
-                                             [Element("C", 12.011, 1)],
-                                       0.1, 2.25, 0.0)])]
-            sim: Simulation = sample.simulations.get_key_value(0)
-            sim.detector = Detector(det_dir, mesu_file, name="simu_detector",
-                                    foils=sim_foils)
-            sim.run = Run(Beam(energy=20))
+            self.assertIs(sim, sample.simulations.get_key_value(0))
+            self.assertIsInstance(sim.detector, Detector)
+            self.assertIsInstance(sim.run, Run)
             self.assertEqual("bar", sim.name)
             self.assertEqual(request, sim.request)
             self.assertEqual(sample, sim.sample)
 
             # ElementSimulation
-            rec_elem = RecoilElement(Element.from_string("Fe"),
-                                     [Point((1, 1))], name="recoil_name")
-            sim.add_element_simulation(rec_elem)
-            elem_sim: ElementSimulation = sim.element_simulations[0]
+            rec_elem = RecoilElement(
+                Element.from_string("Fe"), [Point((1, 1))], name="recoil_name")
+            elem_sim = sim.add_element_simulation(rec_elem)
+            self.assertIs(elem_sim, sim.element_simulations[0])
             elem_sim.number_of_preions = 2
             elem_sim.number_of_ions = 3
             self.assertEqual(request, elem_sim.request)
@@ -108,32 +99,43 @@ class TestElementSimulationSettings(unittest.TestCase):
             # an exception when the tmp dir is removed
             utils.disable_logging()
 
+            # Some pre-simulation checks
+            self.assertIsNot(sim.target, request.default_target)
+            self.assertIsNot(elem_sim, request.default_element_simulation)
+            self.assertIsNot(elem_sim.detector, request.default_detector)
+            self.assertIsNot(elem_sim.run, request.default_run)
+            self.assertIsNot(elem_sim.run.beam, request.default_run.beam)
+            self.assertNotEqual(
+                elem_sim.number_of_ions,
+                request.default_element_simulation.number_of_ions)
+
             # Test with all setting combinations
             elem_sim.use_default_settings = True
             sim.use_request_settings = True
-            self.assert_expected_settings(elem_sim, request, sim,
-                                          mock_mcerd)
+            self.assert_expected_settings(elem_sim, request, sim)
 
             elem_sim.use_default_settings = True
             sim.use_request_settings = False
-            self.assert_expected_settings(elem_sim, request, sim,
-                                          mock_mcerd)
+            self.assert_expected_settings(elem_sim, request, sim)
 
             elem_sim.use_default_settings = False
             sim.use_request_settings = True
-            self.assert_expected_settings(elem_sim, request, sim,
-                                          mock_mcerd)
+            self.assert_expected_settings(elem_sim, request, sim)
 
             elem_sim.use_default_settings = False
             sim.use_request_settings = False
-            self.assert_expected_settings(elem_sim, request, sim,
-                                          mock_mcerd)
+            self.assert_expected_settings(elem_sim, request, sim)
 
-        self.assertFalse(os.path.exists(tmp_dir))
+        self.assertFalse(tmp_dir.exists())
 
-    def assert_expected_settings(self, elem_sim, request, sim,
-                                 mock_mcerd: Mock):
-        elem_sim.start(1, 1, use_old_erd_files=False).subscribe(Mock())
+    @patch("modules.mcerd.MCERD.__init__", return_value=None)
+    @patch("modules.mcerd.MCERD.run", return_value=mo.get_mcerd_stream())
+    def assert_expected_settings(self, elem_sim: ElementSimulation,
+                                 request: Request, sim: Simulation,
+                                 mock_run: Mock, mock_mcerd: Mock):
+        elem_sim.start(1, 1, use_old_erd_files=False).run()
+        mock_run.assert_called_once()
+
         elem_sim._set_flags(False)
         args = mock_mcerd.call_args[0]
         seed, d = args[0], args[1]

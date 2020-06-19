@@ -1,13 +1,12 @@
 # coding=utf-8
 """
 Created on 19.1.2020
-Updated on 23.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -27,49 +26,22 @@ __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 import unittest
-import platform
 import math
+
+import tests.utils as utils
 
 from pathlib import Path
 
 from modules.depth_files import DepthProfileHandler
 from modules.element import Element
-from tests.utils import verify_files, get_sample_data_dir
 from timeit import default_timer as timer
 
 # These tests require reading files from the sample data directory
 # Path to the depth file directory
-_DIR_PATH = Path(get_sample_data_dir(), "Ecaart-11-mini", "Tof-E_65-mini",
-                 "depthfiles")
-
-# List of depth files to be read from the directory
-_FILE_NAMES = [
-    "depth.C",
-    "depth.F",
-    "depth.H",
-    "depth.Li",
-    "depth.Mn",
-    "depth.O",
-    "depth.Si",
-    "depth.total"
-]
-
-_DEFAULT_MSG = "reading files in TestDepthProfileHandling"
-
-# Combined absolute file paths
-_file_paths = [Path(_DIR_PATH, fname) for fname in _FILE_NAMES]
-
-__os = platform.system()
-
-# Expected checksum for all depth files
-# Checksums are valid as of 20.1.2020
-# If depths files are modified or removed, some of the tests will be skipped
-if __os == "Windows":
-    _CHECKSUM = "bc23c40efc30400ad93723d157c9c7f7"
-elif __os == "Linux" or __os == "Darwin":
-    _CHECKSUM = "96c2eefd79f73328473ccf4109ed071c"
-else:
-    _CHECKSUM = None
+_DIR_PATH = Path(
+    utils.get_sample_data_dir(), "Ecaart-11-mini", "Tof-E_65-mini",
+    "depthfiles"
+)
 
 
 class TestDepthProfileHandling(unittest.TestCase):
@@ -92,7 +64,6 @@ class TestDepthProfileHandling(unittest.TestCase):
         ]
         cls.handler = DepthProfileHandler()
 
-    @verify_files(_file_paths, _CHECKSUM, msg=_DEFAULT_MSG)
     def test_file_reading(self):
         """Tests that the files can be read and all given elements are
         stored in the profile handler"""
@@ -121,7 +92,6 @@ class TestDepthProfileHandling(unittest.TestCase):
         self.assertEqual(set(rel_profiles.keys()),
                          elem_set)
 
-    @verify_files(_file_paths, _CHECKSUM, msg=_DEFAULT_MSG)
     def test_calculate_ratios(self):
         all_elem_names = set(str(elem) for elem in self.all_elements)
         some_elem_names = set(str(elem) for elem in self.all_elements)
@@ -153,7 +123,6 @@ class TestDepthProfileHandling(unittest.TestCase):
             else:
                 self.assertTrue(0 <= moes[m])
 
-    @verify_files(_file_paths, _CHECKSUM, msg=_DEFAULT_MSG)
     def test_get_depth_range(self):
         """Tests depth ranges with different depth units"""
         # First read files while using TODO depth units
@@ -179,7 +148,6 @@ class TestDepthProfileHandling(unittest.TestCase):
         self.assertEqual((None, None),
                          self.handler.get_depth_range())
 
-    @verify_files(_file_paths, _CHECKSUM, msg=_DEFAULT_MSG)
     def test_statistics(self):
         """Tests the values for some of the statistics. If the
         calculations methods change, expected values in this test
@@ -199,7 +167,6 @@ class TestDepthProfileHandling(unittest.TestCase):
         self.assertAlmostEqual(34.94, sum(p.values()), places=2)
         self.assertAlmostEqual(0.57, sum(m.values()), places=2)
 
-    @verify_files(_file_paths, _CHECKSUM, msg=_DEFAULT_MSG)
     def test_caching_with_merge(self):
         """Tests caching functionality in DepthProfile merging"""
 
@@ -262,7 +229,6 @@ class TestDepthProfileHandling(unittest.TestCase):
         self.assertNotEqual(m1.keys(), m2.keys())
         self.assertEqual(1, self.handler.merge_profiles.cache_info().currsize)
 
-    @verify_files(_file_paths, _CHECKSUM, msg=_DEFAULT_MSG)
     def test_merge_identities(self):
         """This tests that objects returned by the merge are same when
         retrieved from cache"""

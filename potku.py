@@ -699,7 +699,8 @@ class Potku(QtWidgets.QMainWindow):
         sample_paths_in_request = self.request.get_samples_files()
         if sample_paths_in_request:
             for i, sample_path in enumerate(sample_paths_in_request):
-                sample = self.request.samples.add_sample(sample_path)
+                sample = self.request.samples.add_sample(
+                    sample_path=sample_path)
                 self.add_root_item_to_tree(sample)
 
                 if progress is not None:

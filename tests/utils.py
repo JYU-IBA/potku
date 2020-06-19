@@ -1,7 +1,6 @@
 # coding=utf-8
 """
 Created on 19.1.2020
-Updated on 8.2.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -36,6 +35,7 @@ import platform
 import warnings
 import itertools
 import functools
+import modules.general_functions as gf
 
 from pathlib import Path
 from string import Template
@@ -45,23 +45,13 @@ from typing import Dict
 def get_sample_data_dir() -> Path:
     """Returns the absolute path to the sample data directory.
     """
-    # Absolute path to the directory where utils.py file is
-    path_to_this_file = Path(__file__).parent
-    # Traverse the path to sample data
-    path_to_sample_data = Path(path_to_this_file, os.pardir, "sample_data")
-    # Return the path as an absolute path
-    return path_to_sample_data.resolve()
+    return gf.get_root_dir() / "sample_data"
 
 
 def get_resource_dir() -> Path:
-    """Returns the resource directory's absolute path as a string."""
-    return Path(__file__).parent / "resource"
-
-
-def get_root_folder() -> Path:
-    """Returns root folder of Potku.
+    """Returns the resource directory's absolute path.
     """
-    return Path(__file__).parent.parent.resolve()
+    return gf.get_root_dir() / "tests" / "resource"
 
 
 def change_wd_to_root(func):
@@ -78,7 +68,7 @@ def change_wd_to_root(func):
     # Get old working directory and path to this file. Then traverse to
     # parent directory (i.e. the root)
     old_wd = Path.cwd()
-    root = get_root_folder()
+    root = gf.get_root_dir()
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):

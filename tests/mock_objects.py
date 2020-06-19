@@ -27,6 +27,7 @@ __version__ = "2.0"
 
 import tempfile
 import random
+import rx
 
 import modules.masses as masses
 
@@ -220,4 +221,10 @@ class TestObserver(Observer):
 
     def on_completed(self, msg="done"):
         self.compl.append(msg)
+
+
+def get_mcerd_stream() -> rx.Observable:
+    """Returns a single item stream.
+    """
+    return rx.from_iterable([{"is_running": False, "msg": ""}])
 
