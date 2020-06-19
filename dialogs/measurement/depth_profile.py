@@ -33,6 +33,7 @@ import logging
 
 import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
+import widgets.binding as bnd
 import modules.depth_files as depth_files
 import modules.cut_file as cut_file
 
@@ -64,6 +65,8 @@ class DepthProfileDialog(QtWidgets.QDialog):
     line_zero = False
     line_scale = False
     systerr = 0.0
+
+    status_msg = bnd.bind("label_status")
     
     def __init__(self, parent: BaseTab, measurement: Measurement,
                  global_settings: GlobalSettings, statusbar:
@@ -99,7 +102,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.radioButtonAtPerCm2.clicked.connect(
             self.__remove_reference_density)
 
-        m_name = self.parent.obj.name
+        m_name = self.measurement.name
         if m_name not in DepthProfileDialog.checked_cuts:
             DepthProfileDialog.checked_cuts[m_name] = []
 
@@ -125,11 +128,15 @@ class DepthProfileDialog(QtWidgets.QDialog):
 
         self.__show_important_settings()
         self.exec_()
-        
-    def __accept_params(self):
+
+    @gutils.disable_widget
+    def __accept_params(self, *_):
         """Accept given parameters.
+
+        Args:
+            *_: unused event args
         """
-        self.setEnabled(False)
+        self.status_msg = ""
         sbh = StatusBarHandler(self.statusbar)
 
         try:
@@ -184,8 +191,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
             
             # If items are selected, proceed to generating the depth profile
             if use_cut:
-                self.label_status.setText(
-                    "Please wait. Creating depth profile.")
+                self.status_msg = "Please wait. Creating depth profile."
                 if self.parent.depth_profile_widget:
                     self.parent.del_widget(self.parent.depth_profile_widget)
 
@@ -213,12 +219,12 @@ class DepthProfileDialog(QtWidgets.QDialog):
                                        icon=icon)
                 self.close()
             else:
-                print("No cuts have been selected for depth profile.")
-                self.setEnabled(True)
+                self.status_msg = "Please select .cut file[s] to create " \
+                                  "depth profiles."
         except Exception as e:
-            error_log = f"Unexpected error: {e}"
+            error_log = f"Exception occurred when trying to create depth " \
+                        f"profiles: {e}"
             logging.getLogger(self.measurement.name).error(error_log)
-            self.setEnabled(True)
         finally:
             sbh.reporter.report(100)
 
@@ -426,10 +432,10 @@ class DepthProfileWidget(QtWidgets.QWidget):
     def save_to_file(self):
         """Save object information to file.
         """
-        output_dir = Path(
-            self.output_dir, self.parent.obj.directory).resolve()
+        output_dir = Path.relative_to(
+            self.output_dir, self.measurement.directory)
 
-        file = Path(self.parent.obj.get_depth_profile_dir(), self.save_file)
+        file = Path(self.measurement.get_depth_profile_dir(), self.save_file)
 
         with file.open("w") as fh:
             fh.write("{0}\n".format(str(output_dir)))

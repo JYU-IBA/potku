@@ -67,6 +67,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     checked_cuts = {}
 
     use_efficiency = bnd.bind("use_eff_checkbox")
+    status_msg = bnd.bind("label_status")
 
     def __init__(self, parent, spectrum_type,
                  element_simulation: Optional[ElementSimulation] = None,
@@ -374,9 +375,11 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         logging.getLogger("request").info(f"[{simulation_name}] {msg}")
         logging.getLogger(simulation_name).info(msg)
 
+    @gutils.disable_widget
     def __accept_params(self, spectra_changed=None):
         """Accept given parameters and cut files.
         """
+        self.status_msg = ""
         width = self.histogramTicksDoubleSpinBox.value()
         use_cuts = []
         root = self.treeWidget.invisibleRootItem()
@@ -401,7 +404,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                             item_child.file_name)
                 EnergySpectrumParamsDialog.bin_width = width
         if use_cuts:
-            self.label_status.setText("Please wait. Creating energy spectrum.")
+            self.status_msg = "Please wait. Creating energy spectrum."
             if self.parent.energy_spectrum_widget:
                 self.parent.del_widget(self.parent.energy_spectrum_widget)
             self.parent.energy_spectrum_widget = EnergySpectrumWidget(
@@ -444,6 +447,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     "An error occurred while trying to create energy spectrum.",
                     QtWidgets.QMessageBox.Ok,
                     QtWidgets.QMessageBox.Ok)
+        else:
+            self.status_msg = "Please select .cut file[s] to create energy " \
+                              "spectra."
 
     def __import_external_file(self):
         """

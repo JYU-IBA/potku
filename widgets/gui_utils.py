@@ -30,7 +30,7 @@ import functools
 import modules.general_functions as gf
 
 from pathlib import Path
-from typing import Sequence
+from typing import Iterable
 from typing import Optional
 from typing import Union
 
@@ -439,7 +439,7 @@ def block_treewidget_signals(func):
     return wrapper
 
 
-def fill_combobox(combobox: QtWidgets.QComboBox, values: Sequence):
+def fill_combobox(combobox: QtWidgets.QComboBox, values: Iterable):
     """Fills the combobox with given values. Stores the values as user data
     and displays the string representations as item labels. Previous items
     are removed from the combobox.
@@ -449,7 +449,7 @@ def fill_combobox(combobox: QtWidgets.QComboBox, values: Sequence):
         combobox.addItem(str(value), userData=value)
 
 
-def set_btn_group_data(button_group: QtWidgets.QButtonGroup, values: Sequence):
+def set_btn_group_data(button_group: QtWidgets.QButtonGroup, values: Iterable):
     """Adds a data_item attribute for all buttons in the button group. The
     value of the data_item is taken from the given values.
 
@@ -484,3 +484,18 @@ def set_min_max_handlers(
     upper_box.setMinimum(lower_box.value() - min_diff)
     lower_box.valueChanged.connect(lambda x: upper_box.setMinimum(x + min_diff))
     upper_box.valueChanged.connect(lambda x: lower_box.setMaximum(x - min_diff))
+
+
+def disable_widget(func):
+    """Decorator that disables a QWidget for the duration of the function.
+    The decorated function must take the QWidget as its first argument (for
+    example decorating an instance method works fine).
+    """
+    @functools.wraps(func)
+    def wrapper(qwidget: QtWidgets.QWidget, *args, **kwargs):
+        qwidget.setEnabled(False)
+        try:
+            return func(qwidget, *args, **kwargs)
+        finally:
+            qwidget.setEnabled(True)
+    return wrapper

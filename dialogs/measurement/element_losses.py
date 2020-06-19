@@ -34,6 +34,7 @@ import os
 
 import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
+import widgets.binding as bnd
 import modules.cut_file as cut_file
 
 from pathlib import Path
@@ -57,6 +58,8 @@ class ElementLossesDialog(QtWidgets.QDialog):
     reference_cut = {}
     split_count = 10
     y_scale = 1
+
+    status_msg = bnd.bind("label_status")
 
     def __init__(self, parent, statusbar=None):
         """Inits element losses class.
@@ -102,10 +105,15 @@ class ElementLossesDialog(QtWidgets.QDialog):
 
         self.exec_()
 
-    def __accept_params(self):
+    @gutils.disable_widget
+    def __accept_params(self, *_):
         """Called when OK button is pressed. Creates a elementlosses widget and
         adds it to the parent (mdiArea).
+
+        Args:
+            *_: unused event args
         """
+        self.status_msg = ""
         sbh = StatusBarHandler(self.statusbar)
 
         cut_dir = self.measurement.directory_cuts
@@ -176,7 +184,9 @@ class ElementLossesDialog(QtWidgets.QDialog):
 
             sbh.reporter.report(100)
             self.close()
-
+        else:
+            self.status_msg = "Please select .cut file[s] to create element " \
+                              "losses."
         sbh.reporter.report(100)
 
 
@@ -273,9 +283,8 @@ class ElementLossesWidget(QtWidgets.QWidget):
         self.parent.elemental_losses_widget = None
         file = Path(self.measurement.directory, self.save_file)
         try:
-            if file.exists():
-                os.remove(file)
-        except:
+            file.unlink()
+        except OSError:
             pass
         super().closeEvent(evnt)
 
