@@ -50,20 +50,33 @@ class TestDialogInitialization(unittest.TestCase):
             Mock(), mo.get_measurement(), mo.get_global_settings())
         d.close()
 
-        m = Mock()
-        m.obj = mo.get_measurement()
-        esp = EnergySpectrumParamsDialog(m, "measurement")
-        esp.close()
-
         c = CalibrationDialog(
-            [mo.get_measurement()], mo.get_detector(), mo.get_run)
+            [mo.get_measurement()], mo.get_detector(), mo.get_run())
         c.close()
 
         o = OptimizationDialog(mo.get_simulation(), Mock())
         self.assertFalse(o.pushButton_OK.isEnabled())
         o.close()
 
-        assert mock_exec.call_count == 5
+        assert mock_exec.call_count == 4
+
+    @patch("PyQt5.QtWidgets.QDialog.exec_")
+    def test_espe_params(self, mock_exec):
+        esp = EnergySpectrumParamsDialog(
+            Mock(), "measurement", measurement=mo.get_measurement())
+        esp.close()
+
+        self.assertRaises(
+            ValueError, lambda: EnergySpectrumParamsDialog(Mock(), "simu"))
+
+        sim = mo.get_simulation()
+        elem_sim = sim.add_element_simulation(
+            mo.get_recoil_element(), save_on_creation=False)
+        esp = EnergySpectrumParamsDialog(
+            Mock(), "simulation", simulation=sim, element_simulation=elem_sim)
+        esp.close()
+
+        assert mock_exec.call_count == 2
 
 
 if __name__ == '__main__':

@@ -706,6 +706,11 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 # keyword does not have a known mapping, nothing to do
                 pass
 
+    def get_atom_count(self) -> int:
+        """Returns the total number of observed atoms.
+        """
+        return self.__erd_filehandler.get_total_atom_count()
+
     def get_current_status(self):
         """Returns the number of atoms counted, number of running processes and
         the state of simulation.
@@ -713,7 +718,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         Return:
             dictionary
         """
-        atom_count = self.__erd_filehandler.get_total_atom_count()
+        atom_count = self.get_atom_count()
 
         if self.is_simulation_running():
             state = SimulationState.RUNNING

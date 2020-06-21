@@ -35,7 +35,6 @@ from typing import Optional
 from typing import Union
 from typing import Any
 from typing import Callable
-from typing import Sized
 
 from modules.observing import ProgressReporter
 from modules.observing import Observer
@@ -415,6 +414,8 @@ def fill_cuts_treewidget(measurement: Measurement,
         elem_root = QtWidgets.QTreeWidgetItem(["Elemental Losses"])
         fill_tree(elem_root, cuts_elemloss, text_func=text_func)
         root.addChild(elem_root)
+
+    root.setExpanded(True)
 
 
 def fill_tree(root: QtWidgets.QTreeWidgetItem, data: Iterable[Any],

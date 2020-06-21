@@ -122,7 +122,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
     def closeEvent(self, event):
         try:
             self.settings_updated.disconnect()
-        except AttributeError:
+        except (AttributeError, TypeError):
             pass
         super().closeEvent(event)
 

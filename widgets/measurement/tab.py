@@ -326,7 +326,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             EnergySpectrumParamsDialog.bin_width = width
             EnergySpectrumParamsDialog.checked_cuts[m_name] = set(use_cuts)
             self.energy_spectrum_widget = EnergySpectrumWidget(
-                self, spectrum_type="measurement",
+                self, spectrum_type=EnergySpectrumParamsDialog.MEASUREMENT,
                 use_cuts=use_cuts, bin_width=width)
             icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
             self.add_widget(self.energy_spectrum_widget, icon=icon)
@@ -361,8 +361,9 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         """Opens energy spectrum dialog.
         """
         previous = self.energy_spectrum_widget
-        EnergySpectrumParamsDialog(self, spectrum_type="measurement",
-                                   statusbar=self.statusbar)
+        EnergySpectrumParamsDialog(
+            self, spectrum_type=EnergySpectrumParamsDialog.MEASUREMENT,
+            measurement=self.obj, statusbar=self.statusbar)
         if self.energy_spectrum_widget != previous and \
                 type(self.energy_spectrum_widget) is not None:
             # TODO type(x) is not None???

@@ -111,13 +111,15 @@ def get_target() -> Target:
     return Target()
 
 
-def get_recoil_element() -> RecoilElement:
+def get_recoil_element(recoil_widget=None) -> RecoilElement:
     """Returns a RecoilElement object.
     """
-    return RecoilElement(get_element(), [
+    re = RecoilElement(get_element(), [
         Point((1, 1)),
         Point((2, 2)),
     ], "red")
+    re.widgets.append(recoil_widget)
+    return re
 
 
 def get_run() -> Run:
@@ -126,14 +128,16 @@ def get_run() -> Run:
     return Run(get_beam())
 
 
-def get_element_simulation(request=None) -> ElementSimulation:
+def get_element_simulation(request=None, recoil_widget=None) \
+        -> ElementSimulation:
     """Returns an ElementSimulation object.
     """
     if request is None:
         request = get_request()
 
     return ElementSimulation(
-        _TEMP_DIR, request, [get_recoil_element()], save_on_creation=False)
+        _TEMP_DIR, request, [get_recoil_element(recoil_widget=recoil_widget)],
+        save_on_creation=False)
 
 
 def get_simulation(request=None) -> Simulation:

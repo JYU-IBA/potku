@@ -269,7 +269,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         self.measurement_setting_file_description = \
             measurement_setting_file_description
 
-        self.element_simulations = []
+        self.element_simulations: List[ElementSimulation] = []
 
         self.use_request_settings = use_request_settings
 

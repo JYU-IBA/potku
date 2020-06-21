@@ -190,14 +190,14 @@ class ElementWidget(QtWidgets.QWidget):
         es.exec_()
 
     def plot_spectrum(self, spectra_changed=None):
-        """
-        Plot an energy spectrum and show it in a widget.
+        """Plot an energy spectrum and show it in a widget.
         """
         previous = None
         dialog = EnergySpectrumParamsDialog(
             self.tab,
-            spectrum_type="simulation",
+            spectrum_type=EnergySpectrumParamsDialog.SIMULATION,
             element_simulation=self.element_simulation,
+            simulation=self.tab.obj,
             recoil_widget=self,
             statusbar=self.statusbar)
         if dialog.result_files:
@@ -205,7 +205,7 @@ class ElementWidget(QtWidgets.QWidget):
                 parent=self.tab,
                 use_cuts=dialog.result_files,
                 bin_width=dialog.bin_width,
-                spectrum_type="simulation",
+                spectrum_type=EnergySpectrumParamsDialog.SIMULATION,
                 spectra_changed=spectra_changed)
 
             # Check all energy spectrum widgets, if one has the same

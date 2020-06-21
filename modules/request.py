@@ -38,6 +38,7 @@ import time
 
 from pathlib import Path
 from typing import Tuple
+from typing import List
 
 from .base import ElementSimulationContainer
 from .detector import Detector
@@ -533,6 +534,23 @@ class Request(ElementSimulationContainer):
         requestlog.setFormatter(formatter)
 
         logger.addHandler(requestlog)
+
+    def get_imported_files_folder(self) -> Path:
+        return self.directory / "Imported_files"
+
+    def get_imported_files(self) -> List[Path]:
+        """Returns a list of file paths from imported files directory.
+        """
+        files = []
+        try:
+            with os.scandir(self.get_imported_files_folder()) as scdir:
+                for entry in scdir:
+                    path = Path(entry)
+                    if path.is_file():
+                        files.append(path)
+        except OSError:
+            pass
+        return files
 
     def _get_simulations(self):
         return (
