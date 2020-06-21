@@ -99,18 +99,20 @@ def _update_cuts(old_cut_files, directory):
                 old_cut_files[i] = Path(directory, file)
 
 
-def update_efficiency_label(label: QtWidgets.QLabel,
-                            tree: QtWidgets.QTreeWidget,
-                            detector: Detector,
-                            data_func=lambda x: x):
-    """Updates the used efficiency file label of a qdialog
+def get_effieciency_label_text(tree: QtWidgets.QTreeWidget,
+                               detector: Detector,
+                               data_func=lambda x: x) -> str:
+    """Returns a string representation of used efficiency files.
 
     Args:
-        label: label to update
         tree: QTreeWidget that hosts a collection of .cut files
-        detector: detector that uses the efficiency files
+        detector: detector that has the efficiency files to be matched to
+            .cut files.
         data_func: optional function that determines how .cut files can be
             obtained from the tree
+
+    Return
+        string
     """
     eff_files_used = set()
     efficiency_files = detector.get_efficiency_files()
@@ -130,9 +132,9 @@ def update_efficiency_label(label: QtWidgets.QLabel,
 
     if eff_files_used:
         eff_file_txt = "\t\n".join(str(f) for f in eff_files_used)
-        label.setText(f"Efficiency files used:\t\n{eff_file_txt}")
-    else:
-        label.setText("No efficiency files.")
+        return f"Efficiency files used:\t\n{eff_file_txt}"
+
+    return "No efficiency files."
 
 
 def delete_optim_espe(qdialog, elem_sim):

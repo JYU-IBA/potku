@@ -253,8 +253,8 @@ class DepthProfileDialog(QtWidgets.QDialog):
         """Update efficiency files to UI which are used.
         """
         detector = self.measurement.get_detector_or_default()
-        df.update_efficiency_label(
-            self.label_efficiency_files, self.treeWidget, detector)
+        self.label_efficiency_files.setText(
+            df.get_effieciency_label_text(self.treeWidget, detector))
 
     def __show_important_settings(self):
         """Show some important setting values in the depth profile parameter

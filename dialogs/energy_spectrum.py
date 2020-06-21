@@ -456,8 +456,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             tree = self.treeWidget
             data_func = lambda x: x
 
-        df.update_efficiency_label(
-            self.label_efficiency_files, tree, detector, data_func=data_func)
+        self.label_efficiency_files.setText(
+            df.get_effieciency_label_text(tree, detector, data_func=data_func))
 
 
 class EnergySpectrumWidget(QtWidgets.QWidget):
