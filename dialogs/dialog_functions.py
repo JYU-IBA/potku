@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -33,6 +33,7 @@ from typing import Union
 from pathlib import Path
 
 import widgets.gui_utils as gutils
+import widgets.binding as bnd
 
 from modules.base import ElementSimulationContainer
 from modules.detector import Detector
@@ -98,40 +99,40 @@ def _update_cuts(old_cut_files, directory):
                 old_cut_files[i] = Path(directory, file)
 
 
-def update_used_eff_file_label(qdialog, efficiency_files):
+def update_efficiency_label(label: QtWidgets.QLabel,
+                            tree: QtWidgets.QTreeWidget,
+                            detector: Detector,
+                            data_func=lambda x: x):
     """Updates the used efficiency file label of a qdialog
 
     Args:
-        qdialog: qdialog whose label will be updated
-        efficiency_files: list of efficiency files
+        label: label to update
+        tree: QTreeWidget that hosts a collection of .cut files
+        detector: detector that uses the efficiency files
+        data_func: optional function that determines how .cut files can be
+            obtained from the tree
     """
     eff_files_used = set()
-    root = qdialog.treeWidget.invisibleRootItem()
-    child_count = root.childCount()
+    efficiency_files = detector.get_efficiency_files()
 
     eff_elems = {
         Detector.get_used_efficiency_file_name(eff_file).stem: eff_file
         for eff_file in efficiency_files
     }
+    cuts = (data_func(data) for _, data in bnd.tree_iterator(tree))
 
-    for i in range(child_count):
-        item = root.child(i)
-
-        if not hasattr(item, "file_name"):
-            continue
-
+    for cut in cuts:
         # TODO check for RBS selection too
-        cut_element_str = item.file_name.split(".")[1]
+        cut_element_str = cut.name.split(".")[1]
 
         if cut_element_str in eff_elems:
             eff_files_used.add(eff_elems[cut_element_str])
 
     if eff_files_used:
         eff_file_txt = "\t\n".join(str(f) for f in eff_files_used)
-        qdialog.label_efficiency_files.setText(
-           f"Efficiency files used:\t\n{eff_file_txt}")
+        label.setText(f"Efficiency files used:\t\n{eff_file_txt}")
     else:
-        qdialog.label_efficiency_files.setText("No efficiency files.")
+        label.setText("No efficiency files.")
 
 
 def delete_optim_espe(qdialog, elem_sim):

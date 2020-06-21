@@ -49,7 +49,6 @@ from modules.energy_spectrum import EnergySpectrum
 from modules.measurement import Measurement
 from modules.get_espe import GetEspe
 from modules.enums import OptimizationType
-from modules.detector import Detector
 from modules.element_simulation import ElementSimulation
 from modules.simulation import Simulation
 
@@ -61,13 +60,13 @@ from PyQt5.QtCore import QLocale
 from widgets.matplotlib.measurement.energy_spectrum import \
     MatplotlibEnergySpectrumWidget
 
+_MESU = "measurement"
+_SIMU = "simulation"
+
 
 class EnergySpectrumParamsDialog(QtWidgets.QDialog):
+    """An EnergySpectrumParamsDialog.
     """
-    An EnergySpectrumParamsDialog.
-    """
-    SIMULATION = "simulation"
-    MEASUREMENT = "measurement"
 
     checked_cuts = {}
     bin_width = 0.025
@@ -81,10 +80,10 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     tof_list_files = bnd.bind("tof_list_tree_widget")
     used_recoil = bnd.bind("treeWidget")
 
-    def __init__(self, parent: BaseTab, spectrum_type: str = MEASUREMENT,
+    def __init__(self, parent: BaseTab, spectrum_type: str = _MESU,
                  element_simulation: Optional[ElementSimulation] = None,
                  simulation: Optional[Simulation] = None,
-                 measurement: Optional[MEASUREMENT] = None,
+                 measurement: Optional[Measurement] = None,
                  recoil_widget=None,
                  statusbar: Optional[QtWidgets.QStatusBar] = None,
                  spectra_changed=None):
@@ -103,12 +102,12 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         uic.loadUi(gutils.get_ui_dir() / "ui_energy_spectrum_params.ui", self)
 
         self.parent = parent
-        if spectrum_type == self.MEASUREMENT:
+        if spectrum_type == EnergySpectrumWidget.MEASUREMENT:
             if measurement is None:
                 raise ValueError(
                     f"Must provide a Measurement when spectrum type is "
                     f"{spectrum_type}")
-        elif spectrum_type is self.SIMULATION:
+        elif spectrum_type is EnergySpectrumWidget.SIMULATION:
             if simulation is None:
                 raise ValueError(
                     f"Must provide a Simulation when spectrum type is "
@@ -141,7 +140,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
         self.external_tree_widget = QtWidgets.QTreeWidget()
 
-        if self.spectrum_type == self.MEASUREMENT:
+        if self.spectrum_type == EnergySpectrumWidget.MEASUREMENT:
             EnergySpectrumParamsDialog.bin_width = \
                 self.measurement.channel_width
             self.pushButton_OK.clicked.connect(
@@ -162,9 +161,6 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             EnergySpectrumParamsDialog.bin_width = \
                 self.element_simulation.channel_width
 
-            self.pushButton_OK.clicked.connect(
-                self.__calculate_selected_spectra)
-
             self._set_simulation_files(recoil_widget)
             self._set_measurement_files()
             self._set_external_files()
@@ -173,6 +169,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             self.histogramTicksLabel.setText(
                 "Simulation and measurement histogram bin width:")
 
+            self.pushButton_OK.clicked.connect(
+                self.__calculate_selected_spectra)
             self.importPushButton.clicked.connect(self.__import_external_file)
 
         self.used_bin_width = EnergySpectrumParamsDialog.bin_width
@@ -193,13 +191,6 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         header_item.setText(0, "Simulated element (observed atoms)")
         self.treeWidget.setHeaderItem(header_item)
 
-        # Find the corresponding recoil element to recoil widget
-        rec_to_check = None
-        for rec_element in self.element_simulation.recoil_elements:
-            if rec_element.widgets[0] is recoil_widget:
-                rec_to_check = rec_element
-                break
-
         for elem_sim in self.simulation.element_simulations:
             root = QtWidgets.QTreeWidgetItem([
                 f"{elem_sim.get_full_name()} ({elem_sim.get_atom_count()})"
@@ -219,7 +210,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             self.treeWidget.addTopLevelItem(root)
             root.setExpanded(True)
 
-        self.used_recoil = {rec_to_check}
+        self.used_recoil = {(
+            recoil_widget.element_simulation, recoil_widget.recoil_element, None
+        )}
 
     def _set_measurement_files(self):
         """Sets up the .cut file list.
@@ -454,27 +447,29 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     def __update_eff_files(self):
         """Update efficiency files to UI which are used.
         """
-        detector = self._get_detector()
-        eff_files = detector.get_efficiency_files()
-        df.update_used_eff_file_label(self, eff_files)
-
-    def _get_detector(self) -> Detector:
-        """Returns the detector used by either the ElementSimulation or
-        Measurement.
-        """
-        if self.element_simulation is not None:
+        if self.spectrum_type == _SIMU:
             _, _, detector = self.element_simulation.get_mcerd_params()
-            return detector
-        return self.measurement.get_detector_or_default()
+            tree = self.tof_list_tree_widget
+            data_func = lambda tpl: tpl[0]
+        else:
+            detector = self.measurement.get_detector_or_default()
+            tree = self.treeWidget
+            data_func = lambda x: x
+
+        df.update_efficiency_label(
+            self.label_efficiency_files, tree, detector, data_func=data_func)
 
 
 class EnergySpectrumWidget(QtWidgets.QWidget):
     """Energy spectrum widget which is added to measurement tab.
     """
+    MEASUREMENT = _MESU
+    SIMULATION = _SIMU
+
     save_file = "widget_energy_spectrum.save"
 
     def __init__(self, parent: BaseTab,
-                 spectrum_type: str = EnergySpectrumParamsDialog.MEASUREMENT,
+                 spectrum_type: str = MEASUREMENT,
                  use_cuts=None, bin_width=0.025, use_efficiency=False,
                  save_file_int=0, statusbar=None, spectra_changed=None):
         """Inits widget.
@@ -569,7 +564,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.
         """
-        if self.spectrum_type == "simulation":
+        if self.spectrum_type == EnergySpectrumWidget.SIMULATION:
             file = Path(self.parent.obj.directory, self.save_file)
             try:
                 file.unlink()

@@ -73,7 +73,8 @@ class TestDialogInitialization(unittest.TestCase):
         elem_sim = sim.add_element_simulation(
             mo.get_recoil_element(), save_on_creation=False)
         esp = EnergySpectrumParamsDialog(
-            Mock(), "simulation", simulation=sim, element_simulation=elem_sim)
+            Mock(), "simulation", simulation=sim, element_simulation=elem_sim,
+            recoil_widget=Mock())
         esp.close()
 
         assert mock_exec.call_count == 2

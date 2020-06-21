@@ -41,6 +41,8 @@ from dialogs.simulation.element_simulation_settings import \
 from collections import Counter
 
 from modules.recoil_element import RecoilElement
+from modules.element_simulation import ElementSimulation
+from modules.element import Element
 
 from PyQt5 import QtWidgets
 
@@ -52,8 +54,9 @@ class ElementWidget(QtWidgets.QWidget):
     """Class for creating an element widget for the recoil atom distribution.
     """
 
-    def __init__(self, parent, element, parent_tab, element_simulation,
-                 color, icon_manager: IconManager, statusbar=None,
+    def __init__(self, parent, element: Element, parent_tab,
+                 element_simulation: ElementSimulation, color,
+                 icon_manager: IconManager, statusbar=None,
                  spectra_changed=None, recoil_name_changed=None,
                  settings_updated=None):
         """
@@ -78,6 +81,8 @@ class ElementWidget(QtWidgets.QWidget):
         self.tab = parent_tab
         self.element_simulation = element_simulation
         self.statusbar = statusbar
+        self.recoil_element: RecoilElement = \
+            self.element_simulation.get_main_recoil()
 
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setContentsMargins(0, 0, 0, 0)
@@ -195,7 +200,7 @@ class ElementWidget(QtWidgets.QWidget):
         previous = None
         dialog = EnergySpectrumParamsDialog(
             self.tab,
-            spectrum_type=EnergySpectrumParamsDialog.SIMULATION,
+            spectrum_type=EnergySpectrumWidget.SIMULATION,
             element_simulation=self.element_simulation,
             simulation=self.tab.obj,
             recoil_widget=self,
@@ -205,7 +210,7 @@ class ElementWidget(QtWidgets.QWidget):
                 parent=self.tab,
                 use_cuts=dialog.result_files,
                 bin_width=dialog.bin_width,
-                spectrum_type=EnergySpectrumParamsDialog.SIMULATION,
+                spectrum_type=EnergySpectrumWidget.SIMULATION,
                 spectra_changed=spectra_changed)
 
             # Check all energy spectrum widgets, if one has the same
