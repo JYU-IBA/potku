@@ -82,14 +82,15 @@ class IconManager:
         Args:
             directory: String representing directory where the icons are at.
         """
-        for entry in os.scandir(directory):
-            path = Path(entry.path)
-            if path.is_file() and path.suffix != ".txt":
-                icon = QtGui.QIcon()
-                icon.addPixmap(
-                    QtGui.QPixmap(str(path)), QtGui.QIcon.Normal,
-                    QtGui.QIcon.Off)
-                self.__icons[path.name] = icon
+        with os.scandir(directory) as scdir:
+            for entry in scdir:
+                path = Path(entry.path)
+                if path.is_file() and path.suffix != ".txt":
+                    icon = QtGui.QIcon()
+                    icon.addPixmap(
+                        QtGui.QPixmap(str(path)), QtGui.QIcon.Normal,
+                        QtGui.QIcon.Off)
+                    self.__icons[path.name] = icon
 
 
 def get_potku_icon(name: str) -> QtGui.QIcon:

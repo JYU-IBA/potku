@@ -30,13 +30,15 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import widgets.gui_utils as gutils
+import widgets.binding as bnd
 
-from pathlib import Path
+from typing import List
 
 from modules.cut_file import CutFile
 from modules.calibration import TOFCalibration
 from modules.detector import Detector
 from modules.run import Run
+from modules.measurement import Measurement
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
@@ -49,11 +51,26 @@ from widgets.matplotlib.calibration.linear_fitting \
     import MatplotlibCalibrationLinearFittingWidget
 
 
+def get_cut(instance, attr):
+    cuts = bnd.get_selected_tree_items(getattr(instance, attr))
+    if cuts:
+        return cuts[0]
+    return None
+
+
+def set_cut(instance, attr, value):
+    bnd.set_selected_tree_items(getattr(instance, attr), {value})
+
+
 class CalibrationDialog(QtWidgets.QDialog):
     """A dialog for the time of flight calibration
     """
-    def __init__(self, measurements, detector: Detector, run: Run,
-                 parent_settings_widget=None):
+    bin_width = bnd.bind("binWidthSpinBox")
+    selected_cut_file = bnd.bind(
+        "cutFilesTreeWidget", fget=get_cut, fset=set_cut)
+
+    def __init__(self, measurements: List[Measurement], detector: Detector,
+                 run: Run, parent_settings_widget=None):
         """Inits the calibration dialog class.
         
         Args:
@@ -68,8 +85,6 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.measurements = measurements
         self.run = run
         self.detector = detector
-        self.__cut_file = CutFile()
-        self.__cut_files = {}
 
         self.parent_settings_widget = parent_settings_widget
         self.tof_calibration = TOFCalibration()
@@ -77,18 +92,10 @@ class CalibrationDialog(QtWidgets.QDialog):
         # Go through all the measurements and their cut files and list them.
         for measurement in self.measurements:
             item = QtWidgets.QTreeWidgetItem([measurement.name])
-            
-            cuts, unused_cuts_elemloss = measurement.get_cut_files()
-            # May also return a list of cut file's element losses 
-            # cut files as one of the list elements
-            for cut_file in cuts:
-                subitem = QtWidgets.QTreeWidgetItem([cut_file])
-                subitem.directory = measurement.directory_cuts
-                subitem.file_name = cut_file
-                item.addChild(subitem)
-                cut_object = CutFile()
-                cut_object.load_file(Path(measurement.directory_cuts, cut_file))
-                self.__cut_files[cut_file] = cut_object
+            cuts, _ = measurement.get_cut_files()
+            gutils.fill_tree(
+                item, cuts, data_func=lambda fp: CutFile(cut_file_path=fp),
+                text_func=lambda fp: fp.name)
             self.cutFilesTreeWidget.addTopLevelItem(item)
             item.setExpanded(True)
         # Resize columns to fit the content nicely
@@ -96,8 +103,8 @@ class CalibrationDialog(QtWidgets.QDialog):
             self.cutFilesTreeWidget.resizeColumnToContents(column)
 
         self.curveFittingWidget = CalibrationCurveFittingWidget(
-                self, self.__cut_file, self.tof_calibration, self.detector,
-                self.binWidthSpinBox.value(), 0, self.run)
+            self, self.selected_cut_file, self.tof_calibration, self.detector,
+            self.bin_width, 0, self.run)
         
         old_params = None
         # Get old parameters from the parent dialog
@@ -107,9 +114,8 @@ class CalibrationDialog(QtWidgets.QDialog):
                 f2 = self.parent_settings_widget.tof_slope
                 old_params = f1, f2
             except ValueError as e:
-                m = "Can't get old calibration parameters from the settings " \
-                    f"dialog: {e}."
-                print(m)
+                print(f"Can't get old calibration parameters from the "
+                      f"settings dialog: {e}.")
                 
         self.linearFittingWidget = CalibrationLinearFittingWidget(
             self, self.tof_calibration, old_params)
@@ -119,8 +125,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         
         # Set up connections
         self.cutFilesTreeWidget.itemSelectionChanged.connect(
-            lambda: self.change_current_cut(
-                self.cutFilesTreeWidget.currentItem()))
+            self.__update_curve_fit)
         self.pointsTreeWidget.itemClicked.connect(self.__set_state_for_point)
         self.acceptPointButton.clicked.connect(self.__accept_point)
         self.binWidthSpinBox.valueChanged.connect(self.__update_curve_fit)
@@ -195,35 +200,15 @@ class CalibrationDialog(QtWidgets.QDialog):
         else:
             self.acceptCalibrationLabel.setText(calib_inv)
 
-    def change_current_cut(self, current_item):
-        """Changes the current cut file drawn to the curve fitting widget.
-        
-        Args:
-            current_item: QtWidgets.QTreeWidgetItem of CutFile which was
-            selected.
-        """
-        self.__change_accept_point_label("")
-        if current_item and hasattr(current_item, "directory") and \
-           hasattr(current_item, "file_name"):
-            self.__set_current_cut(current_item)        
-            self.__update_curve_fit()
-
-    def __set_current_cut(self, current_item):
-        """Sets the current open cut file in the calibration dialog.
-        
-        Args:
-            current_item: QtWidgets.QTreeWidgetItem of CutFile which was
-            selected.
-        """
-        self.__cut_file = self.__cut_files[current_item.file_name]
-
-    def __update_curve_fit(self):
+    def __update_curve_fit(self, ):
         """Redraws everything in the curve fitting graph. Updates the bin width
         too.
         """
-        bin_width = self.binWidthSpinBox.value()
-        self.curveFittingWidget.matplotlib.change_bin_width(bin_width)
-        self.curveFittingWidget.matplotlib.change_cut(self.__cut_file)
+        self.__change_accept_point_label("")
+        if self.selected_cut_file is not None:
+            self.curveFittingWidget.matplotlib.change_bin_width(self.bin_width)
+            self.curveFittingWidget.matplotlib.change_cut(
+                self.selected_cut_file)
 
     def __set_state_for_point(self, tree_item):
         """Sets if the tof calibration point is drawn to the linear fit graph

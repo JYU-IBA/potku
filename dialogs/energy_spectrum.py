@@ -65,9 +65,12 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     An EnergySpectrumParamsDialog.
     """
     checked_cuts = {}
+    bin_width = 0.025
 
     use_efficiency = bnd.bind("use_eff_checkbox")
     status_msg = bnd.bind("label_status")
+    measurement_cuts = bnd.bind("treeWidget")
+    used_bin_width = bnd.bind("histogramTicksDoubleSpinBox")
 
     def __init__(self, parent, spectrum_type,
                  element_simulation: Optional[ElementSimulation] = None,
@@ -105,8 +108,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             EnergySpectrumParamsDialog.bin_width = \
                 self.element_simulation.channel_width
 
-        self.histogramTicksDoubleSpinBox.setValue(
-            EnergySpectrumParamsDialog.bin_width)
+        self.used_bin_width = EnergySpectrumParamsDialog.bin_width
 
         if isinstance(self.parent.obj, Measurement):
             self.measurement = self.parent.obj
@@ -118,8 +120,10 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 EnergySpectrumParamsDialog.checked_cuts[m_name] = []
 
             gutils.fill_cuts_treewidget(
-                self.measurement, self.treeWidget, True,
-                EnergySpectrumParamsDialog.checked_cuts[m_name])
+                self.measurement, self.treeWidget.invisibleRootItem(),
+                use_elemloss=True)
+            self.measurement_cuts = \
+                EnergySpectrumParamsDialog.checked_cuts[m_name]
 
             self.importPushButton.setVisible(False)
         else:
@@ -331,7 +335,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         """Calculate selected spectra.
         """
         self.close()
-        self.bin_width = self.histogramTicksDoubleSpinBox.value()
+        EnergySpectrumParamsDialog.bin_width = self.used_bin_width
 
         sbh = StatusBarHandler(self.statusbar)
 
@@ -380,36 +384,20 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         """Accept given parameters and cut files.
         """
         self.status_msg = ""
-        width = self.histogramTicksDoubleSpinBox.value()
-        use_cuts = []
-        root = self.treeWidget.invisibleRootItem()
-        child_count = root.childCount()
+        width = self.used_bin_width
         m_name = self.measurement.name
-        EnergySpectrumParamsDialog.checked_cuts[m_name].clear()
-        for i in range(child_count):
-            item = root.child(i)
-            if item.checkState(0):
-                use_cuts.append(Path(item.directory, item.file_name))
-                EnergySpectrumParamsDialog.checked_cuts[m_name].append(
-                    item.file_name)
-            child_count = item.childCount()
-            if child_count > 0:  # Elemental Losses
-                dir_elo = self.measurement.get_changes_dir()
-                for j in range(child_count):
-                    item_child = item.child(j)
-                    if item_child.checkState(0):
-                        use_cuts.append(
-                            Path(dir_elo, item_child.file_name))
-                        EnergySpectrumParamsDialog.checked_cuts[m_name].append(
-                            item_child.file_name)
-                EnergySpectrumParamsDialog.bin_width = width
-        if use_cuts:
+        selected_cuts = self.measurement_cuts
+        EnergySpectrumParamsDialog.checked_cuts[m_name] = set(
+            self.measurement_cuts)
+        EnergySpectrumParamsDialog.bin_width = width
+
+        if selected_cuts:
             self.status_msg = "Please wait. Creating energy spectrum."
             if self.parent.energy_spectrum_widget:
                 self.parent.del_widget(self.parent.energy_spectrum_widget)
             self.parent.energy_spectrum_widget = EnergySpectrumWidget(
                 self.parent, spectrum_type=self.spectrum_type,
-                use_cuts=use_cuts, bin_width=width,
+                use_cuts=selected_cuts, bin_width=width,
                 use_efficiency=self.use_efficiency,
                 statusbar=self.statusbar, spectra_changed=spectra_changed)
 
@@ -428,11 +416,11 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     measurement_name,
                     "Bin width: {0}".format(width),
                     "Cut files: {0}".format(", ".join(str(cut) for cut
-                                                      in use_cuts)))
+                                                      in selected_cuts)))
                 logging.getLogger("request").info(msg)
                 logging.getLogger(measurement_name).info(
                     "Created Energy Spectrum. Bin width: {0} Cut files: {1}".
-                    format(width, ", ".join(str(cut) for cut in use_cuts)))
+                    format(width, ", ".join(str(cut) for cut in selected_cuts)))
                 log_info = "Energy Spectrum graph points:\n"
                 data = self.parent.energy_spectrum_widget.energy_spectrum_data
                 splitinfo = "\n".join(["{0}: {1}".format(key, ", ".join(
@@ -445,8 +433,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 QtWidgets.QMessageBox.critical(
                     self, "Error",
                     "An error occurred while trying to create energy spectrum.",
-                    QtWidgets.QMessageBox.Ok,
-                    QtWidgets.QMessageBox.Ok)
+                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
         else:
             self.status_msg = "Please select .cut file[s] to create energy " \
                               "spectra."
@@ -540,8 +527,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.spectrum_type = spectrum_type
             rbs_list = {}
 
-            title = "{0} - Bin Width: {1}".format(self.windowTitle(),
-                                                  bin_width)
+            title = f"{self.windowTitle()} - Bin Width: {bin_width}"
             self.setWindowTitle(title)
 
             if isinstance(self.parent.obj, Measurement):

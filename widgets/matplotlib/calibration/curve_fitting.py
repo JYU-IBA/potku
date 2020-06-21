@@ -147,6 +147,9 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
     def on_draw(self):
         """Draw method for matplotlib.
         """
+        if self.cut is None:
+            return
+
         self.axes.clear()
 
         if self.selection_given_manually:

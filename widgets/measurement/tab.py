@@ -214,8 +214,10 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             return
         m_name = self.obj.name
         try:
-            old_folder_prefix = "Measurement_" + "%02d" % serial_number_m
-            new_folder_prefix = "Measurement_" + "%02d" % self.obj.serial_number
+            base = Measurement.DIRECTORY_PREFIX
+            # TODO add sample prefix
+            old_folder_prefix = base + "%02d" % serial_number_m
+            new_folder_prefix = base + "%02d" % self.obj.serial_number
             new_sample_name = "Sample_" + "%02d" % \
                               self.obj.sample.serial_number + "-" + \
                               self.obj.sample.name
@@ -225,7 +227,6 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             use_cuts = self.__confirm_filepath(
                 lines[2].strip().split("\t"), name, m_name, old_folder_prefix,
                 new_folder_prefix, sample_folder_name, new_sample_name)
-            cut_names = [cut.name for cut in use_cuts]
             elements_string = lines[1].strip().split("\t")
             elements = [Element.from_string(element)
                         for element in elements_string]
@@ -237,7 +238,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
                 line_scale = lines[5].strip() == "True"
                 systerr = float(lines[6].strip())
             DepthProfileDialog.x_unit = x_unit
-            DepthProfileDialog.checked_cuts[m_name] = cut_names
+            DepthProfileDialog.checked_cuts[m_name] = set(use_cuts)
             DepthProfileDialog.line_zero = line_zero
             DepthProfileDialog.line_scale = line_scale
             DepthProfileDialog.systerr = systerr
@@ -267,32 +268,29 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             return
         m_name = self.obj.name
         try:
-            old_folder_prefix = "Measurement_" + "%02d" % serial_number
-            new_folder_prefix = "Measurement_" + "%02d" % self.obj.serial_number
+            base = Measurement.DIRECTORY_PREFIX
+            old_folder_prefix = base + "%02d" % serial_number
+            new_folder_prefix = base + "%02d" % self.obj.serial_number
             new_sample_name = "Sample_" + "%02d" % \
                               self.obj.sample.serial_number + "-" + \
                               self.obj.sample.name
             file_path = lines[0].strip()
-            reference_cut = self.__confirm_filepath(file_path,
-                                                    name, m_name,
-                                                    old_folder_prefix,
-                                                    new_folder_prefix,
-                                                    old_sample_name,
-                                                    new_sample_name)
+            reference_cut = self.__confirm_filepath(
+                file_path, name, m_name, old_folder_prefix, new_folder_prefix,
+                old_sample_name, new_sample_name)
             checked_cuts = self.__confirm_filepath(
                 lines[1].strip().split("\t"), name, m_name, old_folder_prefix,
                 new_folder_prefix, old_sample_name, new_sample_name)
-            cut_names = [os.path.basename(cut) for cut in checked_cuts]
             split_count = int(lines[2])
             y_scale = int(lines[3])
             ElementLossesDialog.reference_cut[m_name] = \
                 os.path.basename(reference_cut)
-            ElementLossesDialog.checked_cuts[m_name] = cut_names
+            ElementLossesDialog.checked_cuts[m_name] = set(checked_cuts)
             ElementLossesDialog.split_count = split_count
             ElementLossesDialog.y_scale = y_scale
             self.elemental_losses_widget = ElementLossesWidget(
-                self, reference_cut, checked_cuts, split_count, y_scale,
-                statusbar=self.statusbar, progress=progress)
+                self, self.obj, reference_cut, checked_cuts, split_count,
+                y_scale, statusbar=self.statusbar, progress=progress)
             icon = self.icon_manager.get_icon("elemental_losses_icon_16.png")
             self.add_widget(self.elemental_losses_widget, icon=icon)
         except Exception as e:
@@ -315,18 +313,18 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             return
         m_name = self.obj.name
         try:
-            old_folder_prefix = "Measurement_" + "%02d" % serial_number
-            new_folder_prefix = "Measurement_" + "%02d" % self.obj.serial_number
+            base = Measurement.DIRECTORY_PREFIX
+            old_folder_prefix = base + "%02d" % serial_number
+            new_folder_prefix = base + "%02d" % self.obj.serial_number
             new_sample_name = "Sample_" + "%02d" % \
                               self.obj.sample.serial_number + "-" + \
                               self.obj.sample.name
             use_cuts = self.__confirm_filepath(
                 lines[0].strip().split("\t"), name, m_name, old_folder_prefix,
                 new_folder_prefix, old_sample_name, new_sample_name)
-            cut_names = [os.path.basename(cut) for cut in use_cuts]
             width = float(lines[1].strip())
             EnergySpectrumParamsDialog.bin_width = width
-            EnergySpectrumParamsDialog.checked_cuts[m_name] = cut_names
+            EnergySpectrumParamsDialog.checked_cuts[m_name] = set(use_cuts)
             self.energy_spectrum_widget = EnergySpectrumWidget(
                 self, spectrum_type="measurement",
                 use_cuts=use_cuts, bin_width=width)
@@ -374,7 +372,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         """Opens element losses dialog.
         """
         previous = self.elemental_losses_widget
-        ElementLossesDialog(self, self.statusbar)
+        ElementLossesDialog(self, self.obj, statusbar=self.statusbar)
         if self.elemental_losses_widget != previous and \
                 self.elemental_losses_widget is not None:
             self.elemental_losses_widget.save_to_file()

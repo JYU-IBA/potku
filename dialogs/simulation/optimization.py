@@ -32,11 +32,14 @@ import threading
 import dialogs.dialog_functions as df
 import widgets.binding as bnd
 import widgets.gui_utils as gutils
+import modules.general_functions as gf
 
 from pathlib import Path
 
 from modules.nsgaii import Nsgaii
 from modules.concurrency import CancellationToken
+from modules.simulation import Simulation
+from modules.measurement import Measurement
 
 from widgets.binding import PropertySavingWidget
 from widgets.gui_utils import QtABCMeta
@@ -78,7 +81,10 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
     def recoil_parameters(self, value):
         self._recoil_parameters = value
 
-    def __init__(self, simulation, parent):
+    selected_element_simulation = bnd.bind(
+        "simulationTreeWidget")
+
+    def __init__(self, simulation: Simulation, parent):
         """
         TODO
 
@@ -121,53 +127,30 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         self.radios.addButton(self.recoilRadioButton)
 
         self.result_files = []
-        for file in os.listdir(self.tab.obj.directory):
-            if file.endswith(".mcsimu"):
-                name = file.split(".")[0]
-                item = QtWidgets.QTreeWidgetItem()
-                item.setText(0, name)
-                self.simulationTreeWidget.addTopLevelItem(item)
+
+        # simu_files = gf.find_files_by_extension(
+        #    self.tab.obj.directory, ".mcsimu")[".mcsimu"]
+        gutils.fill_tree(
+            self.simulationTreeWidget.invisibleRootItem(),
+            simulation.element_simulations,
+            text_func=lambda elem_sim: elem_sim.get_full_name())
+
         self.simulationTreeWidget.itemSelectionChanged.connect(
             lambda: self.change_selected_element_simulation(
                  self.simulationTreeWidget.currentItem()))
 
         # Add calculated tof_list files to tof_list_tree_widget by
         # measurement under the same sample.
-
         for sample in self.tab.obj.request.samples.samples:
             for measurement in sample.measurements.measurements.values():
                 if self.simulation.sample is measurement.sample:
+                    root = QtWidgets.QTreeWidgetItem()
+                    root.setText(0, measurement.name)
+                    root.obj = measurement
+                    self.measurementTreeWidget.addTopLevelItem(root)
+                    gutils.fill_cuts_treewidget(
+                        measurement, root, use_elemloss=True)
 
-                    all_cuts = []
-
-                    tree_item = QtWidgets.QTreeWidgetItem()
-                    tree_item.setText(0, measurement.name)
-                    tree_item.obj = measurement
-                    tree_item.obj = measurement
-                    self.measurementTreeWidget.addTopLevelItem(tree_item)
-
-                    # TODO make each of these into their own functions under
-                    #      modules package
-                    for file in os.listdir(
-                            measurement.directory_cuts):
-                        if file.endswith(".cut"):
-                            file_name_without_suffix = \
-                                file.rsplit('.', 1)[0]
-                            all_cuts.append(file_name_without_suffix)
-
-                    for file_2 in os.listdir(measurement.get_changes_dir()):
-                        if file_2.endswith(".cut"):
-                            file_name_without_suffix = \
-                                file_2.rsplit('.', 1)[0]
-                            all_cuts.append(file_name_without_suffix)
-
-                    all_cuts.sort()
-
-                    for cut in all_cuts:
-                        item = QtWidgets.QTreeWidgetItem()
-                        item.setText(0, cut)
-                        tree_item.addChild(item)
-                        tree_item.setExpanded(True)
         self.measurementTreeWidget.itemSelectionChanged.connect(
             lambda: self.change_selected_cut_file(
                 self.measurementTreeWidget.currentItem()))
@@ -178,9 +161,9 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         """Returns absolute path to the file that is used for saving and
         loading parameters.
         """
-        return Path(self.simulation.directory,
-                    ".parameters",
-                    ".optimization_parameters")
+        return Path(
+            self.simulation.directory, ".parameters",
+            ".optimization_parameters")
 
     def change_selected_cut_file(self, item):
         """

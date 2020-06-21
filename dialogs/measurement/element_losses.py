@@ -37,6 +37,9 @@ import widgets.gui_utils as gutils
 import widgets.binding as bnd
 import modules.cut_file as cut_file
 
+from typing import Optional
+from typing import List
+
 from pathlib import Path
 
 from widgets.gui_utils import StatusBarHandler
@@ -60,18 +63,21 @@ class ElementLossesDialog(QtWidgets.QDialog):
     y_scale = 1
 
     status_msg = bnd.bind("label_status")
+    used_reference_cut = bnd.bind("referenceCut")
+    used_cuts = bnd.bind("targetCutTree")
 
-    def __init__(self, parent, statusbar=None):
+    def __init__(self, parent, measurement: Measurement, statusbar:
+                 Optional[QtWidgets.QStatusBar] = None):
         """Inits element losses class.
         
          Args:
             parent: A MeasurementTabWidget.
+            
         """
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_element_losses_params.ui", self)
-
         self.parent = parent
-        self.measurement: Measurement = self.parent.obj
+        self.measurement = measurement
         self.statusbar = statusbar
         self.cuts = []
 
@@ -80,24 +86,22 @@ class ElementLossesDialog(QtWidgets.QDialog):
         # self.referenceCut.currentIndexChanged.connect(self.__load_targets)
 
         # TODO: Reads cut files twice. Requires Refactor.
+        # Reference cuts
         m_name = self.measurement.name
         if m_name not in ElementLossesDialog.reference_cut:
             ElementLossesDialog.reference_cut[m_name] = None
-        cuts, unused_elemloss = parent.obj.get_cut_files()
-        for i, cut in enumerate(cuts):
-            if ".potku" in cut:
-                cut = os.path.basename()
-            self.cuts.append(cut)
-            self.referenceCut.addItem(cut)
-            if cut == ElementLossesDialog.reference_cut[m_name]:
-                self.referenceCut.setCurrentIndex(i)
+        cuts, _ = self.measurement.get_cut_files()
+        gutils.fill_combobox(
+            self.referenceCut, cuts, text_func=lambda fp: fp.name)
+        self.used_reference_cut = ElementLossesDialog.reference_cut[m_name]
 
+        # Cuts and element losses
         if m_name not in ElementLossesDialog.checked_cuts:
-            ElementLossesDialog.checked_cuts[m_name] = []
-
+            ElementLossesDialog.checked_cuts[m_name] = set()
         gutils.fill_cuts_treewidget(
-            parent.obj, self.targetCutTree, True,
-            ElementLossesDialog.checked_cuts[m_name])
+            self.measurement, self.targetCutTree.invisibleRootItem(),
+            use_elemloss=True)
+        self.used_cuts = ElementLossesDialog.checked_cuts[m_name]
 
         self.partitionCount.setValue(ElementLossesDialog.split_count)
         self.radioButton_0max.setChecked(ElementLossesDialog.y_scale == 0)
@@ -116,29 +120,13 @@ class ElementLossesDialog(QtWidgets.QDialog):
         self.status_msg = ""
         sbh = StatusBarHandler(self.statusbar)
 
-        cut_dir = self.measurement.directory_cuts
-        cut_elo = self.measurement.get_changes_dir()
         y_axis_0_scale = self.radioButton_0max.isChecked()
-        reference_cut = Path(cut_dir, self.referenceCut.currentText())
+        reference_cut = self.used_reference_cut
         split_count = self.partitionCount.value()
-        checked_cuts = []
-        root = self.targetCutTree.invisibleRootItem()
-        root_child_count = root.childCount()
         m_name = self.measurement.name
-        ElementLossesDialog.checked_cuts[m_name].clear()
-        for i in range(root_child_count):
-            item = root.child(i)
-            if item.checkState(0):
-                checked_cuts.append(Path(cut_dir, item.file_name))
-                ElementLossesDialog.checked_cuts[m_name].append(item.file_name)
-            child_count = item.childCount()
-            if child_count > 0:  # Elemental Losses
-                for j in range(child_count):
-                    item_child = item.child(j)
-                    if item_child.checkState(0):
-                        checked_cuts.append(Path(cut_elo, item_child.file_name))
-                        ElementLossesDialog.checked_cuts[m_name].append(
-                            item_child.file_name)
+        used_cuts = self.used_cuts
+        ElementLossesDialog.checked_cuts[m_name] = set(used_cuts)
+
         if y_axis_0_scale:
             y_scale = 0
         else:
@@ -151,13 +139,13 @@ class ElementLossesDialog(QtWidgets.QDialog):
 
         sbh.reporter.report(25)
 
-        if checked_cuts:
+        if used_cuts:
             if self.parent.elemental_losses_widget:
                 self.parent.del_widget(self.parent.elemental_losses_widget)
 
             self.parent.elemental_losses_widget = ElementLossesWidget(
-                self.parent, reference_cut, checked_cuts, split_count,
-                y_scale, statusbar=self.statusbar,
+                self.parent, self.measurement, reference_cut, used_cuts,
+                split_count, y_scale, statusbar=self.statusbar,
                 progress=sbh.reporter.get_sub_reporter(
                     lambda x: 25 + 0.70 * x
                 ))
@@ -170,7 +158,7 @@ class ElementLossesDialog(QtWidgets.QDialog):
             msg = "Created Element Losses. Splits: {0} {1} {2}" \
                 .format(split_count,
                         "Reference cut: {0}".format(reference_cut),
-                        "List of cuts: {0}".format(checked_cuts))
+                        "List of cuts: {0}".format(used_cuts))
             logging.getLogger(measurement_name).info(msg)
 
             log_info = "Elemental Losses split counts:\n"
@@ -195,16 +183,18 @@ class ElementLossesWidget(QtWidgets.QWidget):
     """
     save_file = "widget_composition_changes.save"
 
-    def __init__(self, parent, reference_cut_file, checked_cuts,
-                 partition_count, y_scale, statusbar=None, progress=None):
+    def __init__(self, parent, measurement: Measurement,
+                 reference_cut_file: Path, checked_cuts: List[Path],
+                 partition_count: int, y_scale: int, statusbar=None,
+                 progress=None):
         """Inits widget.
         
         Args:
             parent: A MeasurementTabWidget.
-            reference_cut_file: String representing reference cut file.
-            checked_cuts: String list representing cut files.
+            reference_cut_file: absolute path to cut file.
+            checked_cuts: list of absolute paths to cut files.
             partition_count: Integer representing how many splits cut files 
-                             are divided to.
+                are divided to.
             y_scale: Integer flag representing how Y axis is scaled.
             progress: a ProgressReporter object
         """
@@ -214,7 +204,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
 
             self.parent = parent
             self.icon_manager = parent.icon_manager
-            self.measurement: Measurement = self.parent.obj
+            self.measurement = measurement
             self.reference_cut_file = reference_cut_file
             self.checked_cuts = checked_cuts
             self.partition_count = partition_count

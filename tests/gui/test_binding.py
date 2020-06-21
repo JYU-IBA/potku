@@ -27,6 +27,7 @@ __version__ = "2.0"
 import unittest
 import random
 import time
+import tests.gui
 
 import numpy as np
 
@@ -54,6 +55,7 @@ class BWidget(QtWidgets.QWidget, bnd.PropertyBindingWidget,
     cmb = bnd.bind("comboBox")
     gbx = bnd.bind("group_box")
     rbx = bnd.bind("radio_group")
+    trr = bnd.bind("tree")
 
     def __init__(self):
         super().__init__()
@@ -81,6 +83,11 @@ class BWidget(QtWidgets.QWidget, bnd.PropertyBindingWidget,
         for i in range(3):
             self.comboBox.addItem(f"x-{i + 42}", i)
 
+        self.tree = QtWidgets.QTreeWidget()
+        gutils.fill_tree(
+            self.tree.invisibleRootItem(), ["foo", "bar", "baz"]
+        )
+
 
 class TestBinding(unittest.TestCase):
     def setUp(self):
@@ -100,7 +107,8 @@ class TestBinding(unittest.TestCase):
                 "lst": [],
                 "cmb": 0,
                 "gbx": "",
-                "rbx": None
+                "rbx": None,
+                "trr": []
             }, self.widget.get_properties()
         )
 
@@ -125,7 +133,7 @@ class TestBinding(unittest.TestCase):
         """
         self.widget.set_properties(
             foo=3, bar=4.5, baz="test", tim=100, che=True, lst=["1", 2],
-            cmb=1, gbx="hello", rbx="fizz"
+            cmb=1, gbx="hello", rbx="fizz", trr=["foo", "baz"]
         )
         self.assertEqual({
             "foo": 3,
@@ -140,7 +148,8 @@ class TestBinding(unittest.TestCase):
             "lst": ["1", 2],
             "cmb": 1,
             "gbx": "hello",
-            "rbx": "fizz"
+            "rbx": "fizz",
+            "trr": ["foo", "baz"]
             }, self.widget.get_properties()
         )
 
@@ -148,7 +157,7 @@ class TestBinding(unittest.TestCase):
         # unsuitable type. Label does however convert values to string.
         self.widget.set_properties(
             pla="foo", lab=4, not2way=7, tim="foo", sci=1.234e-6,
-            lst=[None, self.widget], cmb=4, gbx=[], rbx=13)
+            lst=[None, self.widget], cmb=4, gbx=[], rbx=13, trr=["hello"])
         self.assertEqual({
             "foo": 3,
             "bar": 4.5,
@@ -162,7 +171,8 @@ class TestBinding(unittest.TestCase):
             "lst": [None, self.widget],
             "cmb": 1,
             "gbx": "hello",
-            "rbx": "fizz"
+            "rbx": "fizz",
+            "trr": []
         }, self.widget.get_properties())
 
 

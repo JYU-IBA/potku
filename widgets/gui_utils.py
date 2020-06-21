@@ -33,14 +33,23 @@ from pathlib import Path
 from typing import Iterable
 from typing import Optional
 from typing import Union
+from typing import Generator
+from typing import Set
+from typing import Any
+from typing import Callable
+from typing import Tuple
 
 from modules.observing import ProgressReporter
 from modules.observing import Observer
 from modules.element import Element
+from modules.measurement import Measurement
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QSettings
+from PyQt5.QtWidgets import QTreeWidgetItemIterator
+from PyQt5.QtWidgets import QTreeWidget
+from PyQt5.QtWidgets import QTreeWidgetItem
 
 # TODO check the preferred name for the org
 # Potku uses QSettings to store non-portable settings such as window
@@ -389,41 +398,49 @@ class GUIObserver(Observer, abc.ABC, metaclass=QtABCMeta):
             self.__signaller.on_completed_sig.emit()
 
 
-def fill_cuts_treewidget(measurement, treewidget, use_elemloss=False,
-                         checked_files=None):
-    """ Fill QTreeWidget with cut files.
+def fill_cuts_treewidget(measurement: Measurement,
+                         root: QtWidgets.QTreeWidgetItem,
+                         use_elemloss: bool = False):
+    """Fill QTreeWidget with cut files.
 
     Args:
         measurement: Measurement object
-        treewidget: A QtGui.QTreeWidget, where cut files are added to.
+        root: root node of the QTreeWidget.
         use_elemloss: A boolean representing whether to add elemental losses.
-        checked_files: A list of previously checked files.
     """
-    if checked_files is None:
-        checked_files = []
-    treewidget.clear()
     cuts, cuts_elemloss = measurement.get_cut_files()
-    for cut in cuts:
-        item = QtWidgets.QTreeWidgetItem([cut])
-        item.directory = Path(measurement.directory, measurement.directory_cuts)
-        item.file_name = cut
-        if not checked_files or item.file_name in checked_files:
-            item.setCheckState(0, QtCore.Qt.Checked)
-        else:
-            item.setCheckState(0, QtCore.Qt.Unchecked)
-        treewidget.addTopLevelItem(item)
-    if use_elemloss and cuts_elemloss:
+
+    def text_func(fp: Path):
+        return fp.name
+
+    # TODO possibly use cuts and elements
+    fill_tree(root, cuts, text_func=text_func)
+
+    if use_elemloss:
         elem_root = QtWidgets.QTreeWidgetItem(["Elemental Losses"])
-        for elemloss in cuts_elemloss:
-            item = QtWidgets.QTreeWidgetItem([elemloss])
-            item.directory = measurement.get_changes_dir()
-            item.file_name = elemloss
-            if item.file_name in checked_files:
-                item.setCheckState(0, QtCore.Qt.Checked)
-            else:
-                item.setCheckState(0, QtCore.Qt.Unchecked)
-            elem_root.addChild(item)
-        treewidget.addTopLevelItem(elem_root)
+        fill_tree(elem_root, cuts_elemloss, text_func=text_func)
+        root.addChild(elem_root)
+
+
+def fill_tree(root: QtWidgets.QTreeWidgetItem, data: Iterable[Any],
+              data_func: Callable = lambda x: x, text_func: Callable = str,
+              column=0):
+    """Fills a QTreeWidget with given data.
+
+    Args:
+        root: root node to fill in the QTreeWidget.
+        data: data used to fill the widget.
+        data_func: function applied to each data point as they are added to
+            the tree.
+        text_func: function that determines how a data point is represented
+            in the GUI.
+        column: column number to use in the QTreeWidget.
+    """
+    for datapoint in data:
+        item = QtWidgets.QTreeWidgetItem()
+        item.setText(column, text_func(datapoint))
+        item.setData(column, QtCore.Qt.UserRole, data_func(datapoint))
+        root.addChild(item)
 
 
 def block_treewidget_signals(func):
@@ -439,14 +456,15 @@ def block_treewidget_signals(func):
     return wrapper
 
 
-def fill_combobox(combobox: QtWidgets.QComboBox, values: Iterable):
+def fill_combobox(combobox: QtWidgets.QComboBox, values: Iterable,
+                  text_func: Callable = str):
     """Fills the combobox with given values. Stores the values as user data
     and displays the string representations as item labels. Previous items
     are removed from the combobox.
     """
     combobox.clear()
     for value in values:
-        combobox.addItem(str(value), userData=value)
+        combobox.addItem(text_func(value), userData=value)
 
 
 def set_btn_group_data(button_group: QtWidgets.QButtonGroup, values: Iterable):
