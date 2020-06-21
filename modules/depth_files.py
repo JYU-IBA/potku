@@ -58,8 +58,11 @@ from .observing import ProgressReporter
 class DepthFileGenerator:
     """DepthFiles handles calling the external programs to create depth files.
     """
+    DEPTH_PREFIX = "depth"
+
     def __init__(self, cut_files: List[Path], output_directory: Path,
-                 prefix: str = "depth", tof_in_file: Optional[Path] = None):
+                 prefix: str = DEPTH_PREFIX, tof_in_file: Optional[Path] =
+                 None):
         """Inits DepthFiles.
 
         Args:
@@ -125,7 +128,8 @@ def generate_depth_files(cut_files: List[Path], output_dir: Path,
     # Delete previous depth files to avoid mixup when assigning the
     # result files back to their cut files
     gf.remove_matching_files(
-        output_dir, filter_func=lambda fn: Path(fn).stem == "stem")
+        output_dir,
+        filter_func=lambda fn: Path(fn).stem == DepthFileGenerator.DEPTH_PREFIX)
 
     if progress is not None:
         progress.report(30)
