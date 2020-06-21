@@ -145,8 +145,12 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.formLayout_2.removeRow(self.offsetLineEdit)
 
         # Parse the value and multiplier
-        self.scientific_tof_slope = ScientificSpinBox()
-        self.scientific_tof_offset = ScientificSpinBox(minimum=-math.inf)
+        self.scientific_tof_slope = ScientificSpinBox(
+            minimum=-math.inf, maximum=math.inf
+        )
+        self.scientific_tof_offset = ScientificSpinBox(
+            minimum=-math.inf, maximum=math.inf
+        )
 
         self.formLayout_2.insertRow(
             0, "ToF slope [s/channel]:", self.scientific_tof_slope)

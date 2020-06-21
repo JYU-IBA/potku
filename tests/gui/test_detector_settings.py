@@ -71,3 +71,18 @@ class TestDetectorSettings(unittest.TestCase):
         self.assertEqual(
             props, self.detector.get_settings()
         )
+
+    def test_spinbox_ranges(self):
+        det_widget = DetectorSettingsWidget(
+            self.detector, self.request, None, None)
+        det_widget.tof_slope = -5e22
+        self.assertEqual(-5e22, det_widget.tof_slope)
+
+        det_widget.tof_slope = 4.2e-10
+        self.assertEqual(4.2e-10, det_widget.tof_slope)
+
+        det_widget.tof_offset = -3.3e54
+        self.assertEqual(-3.3e54, det_widget.tof_offset)
+
+        det_widget.tof_offset = 7.12e12
+        self.assertEqual(7.12e12, det_widget.tof_offset)
