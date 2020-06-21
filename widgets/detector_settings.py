@@ -144,7 +144,6 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.formLayout_2.removeRow(self.slopeLineEdit)
         self.formLayout_2.removeRow(self.offsetLineEdit)
 
-        # Parse the value and multiplier
         self.scientific_tof_slope = ScientificSpinBox(
             minimum=-math.inf, maximum=math.inf
         )

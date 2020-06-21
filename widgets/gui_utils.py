@@ -33,11 +33,9 @@ from pathlib import Path
 from typing import Iterable
 from typing import Optional
 from typing import Union
-from typing import Generator
-from typing import Set
 from typing import Any
 from typing import Callable
-from typing import Tuple
+from typing import Sized
 
 from modules.observing import ProgressReporter
 from modules.observing import Observer
@@ -47,9 +45,6 @@ from modules.measurement import Measurement
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QSettings
-from PyQt5.QtWidgets import QTreeWidgetItemIterator
-from PyQt5.QtWidgets import QTreeWidget
-from PyQt5.QtWidgets import QTreeWidgetItem
 
 # TODO check the preferred name for the org
 # Potku uses QSettings to store non-portable settings such as window
@@ -456,7 +451,7 @@ def block_treewidget_signals(func):
     return wrapper
 
 
-def fill_combobox(combobox: QtWidgets.QComboBox, values: Iterable,
+def fill_combobox(combobox: QtWidgets.QComboBox, values: Iterable[Any],
                   text_func: Callable = str):
     """Fills the combobox with given values. Stores the values as user data
     and displays the string representations as item labels. Previous items
@@ -467,7 +462,8 @@ def fill_combobox(combobox: QtWidgets.QComboBox, values: Iterable,
         combobox.addItem(text_func(value), userData=value)
 
 
-def set_btn_group_data(button_group: QtWidgets.QButtonGroup, values: Iterable):
+def set_btn_group_data(button_group: QtWidgets.QButtonGroup, values:
+                       Iterable[Any]):
     """Adds a data_item attribute for all buttons in the button group. The
     value of the data_item is taken from the given values.
 

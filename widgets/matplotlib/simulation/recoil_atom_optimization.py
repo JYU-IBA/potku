@@ -27,7 +27,11 @@ __version__ = "2.0"
 
 import matplotlib
 
+from typing import Optional
+
 from modules.element_simulation import ElementSimulation
+from modules.concurrency import CancellationToken
+from modules.target import Target
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QLocale
@@ -51,8 +55,8 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
 
     results_accepted = pyqtSignal(ElementSimulation)
 
-    def __init__(self, parent, element_simulation, target,
-                 cancellation_token=None):
+    def __init__(self, parent, element_simulation: ElementSimulation,
+                 target: Target, ct: Optional[CancellationToken] = None):
         super().__init__(parent)
         self.parent = parent
         self.element_simulation = element_simulation
@@ -99,7 +103,7 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         self.stop_optim_btn.clicked.connect(self._stop_optim)
         self.recoil_vertical_layout.addWidget(self.stop_optim_btn)
 
-        self.cancellation_token = cancellation_token
+        self.cancellation_token = ct
 
         spacer = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum,
                                        QtWidgets.QSizePolicy.Expanding)
@@ -158,7 +162,8 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         self.coordinates_widget.y_coordinate_box.setEnabled(False)
         self.coordinates_widget.x_coordinate_box.setEnabled(False)
 
-    def format_coord(self, x, y):
+    @staticmethod
+    def format_coord(x, y):
         """
         Format mouse coordinates.
 
@@ -340,7 +345,7 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         self.canvas.draw()
         self.canvas.flush_events()
 
-    def _move_results(self, *args):
+    def _move_results(self, *_):
         """Moves the optimized results to regular recoils and closes the
         widget.
         """

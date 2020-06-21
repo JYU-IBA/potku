@@ -153,9 +153,10 @@ def delete_recoil_espe(tab, recoil_name):
                     tab.energy_spectrum_widgets.remove(energy_spectra)
                     save_file_path = Path(tab.simulation.directory,
                                           energy_spectra.save_file)
-                    if save_file_path.exists():
-                        os.remove(save_file_path)
-                    # TODO check if more files need to be deleted
+                    try:
+                        save_file_path.unlink()
+                    except OSError:
+                        pass
                     break
 
 

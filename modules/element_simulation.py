@@ -43,6 +43,9 @@ from rx import operators as ops
 from pathlib import Path
 from collections import deque
 from threading import Event
+from typing import Tuple
+from typing import Dict
+from typing import Any
 
 from .concurrency import CancellationToken
 from .base import Serializable
@@ -57,6 +60,8 @@ from .enums import SimulationState
 from .enums import IonDivision
 from .enums import SimulationType
 from .enums import SimulationMode
+from .run import Run
+from .detector import Detector
 
 
 # Mappings between the names of the MCERD parameters (keys) and
@@ -862,7 +867,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         return GetEspe.calculate_simulated_spectrum(
             write_to_file=write_to_file, **espe_settings), espe_file
 
-    def get_mcerd_params(self):
+    def get_mcerd_params(self) -> Tuple[Dict[str, Any], Run, Detector]:
         """Returns the parameters for MCERD simulations.
         """
         if self.use_default_settings:

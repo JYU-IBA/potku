@@ -34,6 +34,7 @@ import widgets.gui_utils as gutils
 
 from collections import Counter
 from pathlib import Path
+from typing import Optional
 
 from dialogs.energy_spectrum import EnergySpectrumWidget
 from dialogs.simulation.optimization import OptimizationDialog
@@ -46,14 +47,24 @@ from widgets.simulation.optimized_fluence import OptimizedFluenceWidget
 from widgets.simulation.optimized_recoils import OptimizedRecoilsWidget
 from widgets.simulation.target import TargetWidget
 from widgets.base_tab import BaseTab
+from widgets.icon_manager import IconManager
+
+from modules.enums import OptimizationType
+from modules.element_simulation import ElementSimulation
+from modules.simulation import Simulation
+from modules.request import Request
+from modules.global_settings import GlobalSettings
+from modules.observing import ProgressReporter
+from modules.concurrency import CancellationToken
 
 
 class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
     """Tab widget where simulation stuff is added.
     """
 
-    def __init__(self, request, tab_id, simulation, icon_manager,
-                 statusbar=None):
+    def __init__(self, request: Request, tab_id: int, simulation: Simulation,
+                 icon_manager: IconManager,
+                 statusbar: Optional[QtWidgets.QStatusBar] = None):
         """ Init simulation tab class.
         
         Args:
@@ -97,8 +108,10 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
         # TODO
         return None
 
-    def add_simulation_target_and_recoil(self, settings, progress=None,
-                                         **kwargs):
+    def add_simulation_target_and_recoil(
+            self, settings: GlobalSettings,
+            progress: Optional[ProgressReporter] = None,
+            **kwargs):
         """Add target widget for modifying the target and recoils into tab.
 
         Args:
@@ -111,29 +124,29 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
             progress=progress, statusbar=self.statusbar, **kwargs)
         self.add_widget(self.simulation_target, has_close_button=False)
 
-    def add_optimization_results_widget(self, elem_sim, measurement_elem,
-                                        mode_recoil, cancellation_token=None):
+    def add_optimization_results_widget(
+            self, elem_sim: ElementSimulation, cut_file_name: str,
+            mode_recoil: OptimizationType,
+            ct: Optional[CancellationToken] = None):
         """
         Add a widget that holds progress and results of optimization.
 
         Args:
             elem_sim: Element simulation that is being optimized.
-            measurement_elem: Measured element used in optimization.
+            cut_file_name: Measured element used in optimization.
             mode_recoil: Whether recoil result widget is shown or fluence
                 result widget.
-            cancellation_token: token used to indicate the stopping of
+            ct: token used to indicate the stopping of
                 optimization
         """
-        if mode_recoil:
+        if mode_recoil == OptimizationType.RECOIL:
             self.optimization_result_widget = OptimizedRecoilsWidget(
-                elem_sim, measurement_elem, self.obj.target,
-                cancellation_token=cancellation_token)
+                elem_sim, cut_file_name, self.obj.target, ct=ct)
             self.optimization_result_widget.results_accepted.connect(
-                self.simulation_target.results_accepted.emit
-            )
+                self.simulation_target.results_accepted.emit)
         else:
             self.optimization_result_widget = OptimizedFluenceWidget(
-                elem_sim, cancellation_token=cancellation_token)
+                elem_sim, ct=ct)
         elem_sim.optimization_widget = self.optimization_result_widget
         icon = self.icon_manager.get_icon("potku_icon.ico")
         self.add_widget(self.optimization_result_widget, icon=icon)

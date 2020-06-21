@@ -51,23 +51,13 @@ from widgets.matplotlib.calibration.linear_fitting \
     import MatplotlibCalibrationLinearFittingWidget
 
 
-def get_cut(instance, attr):
-    cuts = bnd.get_selected_tree_items(getattr(instance, attr))
-    if cuts:
-        return cuts[0]
-    return None
-
-
-def set_cut(instance, attr, value):
-    bnd.set_selected_tree_items(getattr(instance, attr), {value})
-
-
 class CalibrationDialog(QtWidgets.QDialog):
     """A dialog for the time of flight calibration
     """
     bin_width = bnd.bind("binWidthSpinBox")
     selected_cut_file = bnd.bind(
-        "cutFilesTreeWidget", fget=get_cut, fset=set_cut)
+        "cutFilesTreeWidget", fget=bnd.get_selected_tree_item,
+        fset=bnd.set_selected_tree_item)
 
     def __init__(self, measurements: List[Measurement], detector: Detector,
                  run: Run, parent_settings_widget=None):
@@ -200,7 +190,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         else:
             self.acceptCalibrationLabel.setText(calib_inv)
 
-    def __update_curve_fit(self, ):
+    def __update_curve_fit(self):
         """Redraws everything in the curve fitting graph. Updates the bin width
         too.
         """

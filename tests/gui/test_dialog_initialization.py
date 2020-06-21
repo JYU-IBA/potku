@@ -30,12 +30,12 @@ import tests.mock_objects as mo
 
 from unittest.mock import Mock
 from unittest.mock import patch
-from unittest.mock import call
 
 from dialogs.measurement.element_losses import ElementLossesDialog
 from dialogs.measurement.depth_profile import DepthProfileDialog
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.measurement.calibration import CalibrationDialog
+from dialogs.simulation.optimization import OptimizationDialog
 
 
 class TestDialogInitialization(unittest.TestCase):
@@ -44,18 +44,26 @@ class TestDialogInitialization(unittest.TestCase):
         """A simple test to see if various dialogs get initialized properly.
         """
         e = ElementLossesDialog(Mock(), mo.get_measurement())
+        e.close()
 
         d = DepthProfileDialog(
             Mock(), mo.get_measurement(), mo.get_global_settings())
+        d.close()
 
         m = Mock()
         m.obj = mo.get_measurement()
         esp = EnergySpectrumParamsDialog(m, "measurement")
+        esp.close()
 
         c = CalibrationDialog(
             [mo.get_measurement()], mo.get_detector(), mo.get_run)
+        c.close()
 
-        assert mock_exec.call_count == 4
+        o = OptimizationDialog(mo.get_simulation(), Mock())
+        self.assertFalse(o.pushButton_OK.isEnabled())
+        o.close()
+
+        assert mock_exec.call_count == 5
 
 
 if __name__ == '__main__':

@@ -148,6 +148,7 @@ class Nsgaii(Observable):
                                ion_division=IonDivision.BOTH):
         """Performs internal preparation before optimization begins.
         """
+        self.element_simulation.optimization_recoils = []
         # Calculate the energy spectrum that the optimized solutions are
         # compared to.
         if self.measurement is None:

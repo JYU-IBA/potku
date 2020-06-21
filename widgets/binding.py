@@ -173,6 +173,34 @@ def get_tree_items(tree: QTreeWidget, column: int = 0,
     ]
 
 
+def get_selected_tree_item(instance: Any, attr: str,
+                           use_checkboxes=False) -> Optional[Any]:
+    """Returns single selected item from a QTreeWidget or None if no
+    selection has been made.
+    """
+    if use_checkboxes:
+        func = get_checked_tree_items
+    else:
+        func = get_selected_tree_items
+
+    items = func(getattr(instance, attr))
+    if items:
+        return items[0]
+    return None
+
+
+def set_selected_tree_item(instance: Any, attr: str, value: Any,
+                           use_checkboxes=False):
+    """Sets a single item selected in a QTreeWidget.
+    """
+    if use_checkboxes:
+        func = set_checked_tree_items
+    else:
+        func = set_selected_tree_items
+
+    func(getattr(instance, attr), {value})
+
+
 def tree_iterator(tree: QTreeWidget, column=0,
                   flag=QTreeWidgetItemIterator.All) -> \
         Iterable[Tuple[QTreeWidgetItem, Any]]:
@@ -360,21 +388,24 @@ class PropertySavingWidget(PropertyBindingWidget, abc.ABC):
         self.save_properties_to_file(file_path=self.get_property_file_path())
         event.accept()
 
-    def save_properties_to_file(self, file_path: Optional[Path] = None):
+    def save_properties_to_file(self, file_path: Optional[Path] = None,
+                                values: Optional[Dict[str, Any]] = None):
         """Saves properties to a file.
 
         Args:
             file_path: Path object to a file that is used for saving. If None,
                 widget's default property file location is used.
+            values: values to save to file. If None, default values are saved.
         """
         if file_path is None:
             file_path = self.get_property_file_path()
 
-        params = self.get_properties()
+        if values is None:
+            values = self.get_properties()
         try:
             file_path.parent.mkdir(exist_ok=True, parents=True)
             with file_path.open("w") as file:
-                json.dump(params, file, indent=4)
+                json.dump(values, file, indent=4)
         except OSError:
             pass
 
