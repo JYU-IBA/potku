@@ -663,19 +663,19 @@ class Selection:
         return 0
 
     def get_points_tuple(self):
-            """Get points in selection
+        """Get points in selection
 
-            Get points in selection in list. Format: ((x1,y1), (x2,y2), ...).
-            If no points, empty list is returned
+        Get points in selection in list. Format: ((x1,y1), (x2,y2), ...).
+        If no points, empty list is returned
 
-            Return:
-               ((x1, y1), (x2, y2), ...)
-            """
-            points = self.points.get_data()
-            pointlist = []
-            for i in range(len(points[0])):
-                pointlist.append((points[0][i], points[1][i]))
-            return pointlist
+        Return:
+           ((x1, y1), (x2, y2), ...)
+        """
+        points = self.points.get_data()
+        pointlist = []
+        for i in range(len(points[0])):
+            pointlist.append((points[0][i], points[1][i]))
+        return pointlist
 
     def get_points(self):
         """Get points in selection
