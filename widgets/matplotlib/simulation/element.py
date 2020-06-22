@@ -148,13 +148,14 @@ class ElementWidget(QtWidgets.QWidget):
         """
         Add new recoil to element simulation.
         """
-        points = copy.deepcopy(self.element_simulation.recoil_elements[
-                                   0].get_points())
+        points = copy.deepcopy(
+            self.element_simulation.get_main_recoil().get_points())
 
-        element = copy.copy(self.element_simulation.recoil_elements[0].element)
+        element = copy.copy(
+            self.element_simulation.get_main_recoil().element)
         name = "Default-" + str(self.running_int_recoil)
 
-        color = self.element_simulation.recoil_elements[0].color
+        color = self.element_simulation.get_main_recoil().color
 
         if self.element_simulation.simulation_type == "ERD":
             rec_type = "rec"

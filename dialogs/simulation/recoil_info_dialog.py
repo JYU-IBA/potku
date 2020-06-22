@@ -134,14 +134,14 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         if not self.fields_are_valid or not self.__density_valid():
             QtWidgets.QMessageBox.critical(
                 self, "Warning",
-                "Some of the setting values are invalid.\n" +
+                "Some of the setting values are invalid.\n"
                 "Please input values in fields indicated in red.",
                 QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             return
 
         if self.name != self.recoil_element.name:
             # Check that the new name is not already in use
-            if self.name in (r.name for r in
+            if self.name in (r.name for r in    # has_recoil
                              self.element_simulation.recoil_elements):
                 QtWidgets.QMessageBox.critical(
                     self, "Warning",
@@ -152,7 +152,7 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
 
         # If current recoil is used in a running simulation
         if self.recoil_element is \
-                self.element_simulation.recoil_elements[0]:
+                self.element_simulation.get_main_recoil():
             if (self.element_simulation.is_simulation_running() or
                     self.element_simulation.is_optimization_running()) and \
                     self.name != self.recoil_element.name:

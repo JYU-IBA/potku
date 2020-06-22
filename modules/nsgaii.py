@@ -176,7 +176,7 @@ class Nsgaii(Observable):
         # Previous erd files are used as the starting point so combine them
         # into a single file
         erd_file_name = fp.get_erd_file_name(
-            self.element_simulation.recoil_elements[0], "combined",
+            self.element_simulation.get_main_recoil(), "combined",
             optim_mode=self.optimization_type)
 
         gf.combine_files(self.element_simulation.get_erd_files(),
@@ -350,7 +350,7 @@ class Nsgaii(Observable):
                 objective_values.append(self.get_objective_values(espe))
 
         else:  # Evaluate fluence
-            recoil = self.element_simulation.recoil_elements[0]
+            recoil = self.element_simulation.get_main_recoil()
             for solution in sols:
                 # Round solution appropriately
                 sol_fluence = gf.round_value_by_four_biggest(solution[0])
@@ -594,7 +594,7 @@ class Nsgaii(Observable):
             name = name
 
         recoil = RecoilElement(
-            self.element_simulation.recoil_elements[0].element, points,
+            self.element_simulation.get_main_recoil().element, points,
             color="red", name=name)
 
         return recoil
@@ -1399,7 +1399,7 @@ def get_optim_espe(elem_sim: ElementSimulation,
     if optimization_type is OptimizationType.RECOIL:
         recoil = elem_sim.optimization_recoils[0]
     else:
-        recoil = elem_sim.recoil_elements[0]
+        recoil = elem_sim.get_main_recoil()
 
     espe, _ = elem_sim.calculate_espe(
         recoil, optimization_type=optimization_type, write_to_file=False)

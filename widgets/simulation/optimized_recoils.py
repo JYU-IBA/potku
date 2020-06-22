@@ -69,7 +69,7 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
         _, run, _ = self.element_simulation.get_mcerd_params()
 
         self.setWindowTitle(f"Optimization Results: "
-                            f"{element_simulation.recoil_elements[0].element}"
+                            f"{element_simulation.get_main_recoil().element}"
                             f" - {cut_file_name} - fluence: {run.fluence}")
 
         self.recoil_atoms = RecoilAtomOptimizationWidget(

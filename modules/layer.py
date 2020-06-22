@@ -28,6 +28,9 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
+from typing import List
+
+from .element import Element
 from .base import MCERDParameterContainer
 
 
@@ -37,7 +40,8 @@ class Layer(MCERDParameterContainer):
 
     __slots__ = "name", "elements", "thickness", "density", "start_depth"
 
-    def __init__(self, name, elements, thickness, density, start_depth=-1):
+    def __init__(self, name: str, elements: List[Element], thickness: float,
+                 density: float, start_depth=-1):
         """Initializes a target or foil layer.
 
         Args:

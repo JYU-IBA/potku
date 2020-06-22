@@ -332,7 +332,7 @@ def _element_simulations_to_list(
             finished_simulations, running_simulations, finished_optimizations,
             running_optimizations):
         d[elem_sim.simulation.sample.name][elem_sim.simulation.name][
-            elem_sim.main_recoil.get_full_name()] = \
+            elem_sim.get_main_recoil().get_full_name()] = \
             elem_sim.is_optimization_running() or \
             elem_sim.is_optimization_finished()
 

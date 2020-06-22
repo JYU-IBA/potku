@@ -47,7 +47,7 @@ class RecoilElement(MCERDParameterContainer, Serializable):
     """An element that has a list of points and a widget. The points are kept
     in ascending order by their x coordinate.
     """
-    def __init__(self, element, points, color="red", name="Default",
+    def __init__(self, element: Element, points, color="red", name="Default",
                  rec_type="rec",
                  description="These are default recoil settings.",
                  reference_density=4.98e22, modification_time=None,

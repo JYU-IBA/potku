@@ -33,6 +33,7 @@ import time
 
 from pathlib import Path
 from typing import Optional
+from typing import List
 
 from .element import Element
 from .layer import Layer
@@ -48,8 +49,8 @@ class Target:
 
     def __init__(self, name="Default", modification_time=None,
                  description="", target_type="AFM", image_size=(1024, 1024),
-                 image_file="", scattering_element=None, target_theta=20.5,
-                 layers=None):
+                 image_file="", scattering_element: Optional[Element] = None,
+                 target_theta=20.5, layers: Optional[List[Layer]] = None):
         """Initialize a target.
 
         Args:
@@ -86,7 +87,7 @@ class Target:
 
     @classmethod
     def from_file(cls, target_file_path: Path, measurement_file_path: Path,
-                  request):
+                  request: "Request"):
         """Initialize target from a JSON file.
 
         Args:

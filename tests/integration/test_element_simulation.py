@@ -174,7 +174,7 @@ def get_expected_settings(elem_sim: ElementSimulation, request: Request,
         # Always use the target from simulation
         "target": simulation.target,
         "detector": detector,
-        "recoil_element": elem_sim.recoil_elements[0],
+        "recoil_element": elem_sim.get_main_recoil(),
         "sim_dir": elem_sim.directory
     }
 

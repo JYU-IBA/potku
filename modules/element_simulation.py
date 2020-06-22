@@ -62,6 +62,7 @@ from .enums import SimulationType
 from .enums import SimulationMode
 from .run import Run
 from .detector import Detector
+from .element import Element
 
 
 # Mappings between the names of the MCERD parameters (keys) and
@@ -94,8 +95,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 "recoil_elements", "recoil_atoms", \
                 "channel_width", "__erd_filehandler", \
                 "description", "name", \
-                "use_default_settings", "simulation", \
-                "__full_edit_on", "main_recoil",\
+                "use_default_settings", "simulation", "__full_edit_on", \
                 "optimization_recoils", "optimization_widget", \
                 "_optimization_running", "optimized_fluence", \
                 "__cts", "_simulation_running", "_running_event"
@@ -109,10 +109,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                  minimum_main_scattering_angle=20,
                  simulation_mode=SimulationMode.NARROW,
                  seed_number=101, minimum_energy=1.0, channel_width=0.025,
-                 use_default_settings=True, main_recoil=None,
-                 optimization_recoils=None, optimized_fluence=None,
-                 save_on_creation=True):
-        """ Initializes ElementSimulation.
+                 use_default_settings=True, optimization_recoils=None,
+                 optimized_fluence=None, save_on_creation=True):
+        """Initializes ElementSimulation.
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
             request: Request object reference.
@@ -162,11 +161,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         self.recoil_elements = recoil_elements
 
-        if len(self.recoil_elements) == 1:
-            self.main_recoil = self.recoil_elements[0]
-        else:
-            self.main_recoil = main_recoil
-
         self.simulation_type = SimulationType(simulation_type.upper())
         self.simulation_mode = SimulationMode(simulation_mode.lower())
 
@@ -206,7 +200,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self.__cts = set()
 
         self.__erd_filehandler = ERDFileHandler.from_directory(
-            self.directory, self.main_recoil)
+            self.directory, self.get_main_recoil())
 
         # TODO check if all optimization stuff can be moved to another module
         if optimization_recoils is None:
@@ -299,7 +293,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 new_name = recoil_element.get_full_name() + recoil_suffix
                 gf.rename_file(recoil_file, new_name)
 
-            if recoil_element is self.main_recoil:  # Only main recoil
+            if recoil_element is self.get_main_recoil():  # Only main recoil
                 # updates erd file names
                 for file in os.listdir(self.directory):
                     if file.startswith(recoil_element.prefix) and file.endswith(
@@ -412,17 +406,19 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
             # Check if fluence has been optimized
             elif fp.is_optfl_result(prefix, file):
-                with open(Path(simulation_folder, file), "r") as f:
+                with Path(simulation_folder, file).open("r") as f:
                     optimized_fluence = float(f.readline())
         optimized_recoils = [
             val for key, val
-            in sorted(optimized_recoils_dict.items())]
+            in sorted(optimized_recoils_dict.items())
+        ]
+
         return cls(
             directory=simulation_folder, request=request,
             recoil_elements=recoil_elements, name_prefix=name_prefix, name=name,
             optimization_recoils=optimized_recoils,
-            optimized_fluence=optimized_fluence, main_recoil=main_recoil,
-            **kwargs, **mcsimu, simulation=simulation)
+            optimized_fluence=optimized_fluence, **kwargs, **mcsimu,
+            simulation=simulation)
 
     def get_full_name(self):
         """Returns the full name of the ElementSimulation object.
@@ -455,7 +451,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 self.minimum_main_scattering_angle,
             "minimum_energy": self.minimum_energy,
             "use_default_settings": str(self.use_default_settings),
-            "main_recoil": self.main_recoil.name
+            "main_recoil": self.get_main_recoil().name
         }
 
     def get_default_file_path(self):
@@ -569,7 +565,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         if optimization_type is OptimizationType.RECOIL:
             recoil = self.optimization_recoils[0]
         else:
-            recoil = self.recoil_elements[0]
+            recoil = self.get_main_recoil()
 
         if number_of_processes < 1:
             number_of_processes = 1
@@ -725,6 +721,11 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         else:
             return None
 
+    def has_element(self, element: Element):
+        t = element.symbol, element.isotope
+        return t in ((r.element.symbol, r.element.isotope)
+                     for r in self.recoil_elements)
+
     def is_simulation_running(self) -> bool:
         """Whether simulation is currently running and optimization is not
         running.
@@ -807,7 +808,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         if optimization_type is OptimizationType.RECOIL:
             recoil = self.optimization_recoils[0]
         else:
-            recoil = self.recoil_elements[0]
+            recoil = self.get_main_recoil()
 
         if optimization_type is OptimizationType.FLUENCE:
             espe_file = f"{recoil_element.prefix}-optfl.simu"

@@ -506,6 +506,29 @@ class TestElementSimulation(unittest.TestCase):
         self.elem_sim._set_flags(False)
         self.assertTrue(self.elem_sim.is_optimization_finished())
 
+    def test_has_element(self):
+        rec_he = mo.get_recoil_element(symbol="He")
+        rec_1he = mo.get_recoil_element(symbol="He", isotope=1)
+        rec_1he_2 = mo.get_recoil_element(symbol="He", isotope=1, amount=2)
+
+        self.elem_sim.recoil_elements = []
+        self.assertFalse(self.elem_sim.has_element(rec_he.element))
+
+        self.elem_sim.recoil_elements = [rec_he]
+        self.assertTrue(self.elem_sim.has_element(rec_he.element))
+        self.assertFalse(self.elem_sim.has_element(rec_1he.element))
+        self.assertFalse(self.elem_sim.has_element(rec_1he_2.element))
+
+        self.elem_sim.recoil_elements = [rec_1he]
+        self.assertFalse(self.elem_sim.has_element(rec_he.element))
+        self.assertTrue(self.elem_sim.has_element(rec_1he.element))
+        self.assertTrue(self.elem_sim.has_element(rec_1he_2.element))
+
+        self.elem_sim.recoil_elements = [rec_1he, rec_he]
+        self.assertTrue(self.elem_sim.has_element(rec_he.element))
+        self.assertTrue(self.elem_sim.has_element(rec_1he.element))
+        self.assertTrue(self.elem_sim.has_element(rec_1he_2.element))
+
 
 def write_line(file):
     with open(file, "a") as file:
