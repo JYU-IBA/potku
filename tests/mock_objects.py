@@ -47,6 +47,7 @@ from modules.measurement import Measurement
 from modules.global_settings import GlobalSettings
 from modules.observing import Observer
 from modules.request import Request
+from modules.sample import Sample
 
 
 # This module can be used to generate various helper objects for testing
@@ -111,13 +112,15 @@ def get_target() -> Target:
     return Target()
 
 
-def get_recoil_element() -> RecoilElement:
+def get_recoil_element(recoil_widget=None) -> RecoilElement:
     """Returns a RecoilElement object.
     """
-    return RecoilElement(get_element(), [
+    re = RecoilElement(get_element(), [
         Point((1, 1)),
         Point((2, 2)),
     ], "red")
+    re.widgets.append(recoil_widget)
+    return re
 
 
 def get_run() -> Run:
@@ -126,14 +129,16 @@ def get_run() -> Run:
     return Run(get_beam())
 
 
-def get_element_simulation(request=None) -> ElementSimulation:
+def get_element_simulation(request=None, recoil_widget=None) \
+        -> ElementSimulation:
     """Returns an ElementSimulation object.
     """
     if request is None:
         request = get_request()
 
     return ElementSimulation(
-        _TEMP_DIR, request, [get_recoil_element()], save_on_creation=False)
+        _TEMP_DIR, request, [get_recoil_element(recoil_widget=recoil_widget)],
+        save_on_creation=False)
 
 
 def get_simulation(request=None) -> Simulation:
@@ -156,6 +161,14 @@ def get_measurement(request=None) -> Measurement:
     return Measurement(
         request, _TEMP_DIR / "mesu", save_on_creation=False,
         enable_logging=False)
+
+
+def get_sample(request=None) -> Sample:
+    """Returns a Sample object.
+    """
+    if request is None:
+        request = get_request()
+    return Sample(1, request, "sample01")
 
 
 def get_layer(element_count=1, randomize=False) -> Layer:

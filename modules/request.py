@@ -38,6 +38,7 @@ import time
 
 from pathlib import Path
 from typing import Tuple
+from typing import List
 
 from .base import ElementSimulationContainer
 from .detector import Detector
@@ -255,8 +256,8 @@ class Request(ElementSimulationContainer):
             return Run()
 
     def _create_default_simulation(
-            self, save_on_creation, target=None, **kwargs) -> \
-            Tuple[Simulation, ElementSimulation]:
+            self, save_on_creation, target=None, detector=None, run=None,
+            **kwargs) -> Tuple[Simulation, ElementSimulation]:
         """Create default simulation and ElementSimulation
         """
         simulation_path = Path(self.default_folder, "Default.simulation")
@@ -264,12 +265,13 @@ class Request(ElementSimulationContainer):
             # Read default simulation from file
             sim = Simulation.from_file(
                 self, simulation_path, save_on_creation=save_on_creation,
-                target=target, **kwargs)
+                target=target, detector=detector, run=run, **kwargs)
         else:
             # Create default simulation for request
             sim = Simulation(
                 Path(self.default_folder, "Default.simulation"), self,
-                save_on_creation=save_on_creation, target=target, **kwargs,
+                save_on_creation=save_on_creation, target=target,
+                detector=detector, run=run, **kwargs,
                 description="This is a default simulation.",
                 measurement_setting_file_description="These are default "
                                                      "simulation "
@@ -280,8 +282,7 @@ class Request(ElementSimulationContainer):
             # Read default element simulation from file
             elem_sim = ElementSimulation.from_file(
                 self, "4He", self.default_folder, mcsimu_path,
-                Path(self.default_folder, "Default.profile"), sim,
-                **kwargs)
+                Path(self.default_folder, "Default.profile"), simulation=sim)
         else:
             # Create default element simulation for request
             elem_sim = ElementSimulation(
@@ -533,6 +534,23 @@ class Request(ElementSimulationContainer):
         requestlog.setFormatter(formatter)
 
         logger.addHandler(requestlog)
+
+    def get_imported_files_folder(self) -> Path:
+        return self.directory / "Imported_files"
+
+    def get_imported_files(self) -> List[Path]:
+        """Returns a list of file paths from imported files directory.
+        """
+        files = []
+        try:
+            with os.scandir(self.get_imported_files_folder()) as scdir:
+                for entry in scdir:
+                    path = Path(entry)
+                    if path.is_file():
+                        files.append(path)
+        except OSError:
+            pass
+        return files
 
     def _get_simulations(self):
         return (

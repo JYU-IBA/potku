@@ -44,12 +44,13 @@ from pathlib import Path
 from typing import Optional
 
 from widgets.gui_utils import StatusBarHandler
+from widgets.base_tab import BaseTab
 from modules.energy_spectrum import EnergySpectrum
 from modules.measurement import Measurement
 from modules.get_espe import GetEspe
 from modules.enums import OptimizationType
-from modules.detector import Detector
 from modules.element_simulation import ElementSimulation
+from modules.simulation import Simulation
 
 from PyQt5 import uic
 from PyQt5 import QtCore
@@ -59,19 +60,33 @@ from PyQt5.QtCore import QLocale
 from widgets.matplotlib.measurement.energy_spectrum import \
     MatplotlibEnergySpectrumWidget
 
+_MESU = "measurement"
+_SIMU = "simulation"
+
 
 class EnergySpectrumParamsDialog(QtWidgets.QDialog):
+    """An EnergySpectrumParamsDialog.
     """
-    An EnergySpectrumParamsDialog.
-    """
+
     checked_cuts = {}
+    bin_width = 0.025
 
     use_efficiency = bnd.bind("use_eff_checkbox")
     status_msg = bnd.bind("label_status")
+    measurement_cuts = bnd.bind("treeWidget")
+    used_bin_width = bnd.bind("histogramTicksDoubleSpinBox")
 
-    def __init__(self, parent, spectrum_type,
+    external_files = bnd.bind("external_tree_widget")
+    tof_list_files = bnd.bind("tof_list_tree_widget")
+    used_recoil = bnd.bind("treeWidget")
+
+    def __init__(self, parent: BaseTab, spectrum_type: str = _MESU,
                  element_simulation: Optional[ElementSimulation] = None,
-                 recoil_widget=None, statusbar=None, spectra_changed=None):
+                 simulation: Optional[Simulation] = None,
+                 measurement: Optional[Measurement] = None,
+                 recoil_widget=None,
+                 statusbar: Optional[QtWidgets.QStatusBar] = None,
+                 spectra_changed=None):
         """Inits energy spectrum dialog.
         
         Args:
@@ -79,14 +94,39 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             spectrum_type: Whether spectrum is for measurement of simulation.
             element_simulation: ElementSimulation object.
             recoil_widget: RecoilElement widget.
+            statusbar: QStatusBar
+            spectra_changed: pyQtSignal that is emitted when recoil atom
+                distribution is changed.
         """
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_energy_spectrum_params.ui", self)
 
         self.parent = parent
-        self.element_simulation = element_simulation
+        if spectrum_type == EnergySpectrumWidget.MEASUREMENT:
+            if measurement is None:
+                raise ValueError(
+                    f"Must provide a Measurement when spectrum type is "
+                    f"{spectrum_type}")
+        elif spectrum_type is EnergySpectrumWidget.SIMULATION:
+            if simulation is None:
+                raise ValueError(
+                    f"Must provide a Simulation when spectrum type is "
+                    f"{spectrum_type}")
+            if element_simulation is None:
+                raise ValueError(
+                    f"Must provide an ElementSimulation when spectrum is "
+                    f"{spectrum_type}"
+                )
+        else:
+            raise ValueError(f"Unexpected spectrum type: {spectrum_type}")
+
         self.spectrum_type = spectrum_type
+        self.measurement = measurement
+        self.simulation = simulation
+        self.element_simulation = element_simulation
         self.statusbar = statusbar
+        self.result_files = []
+
         self.use_eff_checkbox.stateChanged.connect(
             lambda *_: self.label_efficiency_files.setEnabled(
                 self.use_efficiency))
@@ -98,247 +138,177 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # Connect buttons
         self.pushButton_Cancel.clicked.connect(self.close)
 
-        if type(self.parent.obj) is Measurement:
-            EnergySpectrumParamsDialog.bin_width = \
-                self.parent.obj.channel_width
-        else:
-            EnergySpectrumParamsDialog.bin_width = \
-                self.element_simulation.channel_width
+        self.external_tree_widget = QtWidgets.QTreeWidget()
 
-        self.histogramTicksDoubleSpinBox.setValue(
-            EnergySpectrumParamsDialog.bin_width)
-
-        if isinstance(self.parent.obj, Measurement):
-            self.measurement = self.parent.obj
+        if self.spectrum_type == EnergySpectrumWidget.MEASUREMENT:
+            EnergySpectrumParamsDialog.bin_width = \
+                self.measurement.channel_width
             self.pushButton_OK.clicked.connect(
                 lambda: self.__accept_params(spectra_changed=spectra_changed))
 
             m_name = self.measurement.name
             if m_name not in EnergySpectrumParamsDialog.checked_cuts:
-                EnergySpectrumParamsDialog.checked_cuts[m_name] = []
+                EnergySpectrumParamsDialog.checked_cuts[m_name] = set()
 
             gutils.fill_cuts_treewidget(
-                self.measurement, self.treeWidget, True,
-                EnergySpectrumParamsDialog.checked_cuts[m_name])
+                self.measurement, self.treeWidget.invisibleRootItem(),
+                use_elemloss=True)
+            self.measurement_cuts = \
+                EnergySpectrumParamsDialog.checked_cuts[m_name]
 
             self.importPushButton.setVisible(False)
         else:
-            header_item = QtWidgets.QTreeWidgetItem()
-            header_item.setText(0, "Simulated elements")
-            self.treeWidget.setHeaderItem(header_item)
+            EnergySpectrumParamsDialog.bin_width = \
+                self.element_simulation.channel_width
 
-            self.tof_list_tree_widget = QtWidgets.QTreeWidget()
-            self.tof_list_tree_widget.setSizePolicy(
-                QtWidgets.QSizePolicy.Expanding,
-                QtWidgets.QSizePolicy.Expanding)
-
-            header = QtWidgets.QTreeWidgetItem()
-            header.setText(0, "Pre-calculated elements")
-
-            self.gridLayout_2.addWidget(self.tof_list_tree_widget, 0, 1)
-
-            self.tof_list_tree_widget.setHeaderItem(header)
-
-            self.pushButton_OK.clicked.connect(
-                self.__calculate_selected_spectra)
-
-            # Find the corresponding recoil element to recoil widget
-            rec_to_check = None
-            for rec_element in self.element_simulation.recoil_elements:
-                if rec_element.widgets[0] is recoil_widget:
-                    rec_to_check = rec_element
-
-            self.result_files = []
-            for file in os.listdir(self.parent.obj.directory):
-                if file.endswith(".rec") or file.endswith(".sct"):
-                    rec_name = file.split(".")[0]
-
-                    for f in os.listdir(self.parent.obj.directory):
-                        rec_prefix = rec_name.split('-')[0]
-                        if f.startswith(rec_prefix) and f.endswith(".erd"):
-                            if "opt" in f and "opt" not in rec_name:
-                                continue
-                            elif "opt" in rec_name and "opt" not in f:
-                                continue
-                            else:
-                                item = QtWidgets.QTreeWidgetItem()
-                                item.setText(0, rec_name)
-                                if rec_to_check and rec_to_check.prefix + "-" +\
-                                   rec_to_check.name == rec_name:
-                                    item.setCheckState(0, QtCore.Qt.Checked)
-                                else:
-                                    item.setCheckState(0, QtCore.Qt.Unchecked)
-                                self.treeWidget.addTopLevelItem(item)
-                                break
-
-            # Add calculated tof_list files to tof_list_tree_widget by
-            # measurement under the same sample.
-
-            for sample in self.parent.obj.request.samples.samples:
-                for measurement in sample.measurements.measurements.values():
-                    if self.element_simulation.sample is measurement.sample:
-
-                        all_cuts = []
-
-                        tree_item = QtWidgets.QTreeWidgetItem()
-                        tree_item.setText(0, measurement.name)
-                        tree_item.obj = measurement
-                        self.tof_list_tree_widget.addTopLevelItem(tree_item)
-
-                        for file in os.listdir(
-                                measurement.directory_cuts):
-                            if file.endswith(".cut"):
-                                file_name_without_suffix = \
-                                    file.rsplit('.', 1)[0]
-                                all_cuts.append(file_name_without_suffix)
-
-                        for file_2 in os.listdir(measurement.get_changes_dir()):
-                            if file_2.endswith(".cut"):
-                                file_name_without_suffix = \
-                                    file_2.rsplit('.', 1)[0]
-                                all_cuts.append(file_name_without_suffix)
-
-                        all_cuts.sort()
-
-                        for cut in all_cuts:
-                            item = QtWidgets.QTreeWidgetItem()
-                            item.setText(0, cut)
-                            item.setCheckState(0, QtCore.Qt.Unchecked)
-                            tree_item.addChild(item)
-                            tree_item.setExpanded(True)
-
-            # Add a view for adding external files to draw
-            self.external_tree_widget = QtWidgets.QTreeWidget()
-            self.external_tree_widget.setSizePolicy(
-                QtWidgets.QSizePolicy.Expanding,
-                QtWidgets.QSizePolicy.Expanding)
-
-            header = QtWidgets.QTreeWidgetItem()
-            header.setText(0, "External files")
-
-            self.gridLayout_2.addWidget(self.external_tree_widget, 0, 2)
-
-            self.external_tree_widget.setHeaderItem(header)
-
-            self.imported_files_folder = Path(
-                self.element_simulation.request.directory, "Imported_files")
-            self.imported_files_folder.mkdir(exist_ok=True)
-
-            # Add possible external files to view
-            for ext_file in os.listdir(self.imported_files_folder):
-                item = QtWidgets.QTreeWidgetItem()
-                item.setText(0, ext_file)
-                item.setCheckState(0, QtCore.Qt.Unchecked)
-                self.external_tree_widget.addTopLevelItem(item)
+            self._set_simulation_files(recoil_widget)
+            self._set_measurement_files()
+            self._set_external_files()
 
             # Change the bin width label text
             self.histogramTicksLabel.setText(
                 "Simulation and measurement histogram bin width:")
 
+            self.pushButton_OK.clicked.connect(
+                self.__calculate_selected_spectra)
             self.importPushButton.clicked.connect(self.__import_external_file)
 
+        self.used_bin_width = EnergySpectrumParamsDialog.bin_width
         # FIXME .eff files not shown in sim mode
         self.__update_eff_files()
         self.exec_()
+
+    def showEvent(self, event):
+        """Adjust size after dialog has been shown.
+        """
+        self.adjustSize()
+        super().showEvent(event)
+
+    def _set_simulation_files(self, recoil_widget):
+        """Sets up the simulation files in a QTreeWidget.
+        """
+        header_item = QtWidgets.QTreeWidgetItem()
+        header_item.setText(0, "Simulated element (observed atoms)")
+        self.treeWidget.setHeaderItem(header_item)
+
+        for elem_sim in self.simulation.element_simulations:
+            root = QtWidgets.QTreeWidgetItem([
+                f"{elem_sim.get_full_name()} ({elem_sim.get_atom_count()})"
+            ])
+            gutils.fill_tree(
+                root, elem_sim.recoil_elements,
+                data_func=lambda rec: (elem_sim, rec, None),
+                text_func=lambda rec: rec.get_full_name()
+            )
+            if elem_sim.is_optimization_finished():
+                gutils.fill_tree(
+                    root, elem_sim.optimization_recoils,
+                    data_func=lambda rec: (
+                        elem_sim, rec, OptimizationType.RECOIL),
+                    text_func=lambda rec: rec.get_full_name()
+                )
+            self.treeWidget.addTopLevelItem(root)
+            root.setExpanded(True)
+
+        self.used_recoil = {(
+            recoil_widget.element_simulation, recoil_widget.recoil_element, None
+        )}
+
+    def _set_measurement_files(self):
+        """Sets up the .cut file list.
+        """
+        self.tof_list_tree_widget = QtWidgets.QTreeWidget()
+        self.tof_list_tree_widget.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding,
+            QtWidgets.QSizePolicy.Expanding)
+        header = QtWidgets.QTreeWidgetItem()
+        header.setText(0, "Pre-calculated elements")
+        self.gridLayout_2.addWidget(self.tof_list_tree_widget, 0, 1)
+        self.tof_list_tree_widget.setHeaderItem(header)
+
+        # Add calculated tof_list files to tof_list_tree_widget by
+        # measurement under the same sample.
+        for measurement in self.simulation.sample.get_measurements():
+            root = QtWidgets.QTreeWidgetItem([measurement.name])
+
+            cuts, elem_loss = measurement.get_cut_files()
+            gutils.fill_tree(
+                root, cuts, data_func=lambda c: (c, measurement),
+                text_func=lambda c: c.name)
+
+            self.tof_list_tree_widget.addTopLevelItem(root)
+
+            elem_loss_root = QtWidgets.QTreeWidgetItem(["Element losses"])
+            gutils.fill_tree(
+                elem_loss_root, elem_loss, data_func=lambda c: (c, measurement),
+                text_func=lambda c: c.name
+            )
+            root.addChild(elem_loss_root)
+            root.setExpanded(True)
+
+        self.tof_list_files = {}
+
+    def _set_external_files(self):
+        """Sets up the external file QTreeWidget.
+        """
+        # Add a view for adding external files to draw
+        self.external_tree_widget.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding,
+            QtWidgets.QSizePolicy.Expanding)
+        header = QtWidgets.QTreeWidgetItem()
+        header.setText(0, "External files")
+        self.gridLayout_2.addWidget(self.external_tree_widget, 0, 2)
+        self.external_tree_widget.setHeaderItem(header)
+
+        gutils.fill_tree(
+            self.external_tree_widget.invisibleRootItem(),
+            self.simulation.request.get_imported_files(),
+            text_func=lambda fp: fp.name
+        )
+
+        self.external_files = {}
 
     def get_selected_measurements(self):
         """Returns a dictionary that contains selected measurements,
         cut files belonging to each measurement, and the corresponding
         result file.
         """
-        root_for_tof_list_files = self.tof_list_tree_widget.invisibleRootItem()
-        child_count = root_for_tof_list_files.childCount()
-
+        mesus = self.tof_list_files
         used_measurements = {}
-
-        for i in range(child_count):
-            measurement_item = root_for_tof_list_files.child(i)
-            mes_child_count = measurement_item.childCount()
-            for j in range(mes_child_count):
-                item = measurement_item.child(j)
-                if item.checkState(0):
-                    measurement = item.parent().obj
-                    if len(item.text(0).split(".")) < 5:
-                        # Normal cut
-                        cut_file = Path(measurement.directory_cuts,
-                                        f"{item.text(0)}.cut")
-                    else:
-                        cut_file = Path(
-                            measurement.get_changes_dir(),
-                            f"{item.text(0)}.cut")
-                    result_file = Path(measurement.get_energy_spectra_dir(),
-                                       f"{item.text(0)}.no_foil.hist")
-                    used_measurements.setdefault(measurement, []).append({
-                            "cut_file": cut_file,
-                            "result_file": result_file
-                        })
-
+        # TODO result file is probably not needed here
+        for c, m in mesus:
+            used_measurements.setdefault(m, []).append({
+                "cut_file": c,
+                "result_file": Path(
+                    m.get_energy_spectra_dir(), f"{c.stem}.no_foil.hist")
+            })
         return used_measurements
 
     def get_selected_simulations(self):
         """Returns a dictionary that contains selected simulations and list
         of recoil elements and corresponding result files.
         """
-        root = self.treeWidget.invisibleRootItem()
-        child_count = root.childCount()
-
         used_simulations = {}
-
-        for i in range(child_count):
-            # TODO list items should have the recoil data in user role so
-            #   we do not have iterate these all over again
-            item = root.child(i)
-            if item.checkState(0):
-                for elem_sim in self.parent.obj.element_simulations:
-                    for rec_elem in elem_sim.recoil_elements:
-                        rec_elem_name = rec_elem.get_full_name()
-                        if rec_elem_name == item.text(0):
-                            used_simulations.setdefault(elem_sim, []).append({
-                                "recoil_element": rec_elem,
-                            })
-                            break
-                    if elem_sim.is_optimization_finished():
-                        for rec_elem in elem_sim.optimization_recoils:
-                            rec_elem_name = rec_elem.get_full_name()
-                            if rec_elem_name == item.text(0):
-                                used_simulations.setdefault(
-                                    elem_sim, []).append({
-                                        "recoil_element": rec_elem,
-                                        "optimization_type":
-                                            OptimizationType.RECOIL
-                                    })
-                                break
-
+        for elem_sim, rec, optim in self.used_recoil:
+            # TODO optim type may not be necessary
+            used_simulations.setdefault(elem_sim, []).append({
+                "recoil_element": rec,
+                "optimization_type": optim
+            })
         return used_simulations
 
-    def get_selected_external_files(self):
-        """Returns a list of selected external files.
-        """
-        # Add external files to result files
-        used_external_files = []
-        root_for_ext_files = self.external_tree_widget.invisibleRootItem()
-        child_count = root_for_ext_files.childCount()
-        for k in range(child_count):
-            item = root_for_ext_files.child(k)
-            if item.checkState(0):
-                ext_file = Path(self.imported_files_folder, item.text(0))
-                if ext_file.exists():
-                    used_external_files.append(ext_file)
-
-        return used_external_files
-
-    def __calculate_selected_spectra(self):
+    @gutils.disable_widget
+    def __calculate_selected_spectra(self, *_):
         """Calculate selected spectra.
         """
-        self.close()
-        self.bin_width = self.histogramTicksDoubleSpinBox.value()
+        EnergySpectrumParamsDialog.bin_width = self.used_bin_width
 
         sbh = StatusBarHandler(self.statusbar)
 
         # Get all
         used_simulations = self.get_selected_simulations()
         used_measurements = self.get_selected_measurements()
-        used_externals = self.get_selected_external_files()
+        used_externals = self.external_files
 
         sbh.reporter.report(33)
 
@@ -374,42 +344,27 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
         logging.getLogger("request").info(f"[{simulation_name}] {msg}")
         logging.getLogger(simulation_name).info(msg)
+        self.close()
 
     @gutils.disable_widget
     def __accept_params(self, spectra_changed=None):
         """Accept given parameters and cut files.
         """
         self.status_msg = ""
-        width = self.histogramTicksDoubleSpinBox.value()
-        use_cuts = []
-        root = self.treeWidget.invisibleRootItem()
-        child_count = root.childCount()
+        width = self.used_bin_width
         m_name = self.measurement.name
-        EnergySpectrumParamsDialog.checked_cuts[m_name].clear()
-        for i in range(child_count):
-            item = root.child(i)
-            if item.checkState(0):
-                use_cuts.append(Path(item.directory, item.file_name))
-                EnergySpectrumParamsDialog.checked_cuts[m_name].append(
-                    item.file_name)
-            child_count = item.childCount()
-            if child_count > 0:  # Elemental Losses
-                dir_elo = self.measurement.get_changes_dir()
-                for j in range(child_count):
-                    item_child = item.child(j)
-                    if item_child.checkState(0):
-                        use_cuts.append(
-                            Path(dir_elo, item_child.file_name))
-                        EnergySpectrumParamsDialog.checked_cuts[m_name].append(
-                            item_child.file_name)
-                EnergySpectrumParamsDialog.bin_width = width
-        if use_cuts:
+        selected_cuts = self.measurement_cuts
+        EnergySpectrumParamsDialog.checked_cuts[m_name] = set(
+            self.measurement_cuts)
+        EnergySpectrumParamsDialog.bin_width = width
+
+        if selected_cuts:
             self.status_msg = "Please wait. Creating energy spectrum."
             if self.parent.energy_spectrum_widget:
                 self.parent.del_widget(self.parent.energy_spectrum_widget)
             self.parent.energy_spectrum_widget = EnergySpectrumWidget(
                 self.parent, spectrum_type=self.spectrum_type,
-                use_cuts=use_cuts, bin_width=width,
+                use_cuts=selected_cuts, bin_width=width,
                 use_efficiency=self.use_efficiency,
                 statusbar=self.statusbar, spectra_changed=spectra_changed)
 
@@ -428,25 +383,23 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     measurement_name,
                     "Bin width: {0}".format(width),
                     "Cut files: {0}".format(", ".join(str(cut) for cut
-                                                      in use_cuts)))
+                                                      in selected_cuts)))
                 logging.getLogger("request").info(msg)
                 logging.getLogger(measurement_name).info(
                     "Created Energy Spectrum. Bin width: {0} Cut files: {1}".
-                    format(width, ", ".join(str(cut) for cut in use_cuts)))
+                    format(width, ", ".join(str(cut) for cut in selected_cuts)))
                 log_info = "Energy Spectrum graph points:\n"
                 data = self.parent.energy_spectrum_widget.energy_spectrum_data
                 splitinfo = "\n".join(["{0}: {1}".format(key, ", ".join(
                     "({0};{1})".format(round(v[0], 2), v[1])
                     for v in data[key])) for key in data.keys()])
                 logging.getLogger(measurement_name).info(log_info + splitinfo)
-                self.close()
             else:
-                self.close()
                 QtWidgets.QMessageBox.critical(
                     self, "Error",
                     "An error occurred while trying to create energy spectrum.",
-                    QtWidgets.QMessageBox.Ok,
-                    QtWidgets.QMessageBox.Ok)
+                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            self.close()
         else:
             self.status_msg = "Please select .cut file[s] to create energy " \
                               "spectra."
@@ -467,50 +420,56 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         if not file_path:
             return
 
-        name = os.path.split(file_path)[1]
+        file_path = Path(file_path)
+        name = file_path.name
 
-        for file in os.listdir(self.imported_files_folder):
-            if file == name:
-                QtWidgets.QMessageBox.critical(
-                    self, "Error",
-                    "A file with that name already exists.",
-                    QtWidgets.QMessageBox.Ok,
-                    QtWidgets.QMessageBox.Ok)
-                return
+        new_file_name = \
+            self.element_simulation.request.get_imported_files_folder() / name
 
-        shutil.copyfile(
-            file_path, os.path.join(self.imported_files_folder, name))
+        if new_file_name.exists():
+            QtWidgets.QMessageBox.critical(
+                self, "Error", "A file with that name already exists.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            return
+
+        shutil.copyfile(file_path, new_file_name)
 
         item = QtWidgets.QTreeWidgetItem()
-        item.setText(0, name)
+        item.setText(0, new_file_name.name)
+        item.setData(0, QtCore.Qt.UserRole, new_file_name)
         item.setCheckState(0, QtCore.Qt.Checked)
         self.external_tree_widget.addTopLevelItem(item)
 
     def __update_eff_files(self):
         """Update efficiency files to UI which are used.
         """
-        detector = self._get_detector()
-        eff_files = detector.get_efficiency_files()
-        df.update_used_eff_file_label(self, eff_files)
+        if self.spectrum_type == _SIMU:
+            # Simulation energy spectrum can contain cut files from multiple
+            # Measurements which each can have different Detector an thus
+            # different efficiency files
+            label_txt = df.get_multi_efficiency_text(
+                self.tof_list_tree_widget,
+                self.simulation.sample.get_measurements(),
+                data_func=lambda tpl: tpl[0])
+        else:
+            detector = self.measurement.get_detector_or_default()
+            label_txt = df.get_efficiency_text(self.treeWidget, detector)
 
-    def _get_detector(self) -> Detector:
-        """Returns the detector used by either the ElementSimulation or
-        Measurement.
-        """
-        if self.element_simulation is not None:
-            _, _, detector = self.element_simulation.get_mcerd_params()
-            return detector
-        return self.measurement.get_detector_or_default()
+        self.label_efficiency_files.setText(label_txt)
 
 
 class EnergySpectrumWidget(QtWidgets.QWidget):
     """Energy spectrum widget which is added to measurement tab.
     """
+    MEASUREMENT = _MESU
+    SIMULATION = _SIMU
+
     save_file = "widget_energy_spectrum.save"
 
-    def __init__(self, parent, spectrum_type, use_cuts=None, bin_width=0.025,
-                 use_efficiency=False, save_file_int=0, statusbar=None,
-                 spectra_changed=None):
+    def __init__(self, parent: BaseTab,
+                 spectrum_type: str = MEASUREMENT,
+                 use_cuts=None, bin_width=0.025, use_efficiency=False,
+                 save_file_int=0, statusbar=None, spectra_changed=None):
         """Inits widget.
         
         Args:
@@ -540,8 +499,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.spectrum_type = spectrum_type
             rbs_list = {}
 
-            title = "{0} - Bin Width: {1}".format(self.windowTitle(),
-                                                  bin_width)
+            title = f"{self.windowTitle()} - Bin Width: {bin_width}"
             self.setWindowTitle(title)
 
             if isinstance(self.parent.obj, Measurement):
@@ -604,7 +562,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.
         """
-        if self.spectrum_type == "simulation":
+        if self.spectrum_type == EnergySpectrumWidget.SIMULATION:
             file = Path(self.parent.obj.directory, self.save_file)
             try:
                 file.unlink()

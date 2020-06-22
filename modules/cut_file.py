@@ -43,7 +43,8 @@ class CutFile:
     Cut file_path object for when reading cut files is necessary.
     """
     def __init__(self, directory: Optional[Path] = None, elem_loss=False,
-                 weight_factor=1.0, split_number=0, split_count=1):
+                 weight_factor=1.0, split_number=0, split_count=1,
+                 cut_file_path: Optional[Path] = None):
         """Inits CutFile object.
         
         Args:
@@ -69,6 +70,9 @@ class CutFile:
         self.detector_angle = None
         self.data = []
         self.element_number = None
+
+        if cut_file_path is not None:
+            self.load_file(cut_file_path)
     
     def set_info(self, selection, data: List[Any]):
         """Set selection information and data into CutFile.

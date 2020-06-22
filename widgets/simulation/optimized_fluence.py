@@ -44,7 +44,7 @@ class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
     """Class that handles showing optimized fluence in a widget.
     """
     def __init__(self, element_simulation: ElementSimulation,
-                 cancellation_token: Optional[CancellationToken] = None):
+                 ct: Optional[CancellationToken] = None):
         # TODO common base class for optim result widgets
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_optimized_fluence_widget.ui", self)
@@ -53,7 +53,7 @@ class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
         if self.element_simulation.optimized_fluence:
             self.show_fluence()
 
-        self.cancellation_token = cancellation_token
+        self.cancellation_token = ct
 
     def delete(self):
         """Delete variables and do clean up.

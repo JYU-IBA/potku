@@ -32,6 +32,7 @@ from typing import Optional
 from modules.element_simulation import ElementSimulation
 from modules.nsgaii import OptimizationType
 from modules.concurrency import CancellationToken
+from modules.target import Target
 
 from widgets.gui_utils import GUIObserver
 
@@ -51,9 +52,9 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
     """
     results_accepted = pyqtSignal(ElementSimulation)
 
-    def __init__(self, element_simulation: ElementSimulation, measured_element,
-                 target,
-                 cancellation_token: Optional[CancellationToken] = None):
+    def __init__(self, element_simulation: ElementSimulation,
+                 cut_file_name: str, target: Target,
+                 ct: Optional[CancellationToken] = None):
         """
         Initialize the widget.
         """
@@ -65,19 +66,14 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
             gutils.get_ui_dir() / "ui_optimization_results_widget.ui", self)
 
         self.element_simulation = element_simulation
-
-        if self.element_simulation.run is None:
-            run = self.element_simulation.request.default_run
-        else:
-            run = self.element_simulation.run
+        _, run, _ = self.element_simulation.get_mcerd_params()
 
         self.setWindowTitle(f"Optimization Results: "
                             f"{element_simulation.recoil_elements[0].element}"
-                            f" - {measured_element} - fluence: {run.fluence}")
+                            f" - {cut_file_name} - fluence: {run.fluence}")
 
         self.recoil_atoms = RecoilAtomOptimizationWidget(
-            self, element_simulation, target,
-            cancellation_token=cancellation_token)
+            self, element_simulation, target, ct=ct)
         self.pareto_front = RecoilAtomParetoFront(self)
 
         self.recoil_atoms.results_accepted.connect(self.results_accepted.emit)

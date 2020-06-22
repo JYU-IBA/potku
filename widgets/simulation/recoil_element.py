@@ -30,6 +30,9 @@ import platform
 import dialogs.dialog_functions as df
 import widgets.icon_manager as icons
 
+from modules.recoil_element import RecoilElement
+from modules.element_simulation import ElementSimulation
+
 from collections import Counter
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
@@ -47,7 +50,8 @@ class RecoilElementWidget(QtWidgets.QWidget):
     # TODO this class should be refactored together with simulation/element.py
     #   module
     def __init__(self, parent, parent_tab, parent_element_widget,
-                 element_simulation, color, recoil_element, statusbar=None,
+                 element_simulation: ElementSimulation, color,
+                 recoil_element: RecoilElement, statusbar=None,
                  spectra_changed=None, recoil_name_changed=None):
         """
         Initialize the widget.
@@ -132,14 +136,14 @@ class RecoilElementWidget(QtWidgets.QWidget):
                 self.recoil_element.get_full_name())
 
     def plot_spectrum(self, spectra_changed=None):
-        """
-        Plot an energy spectrum and show it in a widget.
+        """Plot an energy spectrum and show it in a widget.
         """
         previous = None
         dialog = EnergySpectrumParamsDialog(
             self.tab,
-            spectrum_type="simulation",
+            spectrum_type=EnergySpectrumWidget.SIMULATION,
             element_simulation=self.element_simulation,
+            simulation=self.tab.obj,
             recoil_widget=self,
             statusbar=self.statusbar)
         if dialog.result_files:
@@ -147,7 +151,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
                 parent=self.tab,
                 use_cuts=dialog.result_files,
                 bin_width=dialog.bin_width,
-                spectrum_type="simulation",
+                spectrum_type=EnergySpectrumWidget.SIMULATION,
                 spectra_changed=spectra_changed)
 
             # Check all energy spectrum widgets, if one has the same
@@ -176,21 +180,15 @@ class RecoilElementWidget(QtWidgets.QWidget):
                                                     update=False)
 
     def remove_recoil(self):
+        """Remove recoil from element simulation.
         """
-        Remove recoil from element simulation.
-        """
-        reply = QtWidgets.QMessageBox.question(self.parent.parent,
-                                               "Confirmation",
-                                               "Deleting selected recoil "
-                                               "element will delete possible "
-                                               "energy spectra data calculated "
-                                               "from it.\n\nAre you sure you "
-                                               "want to delete selected recoil"
-                                               " element anyway?",
-                                               QtWidgets.QMessageBox.Yes |
-                                               QtWidgets.QMessageBox.No |
-                                               QtWidgets.QMessageBox.Cancel,
-                                               QtWidgets.QMessageBox.Cancel)
+        reply = QtWidgets.QMessageBox.question(
+            self.parent.parent, "Confirmation",
+            "Deleting selected recoil element will delete possible energy "
+            "spectra data calculated from it.\n\n"
+            "Are you sure you want to delete selected recoil element anyway?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+            QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
         if reply == QtWidgets.QMessageBox.No or reply == \
                 QtWidgets.QMessageBox.Cancel:
             return  # If clicked Yes, then continue normally

@@ -26,7 +26,6 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä \n Juhani Sundell"
 __version__ = "2.0"
 
-import os
 import threading
 
 import dialogs.dialog_functions as df
@@ -37,6 +36,8 @@ from pathlib import Path
 
 from modules.nsgaii import Nsgaii
 from modules.concurrency import CancellationToken
+from modules.simulation import Simulation
+from modules.enums import OptimizationType
 
 from widgets.binding import PropertySavingWidget
 from widgets.gui_utils import QtABCMeta
@@ -53,14 +54,21 @@ from widgets.simulation.optimization_parameters import \
 
 class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
                          metaclass=QtABCMeta):
-    """
-    TODO
+    """User may either optimize fluence or recoil atom distribution.
+    Optimization is done by comparing simulated spectrum to measured spectrum.
     """
     ch = bnd.bind("histogramTicksDoubleSpinBox")
+    use_efficiency = bnd.bind("eff_file_check_box")
+    selected_cut_file = bnd.bind(
+        "measurementTreeWidget", fget=bnd.get_selected_tree_item,
+        fset=bnd.set_selected_tree_item)
+    selected_element_simulation = bnd.bind(
+        "simulationTreeWidget", fget=bnd.get_selected_tree_item,
+        fset=bnd.set_selected_tree_item)
 
     @property
     def fluence_parameters(self):
-        if self.current_mode != "recoil":
+        if self.current_mode != OptimizationType.RECOIL:
             self._fluence_parameters = self.parameters_widget.get_properties()
         return self._fluence_parameters
 
@@ -70,7 +78,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
 
     @property
     def recoil_parameters(self):
-        if self.current_mode == "recoil":
+        if self.current_mode == OptimizationType.RECOIL:
             self._recoil_parameters = self.parameters_widget.get_properties()
         return self._recoil_parameters
 
@@ -78,13 +86,13 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
     def recoil_parameters(self, value):
         self._recoil_parameters = value
 
-    def __init__(self, simulation, parent):
-        """
-        TODO
+    def __init__(self, simulation: Simulation, parent):
+        """Initializes an OptimizationDialog that displays various optimization
+        parameters.
 
         Args:
-            simulation: TODO
-            parent: TODO
+            simulation: a Simulation object
+            parent: a SimulationTabWidget
         """
         super().__init__()
 
@@ -93,7 +101,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
 
         self._fluence_parameters = {}
         self._recoil_parameters = {}
-        self.current_mode = "recoil"
+        self.current_mode = OptimizationType.RECOIL
 
         uic.loadUi(gutils.get_ui_dir() / "ui_optimization_params.ui", self)
 
@@ -105,8 +113,6 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         locale = QLocale.c()
         self.histogramTicksDoubleSpinBox.setLocale(locale)
 
-        self.element_simulation = None
-        self.selected_cut_file = None
         self.pushButton_OK.setEnabled(False)
 
         self.pushButton_Cancel.clicked.connect(self.close)
@@ -120,98 +126,88 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         self.radios.addButton(self.fluenceRadioButton)
         self.radios.addButton(self.recoilRadioButton)
 
-        self.result_files = []
-        for file in os.listdir(self.tab.obj.directory):
-            if file.endswith(".mcsimu"):
-                name = file.split(".")[0]
-                item = QtWidgets.QTreeWidgetItem()
-                item.setText(0, name)
-                self.simulationTreeWidget.addTopLevelItem(item)
+        gutils.fill_tree(
+            self.simulationTreeWidget.invisibleRootItem(),
+            simulation.element_simulations,
+            text_func=lambda elem_sim: elem_sim.get_full_name())
+
         self.simulationTreeWidget.itemSelectionChanged.connect(
-            lambda: self.change_selected_element_simulation(
-                 self.simulationTreeWidget.currentItem()))
+            self._enable_ok_button)
 
-        # Add calculated tof_list files to tof_list_tree_widget by
-        # measurement under the same sample.
+        self._fill_measurement_widget()
 
-        for sample in self.tab.obj.request.samples.samples:
-            for measurement in sample.measurements.measurements.values():
-                if self.simulation.sample is measurement.sample:
-
-                    all_cuts = []
-
-                    tree_item = QtWidgets.QTreeWidgetItem()
-                    tree_item.setText(0, measurement.name)
-                    tree_item.obj = measurement
-                    tree_item.obj = measurement
-                    self.measurementTreeWidget.addTopLevelItem(tree_item)
-
-                    # TODO make each of these into their own functions under
-                    #      modules package
-                    for file in os.listdir(
-                            measurement.directory_cuts):
-                        if file.endswith(".cut"):
-                            file_name_without_suffix = \
-                                file.rsplit('.', 1)[0]
-                            all_cuts.append(file_name_without_suffix)
-
-                    for file_2 in os.listdir(measurement.get_changes_dir()):
-                        if file_2.endswith(".cut"):
-                            file_name_without_suffix = \
-                                file_2.rsplit('.', 1)[0]
-                            all_cuts.append(file_name_without_suffix)
-
-                    all_cuts.sort()
-
-                    for cut in all_cuts:
-                        item = QtWidgets.QTreeWidgetItem()
-                        item.setText(0, cut)
-                        tree_item.addChild(item)
-                        tree_item.setExpanded(True)
         self.measurementTreeWidget.itemSelectionChanged.connect(
-            lambda: self.change_selected_cut_file(
-                self.measurementTreeWidget.currentItem()))
+            self._enable_ok_button)
+
+        self.eff_file_check_box.clicked.connect(self._enable_efficiency_label)
+        self._update_efficiency_label()
 
         self.exec_()
+
+    def closeEvent(self, event):
+        """Overrides the QDialogs closeEvent. Saves current parameters to
+        file so they shown next time the dialog is opened.
+        """
+        params = self.get_properties()
+        # Remove non-serializable values
+        params.pop("selected_element_simulation")
+        params.pop("selected_cut_file")
+        self.save_properties_to_file(values=params)
+        QtWidgets.QDialog.closeEvent(self, event)
+
+    def _update_efficiency_label(self):
+        """Updates the text of efficiency label.
+        """
+        self.efficiency_label.setText(
+            df.get_multi_efficiency_text(
+                self.measurementTreeWidget,
+                self.simulation.sample.get_measurements(),
+                data_func=lambda tpl: tpl[0]))
+
+    def _enable_efficiency_label(self):
+        """Enables or disables efficiency label.
+        """
+        self.efficiency_label.setEnabled(self.use_efficiency)
+
+    def _fill_measurement_widget(self):
+        """Add calculated tof_list files to tof_list_tree_widget by
+        measurement under the same sample.
+        """
+        for sample in self.simulation.request.samples.samples:
+            for measurement in sample.measurements.measurements.values():
+                if self.simulation.sample is measurement.sample:
+                    root = QtWidgets.QTreeWidgetItem()
+                    root.setText(0, measurement.name)
+                    self.measurementTreeWidget.addTopLevelItem(root)
+                    cuts, elem_losses = measurement.get_cut_files()
+                    gutils.fill_tree(
+                        root, cuts, data_func=lambda c: (c, measurement),
+                        text_func=lambda c: c.name
+                    )
+                    loss_node = QtWidgets.QTreeWidgetItem(["Element losses"])
+                    gutils.fill_tree(
+                        loss_node, elem_losses,
+                        data_func=lambda c: (c, measurement),
+                        text_func=lambda c: c.name
+                    )
+                    root.addChild(loss_node)
+                    root.setExpanded(True)
 
     def get_property_file_path(self):
         """Returns absolute path to the file that is used for saving and
         loading parameters.
         """
-        return Path(self.simulation.directory,
-                    ".parameters",
-                    ".optimization_parameters")
+        return Path(
+            self.simulation.directory, ".parameters",
+            ".optimization_parameters")
 
-    def change_selected_cut_file(self, item):
+    def _enable_ok_button(self, *_):
+        """Enables OK button if both ElementSimulation and cut file have been
+        selected.
         """
-        Update the selected cut file.
-
-        Args:
-            item: Selected TreeWidgetItem.
-        """
-        # Make sure that a cut file has been selected
-        if "." in item.text(0):
-            self.selected_cut_file = item.text(0)
-            if self.element_simulation:
-                self.pushButton_OK.setEnabled(True)
-        else:
-            self.selected_cut_file = None
-            self.pushButton_OK.setEnabled(False)
-
-    def change_selected_element_simulation(self, item):
-        """
-        Update the selected element simulation.
-
-        Args:
-            item: Selected TreeWidgetItem.
-        """
-        item_text = item.text(0)
-        for element_simulation in self.simulation.element_simulations:
-            if element_simulation.get_full_name() == item_text:
-                self.element_simulation = element_simulation
-                if self.selected_cut_file:
-                    self.pushButton_OK.setEnabled(True)
-                break
+        self.pushButton_OK.setEnabled(
+            self.selected_cut_file is not None and
+            self.selected_element_simulation is not None)
 
     def choose_optimization_mode(self, button, checked):
         """
@@ -242,10 +238,11 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
                 self.parametersLayout.addWidget(self.parameters_widget)
 
     def start_optimization(self):
-        """
-        Find necessary cut file and make energy spectrum with it, and start
+        """Find necessary cut file and make energy spectrum with it, and start
         optimization with given parameters.
         """
+        elem_sim = self.selected_element_simulation
+        cut, measurement = self.selected_cut_file
         # Delete previous results widget if it exists
         if self.tab.optimization_result_widget:
             self.tab.del_widget(
@@ -253,44 +250,15 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             self.tab.optimization_result_widget = None
 
             # Delete previous energy spectra if there are any
-            # TODO remove if check
-            if self.element_simulation.optimization_recoils:
-                # Delete energy spectra that use optimized recoils
-                df.delete_optim_espe(self, self.element_simulation)
-            self.element_simulation.optimization_recoils = []
-        self.close()
-        root_for_cut_files = self.measurementTreeWidget.invisibleRootItem()
+            df.delete_optim_espe(self, elem_sim)
 
-        cut_file = None
-        item_text = None
-        used_measurement = None
-        cut_file_found = False
-        i = 0
-        while not cut_file_found:
-            measurement_item = root_for_cut_files.child(i)
-            mes_child_count = measurement_item.childCount()
-            for j in range(mes_child_count):
-                item = measurement_item.child(j)
-                if item.text(0) == self.selected_cut_file:
-                    item_text = item.text(0)
-                    used_measurement = item.parent().obj
-                    # Calculate energy spectra for cut
-                    if len(item.text(0).split('.')) < 5:
-                        # Normal cut
-                        cut_file = Path(used_measurement.directory_cuts,
-                                        item.text(0) + ".cut")
-                    else:
-                        cut_file = Path(
-                            used_measurement.get_changes_dir(),
-                            f"{item.text(0)}.cut")
-                    cut_file_found = True
-                    break
-            i += 1
+        self.close()
 
         # TODO move following code to the result widget
-        nsgaii = Nsgaii(element_simulation=self.element_simulation,
-                        measurement=used_measurement, cut_file=cut_file,
-                        ch=self.ch, **self.parameters_widget.get_properties())
+        nsgaii = Nsgaii(
+            element_simulation=elem_sim, measurement=measurement, cut_file=cut,
+            ch=self.ch, **self.parameters_widget.get_properties(),
+            use_efficiency=self.use_efficiency)
 
         # Optimization running thread
         ct = CancellationToken()
@@ -298,13 +266,10 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             target=nsgaii.start_optimization, kwargs={"cancellation_token": ct})
 
         # Create necessary results widget
-        mode_recoil = self.current_mode == "recoil"
-
         result_widget = self.tab.add_optimization_results_widget(
-            self.element_simulation, item_text, mode_recoil,
-            cancellation_token=ct)
+            elem_sim, cut.name, self.current_mode, ct=ct)
 
-        self.element_simulation.optimization_widget = result_widget
+        elem_sim.optimization_widget = result_widget
         nsgaii.subscribe(result_widget)
 
         optimization_thread.daemon = True

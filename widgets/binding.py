@@ -24,10 +24,19 @@ along with this program (file named 'LICENCE').
 __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
-import os
 import abc
 import json
 import time
+
+from typing import Any
+from typing import Iterable
+from typing import Optional
+from typing import Set
+from typing import Tuple
+from typing import List
+from typing import Dict
+from typing import Callable
+from pathlib import Path
 
 from widgets.scientific_spinbox import ScientificSpinBox
 from widgets.isotope_selection import IsotopeSelectionWidget
@@ -35,6 +44,9 @@ from widgets.isotope_selection import IsotopeSelectionWidget
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5.QtCore import QTime
+from PyQt5.QtWidgets import QTreeWidgetItemIterator
+from PyQt5.QtWidgets import QTreeWidgetItem
+from PyQt5.QtWidgets import QTreeWidget
 
 
 def from_qtime(qtime: QTime) -> int:
@@ -50,7 +62,7 @@ def to_qtime(seconds: int) -> QTime:
     return t
 
 
-def unix_time_to_label(instance, attr: str, unix_time: float):
+def unix_time_to_label(instance: Any, attr: str, unix_time: float):
     """Sets the text of a label to a formatted string representations
     of the given unix time. Unix time is also stored as an attribute of
     the label so it can be later retrieved.
@@ -60,7 +72,9 @@ def unix_time_to_label(instance, attr: str, unix_time: float):
     label.setText(time.strftime("%c %z %Z", time.localtime(unix_time)))
 
 
-def unix_time_from_label(instance, attr: str) -> float:
+def unix_time_from_label(instance: Any, attr: str) -> float:
+    """Returns the unix time from a label.
+    """
     label = getattr(instance, attr)
     try:
         return label.unix_time
@@ -77,7 +91,7 @@ def get_items(list_widget: QtWidgets.QListWidget):
     ]
 
 
-def set_items(list_widget: QtWidgets.QListWidget, ls):
+def set_items(list_widget: QtWidgets.QListWidget, ls: Iterable[Any]):
     """Sets the items in a QListWidget.
     """
     list_widget.clear()
@@ -87,7 +101,7 @@ def set_items(list_widget: QtWidgets.QListWidget, ls):
         list_widget.addItem(item)
 
 
-def set_selected_combobox_item(combobox: QtWidgets.QComboBox, data):
+def set_selected_combobox_item(combobox: QtWidgets.QComboBox, data: Any):
     """Sets the current item in a combobox depending on the given
     data.
     """
@@ -96,7 +110,7 @@ def set_selected_combobox_item(combobox: QtWidgets.QComboBox, data):
         combobox.setCurrentIndex(idx)
 
 
-def get_btn_group_value(button_group: QtWidgets.QButtonGroup):
+def get_btn_group_value(button_group: QtWidgets.QButtonGroup) -> Optional[Any]:
     """Retuns the value of data_item attribute of the selected button.
     """
     try:
@@ -105,13 +119,101 @@ def get_btn_group_value(button_group: QtWidgets.QButtonGroup):
         return None
 
 
-def set_btn_group_value(button_group: QtWidgets.QButtonGroup, value):
+def set_btn_group_value(button_group: QtWidgets.QButtonGroup, value: Any):
     """Checks the button whose data_item matches the value.
     """
     for btn in button_group.buttons():
         if btn.data_item == value:
             btn.setChecked(True)
             break
+
+
+def set_checked_tree_items(tree: QTreeWidget, checked: Set[Any],
+                           column: int = 0):
+    """Sets checked those tree items whose data attribute is in the given set
+    values.
+    """
+    for item, data in tree_iterator(tree, column):
+        if data in checked:
+            item.setCheckState(column, QtCore.Qt.Checked)
+        else:
+            item.setCheckState(column, QtCore.Qt.Unchecked)
+
+
+def set_selected_tree_items(tree: QTreeWidget, selected: Set[Any],
+                            column: int = 0):
+    """Sets selected those tree items whose data attribute is in the given set
+    values.
+    """
+    for item, data in tree_iterator(tree, column):
+        item.setSelected(data in selected)
+
+
+def get_checked_tree_items(tree: QTreeWidget, column: int = 0) -> List[Any]:
+    """Returns the data attribute of all checked items in a QTreeWidget.
+    """
+    return get_tree_items(
+        tree, column=column, flag=QTreeWidgetItemIterator.Checked)
+
+
+def get_selected_tree_items(tree: QTreeWidget, column: int = 0) -> List[Any]:
+    """Returns the data attribute of all selected items in a QTreeWidget.
+    """
+    return get_tree_items(
+        tree, column=column, flag=QTreeWidgetItemIterator.Selected)
+
+
+def get_tree_items(tree: QTreeWidget, column: int = 0,
+                   flag=QTreeWidgetItemIterator.All):
+    """Returns the data attribute of all items in a QTreeWidget that match
+    given flag.
+    """
+    return [
+        data for _, data in tree_iterator(tree, column, flag)
+    ]
+
+
+def get_selected_tree_item(instance: Any, attr: str,
+                           use_checkboxes=False) -> Optional[Any]:
+    """Returns single selected item from a QTreeWidget or None if no
+    selection has been made.
+    """
+    if use_checkboxes:
+        func = get_checked_tree_items
+    else:
+        func = get_selected_tree_items
+
+    items = func(getattr(instance, attr))
+    if items:
+        return items[0]
+    return None
+
+
+def set_selected_tree_item(instance: Any, attr: str, value: Any,
+                           use_checkboxes=False):
+    """Sets a single item selected in a QTreeWidget.
+    """
+    if use_checkboxes:
+        func = set_checked_tree_items
+    else:
+        func = set_selected_tree_items
+
+    func(getattr(instance, attr), {value})
+
+
+def tree_iterator(tree: QTreeWidget, column=0,
+                  flag=QTreeWidgetItemIterator.All) -> \
+        Iterable[Tuple[QTreeWidgetItem, Any]]:
+    """Yields tuples that consist of a QTreeWidgetItem and the value of the
+    QTreeWidgetItem's data attribute.
+    """
+    it = QTreeWidgetItemIterator(tree, flag)
+    while it.value():
+        item = it.value()
+        data = item.data(column, QtCore.Qt.UserRole)
+        if data is not None:
+            yield item, data
+        it += 1
 
 
 # Collections of default getter and setter methods for various QObjects.
@@ -129,7 +231,8 @@ _DEFAULT_GETTERS = {
     IsotopeSelectionWidget: lambda qobj: qobj.get_element(),
     QtWidgets.QListWidget: get_items,
     QtWidgets.QGroupBox: lambda qobj: qobj.title(),
-    QtWidgets.QButtonGroup: get_btn_group_value
+    QtWidgets.QButtonGroup: get_btn_group_value,
+    QtWidgets.QTreeWidget: get_checked_tree_items
 }
 
 _DEFAULT_SETTERS = {
@@ -145,11 +248,12 @@ _DEFAULT_SETTERS = {
     IsotopeSelectionWidget: lambda qobj, elem: qobj.set_element(elem),
     QtWidgets.QListWidget: set_items,
     QtWidgets.QGroupBox: lambda qobj, txt: qobj.setTitle(txt),
-    QtWidgets.QButtonGroup: set_btn_group_value
+    QtWidgets.QButtonGroup: set_btn_group_value,
+    QtWidgets.QTreeWidget: set_checked_tree_items
 }
 
 
-def _fget(instance, qobj_name):
+def _fget(instance: Any, qobj_name: str) -> Any:
     """Returns the value of a QObject.
 
     Args:
@@ -164,7 +268,7 @@ def _fget(instance, qobj_name):
     return getter(qobj)
 
 
-def _fset(instance, qobj_name, value):
+def _fset(instance: Any, qobj_name: str, value: Any):
     """Sets the value of a QObject.
 
     Args:
@@ -221,7 +325,7 @@ class PropertyBindingWidget(abc.ABC):
                     if _DEBUB_MODE:
                         raise
 
-    def get_properties(self):
+    def get_properties(self) -> Dict[str, Any]:
         """Returns property names and their values as a dictionary.
 
         Return:
@@ -269,10 +373,9 @@ class PropertySavingWidget(PropertyBindingWidget, abc.ABC):
 
     Property values must be JSON encodable.
     """
-    # TODO maybe do loading in showEvent function
 
     @abc.abstractmethod
-    def get_property_file_path(self):
+    def get_property_file_path(self) -> Path:
         """Returns Path object to the file that is used to save and load
         properties.
         """
@@ -285,25 +388,28 @@ class PropertySavingWidget(PropertyBindingWidget, abc.ABC):
         self.save_properties_to_file(file_path=self.get_property_file_path())
         event.accept()
 
-    def save_properties_to_file(self, file_path=None):
+    def save_properties_to_file(self, file_path: Optional[Path] = None,
+                                values: Optional[Dict[str, Any]] = None):
         """Saves properties to a file.
 
         Args:
             file_path: Path object to a file that is used for saving. If None,
                 widget's default property file location is used.
+            values: values to save to file. If None, default values are saved.
         """
         if file_path is None:
             file_path = self.get_property_file_path()
 
-        os.makedirs(file_path.parent, exist_ok=True)
-        params = self.get_properties()
+        if values is None:
+            values = self.get_properties()
         try:
-            with open(file_path, "w") as file:
-                json.dump(params, file, indent=4)
-        except (PermissionError, IsADirectoryError):
+            file_path.parent.mkdir(exist_ok=True, parents=True)
+            with file_path.open("w") as file:
+                json.dump(values, file, indent=4)
+        except OSError:
             pass
 
-    def load_properties_from_file(self, file_path=None):
+    def load_properties_from_file(self, file_path: Optional[Path] = None):
         """Loads properties from a file.
 
         Args:
@@ -313,13 +419,11 @@ class PropertySavingWidget(PropertyBindingWidget, abc.ABC):
         if file_path is None:
             file_path = self.get_property_file_path()
         try:
-            with open(file_path) as file:
+            with file_path.open("r") as file:
                 params = json.load(file)
-        except (OSError, json.JSONDecodeError, UnicodeDecodeError,
-                IsADirectoryError):
-            return
-
-        self.set_properties(**params)
+                self.set_properties(**params)
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError,):
+            pass
 
 
 class TrackingProperty(property):
@@ -328,6 +432,9 @@ class TrackingProperty(property):
 
     If TrackingProperty is used in another kind of object, it behaves like
     a normal property.
+
+    If TrackingProperty is bound to a GUI element, caller should ensure that its
+    value is set in the main thread.
     """
     # Note: the reason why original value is stored in the widget instead of
     # the property, is because the property is a class attribute and therefore
@@ -335,39 +442,37 @@ class TrackingProperty(property):
     # Alternatively, the property could store the original values and a weak
     # reference to every instance in a dictionary.
 
-    def __init__(self, *args, attr_name=None, **kwargs):
+    def __init__(self, *args, attr: Optional[str] = None, **kwargs):
         """Initializes a TrackingProperty.
 
         Args:
             args: arguments passed down to property constructor.
             kwargs: keyword arguments passed down to property constructor.
-            attr_name: name of the attribute that the property is bound to. If
+            attr: name of the attribute that the property is bound to. If
                 value is None, the value of the property is not tracked and
                 TrackingProperty behaves like a normal property.
         """
         super().__init__(*args, **kwargs)
-        self.__prop_name = attr_name
+        self._attr_name = attr
 
-    def __set__(self, instance, value):
+    def __set__(self, instance: Any, value: Any):
         """Sets the value of the property.
 
         Args:
             instance: object that holds a reference to the property.
             value: new value of the property.
         """
-        # TODO consider using a pyQtSignal when setting values of QObjects
-        #   to ensure that GUI is updated in the main thread.
         self.fset(instance, value)
-        if self.__prop_name is not None and \
+        if self._attr_name is not None and \
                 isinstance(instance, PropertyTrackingWidget):
             # Only PropertyTrackingWidget can store original values.
 
             orig_props = instance.get_original_property_values()
-            if self.__prop_name not in orig_props:
+            if self._attr_name not in orig_props:
                 # If the property has not yet been stored, store it now.
-                orig_props[self.__prop_name] = self.fget(instance)
+                orig_props[self._attr_name] = self.fget(instance)
 
-    def is_value_changed(self, instance):
+    def is_value_changed(self, instance: Any) -> bool:
         """Checks if the current value of the property differs from the original
         one.
 
@@ -379,24 +484,25 @@ class TrackingProperty(property):
         Return:
             boolean.
         """
-        if self.__prop_name is not None and \
+        if self._attr_name is not None and \
                 isinstance(instance, PropertyTrackingWidget):
             cur_value = self.fget(instance)
             orig_props = instance.get_original_property_values()
-            orig_value = orig_props.get(self.__prop_name, cur_value)
+            orig_value = orig_props.get(self._attr_name, cur_value)
             return cur_value != orig_value
         return False
 
 
-def bind(attr_name, fget=None, fset=None, twoway=True,
-         track_change=False):
+def bind(attr: str, fget: Optional[Callable] = None,
+         fset: Optional[Callable] = None, twoway: bool = True,
+         track_change: bool = False) -> TrackingProperty:
     """Returns a property that is bound to an attribute.
 
-    Mostly used to bind a QObject value to a property, but other attributes
+    Mostly used to bind a QWidget's value to a property, but other attributes
     can be used as well if custom getter and setter are defined.
 
     Args:
-        attr_name: name of an attribute that the property will be bound to
+        attr: name of an attribute that the property will be bound to
         fget: getter function for the property. If None, a default getter
             function is used depending on the type of QObject that the attr_name
             references. Functions should have the signature:
@@ -415,8 +521,8 @@ def bind(attr_name, fget=None, fset=None, twoway=True,
     """
     def getter(instance):
         if fget is None:
-            return _fget(instance, attr_name)
-        return fget(instance, attr_name)
+            return _fget(instance, attr)
+        return fget(instance, attr)
 
     if not twoway:
         return TrackingProperty(getter)
@@ -424,9 +530,9 @@ def bind(attr_name, fget=None, fset=None, twoway=True,
     def setter(instance, value):
         try:
             if fset is None:
-                _fset(instance, attr_name, value)
+                _fset(instance, attr, value)
             else:
-                fset(instance, attr_name, value)
+                fset(instance, attr, value)
         except TypeError:
             # value is wrong type, nothing to do
             pass
@@ -434,11 +540,11 @@ def bind(attr_name, fget=None, fset=None, twoway=True,
     if not track_change:
         # If changes in property names do not need to be tracked, pass the
         # name as None for the TrackingProperty
-        prop_name_ = None
+        prop_attr = None
     else:
-        prop_name_ = attr_name
+        prop_attr = attr
 
-    return TrackingProperty(getter, setter, attr_name=prop_name_)
+    return TrackingProperty(getter, setter, attr=prop_attr)
 
 
 def multi_bind(attrs, fget=None, fset=None, twoway=True, track_change=False):
@@ -471,6 +577,6 @@ def multi_bind(attrs, fget=None, fset=None, twoway=True, track_change=False):
     else:
         attrs_ = None
 
-    return TrackingProperty(getter, setter, attr_name=attrs_)
+    return TrackingProperty(getter, setter, attr=attrs_)
 
 

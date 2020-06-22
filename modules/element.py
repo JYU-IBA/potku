@@ -85,7 +85,9 @@ class Element(MCERDParameterContainer):
             #           - redo cuts by saving them
             #           - create a composition change graph or energy spectra
             #           - crashes here because of an empty string
-            raise ValueError("Incorrect string given.")
+            raise ValueError(
+                f"Could not intialize an Element from the given "
+                f"string: {element_str}")
 
     def __str__(self):
         """Transform element into string.

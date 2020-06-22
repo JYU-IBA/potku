@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,16 +28,21 @@ __version__ = "2.0"
 
 import os
 import itertools
+import modules.general_functions as gf
+
 from collections import namedtuple, defaultdict
 from typing import Union
+from typing import Iterable
 from pathlib import Path
 
 import widgets.gui_utils as gutils
+import widgets.binding as bnd
 
 from modules.base import ElementSimulationContainer
 from modules.detector import Detector
 from modules.measurement import Measurement
 from modules.simulation import Simulation
+from modules.element_simulation import ElementSimulation
 
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui
@@ -81,7 +86,7 @@ def _update_cuts(old_cut_files, directory):
 
     Args:
         old_cut_files: list of absolute paths to .cut files. List is modified
-                       in place.
+            in place.
         directory: current directory that contains the .cut files
     """
     for file in os.listdir(directory):
@@ -98,50 +103,55 @@ def _update_cuts(old_cut_files, directory):
                 old_cut_files[i] = Path(directory, file)
 
 
-def update_used_eff_file_label(qdialog, efficiency_files):
-    """Updates the used efficiency file label of a qdialog
+def get_efficiency_text(tree: QtWidgets.QTreeWidget,
+                        detector: Detector,
+                        data_func=lambda x: x) -> str:
+    """Returns a string representation of used efficiency files.
 
     Args:
-        qdialog: qdialog whose label will be updated
-        efficiency_files: list of efficiency files
+        tree: QTreeWidget that hosts a collection of .cut files
+        detector: detector that has the efficiency files to be matched to
+            .cut files.
+        data_func: optional function that determines how .cut files can be
+            obtained from the tree
+
+    Return
+        string
     """
-    eff_files_used = set()
-    root = qdialog.treeWidget.invisibleRootItem()
-    child_count = root.childCount()
-
-    eff_elems = {
-        Detector.get_used_efficiency_file_name(eff_file).stem: eff_file
-        for eff_file in efficiency_files
-    }
-
-    for i in range(child_count):
-        item = root.child(i)
-
-        if not hasattr(item, "file_name"):
-            continue
-
-        # TODO check for RBS selection too
-        cut_element_str = item.file_name.split(".")[1]
-
-        if cut_element_str in eff_elems:
-            eff_files_used.add(eff_elems[cut_element_str])
+    cuts = (data_func(data) for _, data in bnd.tree_iterator(tree))
+    eff_files_used = detector.get_matching_efficiency_files(cuts)
 
     if eff_files_used:
         eff_file_txt = "\t\n".join(str(f) for f in eff_files_used)
-        qdialog.label_efficiency_files.setText(
-           f"Efficiency files used:\t\n{eff_file_txt}")
-    else:
-        qdialog.label_efficiency_files.setText("No efficiency files.")
+        return f"Efficiency files used:\t\n{eff_file_txt}"
+
+    return "No efficiency files."
 
 
-def delete_optim_espe(qdialog, elem_sim):
+def get_multi_efficiency_text(tree: QtWidgets.QTreeWidget, measurements: Iterable[
+              Measurement], data_func=lambda x: x) -> str:
+    used_detectors = {}
+    label_txt = ""
+    for m in measurements:
+        detector = m.get_detector_or_default()
+        if detector in used_detectors:
+            eff_txt = used_detectors[detector]
+        else:
+            eff_txt = gf.lower_case_first(get_efficiency_text(
+                tree, detector, data_func=data_func))
+            used_detectors[detector] = eff_txt
+        label_txt += f"{m.name} – {eff_txt}\n"
+    return label_txt
+
+
+def delete_optim_espe(qdialog, elem_sim: ElementSimulation):
     """Deletes energy spectra from optimized recoils"""
     # TODO refactor this wit delete_simu_espe
     for opt_rec in elem_sim.optimization_recoils:
         delete_recoil_espe(qdialog.tab, opt_rec.get_full_name())
 
 
-def delete_recoil_espe(tab, recoil_name):
+def delete_recoil_espe(tab, recoil_name: str):
     """Deletes recoil's energy spectra.
     """
     for energy_spectra in tab.energy_spectrum_widgets:
@@ -153,9 +163,10 @@ def delete_recoil_espe(tab, recoil_name):
                     tab.energy_spectrum_widgets.remove(energy_spectra)
                     save_file_path = Path(tab.simulation.directory,
                                           energy_spectra.save_file)
-                    if save_file_path.exists():
-                        os.remove(save_file_path)
-                    # TODO check if more files need to be deleted
+                    try:
+                        save_file_path.unlink()
+                    except OSError:
+                        pass
                     break
 
 
@@ -306,20 +317,20 @@ def _get_confirmation(qdialog, msg="settings", **kwargs):
     return msg_box.exec_() == QtWidgets.QMessageBox.Yes
 
 
-def _element_simulations_to_list(finished_simulations,
-                                 running_simulations,
-                                 finished_optimizations,
-                                 running_optimizations):
+def _element_simulations_to_list(
+        finished_simulations: Iterable[ElementSimulation],
+        running_simulations: Iterable[ElementSimulation],
+        finished_optimizations: Iterable[ElementSimulation],
+        running_optimizations: Iterable[ElementSimulation]) -> str:
     """Formulates the given lists of ElementSimulations into a roughly csv
     formatted string.
     """
     # Transform the lists into a nested dictionary to avoid duplicates
     # TODO simplify this
     d = defaultdict(lambda: defaultdict(dict))
-    for elem_sim in itertools.chain(finished_simulations,
-                                    running_simulations,
-                                    finished_optimizations,
-                                    running_optimizations):
+    for elem_sim in itertools.chain(
+            finished_simulations, running_simulations, finished_optimizations,
+            running_optimizations):
         d[elem_sim.simulation.sample.name][elem_sim.simulation.name][
             elem_sim.main_recoil.get_full_name()] = \
             elem_sim.is_optimization_running() or \

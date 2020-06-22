@@ -158,11 +158,12 @@ def find_files_by_extension(directory: Path, *exts) -> Dict[str, List[Path]]:
     search_dict = {
         ext: [] for ext in exts
     }
-    for entry in os.scandir(directory):
-        path = Path(entry.path)
-        suffix = path.suffix
-        if suffix in search_dict and path.is_file():
-            search_dict[suffix].append(path)
+    with os.scandir(directory) as scdir:
+        for entry in scdir:
+            path = Path(entry.path)
+            suffix = path.suffix
+            if suffix in search_dict and path.is_file():
+                search_dict[suffix].append(path)
     return search_dict
 
 
@@ -418,6 +419,10 @@ def to_superscript(string):
     return "".join(sups.get(char, char) for char in string)
 
 
+def lower_case_first(s: str) -> str:
+    return s[0].lower() + s[1:] if s else ""
+
+
 def find_y_on_line(point1, point2, x):
     """
     Find the y(x) based on a line that goes through point1 and 2.
@@ -605,9 +610,15 @@ def get_data_dir() -> Path:
     return _get_external_dir() / "share"
 
 
+# When running Potku as a bundle created by PyInstaller, the absolute path
+# to root folder is stored as the value of sys._MEIPASS attribute:
+# https://pyinstaller.readthedocs.io/en/stable/runtime-information.html?
+#   highlight=bundle
+# TODO is this only needed in macOS app?
 _ROOT_DIR = Path(
     getattr(sys, "_MEIPASS", Path(__file__).parent.parent)
 ).resolve()
+
 
 def get_root_dir() -> Path:
     """Returns the absolute path to Potku's root directory.

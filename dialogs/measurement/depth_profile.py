@@ -60,6 +60,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
     """
     Dialog for making a depth profile.
     """
+    # TODO replace these global variables with PropertySavingWidget
     checked_cuts = {}
     x_unit = "1e15 at./cm²"     # TODO make this an enum
     line_zero = False
@@ -67,10 +68,11 @@ class DepthProfileDialog(QtWidgets.QDialog):
     systerr = 0.0
 
     status_msg = bnd.bind("label_status")
+    used_cuts = bnd.bind("treeWidget")
     
     def __init__(self, parent: BaseTab, measurement: Measurement,
                  global_settings: GlobalSettings, statusbar:
-                 QtWidgets.QStatusBar = None):
+                 Optional[QtWidgets.QStatusBar] = None):
         """Inits depth profile dialog.
         
         Args:
@@ -104,11 +106,12 @@ class DepthProfileDialog(QtWidgets.QDialog):
 
         m_name = self.measurement.name
         if m_name not in DepthProfileDialog.checked_cuts:
-            DepthProfileDialog.checked_cuts[m_name] = []
+            DepthProfileDialog.checked_cuts[m_name] = set()
 
         gutils.fill_cuts_treewidget(
-            self.measurement, self.treeWidget, True,
-            DepthProfileDialog.checked_cuts[m_name])
+            self.measurement, self.treeWidget.invisibleRootItem(),
+            use_elemloss=True)
+        self.used_cuts = DepthProfileDialog.checked_cuts[m_name]
         
         x_unit = DepthProfileDialog.x_unit
         radio_buttons = self.findChildren(QtWidgets.QRadioButton)
@@ -138,43 +141,21 @@ class DepthProfileDialog(QtWidgets.QDialog):
         """
         self.status_msg = ""
         sbh = StatusBarHandler(self.statusbar)
+        sbh.reporter.report(10)
 
         try:
-            use_cut = []
             output_dir = self.measurement.get_depth_profile_dir()
-            elements = []
-
-            sbh.reporter.report(10)
             
             # Get the filepaths of the selected items
-            root = self.treeWidget.invisibleRootItem()
-            child_count = root.childCount()
-            m_name = self.measurement.name
-            DepthProfileDialog.checked_cuts[m_name].clear()
-            for i in range(child_count): 
-                item = root.child(i)
-                if item.checkState(0):
-                    use_cut.append(Path(item.directory, item.file_name))
-                    element = Element.from_string(item.file_name.split(".")[1])
-                    elements.append(element)
-                    DepthProfileDialog.checked_cuts[m_name].append(
-                        item.file_name)
-                child_count_2 = item.childCount()
-                if child_count_2 > 0:  # Elemental Losses
-                    for j in range(child_count_2):
-                        item_child = item.child(j)
-                        if item_child.checkState(0):
-                            name = item_child.file_name
-                            dir_e = self.measurement.get_changes_dir()
-                            use_cut.append(Path(dir_e, name))
-                            element = Element.from_string(
-                                item_child.file_name.split(".")[1])
-                            elements.append(element)
-                            DepthProfileDialog.checked_cuts[m_name].\
-                                append(item_child.file_name)
+            used_cuts = self.used_cuts
+            DepthProfileDialog.checked_cuts[self.measurement.name] = \
+                set(used_cuts)
+            # TODO could take care of RBS selection here
+            elements = [
+                Element.from_string(fp.name.split(".")[1])
+                for fp in used_cuts
+            ]
 
-            sbh.reporter.report(20)
-            
             # Get the x-axis unit to be used from the radio buttons
             x_unit = DepthProfileDialog.x_unit
             radio_buttons = self.findChildren(QtWidgets.QRadioButton)
@@ -182,15 +163,15 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 if radio_button.isChecked():
                     x_unit = radio_button.text()
             DepthProfileDialog.x_unit = x_unit
-
-            sbh.reporter.report(30)
             
             DepthProfileDialog.line_zero = self.check_0line.isChecked()
             DepthProfileDialog.line_scale = self.check_scaleline.isChecked()
             DepthProfileDialog.systerr = self.spin_systerr.value()
-            
+
+            sbh.reporter.report(20)
+
             # If items are selected, proceed to generating the depth profile
-            if use_cut:
+            if used_cuts:
                 self.status_msg = "Please wait. Creating depth profile."
                 if self.parent.depth_profile_widget:
                     self.parent.del_widget(self.parent.depth_profile_widget)
@@ -204,7 +185,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                         self.measurement.to_file()
                 
                 self.parent.depth_profile_widget = DepthProfileWidget(
-                    self.parent, output_dir, use_cut, elements, x_unit,
+                    self.parent, output_dir, used_cuts, elements, x_unit,
                     DepthProfileDialog.line_zero, DepthProfileDialog.line_scale,
                     DepthProfileDialog.systerr,
                     progress=sbh.reporter.get_sub_reporter(
@@ -213,10 +194,10 @@ class DepthProfileDialog(QtWidgets.QDialog):
 
                 sbh.reporter.report(90)
                 
-                icon = self.parent.icon_manager.\
-                    get_icon("depth_profile_icon_2_16.png")
-                self.parent.add_widget(self.parent.depth_profile_widget,
-                                       icon=icon)
+                icon = self.parent.icon_manager.get_icon(
+                    "depth_profile_icon_2_16.png")
+                self.parent.add_widget(
+                    self.parent.depth_profile_widget, icon=icon)
                 self.close()
             else:
                 self.status_msg = "Please select .cut file[s] to create " \
@@ -272,8 +253,8 @@ class DepthProfileDialog(QtWidgets.QDialog):
         """Update efficiency files to UI which are used.
         """
         detector = self.measurement.get_detector_or_default()
-        eff_files = detector.get_efficiency_files()
-        df.update_used_eff_file_label(self, eff_files)
+        self.label_efficiency_files.setText(
+            df.get_efficiency_text(self.treeWidget, detector))
 
     def __show_important_settings(self):
         """Show some important setting values in the depth profile parameter

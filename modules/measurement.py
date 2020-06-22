@@ -41,6 +41,8 @@ import time
 from pathlib import Path
 from collections import namedtuple
 from typing import Optional
+from typing import List
+from typing import Tuple
 
 from . import general_functions as gf
 from .cut_file import CutFile
@@ -1050,17 +1052,22 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         directory_changes = self.get_changes_dir()
         gf.remove_matching_files(directory_changes, exts={".cut"})
 
-    def get_cut_files(self):
+    @staticmethod
+    def _get_cut_files(directory: Path) -> List[Path]:
+        try:
+            return gf.find_files_by_extension(directory, ".cut")[".cut"]
+        except OSError:
+            return []
+
+    def get_cut_files(self) -> Tuple[List[Path], List[Path]]:
         """Get cut files from a measurement.
         
         Return:
             Returns a list of cut files in measurement.
         """
-        cuts = [f for f in os.listdir(Path(self.directory, self.directory_cuts))
-                if os.path.isfile(Path(self.directory, self.directory_cuts, f))]
-        elemloss = [f for f in os.listdir(self.get_changes_dir())
-                    if os.path.isfile(Path(self.get_changes_dir(), f))]
-        return cuts, elemloss
+        cuts = self._get_cut_files(self.directory_cuts)
+        elem_losses = self._get_cut_files(self.get_changes_dir())
+        return cuts, elem_losses
 
     def load_selection(self, filename, progress=None):
         """Load selections from a file_path.
@@ -1111,9 +1118,6 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         tof_in_file.parent.mkdir(exist_ok=True)
 
         # Get settings
-        # TODO self.detector and other stuff should never be None. Instead,
-        #   we should check whether measurement settings are being used and
-        #   then select the correct detector
         detector, run, target, measurement = self._get_used_settings()
         global_settings = self.request.global_settings
 
