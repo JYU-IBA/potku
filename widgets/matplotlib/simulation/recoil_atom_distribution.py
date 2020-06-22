@@ -427,11 +427,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """Inits recoil atom distribution widget.
 
         Args:
-            parent: A TargetWidget class object.
-            simulation: A simulation object.
-            target: A Target object.
-            tab: TODO
-            icon_manager: An IconManager class object.
+            parent: a TargetWidget class object.
+            simulation: a Simulation object.
+            target: a Target object.
+            tab: a SimulationTabWidget
+            icon_manager: an IconManager class object.
         """
         # TODO change the button text when full edit is on (or use radio btns)
         super().__init__(parent)
@@ -598,6 +598,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if self.current_element_simulation is not None:
             return self.current_element_simulation.get_main_recoil()
         return None
+
+    def is_main_recoil_selected(self) -> bool:
+        """Checks whether currently selected RecoilElement is also the main
+        recoil.
+        """
+        if self.current_recoil_element is None:
+            return False
+        return self.current_recoil_element is self.get_current_main_recoil()
+
+    def nand_full_main(self):
+        # TODO rename
+        return not self.full_edit_on or not self.is_main_recoil_selected()
 
     def get_minimum_concentration(self) -> float:
         """Returns the minimum concentration that points can be dragged to.
@@ -781,7 +793,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 pass  # Not in list
             # Disable element simulation deletion button and full edit for
             # other than main recoil element
-            if self.current_recoil_element is not self.get_current_main_recoil():
+            if not self.is_main_recoil_selected():
                 self.parent.removePushButton.setEnabled(False)
                 self.edit_lock_push_button.setEnabled(False)
                 # Update zero values and intervals for main recoil element
@@ -838,8 +850,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 if recoil in self.other_recoils:
                     xs = recoil.get_xs()
                     ys = recoil.get_ys()
-                    rec_line = self.axes.plot(xs, ys, color=recoil.color,
-                                              alpha=0.3, visible=True, zorder=1)
+                    rec_line = self.axes.plot(
+                        xs, ys, color=recoil.color, alpha=0.3, visible=True,
+                        zorder=1)
                     self.other_recoils_lines.append(rec_line[0])
         self.fig.canvas.draw_idle()
 
@@ -847,8 +860,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """If current recoil element has too many or too little points at the
         end to match the main recoil element, add or delete points accordingly.
         """
-        main_points = self.current_element_simulation.get_main_recoil()\
-            .get_points()
+        main_points = \
+            self.current_element_simulation.get_main_recoil().get_points()
         main_end = main_points[len(main_points) - 1]
 
         current_points = self.current_recoil_element.get_points()
@@ -1157,10 +1170,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def remove_current_element(self):
         """Remove current element simulation.
         """
-        if not self.current_element_simulation:
+        if self.current_element_simulation is None:
             return
-        if self.current_recoil_element is not \
-                self.current_element_simulation.recoil_elements[0]:
+        if not self.is_main_recoil_selected():
             return
 
         # Check if current element simulation is running
@@ -1326,7 +1338,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.coordinates_action = self.mpl_toolbar.addWidget(
             self.coordinates_widget)
 
-        if not self.current_element_simulation:
+        if self.current_element_simulation is None:
             self.coordinates_action.setVisible(False)
         else:
             self.coordinates_widget.y_coordinate_box.setEnabled(False)
@@ -1362,7 +1374,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def __toggle_individual_limits(self):
         """Toggle individual limits visible and non-visible.
         """
-        if not self.current_recoil_element:
+        if self.current_recoil_element is None:
             return
         if self.area_limits_individual_on:
             for lim in self.current_recoil_element.area_limits:
@@ -1392,7 +1404,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def __toggle_span_limits(self):
         """Toggle span limits visible and non-visible.
         """
-        if not self.current_recoil_element:
+        if self.current_recoil_element is None:
             return
         if self.area_limits_for_all_on:
             for lim in self.area_limits_for_all:
@@ -1488,7 +1500,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
-        if not self.current_element_simulation:
+        if self.current_element_simulation is None:
             return
         # Don't do anything if drag tool or zoom tool is active.
         if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
@@ -1522,8 +1534,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.point_remove_action.setEnabled(True)
                 # If clicked point is zero and full edit is not on
                 if self.clicked_point.get_y() == 0.0:
-                    if not self.full_edit_on or self.current_recoil_element != \
-                            self.get_current_main_recoil():
+                    if self.nand_full_main():
                         self.point_remove_action.setEnabled(False)
                         self.coordinates_widget.x_coordinate_box.setEnabled(
                             False)
@@ -1532,8 +1543,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             True)
                         self.coordinates_widget.y_coordinate_box.setEnabled(
                             True)
-                elif self.get_current_main_recoil() != \
-                        self.current_recoil_element or not self.full_edit_on:
+                elif self.nand_full_main():
                     # If point is between two zeros, cannot delete
                     left_neighbor, right_neighbor = \
                         self.current_recoil_element.get_neighbors(
@@ -1572,9 +1582,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             self.coordinates_widget.setVisible(True)
 
                             if new_point.get_y() == 0.0:
-                                if not self.full_edit_on or \
-                                        self.current_recoil_element != \
-                                        self.get_current_main_recoil():
+                                if self.nand_full_main():
                                     self.point_remove_action.setEnabled(False)
                                     self.coordinates_widget.y_coordinate_box. \
                                         setEnabled(False)
@@ -1614,7 +1622,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """Adds a point if there is space for it.
         Returns the point if a point was added, None if not.
         """
-        if not self.current_element_simulation:
+        if self.current_element_simulation is None:
             return
 
         if recoil is None:
@@ -1680,7 +1688,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
     def update_plot(self):
         """ Updates marker and line data and redraws the plot. """
-        if not self.current_element_simulation:
+        if self.current_element_simulation is None:
             self.markers.set_visible(False)
             self.lines.set_visible(False)
             self.markers_selected.set_visible(False)
@@ -1721,8 +1729,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.__save_points = old_save_value
                 # Disable y coordinate if it's zero and full edit is not on
                 if self.clicked_point.get_y() == 0.0:
-                    if not self.full_edit_on or self.get_current_main_recoil() \
-                            != self.current_recoil_element:
+                    if self.nand_full_main():
                         self.coordinates_widget.y_coordinate_box.setEnabled(
                             False)
                 else:
@@ -1766,11 +1773,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             )
 
             # Put annotation in the middle of the rectangular patch.
-            annotation = self.axes.text(layer.start_depth, y,
-                                        layer.name,
-                                        transform=self.trans,
-                                        fontsize=10,
-                                        ha="left")
+            annotation = self.axes.text(
+                layer.start_depth, y, layer.name, transform=self.trans,
+                fontsize=10, ha="left")
             y -= 0.05
             if y <= 0.1:
                 y = 0.95
@@ -1816,7 +1821,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
-        if not self.current_element_simulation:
+        if self.current_element_simulation is None:
             return
         # Don't do anything if drag tool or zoom tool is active.
         if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
@@ -1848,8 +1853,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         for i in range(len(dr_ps)):
             # End point
             if dr_ps[i] == self.current_recoil_element.get_points()[-1] \
-                    and (not self.full_edit_on or self.current_recoil_element
-                         != self.get_current_main_recoil()):
+                    and self.nand_full_main():
                 if dr_ps[i].get_y() == 0.0:
                     continue
                 else:
@@ -1862,13 +1866,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     dr_ps[i].set_y(new_coords[i][1])
             else:
                 if dr_ps[i].get_y() == 0.0 and not self.full_edit_on and \
-                        self.current_recoil_element == \
-                        self.get_current_main_recoil():
+                        self.is_main_recoil_selected():     # TODO
                     dr_ps[i].set_coordinates((dr_ps[i].get_x(), 0.0))
                 else:
-                    if self.current_recoil_element != \
-                            self.get_current_main_recoil() \
-                            and dr_ps[i].get_y() == 0.0:
+                    if not self.is_main_recoil_selected() and \
+                            dr_ps[i].get_y() == 0.0:
                         dr_ps[i].set_coordinates((dr_ps[i].get_x(), 0.0))
                     else:
                         dr_ps[i].set_coordinates(new_coords[i])
@@ -1944,7 +1946,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 new_coords[i][0] = self.x_dist_left[i - 1]
 
         # Check that y_min is not crossed
-        if self.current_recoil_element != self.get_current_main_recoil():
+        if not self.is_main_recoil_selected():
             y_min = 0.0001
         else:
             if self.current_element_simulation.get_full_edit_on():
@@ -1983,7 +1985,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """Removes all selected points, but not if there would be
         less than two points left.
         """
-        if not self.current_element_simulation:
+        if self.current_element_simulation is None:
             return
         ret = False
         if len(self.current_recoil_element.get_points()) - \
@@ -1996,11 +1998,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             ret = True
         if self.current_recoil_element.get_points()[0] in \
                 self.selected_points:
-            QtWidgets.QMessageBox.critical(self.parent, "Error",
-                                           "You cannot delete the first "
-                                           "point.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.critical(
+                self.parent, "Error",
+                "You cannot delete the first point.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             ret = True
         if self.current_recoil_element.get_points()[-1] in \
                 self.selected_points and not self.full_edit_on:
@@ -2010,16 +2011,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             ret = True
         if 0.0 in self.current_recoil_element.get_ys():
-            show_msg = False
-            reason = "."
+            reason = ""
             if not self.full_edit_on:
                 reason = " when full edit is on."
-                show_msg = True
-            if self.current_recoil_element != \
-                    self.get_current_main_recoil():
+            if not self.is_main_recoil_selected():
                 reason = " from non-main recoil element."
-                show_msg = True
-            if show_msg:
+            if reason:
                 for point in self.selected_points:
                     if point.get_y() == 0.0:
                         QtWidgets.QMessageBox.critical(
@@ -2055,8 +2052,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.selected_points.clear()
             self.update_plot()
 
-            self.recoil_dist_changed.emit(self.current_recoil_element,
-                                          self.current_element_simulation)
+            self.recoil_dist_changed.emit(
+                self.current_recoil_element, self.current_element_simulation)
 
     def on_release(self, event):
         """Callback method for mouse release event. Stops dragging.
@@ -2064,7 +2061,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
-        if not self.current_element_simulation:
+        if self.current_element_simulation is None:
             return
         # Don't do anything if drag tool or zoom tool is active.
         if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
@@ -2441,7 +2438,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             eclick: Area start event.
             erelease: Area end event.
         """
-        if not self.current_element_simulation:
+        if self.current_element_simulation is None:
             return
         xmin = eclick.xdata
         xmax = erelease.xdata
@@ -2469,9 +2466,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             allow_delete = True
             self.clicked_point = sel_points[0]
             if self.clicked_point.get_y() == 0.0:
-                if not self.full_edit_on or \
-                        self.get_current_main_recoil() != \
-                        self.current_recoil_element:
+                if self.nand_full_main():
                     self.coordinates_widget.x_coordinate_box.setEnabled(False)
                 else:
                     self.coordinates_widget.x_coordinate_box.setEnabled(True)
@@ -2488,8 +2483,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.point_remove_action.setEnabled(False)
                 allow_delete = False
             if 0.0 in self.current_recoil_element.get_ys() and allow_delete:
-                if not self.full_edit_on or self.current_recoil_element != \
-                        self.get_current_main_recoil():
+                if self.nand_full_main():
                     for point in self.selected_points:
                         if point.get_y() == 0.0:
                             self.point_remove_action.setEnabled(False)

@@ -141,6 +141,15 @@ class TestRecoilElement(unittest.TestCase):
             for e, r in zip(elems, rec_elems):
                 self.assertEqual(e, r.element)
 
+    def test_identities(self):
+        rec_elem1 = mo.get_recoil_element()
+        rec_elem2 = mo.get_recoil_element()
+
+        self.assertNotEqual(rec_elem1, rec_elem2)
+        self.assertEqual(rec_elem1, rec_elem1)
+
+        self.assertIs(rec_elem2, rec_elem2)
+
 
 if __name__ == '__main__':
     unittest.main()

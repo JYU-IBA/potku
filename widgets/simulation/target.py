@@ -33,17 +33,22 @@ import time
 
 import widgets.gui_utils as gutils
 
+from typing import Optional
 from pathlib import Path
+
 from modules.element_simulation import ElementSimulation
 from modules.simulation import Simulation
 from modules.global_settings import GlobalSettings
 from modules.target import Target
+from modules.observing import ProgressReporter
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import pyqtSignal
 
+from widgets.icon_manager import IconManager
+from widgets.base_tab import BaseTab
 from widgets.gui_utils import StatusBarHandler
 from widgets.matplotlib.simulation.composition import TargetCompositionWidget
 from widgets.matplotlib.simulation.recoil_atom_distribution import \
@@ -56,9 +61,11 @@ class TargetWidget(QtWidgets.QWidget):
     """
     results_accepted = pyqtSignal(ElementSimulation)
 
-    def __init__(self, tab, simulation: Simulation, target: Target,
-                 icon_manager, settings: GlobalSettings, progress=None,
-                 statusbar=None, **kwargs):
+    def __init__(self, tab: BaseTab, simulation: Simulation, target: Target,
+                 icon_manager: IconManager, settings: GlobalSettings,
+                 progress: Optional[ProgressReporter] = None,
+                 statusbar: Optional[QtWidgets.QStatusBar] = None,
+                 auto_save: bool = True, **kwargs):
         """Initializes thw widget that can be used to define target composition
         and
         recoil atom distribution.
@@ -69,6 +76,7 @@ class TargetWidget(QtWidgets.QWidget):
             target: A Target object.
             icon_manager: An icon manager class object.
             progress: ProgressReporter object
+            auto_save: whether automatic saving is enabled.
         """
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_target_widget.ui", self)
@@ -134,10 +142,12 @@ class TargetWidget(QtWidgets.QWidget):
 
         self.stop_saving = False
         self.thread = None
-        self.add_automatic_saving()
+
+        if auto_save:
+            self.add_automatic_saving()
 
     def add_automatic_saving(self):
-        """ Add this target widget to be saved (target and recoils) every 1
+        """Add this target widget to be saved (target and recoils) every 1
         minute in a thread.
         """
         self.thread = threading.Thread(target=self.timed_save)
