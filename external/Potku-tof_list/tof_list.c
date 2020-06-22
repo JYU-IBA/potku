@@ -9,7 +9,7 @@
 #endif
 #include <windows.h>
 #else
-#include <libgen.h> /* for basename_r() */
+#include <libgen.h> /* for basename() */
 #include <sys/param.h> /* for MAXPATHLEN */
 #endif
 /* #include <dirent.h> */
@@ -355,7 +355,6 @@ int main(int argc, char *argv[])
             }
          }
       }
-      fclose(fp[i]);
    }
 
 #if 0
@@ -740,9 +739,9 @@ char *filename_extension(const char *path) { /*  e.g. /bla/bla/tofe2363.O.ERD.0.
     return out;
 #else
     char *ext;
-    char *base = malloc(MAXPATHLEN);
+    char *base = strdup(path);
     char *base_orig=base;
-    basename_r(path, base);
+    base=basename(base);
     while(*base++ != '.');
     ext = strdup(base);
     free(base_orig);
