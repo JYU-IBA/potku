@@ -45,6 +45,19 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="eff_file_check_box">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Selecting this means that efficiency is applied to spectrum of a pre-calculated element&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="text">
+          <string>Use efficiency files</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
         <spacer name="horizontalSpacer">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -127,6 +140,13 @@
      </item>
      <item>
       <widget class="QLabel" name="label_efficiency_files">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="efficiency_label">
        <property name="text">
         <string/>
        </property>

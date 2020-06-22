@@ -228,27 +228,23 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
         # Add calculated tof_list files to tof_list_tree_widget by
         # measurement under the same sample.
-        for sample in self.simulation.request.samples.samples:
-            for measurement in sample.measurements.measurements.values():
-                if self.element_simulation.sample is measurement.sample:
-                    root = QtWidgets.QTreeWidgetItem([measurement.name])
+        for measurement in self.simulation.sample.get_measurements():
+            root = QtWidgets.QTreeWidgetItem([measurement.name])
 
-                    cuts, elem_loss = measurement.get_cut_files()
-                    gutils.fill_tree(
-                        root, cuts, data_func=lambda c: (c, measurement),
-                        text_func=lambda c: c.name)
+            cuts, elem_loss = measurement.get_cut_files()
+            gutils.fill_tree(
+                root, cuts, data_func=lambda c: (c, measurement),
+                text_func=lambda c: c.name)
 
-                    self.tof_list_tree_widget.addTopLevelItem(root)
+            self.tof_list_tree_widget.addTopLevelItem(root)
 
-                    elem_loss_root = QtWidgets.QTreeWidgetItem(
-                        ["Element losses"])
-                    gutils.fill_tree(
-                        elem_loss_root, elem_loss,
-                        data_func=lambda c: (c, measurement),
-                        text_func=lambda c: c.name
-                    )
-                    root.addChild(elem_loss_root)
-                    root.setExpanded(True)
+            elem_loss_root = QtWidgets.QTreeWidgetItem(["Element losses"])
+            gutils.fill_tree(
+                elem_loss_root, elem_loss, data_func=lambda c: (c, measurement),
+                text_func=lambda c: c.name
+            )
+            root.addChild(elem_loss_root)
+            root.setExpanded(True)
 
         self.tof_list_files = {}
 
@@ -448,16 +444,18 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         """Update efficiency files to UI which are used.
         """
         if self.spectrum_type == _SIMU:
-            _, _, detector = self.element_simulation.get_mcerd_params()
-            tree = self.tof_list_tree_widget
-            data_func = lambda tpl: tpl[0]
+            # Simulation energy spectrum can contain cut files from multiple
+            # Measurements which each can have different Detector an thus
+            # different efficiency files
+            label_txt = df.get_multi_efficiency_text(
+                self.tof_list_tree_widget,
+                self.simulation.sample.get_measurements(),
+                data_func=lambda tpl: tpl[0])
         else:
             detector = self.measurement.get_detector_or_default()
-            tree = self.treeWidget
-            data_func = lambda x: x
+            label_txt = df.get_efficiency_text(self.treeWidget, detector)
 
-        self.label_efficiency_files.setText(
-            df.get_effieciency_label_text(tree, detector, data_func=data_func))
+        self.label_efficiency_files.setText(label_txt)
 
 
 class EnergySpectrumWidget(QtWidgets.QWidget):

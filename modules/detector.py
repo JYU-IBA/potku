@@ -32,6 +32,8 @@ import os
 import shutil
 import time
 from typing import Optional
+from typing import Iterable
+from typing import Set
 from pathlib import Path
 
 from . import general_functions as gf
@@ -60,7 +62,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
     EFFICIENCY_DIR = "Efficiency_files"
     USED_EFFICIENCIES_DIR = "Used_efficiencies"
 
-    def __init__(self, path, measurement_file, name="Default",
+    def __init__(self, path: Path, measurement_file, name="Default",
                  description="", modification_time=None,
                  detector_type=DetectorType.TOF,
                  foils=None, tof_foils=None, virtual_size=(2.0, 5.0),
@@ -453,3 +455,24 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
                 continue
             old_file = Path(self.efficiency_directory, eff)
             shutil.copy(old_file, destination / used_file)
+
+    def get_matching_efficiency_files(self, cut_files: Iterable[Path]) \
+            -> Set[Path]:
+        """Returns a set of efficiency files whose elements match those
+        of given cut files.
+        """
+        matched_efficiencies = set()
+
+        eff_elems = {
+            Detector.get_used_efficiency_file_name(eff_file).stem: eff_file
+            for eff_file in self.get_efficiency_files()
+        }
+
+        for cut in cut_files:
+            # TODO check for RBS selection too
+            cut_element_str = cut.name.split(".")[1]
+
+            if cut_element_str in eff_elems:
+                matched_efficiencies.add(eff_elems[cut_element_str])
+
+        return matched_efficiencies

@@ -47,6 +47,7 @@ from modules.measurement import Measurement
 from modules.global_settings import GlobalSettings
 from modules.observing import Observer
 from modules.request import Request
+from modules.sample import Sample
 
 
 # This module can be used to generate various helper objects for testing
@@ -160,6 +161,14 @@ def get_measurement(request=None) -> Measurement:
     return Measurement(
         request, _TEMP_DIR / "mesu", save_on_creation=False,
         enable_logging=False)
+
+
+def get_sample(request=None) -> Sample:
+    """Returns a Sample object.
+    """
+    if request is None:
+        request = get_request()
+    return Sample(1, request, "sample01")
 
 
 def get_layer(element_count=1, randomize=False) -> Layer:

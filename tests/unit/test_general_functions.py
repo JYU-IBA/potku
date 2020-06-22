@@ -398,6 +398,16 @@ class TestFileIO(unittest.TestCase):
             OSError, lambda: gf.find_files_by_extension(Path(tmp_dir)))
 
 
+class TestStringMethods(unittest.TestCase):
+    def test_lower_first(self):
+        self.assertEqual("", gf.lower_case_first(""))
+        self.assertEqual("aA", gf.lower_case_first("AA"))
+        self.assertEqual("aa", gf.lower_case_first("Aa"))
+        self.assertEqual("a ", gf.lower_case_first("A "))
+        self.assertEqual(" A", gf.lower_case_first(" A"))
+        self.assertEqual("?A", gf.lower_case_first("?A"))
+
+
 def sorted_values(dictionary):
     """Helper function for sorting values in a dictionary.
     """

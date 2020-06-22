@@ -58,6 +58,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
     Optimization is done by comparing simulated spectrum to measured spectrum.
     """
     ch = bnd.bind("histogramTicksDoubleSpinBox")
+    use_efficiency = bnd.bind("eff_file_check_box")
     selected_cut_file = bnd.bind(
         "measurementTreeWidget", fget=bnd.get_selected_tree_item,
         fset=bnd.set_selected_tree_item)
@@ -125,8 +126,6 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         self.radios.addButton(self.fluenceRadioButton)
         self.radios.addButton(self.recoilRadioButton)
 
-        self.result_files = []
-
         gutils.fill_tree(
             self.simulationTreeWidget.invisibleRootItem(),
             simulation.element_simulations,
@@ -140,6 +139,9 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         self.measurementTreeWidget.itemSelectionChanged.connect(
             self._enable_ok_button)
 
+        self.eff_file_check_box.clicked.connect(self._enable_efficiency_label)
+        self._update_efficiency_label()
+
         self.exec_()
 
     def closeEvent(self, event):
@@ -152,6 +154,20 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         params.pop("selected_cut_file")
         self.save_properties_to_file(values=params)
         QtWidgets.QDialog.closeEvent(self, event)
+
+    def _update_efficiency_label(self):
+        """Updates the text of efficiency label.
+        """
+        self.efficiency_label.setText(
+            df.get_multi_efficiency_text(
+                self.measurementTreeWidget,
+                self.simulation.sample.get_measurements(),
+                data_func=lambda tpl: tpl[0]))
+
+    def _enable_efficiency_label(self):
+        """Enables or disables efficiency label.
+        """
+        self.efficiency_label.setEnabled(self.use_efficiency)
 
     def _fill_measurement_widget(self):
         """Add calculated tof_list files to tof_list_tree_widget by
@@ -241,7 +257,8 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         # TODO move following code to the result widget
         nsgaii = Nsgaii(
             element_simulation=elem_sim, measurement=measurement, cut_file=cut,
-            ch=self.ch, **self.parameters_widget.get_properties())
+            ch=self.ch, **self.parameters_widget.get_properties(),
+            use_efficiency=self.use_efficiency)
 
         # Optimization running thread
         ct = CancellationToken()

@@ -102,9 +102,9 @@ class TestElementSimulationSettings(unittest.TestCase):
             # Some pre-simulation checks
             self.assertIsNot(sim.target, request.default_target)
             self.assertIsNot(elem_sim, request.default_element_simulation)
-            self.assertIsNot(elem_sim.detector, request.default_detector)
-            self.assertIsNot(elem_sim.run, request.default_run)
-            self.assertIsNot(elem_sim.run.beam, request.default_run.beam)
+            self.assertIsNot(sim.detector, request.default_detector)
+            self.assertIsNot(sim.run, request.default_run)
+            self.assertIsNot(sim.run.beam, request.default_run.beam)
             self.assertNotEqual(
                 elem_sim.number_of_ions,
                 request.default_element_simulation.number_of_ions)

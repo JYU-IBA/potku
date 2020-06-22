@@ -92,17 +92,16 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 "minimum_scattering_angle", "minimum_main_scattering_angle", \
                 "minimum_energy", "simulation_mode", "seed_number", \
                 "recoil_elements", "recoil_atoms", \
-                "channel_width", "detector", "__erd_filehandler", \
-                "description", "run", "name", \
+                "channel_width", "__erd_filehandler", \
+                "description", "name", \
                 "use_default_settings", "simulation", \
                 "__full_edit_on", "main_recoil",\
                 "optimization_recoils", "optimization_widget", \
                 "_optimization_running", "optimized_fluence", \
-                "sample", "__cts", "_simulation_running", "_running_event"
+                "__cts", "_simulation_running", "_running_event"
 
     def __init__(self, directory, request, recoil_elements,
-                 simulation=None, name_prefix="", sample=None,
-                 detector=None, run=None, name="Default",
+                 simulation=None, name_prefix="", name="Default",
                  description="", modification_time=None,
                  simulation_type=SimulationType.ERD, number_of_ions=1_000_000,
                  number_of_preions=100_000, number_of_scaling_ions=5,
@@ -120,8 +119,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             recoil_elements: List of RecoilElement objects.
             simulation: Simulation object.
             name_prefix: Prefix of the name, e.g. 55Mn
-            detector: Detector object reference.
-            run: Run object reference.
             name: Name of the element simulation.
             description: Description of the ElementSimulation
             modification_time: Modification time in Unix time.
@@ -136,7 +133,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             seed_number: Seed number to give unique value to one simulation.
             minimum_energy: Minimum energy.
             channel_width: Channel width.
-            sample: Sample object under which ElementSimulation belongs.
             element simulation.
             main_recoil: Main recoil element.
             optimization_recoils: List or recoils that are used for
@@ -170,14 +166,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             self.main_recoil = self.recoil_elements[0]
         else:
             self.main_recoil = main_recoil
-
-        if detector:
-            self.detector = detector
-        else:
-            self.detector = self.request.default_detector
-
-        self.run = run
-        self.sample = sample
 
         self.simulation_type = SimulationType(simulation_type.upper())
         self.simulation_mode = SimulationMode(simulation_mode.lower())
@@ -333,7 +321,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     @classmethod
     def from_file(cls, request, prefix: str, simulation_folder: Path,
                   mcsimu_file_path: Path, profile_file_path: Path,
-                  sample=None, detector=None, simulation=None, run=None):
+                  simulation=None):
         """Initialize ElementSimulation from JSON files.
 
         Args:
@@ -346,11 +334,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 simulation parameters.
             profile_file_path: A file path to JSON file containing the
                 channel width.
-            sample: sample under which the parent simulation belongs to
-            detector: detector that is used when simulation is not run with
-                request settings.
             simulation: parent Simulation object of this ElementSimulation
-            run: ElementSimulation's run object
         """
         with mcsimu_file_path.open("r") as mcsimu_file:
             mcsimu = json.load(mcsimu_file)
@@ -437,9 +421,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             directory=simulation_folder, request=request,
             recoil_elements=recoil_elements, name_prefix=name_prefix, name=name,
             optimization_recoils=optimized_recoils,
-            optimized_fluence=optimized_fluence,
-            main_recoil=main_recoil, sample=sample, detector=detector,
-            **kwargs, **mcsimu, simulation=simulation, run=run)
+            optimized_fluence=optimized_fluence, main_recoil=main_recoil,
+            **kwargs, **mcsimu, simulation=simulation)
 
     def get_full_name(self):
         """Returns the full name of the ElementSimulation object.
@@ -880,12 +863,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         else:
             settings = self.get_settings()
 
-        if self.simulation.use_request_settings:
-            run = self.request.default_run
-            detector = self.request.default_detector
-        else:
-            run = self.run
-            detector = self.detector
+        run = self.simulation.get_used_run()
+        detector = self.simulation.get_used_detector()
 
         return settings, run, detector
 

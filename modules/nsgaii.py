@@ -70,7 +70,8 @@ class Nsgaii(Observable):
                  recoil_type="box", number_of_processes=1, cross_p=0.9, mut_p=1,
                  stop_percent=0.3, check_time=20, ch=0.025,
                  measurement=None, cut_file=None, dis_c=20,
-                 dis_m=20, check_max=900, check_min=0, skip_simulation=False):
+                 dis_m=20, check_max=900, check_min=0, skip_simulation=False,
+                 use_efficiency=False):
         """
         Initialize the NSGA-II algorithm with needed parameters and start
         running it.
@@ -101,6 +102,8 @@ class Nsgaii(Observable):
             check_max: Maximum time for running a simulation.
             check_min: Minimum time for running a simulation.
             skip_simulation: whether simulation is skipped altogether
+            use_efficiency: whether to use efficiency for pre-calculated
+                spectrum.
         """
         # TODO separate the two optimization types into two classes
         Observable.__init__(self)
@@ -142,6 +145,7 @@ class Nsgaii(Observable):
 
         self.population = None
         self.measured_espe = None
+        self.use_efficiency = use_efficiency
 
     def __prepare_optimization(self, initial_pop=None,
                                cancellation_token=None,
@@ -158,7 +162,8 @@ class Nsgaii(Observable):
         self.element_simulation.optimized_fluence = None
 
         EnergySpectrum.calculate_measured_spectra(
-            self.measurement, [self.cut_file], self.channel_width, no_foil=True)
+            self.measurement, [self.cut_file], self.channel_width,
+            no_foil=True, use_efficiency=self.use_efficiency)
 
         # TODO maybe just use he value returned by calc_spectrum?
         # Add result files

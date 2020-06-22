@@ -39,6 +39,9 @@ from dialogs.simulation.optimization import OptimizationDialog
 
 
 class TestDialogInitialization(unittest.TestCase):
+    """Tests initialization conditions that various Dialogs must have.
+    """
+
     @patch("PyQt5.QtWidgets.QDialog.exec_")
     def test_initialization(self, mock_exec):
         """A simple test to see if various dialogs get initialized properly.
@@ -54,7 +57,15 @@ class TestDialogInitialization(unittest.TestCase):
             [mo.get_measurement()], mo.get_detector(), mo.get_run())
         c.close()
 
-        o = OptimizationDialog(mo.get_simulation(), Mock())
+        # AttributeError is raised if simulation has no sample
+        self.assertRaises(
+            AttributeError,
+            lambda: OptimizationDialog(mo.get_simulation(), Mock()))
+
+        sample = mo.get_sample()
+        sim = mo.get_simulation()
+        sim.sample = sample
+        o = OptimizationDialog(sim, Mock())
         self.assertFalse(o.pushButton_OK.isEnabled())
         o.close()
 
@@ -66,10 +77,21 @@ class TestDialogInitialization(unittest.TestCase):
             Mock(), "measurement", measurement=mo.get_measurement())
         esp.close()
 
+        # ValueError is raised if spectrum type is wrong
         self.assertRaises(
             ValueError, lambda: EnergySpectrumParamsDialog(Mock(), "simu"))
 
+        # AttributeError is raised if simulation has no sample
+        self.assertRaises(
+            AttributeError,
+            lambda: EnergySpectrumParamsDialog(
+                Mock(), "simulation", simulation=mo.get_simulation(),
+                element_simulation=mo.get_element_simulation(),
+                recoil_widget=Mock()))
+
+        sample = mo.get_sample()
         sim = mo.get_simulation()
+        sim.sample = sample
         elem_sim = sim.add_element_simulation(
             mo.get_recoil_element(), save_on_creation=False)
         esp = EnergySpectrumParamsDialog(

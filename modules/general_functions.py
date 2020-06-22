@@ -419,6 +419,10 @@ def to_superscript(string):
     return "".join(sups.get(char, char) for char in string)
 
 
+def lower_case_first(s: str) -> str:
+    return s[0].lower() + s[1:] if s else ""
+
+
 def find_y_on_line(point1, point2, x):
     """
     Find the y(x) based on a line that goes through point1 and 2.

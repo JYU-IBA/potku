@@ -145,11 +145,7 @@ class Simulations:
                     # Create ElementSimulation from files
                     element_simulation = ElementSimulation.from_file(
                         self.request, prefix, simulation_folder,
-                        mcsimu_file, profile_file,
-                        sample=simulation.sample,
-                        detector=simulation.detector,
-                        run=simulation.run,
-                        simulation=simulation
+                        mcsimu_file, profile_file, simulation=simulation
                     )
                     simulation.element_simulations.append(
                         element_simulation)
@@ -306,6 +302,21 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             logging.getLogger("request").info(log)
         self.set_loggers(self.directory, self.request.directory)
 
+    def get_used_detector(self) -> Detector:
+        """Returns the Detector object that is currently used by this
+        Simulation.
+        """
+        if self.use_request_settings:
+            return self.request.default_detector
+        return self.detector
+
+    def get_used_run(self) -> Run:
+        """Returns the Run object that is currently used by this Simulation.
+        """
+        if self.use_request_settings:
+            return self.request.default_run
+        return self.run
+
     def get_measurement_file(self) -> Path:
         """Returns the path to .measurement file that contains the settings
         of this Simulation.
@@ -376,9 +387,9 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
 
         element_simulation = ElementSimulation(
             directory=self.directory, request=self.request, simulation=self,
-            name_prefix=element_str, name=name, detector=self.detector,
-            recoil_elements=[recoil_element], run=self.run, sample=self.sample,
-            simulation_type=simulation_type, save_on_creation=save_on_creation)
+            name_prefix=element_str, name=name,
+            recoil_elements=[recoil_element], simulation_type=simulation_type,
+            save_on_creation=save_on_creation)
 
         self.element_simulations.append(element_simulation)
         return element_simulation

@@ -34,6 +34,7 @@ from typing import Optional
 from typing import Union
 from typing import Dict
 from typing import List
+from typing import Iterable
 
 from .measurement import Measurements
 from .measurement import Measurement
@@ -248,3 +249,7 @@ class Sample:
             self.measurements.remove_obj(obj_removed)
         elif isinstance(obj_removed, Simulation):
             self.simulations.remove_obj(obj_removed)
+
+    def get_measurements(self) -> Iterable[Measurement]:
+        for measurement in self.measurements.measurements.values():
+            yield measurement
