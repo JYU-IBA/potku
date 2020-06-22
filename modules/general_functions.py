@@ -47,8 +47,6 @@ from pathlib import Path
 from decimal import Decimal
 
 from .parsing import ToFListParser
-
-from modules.parsing import ToFListParser
 from subprocess import Popen
 from itertools import (takewhile, repeat)
 
