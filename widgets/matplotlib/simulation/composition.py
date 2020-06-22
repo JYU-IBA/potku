@@ -33,6 +33,7 @@ import widgets
 
 import dialogs.dialog_functions as df
 
+from widgets.matplotlib import mpl_utils
 from pathlib import Path
 
 from dialogs.simulation.layer_properties import LayerPropertiesDialog
@@ -67,7 +68,7 @@ class _CompositionWidget(MatplotlibWidget):
 
         # Remove Y-axis ticks and label
         self.axes.yaxis.set_tick_params("both", left=False, labelleft=False)
-        self.axes.format_coord = self.format_coord
+        self.axes.format_coord = mpl_utils.format_x
         self.name_x_axis = "Depth [nm]"
         self.foil_behaviour = foil_behaviour
 
@@ -96,19 +97,6 @@ class _CompositionWidget(MatplotlibWidget):
 
         if self.layers:
             self.__update_figure(True)
-
-    def format_coord(self, x, y):
-        """
-        Format mouse coordinates.
-
-        Args:
-            x: X coordinate.
-            y: Y coordinate.
-
-        Return:
-            Formatted text.
-        """
-        return "x:{0:1.4f}".format(x)
 
     def on_click(self, event):
         """

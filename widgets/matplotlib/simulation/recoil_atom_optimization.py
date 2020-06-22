@@ -27,6 +27,7 @@ __version__ = "2.0"
 
 import matplotlib
 
+from widgets.matplotlib import mpl_utils
 from typing import Optional
 
 from modules.element_simulation import ElementSimulation
@@ -45,13 +46,16 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
     """
     Class for showing optimized recoil elements.
     """
-    color_scheme = {"Default color": "jet",
-                    "Greyscale": "Greys",
-                    "Greyscale (inverted)": "gray"}
-    tool_modes = {0: "",
-                  1: "pan/zoom",  # Matplotlib's drag
-                  2: "zoom rect"  # Matplotlib's zoom
-                  }
+    color_scheme = {
+        "Default color": "jet",
+        "Greyscale": "Greys",
+        "Greyscale (inverted)": "gray"
+    }
+    tool_modes = {
+        0: "",
+        1: "pan/zoom",  # Matplotlib's drag
+        2: "zoom rect"  # Matplotlib's zoom
+    }
 
     results_accepted = pyqtSignal(ElementSimulation)
 
@@ -66,7 +70,7 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         self.trans = matplotlib.transforms.blended_transform_factory(
             self.axes.transData, self.axes.transAxes)
         self.layer_colors = [(0.9, 0.9, 0.9), (0.85, 0.85, 0.85)]
-        self.axes.format_coord = self.format_coord
+        self.axes.format_coord = mpl_utils.format_coord
 
         self.current_recoil = None
 
@@ -161,22 +165,6 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
 
         self.coordinates_widget.y_coordinate_box.setEnabled(False)
         self.coordinates_widget.x_coordinate_box.setEnabled(False)
-
-    @staticmethod
-    def format_coord(x, y):
-        """
-        Format mouse coordinates.
-
-        Args:
-            x: X coordinate.
-            y: Y coordinate.
-
-        Return:
-            Formatted text.
-        """
-        x_part = "\nx:{0:1.2f},".format(x)
-        y_part = "\ny:{0:1.4f}".format(y)
-        return x_part + y_part
 
     def on_click(self, event):
         """ On click event above graph.
