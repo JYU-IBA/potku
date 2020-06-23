@@ -34,7 +34,6 @@ import tests.utils as utils
 
 from pathlib import Path
 from unittest.mock import patch
-from unittest.mock import Mock
 from modules.simulation import Simulation
 from modules.enums import OptimizationType
 
@@ -109,3 +108,24 @@ class TestSimulation(unittest.TestCase):
             self.assertEqual(sim.target.target_type, sim2.target.target_type)
 
             self.assertEqual(sim.run.fluence, sim2.run.fluence)
+
+    def test_get_recoils(self):
+        sim = mo.get_simulation()
+        n = 10
+        rec_elems = [
+            mo.get_recoil_element() for _ in range(n)
+        ]
+        for rec in rec_elems:
+            sim.add_element_simulation(rec, save_on_creation=False)
+
+        self.assertEqual(rec_elems, sim.get_recoil_elements())
+
+        elem_sim0 = sim.element_simulations[0]
+        rec_elem = mo.get_recoil_element()
+        elem_sim0.recoil_elements.append(rec_elem)
+
+        self.assertEqual([
+            rec_elems[0], rec_elem, *rec_elems[1:]
+        ], sim.get_recoil_elements())
+
+

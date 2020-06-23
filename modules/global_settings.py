@@ -78,6 +78,11 @@ class GlobalSettings:
     _TOFE = "tof-e_graph"
     _SIMULATION = "simulation"
 
+    # Hard-coded minimum and default values of recoil atom distribution
+    # concentration
+    MIN_CONC_LIMIT = 1e-6
+    _DEFAULT_CONC_LIMIT = 1e-4
+
     def __init__(self, config_dir=None, save_on_creation=True):
         """Inits GlobalSettings class.
         """
@@ -508,19 +513,21 @@ class GlobalSettings:
         """
         self.__config[self._SIMULATION]["ion_division"] = str(int(value))
 
-    @handle_exceptions(return_value=0.0001)
+    @handle_exceptions(return_value=_DEFAULT_CONC_LIMIT)
     def get_minimum_concentration(self) -> float:
         """Returns the minimum concentration that can be set in recoil atom
         distribution.
         """
-        return self.__config.getfloat(self._SIMULATION, "min_concentration")
+        return max(
+            self.__config.getfloat(self._SIMULATION, "min_concentration"),
+            GlobalSettings.MIN_CONC_LIMIT)
 
     def set_minimum_concentration(self, value: float):
         """Sets the minimum concentration that can be set in recoil atom
         distribution. Must be a positive value.
         """
-        if value > 0:
-            self.__config[self._SIMULATION]["min_concentration"] = str(value)
+        self.__config[self._SIMULATION]["min_concentration"] = str(
+            max(value, GlobalSettings.MIN_CONC_LIMIT))
 
     @staticmethod
     def get_default_colors():

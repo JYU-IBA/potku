@@ -33,6 +33,7 @@ import modules.general_functions as gf
 from collections import namedtuple, defaultdict
 from typing import Union
 from typing import Iterable
+from typing import Callable
 from pathlib import Path
 
 import widgets.gui_utils as gutils
@@ -128,8 +129,12 @@ def get_efficiency_text(tree: QtWidgets.QTreeWidget,
     return "No efficiency files."
 
 
-def get_multi_efficiency_text(tree: QtWidgets.QTreeWidget, measurements: Iterable[
-              Measurement], data_func=lambda x: x) -> str:
+def get_multi_efficiency_text(tree: QtWidgets.QTreeWidget,
+                              measurements: Iterable[Measurement],
+                              data_func: Callable = lambda x: x) -> str:
+    """Returns a string to be used when displaying the efficiency files
+    from multiple Measurements.
+    """
     used_detectors = {}
     label_txt = ""
     for m in measurements:
@@ -383,7 +388,7 @@ def delete_element_simulations(qdialog,
         # Change full edit unlocked
         # TODO remove reference to GUI element from RecoilElement
         try:
-            elem_sim.recoil_elements[0].widgets[0].parent.full_edit_on = True
+            elem_sim.get_main_recoil().widgets[0].parent.full_edit_on = True
         except IndexError:
             # widget had not yet been created, nothing to do
             pass

@@ -551,3 +551,12 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             elem_sim for elem_sim in self.element_simulations
             if elem_sim.is_optimization_finished()
         )
+
+    def get_recoil_elements(self) -> List[RecoilElement]:
+        """Returns a combined list of RecoilElements from all
+        ElementSimulations that this Simulation has.
+        """
+        return [
+            recoil for elem_sim in self.element_simulations
+            for recoil in elem_sim.recoil_elements
+        ]

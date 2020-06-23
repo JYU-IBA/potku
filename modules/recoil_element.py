@@ -33,6 +33,11 @@ import json
 import itertools
 import time
 
+from pathlib import Path
+from typing import List
+from typing import Optional
+from typing import Tuple
+
 from . import file_paths as fp
 from . import math_functions as mf
 
@@ -47,8 +52,8 @@ class RecoilElement(MCERDParameterContainer, Serializable):
     """An element that has a list of points and a widget. The points are kept
     in ascending order by their x coordinate.
     """
-    def __init__(self, element: Element, points, color="red", name="Default",
-                 rec_type="rec",
+    def __init__(self, element: Element, points: List[Point], color="red",
+                 name="Default", rec_type="rec",
                  description="These are default recoil settings.",
                  reference_density=4.98e22, modification_time=None,
                  channel_width=None):
@@ -126,27 +131,23 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         return f"{self.prefix}-{self.name}"
 
     def delete_widgets(self):
-        """
-        Delete all widgets.
+        """Delete all widgets.
         """
         for widget in self.widgets:
             widget.deleteLater()
 
     def lock_edit(self):
-        """
-        Lock full edit.
+        """Lock full edit.
         """
         self._edit_lock_on = True
 
     def unlock_edit(self):
-        """
-        Unlock full edit.
+        """Unlock full edit.
         """
         self._edit_lock_on = False
 
     def previous_points_in_full_edit(self):
-        """
-        Check if previous points
+        """Check if previous points
         """
         prev_i = self.points_backlog_i_add - 1
         if prev_i >= 0:
@@ -155,8 +156,7 @@ class RecoilElement(MCERDParameterContainer, Serializable):
 
     def save_current_points(self, full_edit_used, exclude=None,
                             save_before_undo=False):
-        """
-        Save current points for undoing or redoing.
+        """Save current points for undoing or redoing.
 
         Args:
             full_edit_used: TODO
@@ -237,7 +237,6 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         """
         Change the points list reference to another list.
         """
-
         self._points = self.points_backlog[self.points_backlog_i_add - 1]
         self.points_backlog_i_add -= 1
 
@@ -297,7 +296,7 @@ class RecoilElement(MCERDParameterContainer, Serializable):
                     (start_zero_point.get_x(), end_zero_point.get_x())
                 )
 
-    def get_edit_lock_on(self):
+    def get_edit_lock_on(self) -> bool:
         """
         Get if full edit is locked or not.
 
@@ -310,25 +309,26 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         """Sorts the points in ascending order by their x coordinate."""
         self._points.sort()
 
-    def get_xs(self):
+    def get_xs(self) -> List[float]:
         """Returns a list of the x coordinates of the points."""
         return [point.get_x() for point in self._points]
 
-    def get_ys(self):
+    def get_ys(self) -> List[float]:
         """Returns a list of the y coordinates of the points."""
         return [point.get_y() for point in self._points]
 
-    def get_xs_and_ys(self):
+    def get_xs_and_ys(self) -> Tuple[List[float], List[float]]:
         """Returns a tuple where first one contains the values on the
-        x axis and second one contains the values on the y axis."""
+        x axis and second one contains the values on the y axis.
+        """
         xs, ys = zip(*(p.get_coordinates() for p in self._points))
         return xs, ys
 
-    def get_point_by_i(self, i):
+    def get_point_by_i(self, i: int) -> Point:
         """Returns the i:th point."""
         return self._points[i]
 
-    def get_points(self):
+    def get_points(self) -> List[Point]:
         """
         Get points.
 
@@ -337,16 +337,17 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         """
         return self._points
 
-    def add_point(self, point):
+    def add_point(self, point: Point):
         """Adds a point and maintains sort order."""
         self._points.append(point)
         self._sort_points()
 
-    def remove_point(self, point):
-        """Removes the given point."""
+    def remove_point(self, point: Point):
+        """Removes the given point.
+        """
         self._points.remove(point)
 
-    def get_left_neighbor(self, point):
+    def get_left_neighbor(self, point: Point) -> Optional[Point]:
         """Returns the point whose x coordinate is closest to but
         less than the given point's.
         """
@@ -356,7 +357,7 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         else:
             return self._points[ind - 1]
 
-    def get_right_neighbor(self, point):
+    def get_right_neighbor(self, point: Point) -> Optional[Point]:
         """Returns the point whose x coordinate is closest to but
         greater than the given point's.
         """
@@ -366,7 +367,8 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         else:
             return self._points[ind + 1]
 
-    def get_neighbors(self, point):
+    def get_neighbors(self, point: Point) \
+            -> Tuple[Optional[Point], Optional[Point]]:
         """Returns point's left and right neighbour.
 
         Args:
@@ -389,6 +391,34 @@ class RecoilElement(MCERDParameterContainer, Serializable):
 
         return ln, rn
 
+    def between_zeros(self, point: Point) -> bool:
+        """Checks whether point is between two zero Points.
+
+        Args:
+            point: Point object.
+
+        Return:
+            boolean
+        """
+        ln, rn = self.get_neighbors(point)
+
+        if ln is not None and rn is not None:
+            return ln.get_y() == 0.0 and rn.get_y() == 0.0
+        return False
+
+    def adjust_point(self, point: Point, res: float = 0.01):
+        """Adjusts a point so that it stays between its neighbours.
+        """
+        ln, rn = self.get_neighbors(point)
+
+        if ln is not None:
+            if point.get_x() <= ln.get_x():
+                point.set_x(ln.get_x() + res)
+
+        if rn is not None:
+            if point.get_x() >= rn.get_x():
+                point.set_x(rn.get_x() - res)
+
     def update(self, new_values):
         """Updates the values of the RecoilElement with the given values
 
@@ -405,7 +435,7 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         except KeyError:
             raise
 
-    def to_file(self, simulation_folder):
+    def to_file(self, simulation_folder: Path):
         """Save recoil settings to file.
 
         Args:
@@ -440,7 +470,7 @@ class RecoilElement(MCERDParameterContainer, Serializable):
             "color": self.color
         }
 
-        with open(recoil_file_path, "w") as file:
+        with recoil_file_path.open("w") as file:
             json.dump(obj, file, indent=4)
 
     @classmethod

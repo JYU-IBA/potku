@@ -171,6 +171,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.presim_ions = self.settings.get_min_presim_ions()
         self.sim_ions = self.settings.get_min_simulation_ions()
         self.ion_division = self.settings.get_ion_division()
+        self.min_conc_spinbox.setMinimum(GlobalSettings.MIN_CONC_LIMIT)
         self.min_concentration = self.settings.get_minimum_concentration()
 
         self.save_window_geometries = gutils.get_potku_setting(

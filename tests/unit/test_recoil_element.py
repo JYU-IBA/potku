@@ -151,5 +151,85 @@ class TestRecoilElement(unittest.TestCase):
         self.assertIs(rec_elem2, rec_elem2)
 
 
+class TestPoints(unittest.TestCase):
+    def setUp(self):
+        self.p2_args = 1, 1
+        self.p1 = Point(0, 0)
+        self.p2 = Point(self.p2_args)
+        self.p3 = Point(2, 0)
+
+        points = [
+            self.p1, self.p2, self.p3
+        ]
+        self.rec_elem = RecoilElement(mo.get_element(), points)
+
+    def test_sorting_points(self):
+        """Points should always remain sorted.
+        """
+        n = 10
+        iters = 10
+        maximum = 20
+        minimum = 0
+        rand = lambda: random.uniform(minimum, maximum)
+        for _ in range(iters):
+            points = [
+                Point(rand(), rand())
+                for _ in range(n)
+            ]
+            points_sorted = sorted(points)
+
+            rec_elem = RecoilElement(
+                mo.get_element(), points)
+
+            self.assertEqual(points_sorted, rec_elem.get_points())
+
+            p_0 = Point(minimum - 1, rand())
+            p_n = Point(maximum + 1, rand())
+            rec_elem.add_point(p_0)
+            rec_elem.add_point(p_n)
+
+            self.assertIs(p_0, rec_elem.get_points()[0])
+            self.assertIs(p_n, rec_elem.get_points()[-1])
+
+    def test_remove_point(self):
+        self.rec_elem.remove_point(self.p1)
+        self.assertEqual([self.p2, self.p3], self.rec_elem.get_points())
+
+        self.rec_elem.remove_point(self.p3)
+        self.assertEqual([self.p2], self.rec_elem.get_points())
+
+        self.rec_elem.remove_point(Point(self.p2_args))
+        self.assertEqual([], self.rec_elem.get_points())
+
+        self.assertRaises(
+            ValueError, lambda: self.rec_elem.remove_point(self.p1))
+
+    def test_get_neighbours(self):
+        ln, rn = self.rec_elem.get_neighbors(self.p1)
+        self.assertIsNone(ln)
+        self.assertIs(rn, self.p2)
+
+        ln, rn = self.rec_elem.get_neighbors(self.p2)
+        self.assertIs(ln, self.p1)
+        self.assertIs(rn, self.p3)
+
+        ln, rn = self.rec_elem.get_neighbors(self.p3)
+        self.assertIs(ln, self.p2)
+        self.assertIsNone(rn)
+
+        ln, rn = self.rec_elem.get_neighbors(Point(1, 1))
+        self.assertIs(ln, self.p1)
+        self.assertIs(rn, self.p3)
+
+    def test_between_zeros(self):
+        self.assertFalse(self.rec_elem.between_zeros(self.p1))
+        self.assertTrue(self.rec_elem.between_zeros(self.p2))
+        self.assertFalse(self.rec_elem.between_zeros(self.p3))
+
+        self.assertTrue(self.rec_elem.between_zeros(Point(1, 1)))
+        self.assertRaises(
+            ValueError, lambda: self.rec_elem.between_zeros(Point(0.5, 1)))
+
+
 if __name__ == '__main__':
     unittest.main()

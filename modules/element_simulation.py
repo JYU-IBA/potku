@@ -132,9 +132,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             seed_number: Seed number to give unique value to one simulation.
             minimum_energy: Minimum energy.
             channel_width: Channel width.
-            element simulation.
-            main_recoil: Main recoil element.
-            optimization_recoils: List or recoils that are used for
+            optimization_recoils: List of recoils that are used for
                 optimization.
             optimized_fluence: Optimized fluence value.
             save_on_creation: Determines if the element simulation is saved to
@@ -471,19 +469,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             file_path = self.get_default_file_path()
         with open(file_path, "w") as file:
             json.dump(self.get_json_content(), file, indent=4)
-
-    def remove_file(self, file_path=None):
-        """Removes the .mcsimu file.
-
-        Args:
-            file_path: path to the .mcsimu file
-        """
-        try:
-            if file_path is None:
-                file_path = self.get_default_file_path()
-            file_path.unlink()
-        except (OSError, IsADirectoryError, PermissionError):
-            pass
 
     def profile_to_file(self, file_path: Path):
         """Save profile settings (only channel width) to file.
@@ -924,15 +909,26 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             exts={".recoil", ".erd", ".simu", ".scatter"},
             filter_func=filter_func)
 
-    def reset(self, remove_files=True):
+    def delete_all_files(self):
+        """Stops simulation and removes all simulation files.
+        """
+        self.reset(remove_result_files=True)
+        # FIXME also removes files that have the same prefix
+        gf.remove_matching_files(
+            self.directory, exts={".mcsimu", ".rec", ".profile", ".sct"},
+            filter_func=lambda fn: fn.startswith(self.name_prefix)
+        )
+
+    def reset(self, remove_result_files=True):
         """Function that resets the state of ElementSimulation.
 
         Args:
-            remove_files: whether simulation result files are also removed
+            remove_result_files: whether simulation result files are also
+                removed
         """
         self.stop().wait(1)
 
-        if remove_files:
+        if remove_result_files:
             self.delete_simulation_results()
             self.delete_optimization_results()
             self.__erd_filehandler.clear()

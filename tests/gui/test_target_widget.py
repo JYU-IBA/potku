@@ -49,7 +49,7 @@ class TestTargetWidget(unittest.TestCase):
             tab, sim, target, icons, settings, auto_save=False)
         rec_dist = widget.recoil_distribution_widget
 
-        self.assertFalse(rec_dist.is_main_recoil_selected())
+        self.assertFalse(rec_dist.main_recoil_selected())
         self.assertIsNone(rec_dist.get_current_main_recoil())
 
         widget.close()

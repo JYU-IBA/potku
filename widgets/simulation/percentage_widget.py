@@ -31,6 +31,10 @@ import widgets.binding as bnd
 import modules.math_functions as mf
 import widgets.gui_utils as gutils
 
+from modules.recoil_element import RecoilElement
+
+from typing import List
+
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import Qt
@@ -48,8 +52,9 @@ class PercentageWidget(QtWidgets.QWidget):
     # for each element.
     interval_type = bnd.bind("comboBox")
 
-    def __init__(self, recoil_elements, common_interval, icon_manager,
-                 distribution_changed=None, interval_changed=None):
+    def __init__(self, recoil_elements: List[RecoilElement], common_interval,
+                 icon_manager, distribution_changed=None,
+                 interval_changed=None):
         """
         Initialize the widget.
 

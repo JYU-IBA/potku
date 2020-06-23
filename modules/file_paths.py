@@ -104,7 +104,7 @@ def validate_erd_file_names(erd_files, recoil_element):
             yield erd_file_path, seed
 
 
-def is_erd_file(recoil_element, file_name):
+def is_erd_file(recoil_element, file_name) -> bool:
     """Checks if the file is a valid ERD file name for the given
     recoil element.
     """
@@ -123,18 +123,18 @@ def recoil_filter(prefix):
 
 
 # TODO document what the prefix actually is in the following functions
-def is_recoil_file(prefix, file_name):
+def is_recoil_file(prefix, file_name) -> bool:
     """Checks whether a file name is a recoil name for the given prefix.
     """
     return recoil_filter(prefix)(file_name)
 
 
-def get_recoil_file_path(recoil_element, directory):
+def get_recoil_file_path(recoil_element, directory) -> Path:
     return Path(directory,
                 f"{recoil_element.get_full_name()}.{recoil_element.type}")
 
 
-def is_optfl_result(prefix, file_name):
+def is_optfl_result(prefix, file_name) -> bool:
     """Checks whether a file name is a optfl result for the given prefix.
     """
     return file_name.startswith(prefix) and \
@@ -142,19 +142,19 @@ def is_optfl_result(prefix, file_name):
         not file_name[file_name.index(prefix) + len(prefix)].isalpha()
 
 
-def is_optfirst(prefix, file_name):
+def is_optfirst(prefix, file_name) -> bool:
     """Checks whether a file name is a optfirst file for the given prefix.
     """
     return f"{prefix}-optfirst.rec" == file_name
 
 
-def is_optmed(prefix, file_name):
+def is_optmed(prefix, file_name) -> bool:
     """Checks whether a file name is a optmed file for the given prefix.
     """
     return f"{prefix}-optmed.rec" == file_name
 
 
-def is_optlast(prefix, file_name):
+def is_optlast(prefix, file_name) -> bool:
     """Checks whether a file name is a optlast file for the given prefix.
     """
     return f"{prefix}-optlast.rec" == file_name

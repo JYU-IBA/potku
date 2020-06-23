@@ -130,7 +130,8 @@ class TestGlobalSettings(unittest.TestCase):
         self.gs.set_minimum_concentration(1)
         self.assertEqual(1, self.gs.get_minimum_concentration())
         self.gs.set_minimum_concentration(0)
-        self.assertEqual(1, self.gs.get_minimum_concentration())
+        # The absolute minimum
+        self.assertEqual(0.000001, self.gs.get_minimum_concentration())
 
     def test_serialiazation(self):
         """Deserialized GlobalSettings object should have the same
