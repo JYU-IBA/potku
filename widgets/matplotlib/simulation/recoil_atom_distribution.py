@@ -25,20 +25,20 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import matplotlib
 
 import modules.general_functions as gf
 import dialogs.dialog_functions as df
-import widgets.binding as bnd
 
 from widgets.matplotlib import mpl_utils
 from pathlib import Path
 from typing import Optional
 from typing import Tuple
 from typing import Dict
+from typing import List
 
 from dialogs.simulation.multiply_area import MultiplyAreaDialog
 from dialogs.simulation.recoil_element_selection import \
@@ -76,10 +76,10 @@ from widgets.icon_manager import IconManager
 
 
 class ElementManager:
-    """
-    A class that manipulates the elements of the simulation.
+    """A class that manipulates the elements of the simulation.
+
     A Simulation can have 0...n ElementSimulations.
-    Each ElementSimulation has 1 RecoilElement.
+    Each ElementSimulation has 0..n RecoilElements.
     Each RecoilElement has 1 Element, 1 ElementWidget and 2...n Points.
     """
 
@@ -612,10 +612,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             for recoil in self.simulation.get_recoil_elements()
         }
 
-    def get_common_limits(self) -> Tuple[float, float]:
-        return tuple(
-            lim.get_xdata()[0] for lim in self.area_limits_for_all
-        )
+    def get_common_limits(self, rounding=None) -> Tuple[float, float]:
+        xs = (lim.get_xdata()[0] for lim in self.area_limits_for_all)
+        if rounding is not None:
+            return tuple(round(x, rounding) for x in xs)
+        return tuple(xs)
 
     def get_all_limits(self) -> Dict:
         return {
@@ -1631,10 +1632,16 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             new_point = Point(new_point)
 
         recoil.add_point(new_point)
-        # FIXME crashes here after multiplying area (floating point precision
-        #  issue?)
-        left_neighbor, right_neighbor = \
-            self.current_recoil_element.get_neighbors(new_point)
+        # FIXME crashes here after multiplying area
+        #       - point gets added to main recoil of current element simulation
+        #         instead of current recoil, which causes a crash as the point
+        #         is not found.
+        try:
+            left_neighbor, right_neighbor = \
+                self.current_recoil_element.get_neighbors(new_point)
+        except ValueError as e:
+            print(e)
+            return
 
         # TODO can we assume that left_neighbor is not None?
         left_neighbor_x = left_neighbor.get_x()
@@ -2181,6 +2188,19 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         return current_low == main_low and current_high == main_high
 
+    def _add_point_at_limit(self, points: List[Point], limit: float, **kwargs) \
+            -> Optional[Point]:
+        """Adds a Point at limit value if there is no point there yet.
+        """
+        if points:
+            for p0, p1 in zip(points[:-1], points[1:]):
+                if p0.get_x() < limit < p1.get_x():
+                    new_point = p0.calculate_new_point(p1, limit)
+                    return self.add_point(new_point, **kwargs)
+                elif p0.get_x() >= limit:
+                    return None
+        return None
+
     def multiply_area(self):
         """Multiply recoil element area and change the distribution accordingly.
         """
@@ -2190,41 +2210,16 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if dialog.can_multiply():
             self.current_recoil_element.save_current_points(self.full_edit_on)
             # Delete/add points between limits to have matching number of points
-            lower_limit = round(self.area_limits_for_all[0].get_xdata()[0], 2)
-            upper_limit = round(self.area_limits_for_all[1].get_xdata()[0], 2)
+            lower_limit, upper_limit = self.get_common_limits(rounding=2)
 
             # Add missing start and end
-            x_coords = self.current_recoil_element.get_xs()
-            current_points = self.current_recoil_element.get_points()
-            if lower_limit not in x_coords:
-                # for p0, p1 in zip(current_points[:-1], current_points[1:]):
-                #     if p0.get_x() < lower_limit < p1.get_x():
-                #         np = p0.calculate_new_point(p1, lower_limit)
-                #         self.add_point(np, multiply=True)
-                point_to_add = None
-                for i, p in enumerate(current_points):
-                    if i > 0:
-                        previous_point = current_points[i - 1]
-                        if previous_point.get_x() < lower_limit < p.get_x():
-                            point_to_add = previous_point.calculate_new_point(
-                                p, lower_limit
-                            )
-                            break
-                if point_to_add is not None:
-                    self.add_point(point_to_add, multiply=True)
+            self._add_point_at_limit(
+                self.current_recoil_element.get_points(), lower_limit,
+                multiply=True)
 
-            if upper_limit not in x_coords:
-                point_to_add = None
-                for i, p in enumerate(current_points):
-                    if i > 0:
-                        previous_point = current_points[i - 1]
-                        if previous_point.get_x() < upper_limit < p.get_x():
-                            point_to_add = previous_point.calculate_new_point(
-                                p, upper_limit
-                            )
-                            break
-                if point_to_add is not None:
-                    self.add_point(point_to_add, multiply=True)
+            self._add_point_at_limit(
+                self.current_recoil_element.get_points(), upper_limit,
+                multiply=True)
 
             # Delete
             for point in reversed(self.current_recoil_element.get_points()):
@@ -2245,37 +2240,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             main_points_to_add = []
 
             # Add lower and upper limit temporarily to main recoil points
-            if lower_limit not in main_x_coords:
-                point_to_add = None
-                for i, p in enumerate(points):
-                    if i > 0:
-                        previous_point = points[i - 1]
-                        if previous_point.get_x() < lower_limit < p.get_x():
-                            point_to_add = previous_point.calculate_new_point(
-                                p, lower_limit
-                            )
-                            break
-                if point_to_add is not None:
-                    point = self.add_point(
-                        point_to_add, recoil=self.get_current_main_recoil(),
-                        multiply=True)
-                    main_points_to_add.append(point)
-
-            if upper_limit not in main_x_coords:
-                point_to_add = None
-                for i, p in enumerate(points):
-                    if i > 0:
-                        previous_point = points[i - 1]
-                        if previous_point.get_x() < upper_limit < p.get_x():
-                            point_to_add = previous_point.calculate_new_point(
-                                p, upper_limit
-                            )
-                            break
-                if point_to_add is not None:
-                    point = self.add_point(
-                        point_to_add, recoil=self.get_current_main_recoil(),
-                        multiply=True)
-                    main_points_to_add.append(point)
+            point = self._add_point_at_limit(
+                self.get_current_main_recoil().get_points(), lower_limit,
+                multiply=True, recoil=self.get_current_main_recoil()
+            )
+            if point is not None:
+                main_points_to_add.append(point)
+            point = self._add_point_at_limit(
+                self.get_current_main_recoil().get_points(), upper_limit,
+                multiply=True, recoil=self.get_current_main_recoil()
+            )
+            if point is not None:
+                main_points_to_add.append(point)
 
             for i in range(len(points)):
                 main_p_x = points[i].get_x()

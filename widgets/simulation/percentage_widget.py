@@ -45,6 +45,7 @@ from widgets.gui_utils import QtABCMeta
 
 
 class IntervalType(Enum):
+    NO_LIMITS = "No limits"
     COMMON = "Common areas"
     INDIVIDUAL = "Individual areas"
 
@@ -128,14 +129,12 @@ class PercentageWidget(QtWidgets.QWidget):
         row = self._percentage_rows.get(recoil)
         return row is not None and not row.selected
 
-    def _calculate_areas_and_percentages(self, start=None, end=None,
-                                         rounding=2):
+    def _calculate_areas_and_percentages(self, rounding=2):
         """Calculate areas and percents for recoil elements within the given
         interval.
 
         Args:
-            start: first point of the interval.
-            end: last point of the interval.
+            interval_type: type of interval to use
             rounding: rounding accuracy of percentage calculation
         Return:
 
@@ -143,7 +142,29 @@ class PercentageWidget(QtWidgets.QWidget):
         if self.get_limits is not None:
             limits = self.get_limits()
         else:
-            return
+            return None, None
+
+        interval_type = self.interval_type
+
+        if interval_type is IntervalType.NO_LIMITS:
+            def get_range(recoil: RecoilElement):
+                return None, None
+
+        elif interval_type is IntervalType.COMMON:
+            def get_range(recoil: RecoilElement):
+                try:
+                    start, end = limits["common"]
+                except (ValueError, KeyError):
+                    start, end = None, None
+                return start, end
+        else:
+            def get_range(recoil: RecoilElement):
+                try:
+                    start, end = limits[recoil]
+                except (ValueError, KeyError):
+                    start, end = None, None
+                return start, end
+
         areas = {}
         percentages = {}
         for recoil in self._percentage_rows:
@@ -153,21 +174,7 @@ class PercentageWidget(QtWidgets.QWidget):
                 # Recoil has been removed
                 area = 0
             else:
-                try:
-                    if start is None:
-                        start_ = limits[recoil][0]
-                    else:
-                        start_ = start
-
-                    if end is None:
-                        end_ = limits[recoil][1]
-                    else:
-                        end_ = end
-                    area = recoil.calculate_area(start_, end_)
-                except IndexError:
-                    # Limit was not a valid value, use the entire distribution
-                    # instead
-                    area = recoil.calculate_area()
+                area = recoil.calculate_area(*get_range(recoil))
 
             if not self.__relative_values:
                 # TODO label text needs to reformatted when using absolute
@@ -177,9 +184,8 @@ class PercentageWidget(QtWidgets.QWidget):
             areas[recoil] = area
 
         for recoil, percentage in zip(
-                areas,
-                mf.calculate_percentages(areas.values(),
-                                         rounding=rounding)):
+                areas, mf.calculate_percentages(
+                    areas.values(), rounding=rounding)):
             percentages[recoil] = percentage
 
         return areas, percentages
@@ -201,20 +207,9 @@ class PercentageWidget(QtWidgets.QWidget):
     def __show_percents_and_areas(self):
         """Show the percentages of the recoil elements.
         """
-        if self.get_limits is None:
+        areas, percentages = self._calculate_areas_and_percentages()
+        if areas is None or percentages is None:
             return
-
-        if self.interval_type == IntervalType.COMMON:
-            limits = self.get_limits()
-            try:
-                start, end = limits["common"]
-            except (ValueError, KeyError):
-                start, end = None, None
-            areas, percentages = self._calculate_areas_and_percentages(
-                start=start, end=end
-            )
-        else:
-            areas, percentages = self._calculate_areas_and_percentages()
 
         for row_idx, recoil in enumerate(sorted(percentages)):
             try:
