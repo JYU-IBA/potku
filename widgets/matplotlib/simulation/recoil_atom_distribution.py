@@ -37,6 +37,8 @@ import widgets.binding as bnd
 from widgets.matplotlib import mpl_utils
 from pathlib import Path
 from typing import Optional
+from typing import Tuple
+from typing import Dict
 
 from dialogs.simulation.multiply_area import MultiplyAreaDialog
 from dialogs.simulation.recoil_element_selection import \
@@ -389,7 +391,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     # Signal that is emitted when recoil distribution changes
     recoil_dist_changed = pyqtSignal(RecoilElement, ElementSimulation)
     # Signal that is emitted when limit values are changed
-    limit_changed = pyqtSignal(float, float)
+    limit_changed = pyqtSignal()
 
     update_element_simulation = pyqtSignal(ElementSimulation)
     recoil_name_changed = pyqtSignal(ElementSimulation, RecoilElement)
@@ -604,6 +606,23 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         return self._settings.get_minimum_concentration()
 
+    def get_individual_limits(self) -> Dict[RecoilElement, Tuple[float, float]]:
+        return {
+            recoil: tuple(lim.get_xdata()[0] for lim in recoil.area_limits)
+            for recoil in self.simulation.get_recoil_elements()
+        }
+
+    def get_common_limits(self) -> Tuple[float, float]:
+        return tuple(
+            lim.get_xdata()[0] for lim in self.area_limits_for_all
+        )
+
+    def get_all_limits(self) -> Dict:
+        return {
+            "common": self.get_common_limits(),
+            **self.get_individual_limits()
+        }
+
     def __update_figure(self, **kwargs):
         """Update figure.
         """
@@ -621,12 +640,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         on the same interval and their individual intervals.
         """
         recoils = self.simulation.get_recoil_elements()
-        limits = [x.get_xdata()[0] for x in self.area_limits_for_all]
 
         percentage_widget = PercentageWidget(
-            recoils, limits, self.__icon_manager,
+            recoils, self.__icon_manager,
             distribution_changed=self.recoil_dist_changed,
-            interval_changed=self.limit_changed
+            interval_changed=self.limit_changed,
+            get_limits=self.get_all_limits
         )
         self.tab.add_widget(percentage_widget)
 
@@ -1086,6 +1105,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Args:
             element_simulation: An ElementSimulation object.
         """
+        # FIXME should also remove individual limit lines of all recoils
         self.element_manager.remove_element_simulation(element_simulation)
 
     def remove_recoil_element(
@@ -1381,6 +1401,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         self.__button_individual_limits.setChecked(
             self.area_limits_individual_on)
+        self.limit_changed.emit()
         self.canvas.draw_idle()
 
     def __toggle_span_limits(self):
@@ -1407,6 +1428,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.parent.percentButton.setEnabled(True)
             self.area_limits_for_all_on = True
             self.span_selector.set_active(True)
+            self.limit_changed.emit()
 
         self.__button_span_limits.setChecked(self.area_limits_for_all_on)
         self.canvas.draw_idle()
@@ -2077,8 +2099,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             lower.set_color("green")
                             lim.set_color("orange")
                         self.__move_lower = True
-
-                    # TODO signal that individual limit has changed
+                    self.limit_changed.emit()
                     self.__calculate_selected_area()
 
     def undo_recoil_changes(self):
@@ -2163,11 +2184,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def multiply_area(self):
         """Multiply recoil element area and change the distribution accordingly.
         """
-        dialog = MultiplyAreaDialog(
-            self.get_current_main_recoil(), self.area_limits_for_all)
+        dialog = MultiplyAreaDialog(self.get_current_main_recoil())
 
         # If there are proper areas to handle
-        if dialog.ok_pressed and dialog.reference_area and dialog.new_area:
+        if dialog.can_multiply():
             self.current_recoil_element.save_current_points(self.full_edit_on)
             # Delete/add points between limits to have matching number of points
             lower_limit = round(self.area_limits_for_all[0].get_xdata()[0], 2)
@@ -2333,7 +2353,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.area_limits_for_all.append(self.axes.axvline(
             x=high_x, linestyle="--", color='red'))
 
-        self.limit_changed.emit(low_x, high_x)
+        self.limit_changed.emit()
 
         self.axes.set_ybound(ylim[0], ylim[1])
         self.canvas.draw_idle()
@@ -2353,7 +2373,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.current_recoil_element.area_limits.append(self.axes.axvline(
                 x=high_x, linestyle="--", color='orange'))
 
-        area = self.current_recoil_element.calculate_area_for_interval()
+        area = self.current_recoil_element.calculate_area()
         self.current_recoil_element.area = area
 
         if self.anchored_box:

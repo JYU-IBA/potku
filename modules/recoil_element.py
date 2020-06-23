@@ -545,9 +545,13 @@ class RecoilElement(MCERDParameterContainer, Serializable):
 
         return params
 
-    def calculate_area_for_interval(self, start=None, end=None):
-        """
-        Calculate area for given interval.
+    def calculate_area(self, start: Optional[float] = None,
+                       end: Optional[float] = None) -> float:
+        """Calculates the area of the recoil distribution.
+
+        If start and end values are defined, area is calculated between those
+        two values on the x axis, otherwise the entire length of the
+        distribution is used.
 
         Args:
             start: Start x.
@@ -561,6 +565,6 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         if end is None:
             end = self._points[-1].get_x()
 
-        area_points = list(mf.get_continuous_range(*self.get_xs_and_ys(),
-                                                   a=start, b=end))
+        area_points = list(mf.get_continuous_range(
+            *self.get_xs_and_ys(), a=start, b=end))
         return mf.calculate_area(area_points)

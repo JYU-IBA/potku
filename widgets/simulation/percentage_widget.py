@@ -32,6 +32,7 @@ import modules.math_functions as mf
 import widgets.gui_utils as gutils
 
 from modules.recoil_element import RecoilElement
+from enum import Enum
 
 from typing import List
 
@@ -43,6 +44,14 @@ from widgets.simulation.circle import Circle
 from widgets.gui_utils import QtABCMeta
 
 
+class IntervalType(Enum):
+    COMMON = "Common areas"
+    INDIVIDUAL = "Individual areas"
+
+    def __str__(self):
+        return self.value
+
+
 class PercentageWidget(QtWidgets.QWidget):
     """
     Class for a widget that calculates the percentages for given recoils and
@@ -52,15 +61,14 @@ class PercentageWidget(QtWidgets.QWidget):
     # for each element.
     interval_type = bnd.bind("comboBox")
 
-    def __init__(self, recoil_elements: List[RecoilElement], common_interval,
+    def __init__(self, recoil_elements: List[RecoilElement],
                  icon_manager, distribution_changed=None,
-                 interval_changed=None):
+                 interval_changed=None, get_limits=None):
         """
         Initialize the widget.
 
         Args:
             recoil_elements: List of recoil elements.
-            common_interval: Interval that used for all the recoils.
             icon_manager: Icon manager.
         """
         super().__init__()
@@ -71,35 +79,31 @@ class PercentageWidget(QtWidgets.QWidget):
             recoil: None
             for recoil in recoil_elements
         }
-        if not common_interval:
-            try:
-                self.common_interval = list(
-                    recoil_elements[0].get_individual_interval())
-            except IndexError:
-                self.common_interval = [0, 0]
-        else:
-            self.common_interval = common_interval
 
         self.icon_manager = icon_manager
         self.setWindowTitle("Percentages")
 
+        gutils.fill_combobox(self.comboBox, IntervalType)
         self.comboBox.currentIndexChanged.connect(
             self.__show_percents_and_areas)
 
-        self.icon_manager.set_icon(self.absRelButton,
-                                   "depth_profile_rel.svg")
+        self.icon_manager.set_icon(
+            self.absRelButton, "depth_profile_rel.svg")
         self.__relative_values = True
-        self.absRelButton.setToolTip("Toggle between relative and absolute "
-                                     "values.")
+        self.absRelButton.setToolTip(
+            "Toggle between relative and absolute values.")
         self.absRelButton.clicked.connect(self.__show_abs_or_rel_values)
 
         self.__dist_changed_sig = distribution_changed
         self.__interval_changed_sig = interval_changed
-        if distribution_changed is not None:
-            distribution_changed.connect(self._dist_changed)
 
-        if interval_changed is not None:
-            interval_changed.connect(self._limits_changed)
+        self.get_limits = get_limits
+        if self.get_limits is not None:
+            if distribution_changed is not None:
+                distribution_changed.connect(self._dist_changed)
+
+            if interval_changed is not None:
+                interval_changed.connect(self._limits_changed)
 
         self.__show_percents_and_areas()
 
@@ -118,6 +122,12 @@ class PercentageWidget(QtWidgets.QWidget):
             pass
         event.accept()
 
+    def row_unselected(self, recoil: RecoilElement) -> bool:
+        """Checks if the given recoil has a row that is unselected.
+        """
+        row = self._percentage_rows.get(recoil)
+        return row is not None and not row.selected
+
     def _calculate_areas_and_percentages(self, start=None, end=None,
                                          rounding=2):
         """Calculate areas and percents for recoil elements within the given
@@ -130,25 +140,34 @@ class PercentageWidget(QtWidgets.QWidget):
         Return:
 
         """
+        if self.get_limits is not None:
+            limits = self.get_limits()
+        else:
+            return
         areas = {}
         percentages = {}
         for recoil in self._percentage_rows:
-            try:
-                if not self._percentage_rows[recoil].selected:
-                    area = 0
-                else:
+            if self.row_unselected(recoil):
+                area = 0
+            elif recoil not in limits:
+                # Recoil has been removed
+                area = 0
+            else:
+                try:
                     if start is None:
-                        start_ = recoil.area_limits[0].get_xdata()[0]
+                        start_ = limits[recoil][0]
                     else:
                         start_ = start
 
                     if end is None:
-                        end_ = recoil.area_limits[-1].get_xdata()[0]
+                        end_ = limits[recoil][1]
                     else:
                         end_ = end
-                    area = recoil.calculate_area_for_interval(start_, end_)
-            except (KeyError, AttributeError, IndexError):
-                area = recoil.calculate_area_for_interval(start, end)
+                    area = recoil.calculate_area(start_, end_)
+                except IndexError:
+                    # Limit was not a valid value, use the entire distribution
+                    # instead
+                    area = recoil.calculate_area()
 
             if not self.__relative_values:
                 # TODO label text needs to reformatted when using absolute
@@ -170,8 +189,8 @@ class PercentageWidget(QtWidgets.QWidget):
         Show recoil area in absolute or relative format.
         """
         if self.__relative_values:
-            self.icon_manager.set_icon(self.absRelButton,
-                                       "depth_profile_abs.svg")
+            self.icon_manager.set_icon(
+                self.absRelButton, "depth_profile_abs.svg")
         else:
             self.icon_manager.set_icon(self.absRelButton,
                                        "depth_profile_rel.svg")
@@ -180,13 +199,19 @@ class PercentageWidget(QtWidgets.QWidget):
         self.__show_percents_and_areas()
 
     def __show_percents_and_areas(self):
+        """Show the percentages of the recoil elements.
         """
-        Show the percentages of the recoil elements.
-        """
-        if self.interval_type == "Common interval":
+        if self.get_limits is None:
+            return
+
+        if self.interval_type == IntervalType.COMMON:
+            limits = self.get_limits()
+            try:
+                start, end = limits["common"]
+            except (ValueError, KeyError):
+                start, end = None, None
             areas, percentages = self._calculate_areas_and_percentages(
-                start=self.common_interval[0],
-                end=self.common_interval[1]
+                start=start, end=end
             )
         else:
             areas, percentages = self._calculate_areas_and_percentages()
@@ -219,12 +244,10 @@ class PercentageWidget(QtWidgets.QWidget):
         if recoil in self._percentage_rows:
             self.__show_percents_and_areas()
 
-    def _limits_changed(self, low_x, high_x):
+    def _limits_changed(self):
         """Updates the common_interval with given x values and calls
         __show_percents_and_areas.
         """
-        self.common_interval[0] = low_x
-        self.common_interval[1] = high_x
         self.__show_percents_and_areas()
 
 
@@ -295,9 +318,9 @@ class PercentageRow(QtWidgets.QWidget, bnd.PropertyBindingWidget,
         self.areaLabel.setMaximumWidth(40)
 
         self.selectedCheckbox = QtWidgets.QCheckBox()
-        self.selectedCheckbox.setToolTip(f"Deselect to ignore the element "
-                                         "from percentage and area "
-                                         "calculations.")
+        self.selectedCheckbox.setToolTip(
+            f"Deselect to ignore the element from percentage and area "
+            f"calculations.")
         self.selectedCheckbox.setChecked(True)
 
         layout.addWidget(text_label)

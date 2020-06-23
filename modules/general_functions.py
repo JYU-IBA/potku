@@ -133,12 +133,7 @@ def remove_matching_files(directory: Path, exts: Optional[Set[str]] = None,
             for entry in sdir:
                 path = Path(entry.path)
                 if _filter_func(path):
-                    try:
-                        path.unlink()
-                    except OSError:
-                        # fp could be a directory, or permissions may prevent
-                        # deletion
-                        pass
+                    remove_files(path)
     except OSError:
         # Directory not found (or directory is a file), nothing to do
         pass

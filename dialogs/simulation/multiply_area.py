@@ -28,22 +28,22 @@ __version__ = "2.0"
 
 import widgets.gui_utils as gutils
 
+from modules.recoil_element import RecoilElement
+
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 
 
 class MultiplyAreaDialog(QtWidgets.QDialog):
+    """Dialog for choosing area multiplication parameters.
     """
-    Dialog for choosing area multiplication parameters.
-    """
-    def __init__(self, main_recoil, area_limits):
+    def __init__(self, main_recoil: RecoilElement):
         """
         Initializes the dialog.
 
         Args:
             main_recoil: Main RecoilElement object.
-            area_limits: Limits for area.
         """
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_multiply_area_dialog.ui", self)
@@ -60,7 +60,7 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
         self.fractionDoubleSpinBox.valueChanged.connect(
             self.calculate_new_area)
 
-        self.main_area = self.main_recoil.calculate_area_for_interval()
+        self.main_area = self.main_recoil.calculate_area()
         text = str(round(self.main_area, 2))
 
         self.mainAreaLabel.setText(text)
@@ -70,13 +70,12 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
         self.reference_area = self.main_area
         self.fraction = None
 
-        self.ok_pressed = False
+        self.is_ok = False
 
         self.exec_()
 
     def calculate_new_area(self):
-        """
-        Calculate new area based on dialog's values.
+        """Calculate new area based on dialog's values.
         """
         ref_area = self.main_area
 
@@ -97,8 +96,7 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
         self.fraction = fraction
 
     def change_custom(self):
-        """
-        Enable or disable custom area or fraction usage.
+        """Enable or disable custom area or fraction usage.
         """
         if self.sender() is self.fractionCheckBox:
             checked = self.fractionCheckBox.isChecked()
@@ -106,8 +104,14 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
         self.calculate_new_area()
 
     def ok_pressed(self):
+        """Note that Ok was pressed.
         """
-        Note that Ok was pressed.
-        """
-        self.ok_pressed = True
+        self.is_ok = True
         self.close()
+
+    def can_multiply(self) -> bool:
+        """Whether multiplication can be applied or not.
+
+        Reference are and new are must be defined.
+        """
+        return self.is_ok and self.reference_area and self.new_area

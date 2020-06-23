@@ -102,28 +102,28 @@ class TestRecoilElement(unittest.TestCase):
         self.assertEqual(fst, snd)
 
     def test_calculate_area(self):
-        self.assertEqual(12, self.rec_elem.calculate_area_for_interval())
-        self.assertEqual(4.5, self.rec_elem.calculate_area_for_interval(
+        self.assertEqual(12, self.rec_elem.calculate_area())
+        self.assertEqual(4.5, self.rec_elem.calculate_area(
             start=0, end=1))
 
-        self.assertEqual(0, self.rec_elem.calculate_area_for_interval(
+        self.assertEqual(0, self.rec_elem.calculate_area(
             start=0.5, end=0.5))
-        self.assertEqual(2.25, self.rec_elem.calculate_area_for_interval(
+        self.assertEqual(2.25, self.rec_elem.calculate_area(
             start=0.25, end=0.75))
 
-        self.assertEqual(5.5, self.rec_elem.calculate_area_for_interval(
+        self.assertEqual(5.5, self.rec_elem.calculate_area(
             start=0.5, end=1.5))
 
         # If the interval is outside the point range, 0 is returned
-        self.assertEqual(0, self.rec_elem.calculate_area_for_interval(
+        self.assertEqual(0, self.rec_elem.calculate_area(
             start=2, end=3))
-        self.assertEqual(0, self.rec_elem.calculate_area_for_interval(
+        self.assertEqual(0, self.rec_elem.calculate_area(
             start=-2, end=0))
 
         # If the length of the interval is non-positive, 0 is returned
-        self.assertEqual(0, self.rec_elem.calculate_area_for_interval(
+        self.assertEqual(0, self.rec_elem.calculate_area(
             start=1, end=1))
-        self.assertEqual(0, self.rec_elem.calculate_area_for_interval(
+        self.assertEqual(0, self.rec_elem.calculate_area(
             start=1, end=0))
 
     def test_sorting(self):
