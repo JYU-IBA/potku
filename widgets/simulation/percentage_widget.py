@@ -45,9 +45,9 @@ from widgets.gui_utils import QtABCMeta
 
 
 class IntervalType(Enum):
-    NO_LIMITS = "No limits"
     COMMON = "Common areas"
     INDIVIDUAL = "Individual areas"
+    NO_LIMITS = "No limits"
 
     def __str__(self):
         return self.value
