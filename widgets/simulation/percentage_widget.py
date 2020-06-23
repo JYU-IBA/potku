@@ -35,6 +35,8 @@ from modules.recoil_element import RecoilElement
 from enum import Enum
 
 from typing import List
+from typing import Tuple
+from typing import Dict
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -58,9 +60,8 @@ class PercentageWidget(QtWidgets.QWidget):
     Class for a widget that calculates the percentages for given recoils and
     intervals.
     """
-    # Interval is either same interval for all elements or individual interval
-    # for each element.
     interval_type = bnd.bind("comboBox")
+    status_msg = bnd.bind("label_status")
 
     def __init__(self, recoil_elements: List[RecoilElement],
                  icon_manager, distribution_changed=None,
@@ -129,15 +130,14 @@ class PercentageWidget(QtWidgets.QWidget):
         row = self._percentage_rows.get(recoil)
         return row is not None and not row.selected
 
-    def _calculate_areas_and_percentages(self, rounding=2):
+    def _calculate_areas_and_percentages(self, rounding=2) -> Tuple[Dict, Dict]:
         """Calculate areas and percents for recoil elements within the given
         interval.
 
         Args:
-            interval_type: type of interval to use
             rounding: rounding accuracy of percentage calculation
         Return:
-
+            areas and percentages as a dict
         """
         if self.get_limits is not None:
             limits = self.get_limits()
@@ -147,24 +147,33 @@ class PercentageWidget(QtWidgets.QWidget):
         interval_type = self.interval_type
 
         if interval_type is IntervalType.NO_LIMITS:
-            def get_range(recoil: RecoilElement):
-                return None, None
+            error_msg = ""
+
+            def get_range(_):
+                return None, None, False
 
         elif interval_type is IntervalType.COMMON:
-            def get_range(recoil: RecoilElement):
-                try:
-                    start, end = limits["common"]
-                except (ValueError, KeyError):
-                    start, end = None, None
-                return start, end
-        else:
-            def get_range(recoil: RecoilElement):
-                try:
-                    start, end = limits[recoil]
-                except (ValueError, KeyError):
-                    start, end = None, None
-                return start, end
+            error_msg = "No common interval defined, calculating percentages " \
+                        "using no limits."
 
+            def get_range(_):
+                try:
+                    start, end, error = *limits["common"], False
+                except (ValueError, KeyError):
+                    start, end, error = None, None, True
+                return start, end, error
+        else:
+            error_msg = "No individual intervals defined for some elements. " \
+                        "Using no limits to calculate areas for these."
+
+            def get_range(rec: RecoilElement):
+                try:
+                    start, end, error = *limits[rec], False
+                except ValueError:
+                    start, end, error = None, None, True
+                return start, end, error
+
+        err = False
         areas = {}
         percentages = {}
         for recoil in self._percentage_rows:
@@ -174,7 +183,8 @@ class PercentageWidget(QtWidgets.QWidget):
                 # Recoil has been removed
                 area = 0
             else:
-                area = recoil.calculate_area(*get_range(recoil))
+                s, e, err = get_range(recoil)
+                area = recoil.calculate_area(s, e)
 
             if not self.__relative_values:
                 # TODO label text needs to reformatted when using absolute
@@ -188,6 +198,10 @@ class PercentageWidget(QtWidgets.QWidget):
                     areas.values(), rounding=rounding)):
             percentages[recoil] = percentage
 
+        if err:
+            self.status_msg = error_msg
+        else:
+            self.status_msg = ""
         return areas, percentages
 
     def __show_abs_or_rel_values(self):

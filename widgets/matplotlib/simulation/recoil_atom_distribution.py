@@ -565,6 +565,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.colormap = self._settings.get_element_colors()
 
         self.parent.percentButton.clicked.connect(self.__create_percent_widget)
+        self.parent.percentButton.setEnabled(True)
 
         self.on_draw()
 
@@ -1394,7 +1395,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.axes.axvline(x=low_x, linestyle="--", color='green'))
                 self.current_recoil_element.area_limits.append(
                     self.axes.axvline(x=high_x, linestyle="--", color='orange'))
-            self.parent.percentButton.setEnabled(True)
             self.area_limits_individual_on = True
             self.__calculate_selected_area()
             if self.anchored_box:
@@ -1426,7 +1426,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     x=low_x, linestyle="--"))
                 self.area_limits_for_all.append(self.axes.axvline(
                     x=high_x, linestyle="--", color='red'))
-                self.parent.percentButton.setEnabled(True)
             self.area_limits_for_all_on = True
             self.span_selector.set_active(True)
             self.limit_changed.emit()
