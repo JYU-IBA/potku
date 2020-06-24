@@ -47,9 +47,9 @@ from widgets.gui_utils import QtABCMeta
 
 
 class IntervalType(Enum):
-    COMMON = "Common areas"
-    INDIVIDUAL = "Individual areas"
-    NO_LIMITS = "No limits"
+    COMMON = "Common interval"
+    INDIVIDUAL = "Individual intervals"
+    NO_LIMITS = "No interval"
 
     def __str__(self):
         return self.value
@@ -153,8 +153,8 @@ class PercentageWidget(QtWidgets.QWidget):
                 return None, None, False
 
         elif interval_type is IntervalType.COMMON:
-            error_msg = "No common interval defined, calculating percentages " \
-                        "using no limits."
+            error_msg = "No common interval defined, calculating areas for " \
+                        "the entire length of each distribution."
 
             def get_range(_):
                 try:
@@ -164,7 +164,8 @@ class PercentageWidget(QtWidgets.QWidget):
                 return start, end, error
         else:
             error_msg = "No individual intervals defined for some elements. " \
-                        "Using no limits to calculate areas for these."
+                        "Calculating areas for the entire length for each of " \
+                        "these."
 
             def get_range(rec: RecoilElement):
                 try:
@@ -205,15 +206,14 @@ class PercentageWidget(QtWidgets.QWidget):
         return areas, percentages
 
     def __show_abs_or_rel_values(self):
-        """
-        Show recoil area in absolute or relative format.
+        """Show recoil area in absolute or relative format.
         """
         if self.__relative_values:
             self.icon_manager.set_icon(
                 self.absRelButton, "depth_profile_abs.svg")
         else:
-            self.icon_manager.set_icon(self.absRelButton,
-                                       "depth_profile_rel.svg")
+            self.icon_manager.set_icon(
+                self.absRelButton, "depth_profile_rel.svg")
 
         self.__relative_values = not self.__relative_values
         self.__show_percents_and_areas()
@@ -303,6 +303,7 @@ class PercentageRow(QtWidgets.QWidget, bnd.PropertyBindingWidget,
             kwargs: percentage and area.
         """
         super().__init__()
+        self.setMinimumHeight(20)
         layout = QtWidgets.QHBoxLayout()
         layout.setAlignment(Qt.AlignBottom)
 
@@ -323,8 +324,8 @@ class PercentageRow(QtWidgets.QWidget, bnd.PropertyBindingWidget,
         self.percentageLabel.setMaximumWidth(80)
 
         self.areaLabel = QtWidgets.QLabel()
-        self.areaLabel.setMinimumWidth(40)
-        self.areaLabel.setMaximumWidth(40)
+        self.areaLabel.setMinimumWidth(60)
+        self.areaLabel.setMaximumWidth(60)
 
         self.selectedCheckbox = QtWidgets.QCheckBox()
         self.selectedCheckbox.setToolTip(
