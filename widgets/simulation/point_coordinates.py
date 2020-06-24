@@ -33,6 +33,7 @@ from typing import Optional
 from modules.point import Point
 from dialogs.simulation.multiply_coordinate import MultiplyCoordinateDialog
 
+from PyQt5.QtCore import pyqtSignal
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 
@@ -44,9 +45,10 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
     x_coord = bnd.bind("x_coordinate_box")
     y_coord = bnd.bind("y_coordinate_box")
 
+    coord_changed = pyqtSignal()
+
     def __init__(self, parent, optimize=False, full_edit_changed=None):
-        """
-        Initializes the widget.
+        """Initializes the widget.
 
         Args:
             parent: RecoilAtomDistributionWidget.
@@ -84,7 +86,7 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
             self.actionXMultiply.triggered.connect(
                 lambda: self.__multiply_coordinate(self.x_coordinate_box))
             self.x_coordinate_box.addAction(self.actionXMultiply)
-            self.x_coordinate_box.setEnabled(False)
+            self.set_x_enabled(False)
 
         # X label
         label_x = QtWidgets.QLabel("x:")
@@ -111,7 +113,12 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
                 lambda: self.__multiply_coordinate(self.y_coordinate_box))
             self.y_coordinate_box.addAction(self.actionYMultiply)
 
-        self.y_coordinate_box.setEnabled(False)
+            self.y_coordinate_box.editingFinished.connect(
+                self.coord_changed.emit)
+            self.x_coordinate_box.editingFinished.connect(
+                self.coord_changed.emit)
+
+        self.set_y_enabled(False)
 
         # Y label
         label_y = QtWidgets.QLabel("y:")
@@ -136,6 +143,8 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
             full_edit_changed.connect(self.set_y_min)
 
     def closeEvent(self, event):
+        """Disconnects full edit signal when closing.
+        """
         try:
             self._full_edit_changed.disconnect(self.set_y_min)
         except AttributeError:
@@ -159,7 +168,17 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
         except AttributeError:
             self.y_coordinate_box.setMinimum(0.0)
 
-    def __multiply_coordinate(self, spinbox):
+    def set_x_enabled(self, b: bool):
+        """Enables or disables x coordinate spinbox.
+        """
+        self.x_coordinate_box.setEnabled(b)
+
+    def set_y_enabled(self, b: bool):
+        """Enables or disables y coordinate spinbox.
+        """
+        self.y_coordinate_box.setEnabled(b)
+
+    def __multiply_coordinate(self, spinbox: QtWidgets.QDoubleSpinBox):
         """Multiply the spinbox's value with the value in clipboard.
 
         Args:
@@ -172,13 +191,10 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
             self.parent.current_recoil_element.save_current_points(
                 self.parent.full_edit_on)
 
-            if spinbox == self.x_coordinate_box:
+            if spinbox is self.x_coordinate_box:
                 for point in reversed(self.parent.selected_points):
                     if point.get_y() == 0.0:
-                        if not self.parent.full_edit_on or \
-                                self.parent.current_element_simulation. \
-                                        recoil_elements[0] != \
-                                self.parent.current_recoil_element:
+                        if self.parent.editing_restricted():
                             continue
                     coord = point.get_x()
                     new_coord = round(multiplier * coord, 3)
@@ -189,10 +205,7 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
             else:
                 for point in reversed(self.parent.selected_points):
                     if point.get_y() == 0.0:
-                        if not self.parent.full_edit_on or \
-                                self.parent.current_element_simulation. \
-                                        recoil_elements[0] != \
-                                self.parent.current_recoil_element:
+                        if self.parent.editing_restricted():
                             continue
                     coord = point.get_y()
                     new_coord = round(multiplier * coord, 3)

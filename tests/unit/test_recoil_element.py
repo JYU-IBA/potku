@@ -188,8 +188,8 @@ class TestPoints(unittest.TestCase):
             rec_elem.add_point(p_0)
             rec_elem.add_point(p_n)
 
-            self.assertIs(p_0, rec_elem.get_points()[0])
-            self.assertIs(p_n, rec_elem.get_points()[-1])
+            self.assertIs(p_0, rec_elem.get_first_point())
+            self.assertIs(p_n, rec_elem.get_last_point())
 
     def test_remove_point(self):
         self.rec_elem.remove_point(self.p1)

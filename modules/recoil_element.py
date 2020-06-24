@@ -324,18 +324,24 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         xs, ys = zip(*(p.get_coordinates() for p in self._points))
         return xs, ys
 
-    def get_point_by_i(self, i: int) -> Point:
-        """Returns the i:th point."""
+    def get_point(self, i: int) -> Point:
+        """Returns the i:th point.
+        """
         return self._points[i]
 
     def get_points(self) -> List[Point]:
-        """
-        Get points.
+        """Get points.
 
         Return:
              Points list.
         """
         return self._points
+
+    def get_first_point(self) -> Point:
+        return self.get_point(0)
+
+    def get_last_point(self) -> Point:
+        return self.get_point(-1)
 
     def add_point(self, point: Point):
         """Adds a point and maintains sort order."""
@@ -538,9 +544,9 @@ class RecoilElement(MCERDParameterContainer, Serializable):
 
         # MCERD requires the recoil atom distribution to end with these
         # points
-        params.append(f"{round(self.get_points()[-1].get_x() + 0.01, 2)} "
+        params.append(f"{round(self.get_last_point().get_x() + 0.01, 2)} "
                       f"0.0")
-        params.append(f"{round(self.get_points()[-1].get_x() + 0.02, 2)} "
+        params.append(f"{round(self.get_last_point().get_x() + 0.02, 2)} "
                       f"0.0\n")
 
         return params
@@ -561,9 +567,9 @@ class RecoilElement(MCERDParameterContainer, Serializable):
             Area between intervals and recoil points and x axis.
         """
         if start is None:
-            start = self._points[0].get_x()
+            start = self.get_first_point().get_x()
         if end is None:
-            end = self._points[-1].get_x()
+            end = self.get_last_point().get_x()
 
         area_points = list(mf.get_continuous_range(
             *self.get_xs_and_ys(), a=start, b=end))

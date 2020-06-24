@@ -28,6 +28,11 @@ graphs.
 __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
+from typing import Tuple
+
+from PyQt5.QtWidgets import QToolButton
+from PyQt5.QtWidgets import QLabel
+
 
 def format_coord(x: float, y: float) -> str:
     """Format mouse coordinates to string.
@@ -56,3 +61,21 @@ def format_x(x: float, _) -> str:
     """
     return f"x:{x:1.4f}"
 
+
+def get_toolbar_elements(toolbar, drag_callback=None, zoom_callback=None) -> \
+        Tuple[QLabel, QToolButton, QToolButton]:
+    """Returns tool label, drag button and zoom button from given
+    NavigationToolBar.
+    """
+    # Toolbar element indexes:
+    #   24  tool_label
+    #   12  drag button
+    #   14  zoom button
+    #   4   home    (not currently returned)
+    children = toolbar.children()
+    tool_lbl, drag_btn, zoom_btn = children[24], children[12], children[14]
+    if drag_callback is not None:
+        drag_btn.clicked.connect(drag_callback)
+    if zoom_callback is not None:
+        zoom_btn.clicked.connect(zoom_callback)
+    return tool_lbl, drag_btn, zoom_btn

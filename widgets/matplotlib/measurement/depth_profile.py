@@ -37,6 +37,7 @@ import modules.math_functions as mf
 from dialogs.measurement.depth_profile_ignore_elements \
     import DepthProfileIgnoreElements
 from widgets.matplotlib.base import MatplotlibWidget
+from widgets.matplotlib import mpl_utils
 
 from modules.depth_files import DepthProfileHandler
 from modules.element import Element
@@ -319,10 +320,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         """Custom toolbar buttons be here.
         """
         # But first, let's play around with the existing MatPlotLib buttons.
-        self.__button_drag = self.mpl_toolbar.children()[12]
-        self.__button_zoom = self.mpl_toolbar.children()[14]
-        self.__button_drag.clicked.connect(self.__uncheck_custom_buttons)
-        self.__button_zoom.clicked.connect(self.__uncheck_custom_buttons)
+        _, self.__button_drag, self.__button_zoom = \
+            mpl_utils.get_toolbar_elements(
+                self.mpl_toolbar, drag_callback=self.__uncheck_custom_buttons,
+                zoom_callback=self.__uncheck_custom_buttons)
 
         self.limButton = QtWidgets.QToolButton(self)
         self.limButton.clicked.connect(self.__toggle_lim_lines)
@@ -334,7 +335,6 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
 
         self.modeButton = QtWidgets.QToolButton(self)
         self.modeButton.clicked.connect(self.__toggle_lim_mode)
-        #self.modeButton.setEnabled(False)
         self.modeButton.setToolTip(
             "Toggles between selecting the entire " +
             "histogram, area included in the limits and " +
@@ -509,7 +509,7 @@ class LimitLines:
             highlight_last: highlights the last set limit with a different
                             color
         """
-        #TODO better highlighting OR draggable 2d lines
+        # TODO better highlighting OR draggable 2d lines
         for i in range(len(self.__limits)):
             if highlight_last and self.__next_limit != i:
                 axes.axvline(x=self.__limits[i], linestyle="-",

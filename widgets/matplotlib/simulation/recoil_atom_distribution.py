@@ -491,7 +491,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Points that have been selected
         self.selected_points = []
         # Clicked point
-        self.clicked_point = None
+        self.clicked_point: Optional[Point] = None
         # If point has been clicked
         self.point_clicked = False
         # Event for right clicking, used for either showing context menu of
@@ -581,6 +581,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 elem_sim, spectra_changed=self.recoil_dist_changed,
                 recoil_name_changed=self.recoil_name_changed))
 
+    def emit_distribution_change(self):
+        """Emits recoil distribution changed signal if recoil element
+        and element simulation are selected.
+        """
+        # FIXME comes here twice after spinbox is edited
+        if self.current_recoil_element is None:
+            return
+        if self.current_element_simulation is None:
+            return
+        self.recoil_dist_changed.emit(
+            self.current_recoil_element, self.current_element_simulation)
+
     def get_current_main_recoil(self) -> Optional[RecoilElement]:
         """Returns the main recoil of currently selected ElementSimulation.
         """
@@ -602,24 +614,79 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         return not self.full_edit_on or not self.main_recoil_selected()
 
+    def first_point_selected(self) -> bool:
+        """Checks whether currently selected point is first in the
+        distribution.
+        """
+        return self.clicked_point is \
+            self.current_recoil_element.get_first_point()
+
+    def first_point_in_selection(self) -> bool:
+        """Checks whether the first point of the distribution is in current
+        selection of points.
+        """
+        return self.point_in_selection(
+            self.current_recoil_element.get_first_point())
+
+    def last_point_selected(self) -> bool:
+        """Checks whether currently selected point is the last point in the
+        distribution.
+        """
+        return self.clicked_point is \
+            self.current_recoil_element.get_last_point()
+
+    def last_point_in_selection(self) -> bool:
+        """Checks whether the last point of the distribution is in current
+        selection of points.
+        """
+        return self.point_in_selection(
+            self.current_recoil_element.get_last_point())
+
+    def point_in_selection(self, point: Point):
+        """Checks whether the given point is in current selection of points.
+        """
+        return point in self.selected_points
+
+    def zero_point_selected(self) -> bool:
+        """Checks whether currently selected point is a zero point.
+        """
+        return self.clicked_point.get_y() == 0.0
+
+    def zero_point_in_selection(self) -> bool:
+        """Checks whether current selection contains a zero point.
+        """
+        return 0.0 in (p.get_y() for p in self.selected_points)
+
+    def selected_between_zeros(self) -> bool:
+        """Checks whether currently selected point is between two zero
+        points.
+        """
+        return self.current_recoil_element.between_zeros(self.clicked_point)
+
     def get_minimum_concentration(self) -> float:
         """Returns the minimum concentration that points can be dragged to.
         """
         return self._settings.get_minimum_concentration()
 
     def get_individual_limits(self) -> Dict[RecoilElement, Tuple[float, float]]:
+        """Returns individual area limits for each recoil element.
+        """
         return {
             recoil: tuple(lim.get_xdata()[0] for lim in recoil.area_limits)
             for recoil in self.simulation.get_recoil_elements()
         }
 
     def get_common_limits(self, rounding=None) -> Tuple[float, float]:
+        """Returns a common are limit for all recoil elements.
+        """
         xs = (lim.get_xdata()[0] for lim in self.area_limits_for_all)
         if rounding is not None:
             return tuple(round(x, rounding) for x in xs)
         return tuple(xs)
 
     def get_all_limits(self) -> Dict:
+        """Returns both common and individual area limits as a dictionary.
+        """
         return {
             "common": self.get_common_limits(),
             **self.get_individual_limits()
@@ -748,10 +815,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
             self.full_edit_on = True
 
-            if self.clicked_point is \
-                    self.current_recoil_element.get_points()[-1]:
+            if self.last_point_selected():
                 self.point_remove_action.setEnabled(True)
-            self.coordinates_widget.x_coordinate_box.setEnabled(True)
+            self.coordinates_widget.set_x_enabled(True)
         else:
             self.current_element_simulation.lock_edit()
             self.full_edit_on = False
@@ -912,7 +978,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.current_recoil_element.zero_values_on_x.remove(val)
                     xs = self.current_recoil_element.get_xs()
                     i = xs.index(val)
-                    remove_point = self.current_recoil_element.get_point_by_i(i)
+                    remove_point = self.current_recoil_element.get_point(i)
                     self.current_recoil_element.remove_point(remove_point)
         # Add intervals
         for interval in self.get_current_main_recoil().zero_intervals_on_x:
@@ -993,7 +1059,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         xs = self.current_recoil_element.get_xs()
         if x in xs:
             i = xs.index(x)
-            new_point = self.current_recoil_element.get_point_by_i(i)
+            new_point = self.current_recoil_element.get_point(i)
         else:
             self.current_recoil_element.add_point(new_point)
 
@@ -1323,11 +1389,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """Fork navigation tool bar button into custom ones.
         """
         self.mpl_toolbar.mode_tool = 0
-        self.__tool_label = self.mpl_toolbar.children()[24]
-        self.__button_drag = self.mpl_toolbar.children()[12]
-        self.__button_zoom = self.mpl_toolbar.children()[14]
-        self.__button_drag.clicked.connect(self.__toggle_tool_drag)
-        self.__button_zoom.clicked.connect(self.__toggle_tool_zoom)
+        self.__tool_label, self.__button_drag, self.__button_zoom = \
+            mpl_utils.get_toolbar_elements(
+                self.mpl_toolbar, drag_callback=self.__toggle_tool_drag,
+                zoom_callback=self.__toggle_tool_zoom)
 
         # Make own buttons
         self.mpl_toolbar.addSeparator()
@@ -1337,12 +1402,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self, full_edit_changed=self.full_edit_changed)
         self.coordinates_action = self.mpl_toolbar.addWidget(
             self.coordinates_widget)
+        self.coordinates_widget.coord_changed.connect(
+            self.emit_distribution_change)
 
         if self.current_element_simulation is None:
             self.coordinates_action.setVisible(False)
         else:
-            self.coordinates_widget.y_coordinate_box.setEnabled(False)
-            self.coordinates_widget.x_coordinate_box.setEnabled(False)
+            self.coordinates_widget.set_y_enabled(False)
+            self.coordinates_widget.set_x_enabled(False)
 
         # Point removal
         self.point_remove_action = QtWidgets.QAction("Remove point", self)
@@ -1520,42 +1587,35 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.span_selector.set_active(False)
                 self.coordinates_widget.setVisible(True)
                 i = marker_info['ind'][0]  # The clicked point's index
-                clicked_point = self.current_recoil_element.get_point_by_i(i)
+                clicked_point = self.current_recoil_element.get_point(i)
 
-                if clicked_point not in self.selected_points:
+                if not self.point_in_selection(clicked_point):
                     self.selected_points = [clicked_point]
                 self.dragged_points.extend(self.selected_points)
                 self.clicked_point = clicked_point
                 # If clicked point is first
-                if self.clicked_point is \
-                        self.current_recoil_element.get_points()[0]:
+                if self.first_point_selected():
                     self.point_remove_action.setEnabled(False)
                 # If clicked point is last and full edit is not on
-                elif self.clicked_point is \
-                        self.current_recoil_element.get_points()[-1] and not \
-                        self.full_edit_on:
+                elif self.last_point_selected() and not self.full_edit_on:
                     self.point_remove_action.setEnabled(False)
                 else:
                     self.point_remove_action.setEnabled(True)
                 # If clicked point is zero and full edit is not on
-                if self.clicked_point.get_y() == 0.0:
+                if self.zero_point_selected():
                     if self.editing_restricted():
                         self.point_remove_action.setEnabled(False)
-                        self.coordinates_widget.x_coordinate_box.setEnabled(
-                            False)
+                        self.coordinates_widget.set_x_enabled(False)
                     else:
-                        self.coordinates_widget.x_coordinate_box.setEnabled(
-                            True)
-                        self.coordinates_widget.y_coordinate_box.setEnabled(
-                            True)
+                        self.coordinates_widget.set_x_enabled(True)
+                        self.coordinates_widget.set_y_enabled(True)
                 elif self.editing_restricted():
                     # If point is between two zeros, cannot delete
-                    if self.current_recoil_element.between_zeros(
-                            self.clicked_point):
+                    if self.selected_between_zeros():
                         self.point_remove_action.setEnabled(False)
-                    self.coordinates_widget.x_coordinate_box.setEnabled(True)
+                    self.coordinates_widget.set_x_enabled(True)
                 else:
-                    self.coordinates_widget.x_coordinate_box.setEnabled(True)
+                    self.coordinates_widget.set_x_enabled(True)
                 self.set_on_click_attributes(event)
 
                 self.update_plot()
@@ -1584,8 +1644,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             if new_point.get_y() == 0.0:
                                 if self.editing_restricted():
                                     self.point_remove_action.setEnabled(False)
-                                    self.coordinates_widget.y_coordinate_box. \
-                                        setEnabled(False)
+                                    self.coordinates_widget.set_y_enabled(False)
                             self.set_on_click_attributes(event)
                             self.update_plot()
                 else:
@@ -1693,7 +1752,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             return new_point
 
     def update_plot(self):
-        """ Updates marker and line data and redraws the plot. """
+        """Updates marker and line data and redraws the plot.
+        """
         if self.current_element_simulation is None:
             self.markers.set_visible(False)
             self.lines.set_visible(False)
@@ -1719,14 +1779,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if self.selected_points:  # If there are selected points
             self.coordinates_action.setVisible(True)
             self.markers_selected.set_visible(True)
-            selected_xs = []
-            selected_ys = []
-            for point in self.selected_points:
-                selected_xs.append(point.get_x())
-                selected_ys.append(point.get_y())
+            selected_xs = [p.get_x() for p in self.selected_points]
+            selected_ys = [p.get_y() for p in self.selected_points]
             self.markers_selected.set_data(selected_xs, selected_ys)
 
-            if self.clicked_point:
+            if self.clicked_point is not None:
                 old_save_value = self.__save_points
                 self.__save_points = False
                 self.coordinates_widget.x_coord = self.clicked_point.get_x()
@@ -1734,12 +1791,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.coordinates_widget.y_coord = self.clicked_point.get_y()
                 self.__save_points = old_save_value
                 # Disable y coordinate if it's zero and full edit is not on
-                if self.clicked_point.get_y() == 0.0:
+                if self.zero_point_selected():
                     if self.editing_restricted():
-                        self.coordinates_widget.y_coordinate_box.setEnabled(
-                            False)
+                        self.coordinates_widget.set_y_enabled(False)
                 else:
-                    self.coordinates_widget.y_coordinate_box.setEnabled(True)
+                    self.coordinates_widget.set_y_enabled(True)
         else:
             self.markers_selected.set_data(
                 self.current_recoil_element.get_xs(),
@@ -1750,8 +1806,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         # Show all of recoil
         if self.__show_all_recoil:
-            last_point = self.current_recoil_element.get_point_by_i(len(
-                self.current_recoil_element.get_points()) - 1)
+            last_point = self.current_recoil_element.get_last_point()
             last_point_x = last_point.get_x()
             x_min, xmax = self.axes.get_xlim()
             if xmax < last_point_x:
@@ -1797,9 +1852,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             end = next_layer_position - last_layer_thickness * 0.7
             start = 0 - end * 0.05
 
-        if self.__show_all_recoil and self.current_recoil_element:
-            last_point = self.current_recoil_element.get_point_by_i(len(
-                self.current_recoil_element.get_points()) - 1)
+        if self.__show_all_recoil and self.current_recoil_element is not None:
+            last_point = self.current_recoil_element.get_last_point()
             last_point_x = last_point.get_x()
             if end < last_point_x:
                 end = last_point_x + 0.04 * last_point_x
@@ -1857,14 +1911,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # end points can only move in y direction
         for i in range(len(dr_ps)):
             # End point
-            if dr_ps[i] == self.current_recoil_element.get_points()[-1] \
+            if dr_ps[i] == self.current_recoil_element.get_last_point() \
                     and self.editing_restricted():
                 if dr_ps[i].get_y() == 0.0:
                     continue
                 else:
                     dr_ps[i].set_y(new_coords[i][1])
             # Start point
-            elif dr_ps[i] == self.current_recoil_element.get_points()[0]:
+            elif dr_ps[i] == self.current_recoil_element.get_first_point():
                 if not self.full_edit_on and dr_ps[i].get_y() == 0.0:
                     continue
                 else:
@@ -1880,7 +1934,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     else:
                         dr_ps[i].set_coordinates(new_coords[i])
 
-            if dr_ps[i] == self.current_recoil_element.get_points()[-1]:
+            if dr_ps[i] == self.current_recoil_element.get_last_point():
                 if dr_ps[i].get_x() > self.target_thickness:
                     dr_ps[i].set_x(self.target_thickness)
 
@@ -1986,19 +2040,16 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 len(self.selected_points) < 2:
             QtWidgets.QMessageBox.critical(
                 self.parent, "Error",
-                "You cannot delete this point.\nT"
-                "here must always be at least two points.",
+                "You cannot delete this point.\n"
+                "There must always be at least two points.",
                 QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             ret = True
-        if self.current_recoil_element.get_points()[0] in \
-                self.selected_points:
+        if self.first_point_in_selection():
             QtWidgets.QMessageBox.critical(
-                self.parent, "Error",
-                "You cannot delete the first point.",
+                self.parent, "Error", "You cannot delete the first point.",
                 QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             ret = True
-        if self.current_recoil_element.get_points()[-1] in \
-                self.selected_points and not self.full_edit_on:
+        if self.last_point_in_selection() and not self.full_edit_on:
             QtWidgets.QMessageBox.critical(
                 self.parent, "Error",
                 "You cannot delete the last point when full edit is locked.",
@@ -2015,8 +2066,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     if point.get_y() == 0.0:
                         QtWidgets.QMessageBox.critical(
                             self.parent, "Error",
-                            "You cannot delete a point that has 0 as a "
-                            "y coordinate" + reason,
+                            f"You cannot delete a point that has 0 as a "
+                            f"y coordinate {reason}",
                             QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                         ret = True
                         break
@@ -2042,8 +2093,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.selected_points.clear()
             self.update_plot()
 
-            self.recoil_dist_changed.emit(
-                self.current_recoil_element, self.current_element_simulation)
+            self.emit_distribution_change()
 
     def on_release(self, event):
         """Callback method for mouse release event. Stops dragging.
@@ -2063,8 +2113,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.update_plot()
 
             if self.point_clicked:
-                self.recoil_dist_changed.emit(self.current_recoil_element,
-                                              self.current_element_simulation)
+                self.emit_distribution_change()
                 self.span_selector.set_active(True)
 
             # If graph was clicked and span not used
@@ -2127,8 +2176,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.coordinates_widget.setVisible(False)
         self.update_plot()
 
-        self.recoil_dist_changed.emit(
-            self.current_recoil_element, self.current_element_simulation)
+        self.emit_distribution_change()
 
     def redo_recoil_changes(self):
         """Redo recoil changes.
@@ -2271,11 +2319,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
             # Adjust the lower and upper limit ys
             if main_y_lower is not None:
-                lower_point = self.current_recoil_element.get_point_by_i(
+                lower_point = self.current_recoil_element.get_point(
                     main_y_lower_i)
                 lower_point.set_y(main_y_lower)
             if main_y_upper is not None:
-                upper_point = self.current_recoil_element.get_point_by_i(
+                upper_point = self.current_recoil_element.get_point(
                     main_y_upper_i)
                 upper_point.set_y(main_y_upper)
 
@@ -2420,30 +2468,26 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if sel_points:
             allow_delete = True
             self.clicked_point = sel_points[0]
-            if self.clicked_point.get_y() == 0.0:
+            if self.zero_point_selected():
                 if self.editing_restricted():
-                    self.coordinates_widget.x_coordinate_box.setEnabled(False)
+                    self.coordinates_widget.set_x_enabled(False)
                 else:
-                    self.coordinates_widget.x_coordinate_box.setEnabled(True)
-                    self.coordinates_widget.y_coordinate_box.setEnabled(True)
+                    self.coordinates_widget.set_x_enabled(True)
+                    self.coordinates_widget.set_y_enabled(True)
             else:
-                self.coordinates_widget.x_coordinate_box.setEnabled(True)
-            if self.current_recoil_element.get_points()[0] in \
-                    self.selected_points:
+                self.coordinates_widget.set_x_enabled(True)
+            if self.last_point_in_selection():
                 self.point_remove_action.setEnabled(False)
                 allow_delete = False
-            if self.current_recoil_element.get_points()[-1] in \
-                    self.selected_points and not self.full_edit_on and \
+            if self.last_point_in_selection() and not self.full_edit_on and \
                     allow_delete:
                 self.point_remove_action.setEnabled(False)
                 allow_delete = False
             if 0.0 in self.current_recoil_element.get_ys() and allow_delete:
                 if self.editing_restricted():
-                    for point in self.selected_points:
-                        if point.get_y() == 0.0:
-                            self.point_remove_action.setEnabled(False)
-                            allow_delete = False
-                            break
+                    if self.zero_point_in_selection():
+                        self.point_remove_action.setEnabled(False)
+                        allow_delete = False
             # Check if trying to delete a non-zero point from between two zero
             # points
             if allow_delete:
