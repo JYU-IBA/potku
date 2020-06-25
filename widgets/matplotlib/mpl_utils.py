@@ -99,7 +99,7 @@ def draw_and_flush(func):
     """
     @functools.wraps(func)
     def wrapper(canvas_wrapper: GraphWrapper, *args, **kwargs):
-        res = func(*args, **kwargs)
+        res = func(canvas_wrapper, *args, **kwargs)
         canvas_wrapper.canvas.draw()
         canvas_wrapper.canvas.flush_events()
         return res

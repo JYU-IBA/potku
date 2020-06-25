@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -122,6 +122,7 @@ class TestElement(unittest.TestCase):
             elem2 = Element.from_string(elem1_str)
             self.assertIsNot(elem1, elem2)
             self.assertEqual(elem1, elem2)
+            self.assertEqual(hash(elem1), hash(elem2))
 
     def test_get_isotopes(self):
         self.assert_isotopes_match("H", (1, 2), include_st_mass=False)
@@ -160,6 +161,34 @@ class TestElement(unittest.TestCase):
                 self.assertEqual(
                     masses.get_most_common_isotope(e.symbol)[masses.NUMBER_KEY],
                     e.get_most_common_isotope())
+
+    def test_hash(self):
+        e = Element.from_string("H")
+        hashed_elems = {
+            e, e,
+            Element.from_string("H"),
+            Element.from_string("1H"),
+            Element.from_string("1H 4.0"),
+            Element.from_string("1H 4.0"),
+            Element.from_string("1H 5.0")
+        }
+
+        self.assertEqual({
+            Element.from_string("H"),
+            Element.from_string("1H"),
+            Element.from_string("1H 4.0"),
+            Element.from_string("1H 5.0")
+        }, hashed_elems)
+
+    def test_hash_properties(self):
+        n = 1000
+        for _ in range(n):
+            e1 = mo.get_element(randomize=True, amount_p=0.0)
+            e2 = mo.get_element(randomize=True, amount_p=0.0)
+            if e1.symbol == e2.symbol and e1.isotope == e2.isotope:
+                self.assertEqual(hash(e1), hash(e2))
+            else:
+                self.assertNotEqual(hash(e1), hash(e2))
 
 
 if __name__ == '__main__':
