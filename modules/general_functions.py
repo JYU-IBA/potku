@@ -50,6 +50,12 @@ from typing import List
 from typing import Set
 from typing import Callable
 from typing import Optional
+from typing import Tuple
+from typing import Union
+
+# Helpers for type hints, maybe move these to another module
+Range = Tuple[Union[float, int], Union[float, int]]
+StrTuple = Tuple[str, str]
 
 
 # TODO this could still be organized into smaller modules

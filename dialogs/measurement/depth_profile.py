@@ -368,21 +368,23 @@ class DepthProfileWidget(QtWidgets.QWidget):
                     if elem == element:
                         elements[i] = rbs_list[rbs]
 
-            depth_scale = self.measurement.depth_for_concentration_from, \
-                self.measurement.depth_for_concentration_to
+            if self.__line_scale:
+                depth_scale = self.measurement.depth_for_concentration_from, \
+                    self.measurement.depth_for_concentration_to
+            else:
+                depth_scale = None
 
             if progress is not None:
                 sub_progress = progress.get_sub_reporter(
-                    lambda x: 50 + 0.5 * x
-                )
+                    lambda x: 50 + 0.5 * x)
             else:
                 sub_progress = None
 
             self.matplotlib = MatplotlibDepthProfileWidget(
                 self, self.output_dir, self.elements, rbs_list,
-                depth_scale, self.use_cuts, self.x_units, True,
-                self.__line_zero, self.__line_scale,
-                self.__systerr, progress=sub_progress)
+                self.use_cuts, depth_scale=depth_scale, x_units=self.x_units,
+                legend=True, add_line_zero=self.__line_zero,
+                systematic_error=self.__systerr, progress=sub_progress)
         except Exception as e:
             msg = f"Could not create Depth Profile graph: {e}"
             logging.getLogger(self.measurement.name).error(msg)

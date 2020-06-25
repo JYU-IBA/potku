@@ -34,8 +34,8 @@ __version__ = "2.0"
 
 import modules.math_functions as mf
 
-from typing import Tuple
 from typing import List
+from typing import Optional
 
 from pathlib import Path
 
@@ -47,6 +47,7 @@ from widgets.matplotlib.mpl_utils import AlternatingLimits
 
 from modules.depth_files import DepthProfileHandler
 from modules.element import Element
+from modules.general_functions import Range
 
 from PyQt5 import QtWidgets
 
@@ -56,10 +57,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
     """
 
     def __init__(self, parent, depth_dir: Path, elements: List[Element],
-                 rbs_list, depth_scale: Tuple[float, float],
-                 used_cuts: List[Path], x_units='nm', legend=True,
-                 line_zero=False, line_scale=False, systematic_error=3.0,
-                 progress=None):
+                 rbs_list, used_cuts: List[Path], x_units="nm",
+                 depth_scale: Optional[Range] = None, legend=True,
+                 add_line_zero=False, systematic_error=3.0, progress=None):
         """Inits depth profile widget.
 
         Args:
@@ -73,9 +73,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                 profile.
             x_units: An unit to be used as x axis.
             legend: A boolean of whether to show the legend.
-            line_zero: A boolean representing if vertical line is drawn at zero.
-            line_scale: A boolean representing if horizontal line is drawn at
-                        the defined depth scale.
+            add_line_zero: A boolean representing if vertical line is drawn at
+                zero.
             systematic_error: A double representing systematic error.
             progress: a ProgressReporter object
         """
@@ -87,16 +86,12 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.x_units = x_units
         self.draw_legend = legend
         self.elements = elements
-        self.depth_dir = depth_dir
-        self.__depth_scale = depth_scale
         self.__used_cuts = used_cuts
-        self.__line_zero = line_zero
-        self.__line_scale = line_scale
         self.__systerr = systematic_error
 
         self.profile_handler = DepthProfileHandler()
         self.profile_handler.read_directory(
-            self.depth_dir, self.elements, depth_units=self.x_units)
+            depth_dir, self.elements, depth_units=self.x_units)
         if progress is not None:
             progress.report(50)
 
@@ -120,7 +115,6 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__position_set = False
         self.__rel_graph = False
         self.__absolute_values = False
-        self.__enable_norm_over_range = False
         self.__rbs_list = rbs_list
         self.__fork_toolbar_buttons()
 
@@ -131,9 +125,27 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             self.canvas, self.axes, xs=self.profile_handler.get_depth_range(),
             colors=("blue", "red"))
         self.depth_plots = {}
-        self.__update_depth_plots(
+        self._update_depth_plots(
             self.get_profiles_to_use(), draw_first_time=True)
-        self.__make_legend_box()
+        self.axes.set_ylim(bottom=0.0)
+
+        if self.draw_legend:
+            self.__make_legend_box()
+
+        self.axes.axhline(y=0, color="#000000")
+        if add_line_zero:
+            self._line_zero, = self.axes.axvline(
+                x=0, linestyle="-", linewidth=3, color="#C0C0C0", alpha=0.75)
+        else:
+            self._line_zero = None
+
+        if depth_scale:
+            self._vspan, = self.axes.axvspan(
+                *depth_scale, color="#C0C0C0", alpha=0.20, edgecolor=None)
+        else:
+            self._vspan = None
+
+        self.remove_axes_ticks()
 
         if progress is not None:
             progress.report(100)
@@ -168,60 +180,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             lim_a, lim_b, method="rel_abs_rel"
         )
 
-    def on_draw(self):
-        """Draws the depth profile graph
-        """
-        # Values for zoom
-        x_min, x_max = self.axes.get_xlim()
-        y_min, y_max = self.axes.get_ylim()
-
-        # Clear axes for a new draw.
-        self.axes.clear()
-
-        # Plot the limits a and b
-        # TODO fix the depth profile plotting so we do not have to resort to
-        #  this
-        a, b = self.limit.get_range()
-        self.limit = AlternatingLimits(
-            self.canvas, self.axes, xs=(a, b), colors=("blue", "red"))
-
-        self.axes.axhline(y=0, color="#000000")
-        if self.__line_zero:
-            self.axes.axvline(x=0, linestyle="-", linewidth=3,
-                              color="#C0C0C0", alpha=0.75)
-
-        if self.__line_scale:
-            self.axes.axvspan(self.__depth_scale[0], self.__depth_scale[1],
-                              color='#C0C0C0', alpha=0.20, edgecolor=None)
-
-        self.__update_depth_plots(
-            self.get_profiles_to_use(), draw_first_time=True)
-
-        if not self.__position_set:
-            self.fig.tight_layout(pad=0.5)
-
-        # Set up the legend
-        if self.draw_legend:
-            self.__make_legend_box()
-
-        # If drawing for "the first time", get limits from the drawn data.
-        if 0.09 < x_max < 1.01:  # This works...
-            x_min, x_max = self.axes.get_xlim()
-        if 0.09 < y_max < 1.01:
-            y_max = self.axes.get_ylim()[1]
-
-        # Set limits accordingly
-        self.axes.set_ylim([y_min, y_max])
-        self.axes.set_xlim([x_min, x_max])
-
-        if self.__log_scale:
-            self.axes.set_yscale('symlog')
-
-        self.remove_axes_ticks()
-        self.canvas.draw()
-
     @mpl_utils.draw_and_flush
-    def __update_depth_plots(self, profiles_to_use, draw_first_time=False):
+    def _update_depth_plots(self, profiles_to_use, draw_first_time=False):
         sorted_profile_names = sorted(
             filter(lambda x: x != "total", profiles_to_use),
             key=lambda x: profiles_to_use[x].element)
@@ -239,7 +199,6 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                 color_key = "RBS_{0}0".format(str(element))
             else:
                 color_key = "{0}0".format(str(element))
-            # TODO: erd_depth for multiple selections of same element.
 
             axe1 = profiles_to_use[profile_name].depths
             axe2 = profiles_to_use[profile_name].concentrations
@@ -382,8 +341,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__button_ignores = QtWidgets.QToolButton(self)
         self.__button_ignores.clicked.connect(self.__ignore_elements_dialog)
         self.__button_ignores.setToolTip(
-            "Select elements which are included in" +
-            " ratio calculation.")
+            "Select elements which are included in "
+            "ratio calculation.")
         self.icon_manager.set_icon(self.__button_ignores, "gear.svg")
         self.mpl_toolbar.addWidget(self.__button_ignores)
 
@@ -398,7 +357,6 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__button_drag.setChecked(False)
         self.__button_zoom.setChecked(False)
 
-    @mpl_utils.draw_and_flush
     def __toggle_lim_mode(self, *_):
         """Toggle lim mode.
 
@@ -423,7 +381,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             self.lim_mode = "a"
         self.icon_manager.set_icon(
             self.modeButton, self.lim_icons[self.lim_mode])
-        self.__update_depth_plots(self.get_profiles_to_use())
+        self._update_depth_plots(self.get_profiles_to_use())
 
     def __toggle_lim_lines(self):
         """Toggles the usage of limit lines.
@@ -440,7 +398,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         else:
             self.icon_manager.set_icon(self.viewButton, "depth_profile_abs.svg")
 
-        self.__update_depth_plots(self.get_profiles_to_use())
+        self._update_depth_plots(self.get_profiles_to_use())
 
     def __toggle_drag_zoom(self):
         """Toggles drag zoom.

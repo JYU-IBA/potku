@@ -34,12 +34,11 @@ import functools
 from typing import Tuple
 from typing import Optional
 from typing import Any
+from modules.general_functions import Range
+from modules.general_functions import StrTuple
 
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QLabel
-
-Range = Tuple[float, float]
-StrTuple = Tuple[str, str]
 
 
 def format_coord(x: float, y: float) -> str:
@@ -107,6 +106,8 @@ def draw_and_flush(func):
 
 
 class GraphWrapper(abc.ABC):
+    """Class that wraps Matplotlib canvas and axes and draws plots on them.
+    """
     def __init__(self, canvas, axes):
         self.canvas = canvas
         self.axes = axes
@@ -140,12 +141,14 @@ class VerticalLimits(GraphWrapper):
         """
         GraphWrapper.__init__(self, canvas, axes)
         self._visible = True
+        self._limit_lines = self._init_draw(xs, colors)
 
+    def _init_draw(self, xs, colors):
         x0, x1 = self._unpack_args(xs, VerticalLimits._DEFAULT_X)
         x0_col, x1_col = self._unpack_args(
             colors, VerticalLimits._DEFAULT_COLOR)
 
-        self._limit_lines = (
+        return (
             self.axes.axvline(
                 x=x0, linestyle=self._LINE_STYLE, color=x0_col),
             self.axes.axvline(
@@ -174,8 +177,8 @@ class VerticalLimits(GraphWrapper):
     def get_range(self) -> Range:
         """Returns the x axis values of each limit line.
         """
-        xs = tuple(line.get_xdata()[0] for line in self._limit_lines)
-        return tuple(sorted(xs))
+        x0, xn = sorted([line.get_xdata()[0] for line in self._limit_lines])
+        return x0, xn
 
     def set_visible(self, b: bool):
         """Sets the visibility of the limit lines.
