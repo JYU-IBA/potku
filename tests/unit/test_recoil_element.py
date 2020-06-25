@@ -230,6 +230,15 @@ class TestPoints(unittest.TestCase):
         self.assertRaises(
             ValueError, lambda: self.rec_elem.between_zeros(Point(0.5, 1)))
 
+    def test_dist_length(self):
+        self.assertEqual(2, self.rec_elem.distribution_length())
+        self.rec_elem.add_point(Point(10.5, 0))
+        self.assertEqual(10.5, self.rec_elem.distribution_length())
+        for p in list(self.rec_elem.get_points()):
+            self.rec_elem.remove_point(p)
+
+        self.assertRaises(IndexError, self.rec_elem.distribution_length)
+
 
 if __name__ == '__main__':
     unittest.main()

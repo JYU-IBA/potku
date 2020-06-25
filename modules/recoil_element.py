@@ -80,6 +80,7 @@ class RecoilElement(MCERDParameterContainer, Serializable):
 
         # TODO might want to use some sort of sorted collection instead of a
         #  list, although this depends on the number of elements in the list.
+        #  A linked list would make finding neighbors faster.
         self._points = sorted(points)
         self.points_backlog = []
         # This is out of bounds if no undo is done, telss the index of the
@@ -100,11 +101,6 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         # List for keeping track of singular zero points
         self.zero_values_on_x = []
 
-        # Area of certain limits
-        # TODO these may be removed
-        self.area = None
-        self.area_limits = []
-
         # Color of the recoil
         self.color = color
 
@@ -117,13 +113,6 @@ class RecoilElement(MCERDParameterContainer, Serializable):
             return NotImplemented
 
         return self.element < other.element
-
-    def get_individual_interval(self):
-        try:
-            return self.area_limits[0].get_xdata()[0], \
-                   self.area_limits[-1].get_xdata()[0]
-        except IndexError:
-            return None, None
 
     def get_full_name(self):
         """Returns the prefixed name of the RecoilElement.
@@ -335,13 +324,29 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         Return:
              Points list.
         """
+        # TODO maybe return shallow copy
         return self._points
 
     def get_first_point(self) -> Point:
+        """Returns the first point in the distribution.
+        """
         return self.get_point(0)
 
     def get_last_point(self) -> Point:
+        """Returns the last point in the distribution.
+        """
         return self.get_point(-1)
+
+    def get_range(self) -> Tuple[float, float]:
+        """Returns first and last points of the distribution.
+        """
+        return self.get_first_point().get_x(), self.get_last_point().get_x()
+
+    def distribution_length(self) -> float:
+        """Returns the distance between first and last point.
+        """
+        low, high = self.get_range()
+        return high - low
 
     def add_point(self, point: Point):
         """Adds a point and maintains sort order."""
