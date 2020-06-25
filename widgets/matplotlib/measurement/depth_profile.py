@@ -34,10 +34,16 @@ __version__ = "2.0"
 
 import modules.math_functions as mf
 
+from typing import Tuple
+from typing import List
+
+from pathlib import Path
+
 from dialogs.measurement.depth_profile_ignore_elements \
     import DepthProfileIgnoreElements
 from widgets.matplotlib.base import MatplotlibWidget
 from widgets.matplotlib import mpl_utils
+from widgets.matplotlib.mpl_utils import AlternatingLimits
 
 from modules.depth_files import DepthProfileHandler
 from modules.element import Element
@@ -49,9 +55,11 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
     """Depth profile widget that handles drawing depth profiles.
     """
 
-    def __init__(self, parent, depth_dir, elements, rbs_list, depth_scale,
-                 used_cuts, x_units='nm', legend=True, line_zero=False,
-                 line_scale=False, systematic_error=3.0, progress=None):
+    def __init__(self, parent, depth_dir: Path, elements: List[Element],
+                 rbs_list, depth_scale: Tuple[float, float],
+                 used_cuts: List[Path], x_units='nm', legend=True,
+                 line_zero=False, line_scale=False, systematic_error=3.0,
+                 progress=None):
         """Inits depth profile widget.
 
         Args:
@@ -59,10 +67,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             depth_dir: A directory where the depth files are located.
             elements: A list of Element objects.
             rbs_list: A dictionary of RBS selection elements containing
-                      scatter elements.
+                scatter elements.
             depth_scale: A tuple of depth scaling values.
             used_cuts: List of cut file paths that are sed to create depth
-            profile.
+                profile.
             x_units: An unit to be used as x axis.
             legend: A boolean of whether to show the legend.
             line_zero: A boolean representing if vertical line is drawn at zero.
@@ -87,17 +95,14 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__systerr = systematic_error
 
         self.profile_handler = DepthProfileHandler()
-        self.profile_handler.read_directory(self.depth_dir,
-                                            self.elements,
-                                            depth_units=self.x_units)
+        self.profile_handler.read_directory(
+            self.depth_dir, self.elements, depth_units=self.x_units)
         if progress is not None:
             progress.report(50)
 
-        lim_a, lim_b = self.profile_handler.get_depth_range()
-        if lim_a is not None and lim_b is not None:
-            self.limit = LimitLines(a=lim_a, b=lim_b)
-        else:
-            self.limit = LimitLines()
+        self.limit = AlternatingLimits(
+            self.canvas, self.axes, xs=self.profile_handler.get_depth_range(),
+            colors=("blue", "red"))
         self.energy_plots = {}
 
         self.__ignore_from_graph = set()
@@ -115,14 +120,16 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
 
         self.canvas.mpl_connect('button_press_event', self.onclick)
 
-        self.__limits_set = False
         self.__position_set = False
         self.__rel_graph = False
         self.__log_scale = False
         self.__absolute_values = False
         self.__enable_norm_over_range = False
         self.__rbs_list = rbs_list
-        self.__fork_toolbar_buttons()
+        try:
+            self.__fork_toolbar_buttons()
+        except Exception as e:
+            print(e)
         self.on_draw()
 
         if progress is not None:
@@ -135,7 +142,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             event: A click event on the graph
         """
         if event.button == 1 and self.limButton.isChecked():
-            self.limit.set(event.xdata)
+            self.limit.update_graph(event.xdata)
             self.on_draw()
 
     def get_profiles_to_use(self):
@@ -147,7 +154,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         elif self.lim_mode == 'a':
             return self.profile_handler.get_relative_profiles()
 
-        lim_a, lim_b = self.limit.get_limits()
+        lim_a, lim_b = self.limit.get_range()
         if self.lim_mode == 'b':
             return self.profile_handler.merge_profiles(
                 lim_a, lim_b, method="abs_rel_abs"
@@ -171,9 +178,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.axes.set_ylabel('Concentration (at.%)')
 
         # Plot the limits a and b
-        # if self.__show_limits:
-        # Currently limits are always drawn
-        self.limit.draw(self.axes)
+        # TODO fix the depth profile plotting so we do not have to resort to
+        #  this
+        a, b = self.limit._draw()
 
         self.axes.axhline(y=0, color="#000000")
         if self.__line_zero:
@@ -184,8 +191,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             self.axes.axvspan(self.__depth_scale[0], self.__depth_scale[1],
                               color='#C0C0C0', alpha=0.20, edgecolor=None)
 
-        self.__update_energy_plots(self.get_profiles_to_use(),
-                                   draw_first_time=True)
+        self.__update_depth_plots(
+            self.get_profiles_to_use(), draw_first_time=True)
 
         if not self.__position_set:
             self.fig.tight_layout(pad=0.5)
@@ -210,10 +217,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.remove_axes_ticks()
         self.canvas.draw()
 
-    def __update_energy_plots(self, profiles_to_use, draw_first_time=False):
-        sorted_profile_names = sorted(filter(lambda x: x != "total",
-                                             profiles_to_use),
-                                      key=lambda x: profiles_to_use[x].element)
+    def __update_depth_plots(self, profiles_to_use, draw_first_time=False):
+        sorted_profile_names = sorted(
+            filter(lambda x: x != "total", profiles_to_use),
+            key=lambda x: profiles_to_use[x].element)
 
         for profile_name in sorted_profile_names:
             if profile_name == "total":
@@ -259,7 +266,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         # TODO don't recalculate these if lim selection is unchanged
 
         # Calculate values to be displayed in the legend box
-        lim_a, lim_b = self.limit.get_limits()
+        lim_a, lim_b = self.limit.get_range()
         if self.__absolute_values:
             concentrations = self.profile_handler.integrate_concentrations(
                 lim_a, lim_b)
@@ -463,66 +470,3 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         """
         self.__log_scale = self.__button_toggle_log.isChecked()
         self.on_draw()
-
-
-class LimitLines:
-    """Stores values for limits used in depth calculations. Also used to draw
-    lines on canvas.
-    """
-
-    def __init__(self, a=0.0, b=0.0):
-        """Inits LimitLines object
-
-        Args:
-            a: position of the first limit line on x-axis
-            b: position of the second limit line on x-axis
-        """
-
-        # Internally, LimitLine object does not care if a is bigger than b
-        # or vice versa so we just store them in a list without sorting
-        # them.
-        self.__limits = [a, b]
-        self.__next_limit = 1
-
-    def __switch(self):
-        """Switches the current limit between first and last.
-        """
-        self.__next_limit = abs(1 - self.__next_limit)
-
-    def set(self, value, switch=True):
-        """Sets the value for current limit.
-
-        Args:
-            value: float value for the current limit
-            switch: sets if the current limit is switched after setting
-            the value
-        """
-        self.__limits[self.__next_limit] = value
-        if switch:
-            self.__switch()
-
-    def draw(self, axes, highlight_last=False):
-        """Draws limit lines on the given axes.
-
-        Args:
-            axes: axes object that the lines will be drawn
-            highlight_last: highlights the last set limit with a different
-                            color
-        """
-        # TODO better highlighting OR draggable 2d lines
-        for i in range(len(self.__limits)):
-            if highlight_last and self.__next_limit != i:
-                axes.axvline(x=self.__limits[i], linestyle="-",
-                             color="yellow")
-                axes.axvline(x=self.__limits[i], linestyle="--")
-            else:
-                axes.axvline(x=self.__limits[i], linestyle="--")
-
-    def get_limits(self):
-        """Returns limits sorted by value (lowest first).
-        """
-        # Here we check the order of limits and return smaller one first
-        # and bigger one last
-        if self.__limits[0] <= self.__limits[1]:
-            return self.__limits[0], self.__limits[1]
-        return self.__limits[1], self.__limits[0]

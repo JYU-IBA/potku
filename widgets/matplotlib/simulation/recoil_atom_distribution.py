@@ -685,10 +685,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.individual_intervals[
                 self.current_recoil_element].update_graph(x)
         elif self.current_recoil_element not in self.individual_intervals:
-            x, y = self.current_recoil_element.get_range()
             self.individual_intervals[self.current_recoil_element] = \
                 AlternatingLimits(
-                    self.canvas, self.axes, x, y, "orange", "green"
+                    self.canvas, self.axes,
+                    xs=self.current_recoil_element.get_range(),
+                    colors=("orange", "green")
             )
 
     def set_current_interval_visible(self, b: bool):
@@ -1489,9 +1490,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if self.common_interval is not None:
                 self.common_interval.set_visible(True)
             else:
-                low_x, high_x = self.current_recoil_element.get_range()
                 self.common_interval = VerticalLimits(
-                    self.canvas, self.axes, low_x, high_x, "blue", "red"
+                    self.canvas, self.axes,
+                    xs=self.current_recoil_element.get_range(),
+                    colors=("blue", "red")
                 )
             self.area_limits_for_all_on = True
             self.span_selector.set_active(True)
