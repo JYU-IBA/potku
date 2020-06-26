@@ -124,11 +124,14 @@ class PercentageWidget(QtWidgets.QWidget):
             pass
         event.accept()
 
-    def row_unselected(self, recoil: RecoilElement) -> bool:
-        """Checks if the given recoil has a row that is unselected.
+    def row_selected(self, recoil: RecoilElement) -> bool:
+        """Checks if the given recoil has a row that is selected.
         """
-        row = self._percentage_rows.get(recoil)
-        return row is not None and not row.selected
+        row = self._percentage_rows.get(recoil, None)
+        # Row is None when it has not been created yet.
+        # Row will be created after area has been calculated
+        # for the first time so we can return True
+        return row is None or row.selected
 
     def _calculate_areas_and_percentages(self, rounding=2) -> Tuple[Dict, Dict]:
         """Calculate areas and percents for recoil elements within the given
@@ -147,44 +150,31 @@ class PercentageWidget(QtWidgets.QWidget):
         interval_type = self.interval_type
 
         if interval_type is IntervalType.NO_LIMITS:
-            error_msg = ""
-
             def get_range(_):
-                return None, None, False
+                return None, None
 
         elif interval_type is IntervalType.COMMON:
-            error_msg = "No common interval defined, calculating areas for " \
-                        "the entire length of each distribution."
-
             def get_range(_):
                 try:
-                    start, end, error = *limits["common"], False
+                    start, end = limits["common"]
                 except (ValueError, KeyError):
-                    start, end, error = None, None, True
-                return start, end, error
+                    start, end = None, None
+                return start, end
         else:
-            error_msg = "No individual intervals defined for some elements. " \
-                        "Calculating areas for the entire length for each of " \
-                        "these."
-
             def get_range(rec: RecoilElement):
                 try:
-                    start, end, error = *limits[rec], False
-                except ValueError:
-                    start, end, error = None, None, True
-                return start, end, error
+                    start, end = limits[rec]
+                except (ValueError, KeyError):
+                    start, end = None, None
+                return start, end
 
-        err = False
         areas = {}
         percentages = {}
         for recoil in self._percentage_rows:
-            if self.row_unselected(recoil):
-                area = 0
-            elif recoil not in limits:
-                # Recoil has been removed
+            if not self.row_selected(recoil):
                 area = 0
             else:
-                s, e, err = get_range(recoil)
+                s, e = get_range(recoil)
                 area = recoil.calculate_area(s, e)
 
             if not self.__relative_values:
@@ -199,10 +189,6 @@ class PercentageWidget(QtWidgets.QWidget):
                     areas.values(), rounding=rounding)):
             percentages[recoil] = percentage
 
-        if err:
-            self.status_msg = error_msg
-        else:
-            self.status_msg = ""
         return areas, percentages
 
     def __show_abs_or_rel_values(self):
