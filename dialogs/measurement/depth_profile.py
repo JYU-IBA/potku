@@ -382,8 +382,8 @@ class DepthProfileWidget(QtWidgets.QWidget):
 
             self.matplotlib = MatplotlibDepthProfileWidget(
                 self, self.output_dir, self.elements, rbs_list,
-                self.use_cuts, depth_scale=depth_scale, x_units=self.x_units,
-                legend=True, add_line_zero=self.__line_zero,
+                depth_scale=depth_scale, x_units=self.x_units,
+                add_legend=True, add_line_zero=self.__line_zero,
                 systematic_error=self.__systerr, progress=sub_progress)
         except Exception as e:
             msg = f"Could not create Depth Profile graph: {e}"

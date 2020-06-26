@@ -1,13 +1,12 @@
 # coding=utf-8
 """
-Created on TODO
 Updated on 27.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -27,13 +26,8 @@ __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 import unittest
-import tempfile
 
-import tests.mock_objects as mo
-import tests.utils as utils
 import modules.depth_files as depth_files
-
-from pathlib import Path
 
 from modules.depth_files import DepthProfile
 from modules.element import Element

@@ -32,8 +32,14 @@ import abc
 import functools
 
 from typing import Tuple
+from typing import Dict
+from typing import Iterable
+from typing import Set
 from typing import Optional
 from typing import Any
+from typing import Hashable
+from typing import List
+from typing import Callable
 from modules.general_functions import Range
 from modules.general_functions import StrTuple
 
@@ -143,6 +149,7 @@ class VerticalLimits(GraphWrapper):
         self._visible = True
         self._limit_lines = self._init_draw(xs, colors)
 
+    @draw_and_flush
     def _init_draw(self, xs, colors):
         x0, x1 = self._unpack_args(xs, VerticalLimits._DEFAULT_X)
         x0_col, x1_col = self._unpack_args(
@@ -167,10 +174,10 @@ class VerticalLimits(GraphWrapper):
         x0, x1, *_ = tpl
         return x0, x1
 
+    @draw_and_flush
     def update_graph(self, x0: float, x1: float):
         """Updates the x coordinates of both limit lines.
         """
-        # TODO maybe decorate this with draw_and_flush
         self._limit_lines[0].set_xdata([x0])
         self._limit_lines[1].set_xdata([x1])
 
@@ -180,10 +187,10 @@ class VerticalLimits(GraphWrapper):
         x0, xn = sorted([line.get_xdata()[0] for line in self._limit_lines])
         return x0, xn
 
+    @draw_and_flush
     def set_visible(self, b: bool):
         """Sets the visibility of the limit lines.
         """
-        # TODO maybe add decorator
         self._visible = b
         linestyle = self._LINE_STYLE if b else "None"
         for line in self._limit_lines:
@@ -202,9 +209,62 @@ class AlternatingLimits(VerticalLimits):
         VerticalLimits.__init__(self, *args, **kwargs)
         self._next_limit_idx = 1
 
+    @draw_and_flush
     def update_graph(self, x: float):
         """Moves the limit line that is next in turn to the position x on the
         x axis.
         """
         self._next_limit_idx = abs(1 - self._next_limit_idx)
         self._limit_lines[self._next_limit_idx].set_xdata([x])
+
+
+class LineChart(GraphWrapper):
+    _DEFAULT_LINESTYLE = "-"
+
+    def __init__(self, canvas, axes, lineargs: Iterable[Dict]):
+        GraphWrapper.__init__(self, canvas, axes)
+        self._lines = self._init_draw(lineargs)
+
+    @draw_and_flush
+    def _init_draw(self, lineargs: Iterable[Dict]) -> Dict:
+        def _inner_draw(key, xs, ys, **kwargs):
+            line, = self.axes.plot(xs, ys, **kwargs)
+            return key, line
+        return dict([
+            _inner_draw(**kwargs)
+            for kwargs in lineargs
+        ])
+
+    @staticmethod
+    def get_line_args(key: Hashable, xs: List[float], ys: List[float],
+                      label_func: Callable = str, **kwargs) -> Dict:
+        return {
+            "key": key,
+            "label": label_func(key),
+            "xs": xs,
+            "ys": ys,
+            **kwargs
+        }
+
+    def get_keys(self) -> Set:
+        return set(self._lines.keys())
+
+    @draw_and_flush
+    def update_graph(self, lineargs: Iterable[Dict]):
+        for arg in lineargs:
+            line = self._lines[arg["key"]]
+            if "xs" in arg:
+                line.set_xdata(arg["xs"])
+            line.set_ydata(arg["ys"])
+
+    @draw_and_flush
+    def hide_lines(self, lines_to_hide: Set):
+        for label, line in self._lines.items():
+            if label in lines_to_hide:
+                line.set_linestyle("None")
+            else:
+                line.set_linestyle(LineChart._DEFAULT_LINESTYLE)
+
+    @draw_and_flush
+    def set_yscale(self, y_scale: str):
+        self.axes.set_yscale(y_scale)

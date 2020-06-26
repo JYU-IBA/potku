@@ -28,51 +28,27 @@ __version__ = "2.0"
 import unittest
 import math
 
-import tests.utils as utils
-
-from pathlib import Path
+import tests.mock_objects as mo
 
 from modules.depth_files import DepthProfileHandler
-from modules.element import Element
 from timeit import default_timer as timer
-
-# These tests require reading files from the sample data directory
-# Path to the depth file directory
-_DIR_PATH = Path(
-    utils.get_sample_data_dir(), "Ecaart-11-mini", "Tof-E_65-mini",
-    "depthfiles"
-)
 
 
 class TestDepthProfileHandling(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.all_elements = [
-            Element.from_string("C"),
-            Element.from_string("F"),
-            Element.from_string("H"),
-            Element.from_string("Li"),
-            Element.from_string("Mn"),
-            Element.from_string("O"),
-            Element.from_string("Si")
-        ]
-        cls.some_elements = [
-            Element.from_string("F"),
-            Element.from_string("H"),
-            Element.from_string("Mn"),
-            Element.from_string("Si")
-        ]
-        cls.handler = DepthProfileHandler()
+    def setUp(self):
+        self.depth_dir, self.all_elements, self.some_elements = \
+            mo.get_sample_depth_files_and_elements()
+        self.handler = DepthProfileHandler()
 
     def test_file_reading(self):
         """Tests that the files can be read and all given elements are
         stored in the profile handler"""
-        self.handler.read_directory(_DIR_PATH, self.all_elements)
+        self.handler.read_directory(self.depth_dir, self.all_elements)
         self.check_handler_profiles(self.handler, self.all_elements)
 
         # Read just some of the elements. This should remove existing
         # profiles from the handler
-        self.handler.read_directory(_DIR_PATH, self.some_elements)
+        self.handler.read_directory(self.depth_dir, self.some_elements)
         self.check_handler_profiles(self.handler, self.some_elements)
 
     def check_handler_profiles(self, handler, elements):
@@ -95,7 +71,7 @@ class TestDepthProfileHandling(unittest.TestCase):
     def test_calculate_ratios(self):
         all_elem_names = set(str(elem) for elem in self.all_elements)
         some_elem_names = set(str(elem) for elem in self.all_elements)
-        self.handler.read_directory(_DIR_PATH, self.all_elements)
+        self.handler.read_directory(self.depth_dir, self.all_elements)
 
         # All elements are ignored, so all values returned by the calculation
         # are None
@@ -126,15 +102,13 @@ class TestDepthProfileHandling(unittest.TestCase):
     def test_get_depth_range(self):
         """Tests depth ranges with different depth units"""
         # First read files while using TODO depth units
-        self.handler.read_directory(_DIR_PATH,
-                                    self.some_elements,
-                                    depth_units="")
+        self.handler.read_directory(
+            self.depth_dir, self.some_elements, depth_units="")
         fst_range = self.handler.get_depth_range()
 
         # Then read files using nanometers
-        self.handler.read_directory(_DIR_PATH,
-                                    self.some_elements,
-                                    depth_units="nm")
+        self.handler.read_directory(
+            self.depth_dir, self.some_elements, depth_units="nm")
         snd_range = self.handler.get_depth_range()
 
         # First and second ranges are different and both are not
@@ -152,7 +126,7 @@ class TestDepthProfileHandling(unittest.TestCase):
         """Tests the values for some of the statistics. If the
         calculations methods change, expected values in this test
         must also be changed."""
-        self.handler.read_directory(_DIR_PATH, self.some_elements)
+        self.handler.read_directory(self.depth_dir, self.some_elements)
 
         self.assertEqual((-27.632, 310.992),
                          self.handler.get_depth_range())
@@ -178,9 +152,8 @@ class TestDepthProfileHandling(unittest.TestCase):
         self.assertEqual(inf.currsize, 0)
         self.assertEqual(inf.maxsize, max_cache)
 
-        self.handler.read_directory(_DIR_PATH,
-                                    self.all_elements,
-                                    depth_units="nm")
+        self.handler.read_directory(
+            self.depth_dir, self.all_elements, depth_units="nm")
         a, b = self.handler.get_depth_range()
 
         # First merge is called with same parameters for n times
@@ -221,7 +194,7 @@ class TestDepthProfileHandling(unittest.TestCase):
 
         # Assert that cache gets cleared when directory is read
         m1 = self.handler.merge_profiles(a + 100, b - 100, method="abs_rel_abs")
-        self.handler.read_directory(_DIR_PATH, elements=self.some_elements)
+        self.handler.read_directory(self.depth_dir, elements=self.some_elements)
 
         self.assertEqual(0, self.handler.merge_profiles.cache_info().currsize)
         m2 = self.handler.merge_profiles(a + 100, b - 100, method="abs_rel_abs")
@@ -235,9 +208,8 @@ class TestDepthProfileHandling(unittest.TestCase):
         # Caching means that same object is returned
         # This needs to be taken into consideration if caller needs to modify
         # the results
-        self.handler.read_directory(_DIR_PATH,
-                                    self.some_elements,
-                                    depth_units="nm")
+        self.handler.read_directory(
+            self.depth_dir, self.some_elements, depth_units="nm")
 
         # Set initial ranges that fall within handlers depth range
         a, b = self.handler.get_depth_range()
@@ -261,9 +233,8 @@ class TestDepthProfileHandling(unittest.TestCase):
 
         # When a new ProfileHandler is created, new cache is also established
         new_dp = DepthProfileHandler()
-        new_dp.read_directory(_DIR_PATH,
-                              self.some_elements,
-                              depth_units="nm")
+        new_dp.read_directory(
+            self.depth_dir, self.some_elements, depth_units="nm")
 
         m5 = new_dp.merge_profiles(a, b, method="abs_rel_abs")
         self.assertIsNot(m1, m5)

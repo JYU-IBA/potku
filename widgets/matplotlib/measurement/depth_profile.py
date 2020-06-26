@@ -36,6 +36,7 @@ import modules.math_functions as mf
 
 from typing import List
 from typing import Optional
+from typing import Dict
 
 from pathlib import Path
 
@@ -44,8 +45,10 @@ from dialogs.measurement.depth_profile_ignore_elements \
 from widgets.matplotlib.base import MatplotlibWidget
 from widgets.matplotlib import mpl_utils
 from widgets.matplotlib.mpl_utils import AlternatingLimits
+from widgets.matplotlib.mpl_utils import LineChart
 
 from modules.depth_files import DepthProfileHandler
+from modules.depth_files import DepthProfile
 from modules.element import Element
 from modules.general_functions import Range
 
@@ -57,9 +60,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
     """
 
     def __init__(self, parent, depth_dir: Path, elements: List[Element],
-                 rbs_list, used_cuts: List[Path], x_units="nm",
-                 depth_scale: Optional[Range] = None, legend=True,
-                 add_line_zero=False, systematic_error=3.0, progress=None):
+                 rbs_list, x_units="nm", depth_scale: Optional[Range] = None,
+                 add_legend=True, add_line_zero=False, systematic_error=3.0,
+                 progress=None):
         """Inits depth profile widget.
 
         Args:
@@ -69,10 +72,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             rbs_list: A dictionary of RBS selection elements containing
                 scatter elements.
             depth_scale: A tuple of depth scaling values.
-            used_cuts: List of cut file paths that are sed to create depth
-                profile.
             x_units: An unit to be used as x axis.
-            legend: A boolean of whether to show the legend.
+            add_legend: A boolean of whether to show the legend.
             add_line_zero: A boolean representing if vertical line is drawn at
                 zero.
             systematic_error: A double representing systematic error.
@@ -84,9 +85,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.axes.fmt_xdata = lambda x: "{0:1.2f}".format(x)
         self.axes.fmt_ydata = lambda y: "{0:1.2f}".format(y)
         self.x_units = x_units
-        self.draw_legend = legend
         self.elements = elements
-        self.__used_cuts = used_cuts
         self.__systerr = systematic_error
 
         self.profile_handler = DepthProfileHandler()
@@ -124,23 +123,24 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.limit = AlternatingLimits(
             self.canvas, self.axes, xs=self.profile_handler.get_depth_range(),
             colors=("blue", "red"))
+        self._line_chart = None
         self.depth_plots = {}
-        self._update_depth_plots(
-            self.get_profiles_to_use(), draw_first_time=True)
+        self._update_depth_plots(self.get_profiles_to_use())
         self.axes.set_ylim(bottom=0.0)
 
-        if self.draw_legend:
+        self.add_legend = add_legend
+        if self.add_legend:
             self.__make_legend_box()
 
         self.axes.axhline(y=0, color="#000000")
         if add_line_zero:
-            self._line_zero, = self.axes.axvline(
+            self._line_zero = self.axes.axvline(
                 x=0, linestyle="-", linewidth=3, color="#C0C0C0", alpha=0.75)
         else:
             self._line_zero = None
 
         if depth_scale:
-            self._vspan, = self.axes.axvspan(
+            self._vspan = self.axes.axvspan(
                 *depth_scale, color="#C0C0C0", alpha=0.20, edgecolor=None)
         else:
             self._vspan = None
@@ -150,7 +150,6 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         if progress is not None:
             progress.report(100)
 
-    @mpl_utils.draw_and_flush
     def onclick(self, event):
         """Handles clicks on the graph.
 
@@ -159,9 +158,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         """
         if event.button == 1 and self.limButton.isChecked():
             self.limit.update_graph(event.xdata)
-            self.__make_legend_box()
+            if self.add_legend:
+                self.__make_legend_box()
 
-    def get_profiles_to_use(self):
+    def get_profiles_to_use(self) -> Dict[str, DepthProfile]:
         """Determines what files to use for plotting. Either relative, absolute
         or a merger of the two.
         """
@@ -180,38 +180,33 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             lim_a, lim_b, method="rel_abs_rel"
         )
 
-    @mpl_utils.draw_and_flush
-    def _update_depth_plots(self, profiles_to_use, draw_first_time=False):
-        sorted_profile_names = sorted(
-            filter(lambda x: x != "total", profiles_to_use),
-            key=lambda x: profiles_to_use[x].element)
+    def _update_depth_plots(self, profiles: Dict[str, DepthProfile]):
+        profiles_to_use = {
+            k: v for k, v in profiles.items() if k != "total"
+        }
+        if self._line_chart is None:
+            lineargs = []
+            for key, profile in sorted(
+                    profiles_to_use.items(), key=lambda tpl: tpl[1].element):
 
-        for profile_name in sorted_profile_names:
-            if profile_name == "total":
-                continue
+                # Check RBS selection
+                element = profile.element
+                if key in self.__rbs_list.values():
+                    color_key = f"RBS_{element}0"
+                else:
+                    color_key = f"{element}0"
 
-            element = profiles_to_use[profile_name].element
-            if element in self.__ignore_from_graph:
-                continue
+                lineargs.append(LineChart.get_line_args(
+                    element, profile.depths, profile.concentrations,
+                    color=self.selection_colors.get(color_key, "red")))
 
-            # Check RBS selection
-            if profile_name in self.__rbs_list.values():
-                color_key = "RBS_{0}0".format(str(element))
-            else:
-                color_key = "{0}0".format(str(element))
-
-            axe1 = profiles_to_use[profile_name].depths
-            axe2 = profiles_to_use[profile_name].concentrations
-
-            label = str(element)        # TODO rbs string
-
-            if draw_first_time:
-                line, = self.axes.plot(
-                    axe1, axe2, label=label,
-                    color=self.selection_colors[color_key])
-                self.depth_plots[profile_name] = line
-            else:
-                self.depth_plots[profile_name].set_ydata(axe2)
+            self._line_chart = LineChart(self.canvas, self.axes, lineargs)
+        else:
+            lineargs = ({
+                "key": v.element,
+                "ys": v.concentrations
+            } for v in profiles_to_use.values())
+            self._line_chart.update_graph(lineargs)
 
     @mpl_utils.draw_and_flush
     def __make_legend_box(self):
@@ -232,9 +227,11 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         if self.__absolute_values:
             concentrations = self.profile_handler.integrate_concentrations(
                 lim_a, lim_b)
+            percentages, moe = {}, {}
         else:
             percentages, moe = self.profile_handler.calculate_ratios(
                 ignored_str, lim_a, lim_b, self.__systerr)
+            concentrations = {}
 
         # Fix labels to proper format, with MoE
         labels_w_percentages = []
@@ -423,28 +420,24 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self._update_ignored(
             dialog.ignored_from_graph, dialog.ignored_from_ratio)
 
-    @mpl_utils.draw_and_flush
     def _update_ignored(self, ignored_graph, ignored_ratio):
         self.__ignore_from_graph = set(ignored_graph)
         self.__ignore_from_ratio = set(ignored_ratio)
-        for profile, line in self.depth_plots.items():
-            if Element.from_string(profile) in self.__ignore_from_graph:
-                line.set_linestyle("None")
-            else:
-                line.set_linestyle("-")
-        self.__make_legend_box()
+        self._line_chart.hide_lines(self.__ignore_from_graph)
+        if self.add_legend:
+            self.__make_legend_box()
 
     def __toggle_absolute_values(self):
         """Toggle absolute values for the elements in the graph.
         """
         self.__absolute_values = self.__button_toggle_absolute.isChecked()
-        self.__make_legend_box()
+        if self.add_legend:
+            self.__make_legend_box()
 
-    @mpl_utils.draw_and_flush
     def __toggle_log_scale(self, *_):
         """Toggle log scaling for Y axis in depth profile graph.
         """
         if self.__button_toggle_log.isChecked():
-            self.axes.set_yscale("symlog")
+            self._line_chart.set_yscale("symlog")
         else:
-            self.axes.set_yscale("linear")
+            self._line_chart.set_yscale("linear")
