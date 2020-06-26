@@ -8,7 +8,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -485,7 +485,8 @@ class RecoilElement(MCERDParameterContainer, Serializable):
             json.dump(obj, file, indent=4)
 
     @classmethod
-    def from_file(cls, file_path, channel_width=None, rec_type="rec"):
+    def from_file(cls, file_path: Path, channel_width=None, rec_type="rec") \
+            -> "RecoilElement":
         """Returns a RecoilElement from a json file.
 
         Args:
@@ -496,7 +497,7 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         Return:
             RecoilElement object
         """
-        with open(file_path) as rec_file:
+        with file_path.open("r") as rec_file:
             reco = json.load(rec_file)
 
         # Pop the values that need conversion and/or are provided as positional

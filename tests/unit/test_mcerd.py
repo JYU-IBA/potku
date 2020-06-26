@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -26,7 +26,6 @@ __version__ = "2.0"
 
 import unittest
 import rx
-import itertools
 
 import modules.mcerd as mcerd
 
@@ -82,18 +81,18 @@ class TestParseOutput(unittest.TestCase):
 
     def test_pipeline(self):
         output = [
-            b"Initializing parameters.",
-            b"Reading input files.",
-            b"Beam ion: Z=17, M=34.969",
-            b"Starting simulation.",
-            b"Calculated 20 of 100 ions (20%)",
-            b"Presimulation finished",
-            b"Calculated 50 of 100 ions (50%)",
-            b"Energy would change too much in virtual detector",
-            b"Opening target file xyz",
-            b"atom: 1 1.0, con: 0.048 6.920",
-            b"angave 25.6119865",
-            b"bar"
+            "Initializing parameters.",
+            "Reading input files.",
+            "Beam ion: Z=17, M=34.969",
+            "Starting simulation.",
+            "Calculated 20 of 100 ions (20%)",
+            "Presimulation finished",
+            "Calculated 50 of 100 ions (50%)",
+            "Energy would change too much in virtual detector",
+            "Opening target file xyz",
+            "atom: 1 1.0, con: 0.048 6.920",
+            "angave 25.6119865",
+            "bar"
         ]
 
         obs = TestObserver()

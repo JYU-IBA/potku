@@ -8,7 +8,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -39,13 +39,15 @@ from . import file_paths as fp
 from . import general_functions as gf
 
 from typing import Optional
+from typing import List
+from typing import Iterable
+from typing import Tuple
+from typing import Dict
+from typing import Set
 from rx import operators as ops
 from pathlib import Path
 from collections import deque
 from threading import Event
-from typing import Tuple
-from typing import Dict
-from typing import Any
 
 from .concurrency import CancellationToken
 from .base import Serializable
@@ -86,6 +88,12 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     """Class for handling the element specific simulation. Can have multiple
     MCERD objects.
     """
+    # Keys that are added to MCERD output
+    FINISHED = "finished_processes"
+    TOTAL = "total_processes"
+    STATE = "status"
+    ATOMS = "atom_count"
+    OPTIMIZING = "optimizing"
 
     __slots__ = "directory", "request", "name_prefix", "modification_time", \
                 "simulation_type", "number_of_ions", "number_of_preions", \
@@ -93,15 +101,17 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 "minimum_scattering_angle", "minimum_main_scattering_angle", \
                 "minimum_energy", "simulation_mode", "seed_number", \
                 "recoil_elements", "recoil_atoms", \
-                "channel_width", "__erd_filehandler", \
+                "channel_width", "_erd_filehandler", \
                 "description", "name", \
                 "use_default_settings", "simulation", "__full_edit_on", \
                 "optimization_recoils", "optimization_widget", \
                 "_optimization_running", "optimized_fluence", \
-                "__cts", "_simulation_running", "_running_event"
+                "_cts", "_simulation_running", "_running_event"
 
-    def __init__(self, directory, request, recoil_elements,
-                 simulation=None, name_prefix="", name="Default",
+    def __init__(self, directory: Path, request: "Request",
+                 recoil_elements: List[RecoilElement],
+                 simulation: Optional["Simulation"] = None,
+                 name_prefix="", name="Default",
                  description="", modification_time=None,
                  simulation_type=SimulationType.ERD, number_of_ions=1_000_000,
                  number_of_preions=100_000, number_of_scaling_ions=5,
@@ -136,7 +146,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 optimization.
             optimized_fluence: Optimized fluence value.
             save_on_creation: Determines if the element simulation is saved to
-                    a file when initialized
+                a file when initialized
         """
         # FIXME there is an inconsistency when it comes to the return value
         #  is_simulation_finished method. If the user starts a new simulation,
@@ -195,9 +205,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             self.profile_to_file(Path(self.directory, f"{prefix}.profile"))
 
         # Collection of CancellationTokens
-        self.__cts = set()
+        self._cts: Set[CancellationToken] = set()
 
-        self.__erd_filehandler = ERDFileHandler.from_directory(
+        self._erd_filehandler = ERDFileHandler.from_directory(
             self.directory, self.get_main_recoil())
 
         # TODO check if all optimization stuff can be moved to another module
@@ -211,6 +221,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         # Also set up an Event that will be locked during simulation
         self._running_event = Event()
         self._running_event.set()
+
+        # TODO get rid of this reference
         self.optimization_widget = None
         # Store fluence optimization results
         self.optimized_fluence = optimized_fluence
@@ -303,7 +315,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                         gf.rename_file(erd_file, new_name)
                 # Write mcsimu file
                 self.to_file()
-                self.__erd_filehandler.update()
+                self._erd_filehandler.update()
 
             simu_file = Path(self.directory, f"{old_name}.simu")
             if simu_file.exists():
@@ -313,7 +325,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     @classmethod
     def from_file(cls, request, prefix: str, simulation_folder: Path,
                   mcsimu_file_path: Path, profile_file_path: Path,
-                  simulation=None):
+                  simulation=None) -> "ElementSimulation":
         """Initialize ElementSimulation from JSON files.
 
         Args:
@@ -413,8 +425,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         return cls(
             directory=simulation_folder, request=request,
-            recoil_elements=recoil_elements, name_prefix=name_prefix, name=name,
-            optimization_recoils=optimized_recoils,
+            recoil_elements=list(recoil_elements), name_prefix=name_prefix,
+            name=name, optimization_recoils=optimized_recoils,
             optimized_fluence=optimized_fluence, **kwargs, **mcsimu,
             simulation=simulation)
 
@@ -425,7 +437,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             return f"{self.name_prefix}-{self.name}"
         return self.name
 
-    def get_json_content(self):
+    def get_json_content(self) -> Dict:
         """Returns a dictionary that represents the values of the
         ElementSimulation in json format.
         """
@@ -452,22 +464,20 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             "main_recoil": self.get_main_recoil().name
         }
 
-    def get_default_file_path(self):
+    def get_default_file_path(self) -> Path:
         """Returns a default file path that to_file uses.
         """
         return Path(self.directory, f"{self.get_full_name()}.mcsimu")
 
-    def to_file(self, file_path=None):
+    def to_file(self, file_path: Optional[Path] = None):
         """Save mcsimu settings to file.
 
         Args:
             file_path: File in which the mcsimu settings will be saved.
         """
-        # TODO maybe it is not necessary to call this every time a request
-        #      is opened
         if file_path is None:
             file_path = self.get_default_file_path()
-        with open(file_path, "w") as file:
+        with file_path.open("w") as file:
             json.dump(self.get_json_content(), file, indent=4)
 
     def profile_to_file(self, file_path: Path):
@@ -497,9 +507,10 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         with file_path.open("w") as file:
             json.dump(obj_profile, file, indent=4)
 
-    def start(self, number_of_processes, start_value=None,
+    def start(self, number_of_processes: int, start_value=None,
               use_old_erd_files=True, optimization_type=None,
-              ion_division=IonDivision.NONE, cancellation_token=None,
+              ion_division=IonDivision.NONE,
+              ct: Optional[CancellationToken] = None,
               start_interval=5, status_check_interval=1,
               **kwargs) -> Optional[rx.Observable]:
         """
@@ -513,7 +524,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             optimization_type: either recoil, fluence or None
             ion_division: ion division mode that determines how ions are
                 divided per process
-            cancellation_token: CancellationToken that can be used to stop
+            ct: CancellationToken that can be used to stop
                 the start process
             start_interval: seconds between the start of each simulation
                 (ensures that MCERD's startup files are not being
@@ -533,7 +544,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             self.on_completed(self.get_current_status())
 
         if not use_old_erd_files:
-            self.__erd_filehandler.clear()
+            self._erd_filehandler.clear()
             self.delete_simulation_results()
 
         settings, run, detector = self.get_mcerd_params()
@@ -570,49 +581,50 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             "sim_dir": self.directory
         })
 
-        if cancellation_token is None:
-            cancellation_token = CancellationToken()
+        if ct is None:
+            ct = CancellationToken()
 
-        self.__cts.add(cancellation_token)
+        self._cts.add(ct)
 
         # New MCERD process is started every five seconds until number of
         # processes is reached or cancellation has been requested.
         # Seed is incremented for each new process.
         return rx.timer(0, start_interval).pipe(
             ops.take_while(
-                lambda _: not cancellation_token.is_cancellation_requested()),
+                lambda _: not ct.is_cancellation_requested()),
             ops.take(number_of_processes),
             ops.scan(lambda acc, _: acc + 1, seed=seed_number - 1),
             ops.map(lambda next_seed: self._start(
                 recoil, next_seed, optimization_type, dict(settings),
-                cancellation_token, **kwargs)),
+                ct, **kwargs)),
             ops.flat_map(lambda x: x),
             ops.scan(lambda acc, x: {
                 **x,
-                "total_processes": number_of_processes,
-                "finished_processes": acc["finished_processes"] + int(
-                    not x["is_running"])
-            }, seed={"finished_processes": 0}),
+                ElementSimulation.TOTAL: number_of_processes,
+                ElementSimulation.FINISHED:
+                    acc[ElementSimulation.FINISHED] + int(
+                        not x[MCERD.IS_RUNNING])
+            }, seed={ElementSimulation.FINISHED: 0}),
             ops.combine_latest(rx.timer(0, status_check_interval).pipe(
                 ops.map(lambda x: self.get_current_status()),
                 ops.take_while(
-                    lambda _:
-                    not cancellation_token.is_cancellation_requested(),
+                    lambda _: not ct.is_cancellation_requested(),
                     inclusive=True),
             )),
             ops.map(lambda x: {**x[0], **x[1]}),
             ops.take_while(
-                lambda x: x["finished_processes"] < x["total_processes"] and
-                not x["msg"].startswith("Simulation "),
+                lambda x: x[ElementSimulation.FINISHED] < x[
+                    ElementSimulation.TOTAL] and
+                not x[MCERD.MSG] in (MCERD.SIM_STOPPED, MCERD.SIM_TIMEOUT),
                 inclusive=True),
             ops.do_action(
-                on_error=lambda _: self._clean_up(cancellation_token),
-                on_completed=lambda: self._clean_up(cancellation_token)
+                on_error=lambda _: self._clean_up(ct),
+                on_completed=lambda: self._clean_up(ct)
             )
         )
 
-    def _start(self, recoil, seed_number, optimization_type, settings,
-               cancellation_token, **kwargs) -> rx.Observable:
+    def _start(self, recoil, seed_number, optimization_type, settings, ct,
+               **kwargs) -> rx.Observable:
         """Inner method that creates an MCERD instance and runs it.
 
         Returns an observable stream of MCERD output.
@@ -628,15 +640,15 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             pass
 
         if optimization_type is None:
-            self.__erd_filehandler.add_active_file(new_erd_file)
+            self._erd_filehandler.add_active_file(new_erd_file)
 
         mcerd = MCERD(
             seed_number, settings, self.get_full_name(),
             optimize_fluence=optimization_type is OptimizationType.FLUENCE)
 
-        return mcerd.run(cancellation_token=cancellation_token, **kwargs)
+        return mcerd.run(ct=ct, **kwargs)
 
-    def _set_flags(self, b, optim_mode=None):
+    def _set_flags(self, b: bool, optim_mode=None):
         """Sets the boolean flags that indicate the state of
         simulation accordingly.
         """
@@ -648,7 +660,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self._simulation_running = b and optim_mode is None
         self._optimization_running = b and optim_mode is not None
 
-    def get_settings(self):
+    def get_settings(self) -> Dict:
         """Returns simulation settings as a dict. Overrides base class function.
         """
         return {
@@ -673,9 +685,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def get_atom_count(self) -> int:
         """Returns the total number of observed atoms.
         """
-        return self.__erd_filehandler.get_total_atom_count()
+        return self._erd_filehandler.get_total_atom_count()
 
-    def get_current_status(self):
+    def get_current_status(self) -> Dict:
         """Returns the number of atoms counted, number of running processes and
         the state of simulation.
 
@@ -693,20 +705,24 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         # Return status as a dict
         return {
-            "atom_count": atom_count,
-            "state": state,
-            "optimizing": self.is_optimization_running()
+            ElementSimulation.ATOMS: atom_count,
+            ElementSimulation.STATE: state,
+            ElementSimulation.OPTIMIZING: self.is_optimization_running()
         }
 
     def get_main_recoil(self) -> Optional[RecoilElement]:
-        # TODO replace the main_recoil attribute as well as all references to
-        #   recoil_elements[0] with this function
+        """Returns the main recoil of this ElementSimulation.
+        """
         if self.recoil_elements:
             return self.recoil_elements[0]
         else:
             return None
 
-    def has_element(self, element: Element):
+    def has_element(self, element: Element) -> bool:
+        """Checks whether the this ELementSimulation's collection of
+        RecoilElements contains the given element.
+        """
+        # TODO can't ElementSimulation only have one type of element anyway?
         t = element.symbol, element.isotope
         return t in ((r.element.symbol, r.element.isotope)
                      for r in self.recoil_elements)
@@ -721,7 +737,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         """Whether simulation is finished.
         """
         return not self.is_simulation_running() and \
-            self.__erd_filehandler.results_exist()
+            self._erd_filehandler.results_exist()
 
     def is_optimization_running(self) -> bool:
         """Whether optimization is running.
@@ -734,27 +750,27 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         return not self.is_optimization_running() and (any(
             self.optimization_recoils) or self.optimized_fluence is not None)
 
-    def get_max_seed(self):
+    def get_max_seed(self) -> int:
         """Returns maximum seed that has been used in simulations.
 
         Return:
             maximum seed value used in simulation processes
         """
-        return self.__erd_filehandler.get_max_seed()
+        return self._erd_filehandler.get_max_seed()
 
-    def get_erd_files(self):
+    def get_erd_files(self) -> List[Path]:
         """Returns both active and already simulated ERD files.
         """
-        return list(f for f, _, _ in self.__erd_filehandler)
+        return list(f for f, _, _ in self._erd_filehandler)
 
-    def _clean_up(self, cancellation_token):
+    def _clean_up(self, ct: CancellationToken):
         """Performs clean up after all of the simulation process have ended.
         """
         self._set_flags(False)
-        self.__erd_filehandler.update()
-        self.__cts.remove(cancellation_token)
+        self._erd_filehandler.update()
+        self._cts.remove(ct)
         if self.simulation is not None:
-            atom_count = self.__erd_filehandler.get_total_atom_count()
+            atom_count = self._erd_filehandler.get_total_atom_count()
             msg = f"Simulation finished. Element " \
                   f"{self.get_main_recoil().get_full_name()}, " \
                   f"observed atoms: {atom_count}."
@@ -767,14 +783,15 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         Returns an Event that can be waited for until all processes have
         stopped.
         """
-        cts = list(self.__cts)
+        cts = list(self._cts)
         for ct in cts:
             ct.request_cancellation()
 
         return self._running_event
 
-    def calculate_espe(self, recoil_element, ch=None, fluence=None,
-                       optimization_type=None, write_to_file=True):
+    def calculate_espe(self, recoil_element: RecoilElement, ch=None,
+                       fluence=None, optimization_type=None,
+                       write_to_file=True):
         """
         Calculate the energy spectrum from the MCERD result file.
 
@@ -841,7 +858,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         return GetEspe.calculate_simulated_spectrum(
             write_to_file=write_to_file, **espe_settings), espe_file
 
-    def get_mcerd_params(self) -> Tuple[Dict[str, Any], Run, Detector]:
+    def get_mcerd_params(self) -> Tuple[Dict, Run, Detector]:
         """Returns the parameters for MCERD simulations.
         """
         if self.use_default_settings:
@@ -931,7 +948,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         if remove_result_files:
             self.delete_simulation_results()
             self.delete_optimization_results()
-            self.__erd_filehandler.clear()
+            self._erd_filehandler.clear()
         self.unlock_edit()
 
         self.on_completed(self.get_current_status())
@@ -942,13 +959,13 @@ class ERDFileHandler:
 
     Handles counting atoms and getting seeds.
     """
-    def __init__(self, old_files, recoil_element):
+    def __init__(self, files: Iterable[Path], recoil_element: RecoilElement):
         """Initializes a new ERDFileHandler that tracks old and new .erd files
         belonging to the given recoil element
 
         Args:
-            old_files: list of absolute paths to .erd files that contain data
-                       that has already been simulated
+            files: list of absolute paths to .erd files that contain data
+                that has already been simulated
             recoil_element: recoil element for which the .erd files belong to.
         """
         self.recoil_element = recoil_element
@@ -957,11 +974,12 @@ class ERDFileHandler:
         self.__old_files = {
             file: seed
             for file, seed in fp.validate_erd_file_names(
-                old_files, self.recoil_element)
+                files, self.recoil_element)
         }
 
     @classmethod
-    def from_directory(cls, directory, recoil_element):
+    def from_directory(cls, directory: Path, recoil_element: RecoilElement) \
+            -> "ERDFileHandler":
         """Initializes a new ERDFileHandler by reading ERD files
         from a directory.
 
@@ -988,11 +1006,16 @@ class ERDFileHandler:
             that tells if the ERD file is used in a running simulation or
             not.
         """
-        for file, seed in itertools.chain(self.__active_files.items(),
-                                          self.__old_files.items()):
+        for file, seed in itertools.chain(
+                self.__active_files.items(), self.__old_files.items()):
             yield file, seed, file in self.__active_files
 
-    def add_active_file(self, erd_file):
+    def __len__(self):
+        """Returns the number of active files and already simulated files.
+        """
+        return len(self.__active_files) + len(self.__old_files)
+
+    def add_active_file(self, erd_file: Path):
         """Adds an active ERD file to the handler.
 
         File must not already exist in active or old files, otherwise
@@ -1018,37 +1041,37 @@ class ERDFileHandler:
         else:
             raise ValueError("Given file was not a valid .erd file")
 
-    def get_max_seed(self):
+    def get_max_seed(self) -> Optional[int]:
         """Returns the largest seed in current .erd file collection or None
         if no .erd files are stored in the handler.
         """
         return max((seed for _, seed, _ in self), default=None)
 
-    def get_active_atom_count(self):
+    def get_active_atom_count(self) -> int:
         """Returns the number of atoms in currently active .erd files.
         """
         return sum(self.__get_atom_count(file)
                    for file in self.__active_files)
 
-    def get_old_atom_count(self):
+    def get_old_atom_count(self) -> int:
         """Returns the number of atoms in already simulated .erd files.
         """
         return sum(self.__get_atom_count_cached(file)
                    for file in self.__old_files)
 
-    def get_total_atom_count(self):
+    def get_total_atom_count(self) -> int:
         """Returns the total number of observed atoms.
         """
         return self.get_active_atom_count() + self.get_old_atom_count()
 
     @staticmethod
-    def __get_atom_count(erd_file):
+    def __get_atom_count(erd_file: Path):
         """Returns the number of counted atoms in given ERD file.
         """
         return gf.count_lines_in_file(erd_file, check_file_exists=True)
 
     @functools.lru_cache(128)
-    def __get_atom_count_cached(self, erd_file):
+    def __get_atom_count_cached(self, erd_file: Path):
         """Cached version of the atom counter. If the atoms in the
         ERD file have already been counted, a cached result is returned.
         """
@@ -1073,12 +1096,7 @@ class ERDFileHandler:
         self.__old_files = {}
         self.__get_atom_count_cached.cache_clear()
 
-    def results_exist(self):
+    def results_exist(self) -> bool:
         """Returns True if ERD files exist.
         """
         return any(self.__old_files) or any(self.__active_files)
-
-    def __len__(self):
-        """Returns the number of active files and already simulated files.
-        """
-        return len(self.__active_files) + len(self.__old_files)

@@ -8,7 +8,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -29,7 +29,6 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
 __version__ = "2.0"
 
 import platform
-import shutil
 import subprocess
 import re
 import multiprocessing
@@ -38,6 +37,9 @@ import rx
 from . import general_functions as gf
 from . import observing
 
+from typing import Optional
+from typing import Dict
+from .general_functions import StrTuple
 from pathlib import Path
 from rx import operators as ops
 from rx.scheduler import ThreadPoolScheduler
@@ -56,11 +58,38 @@ class MCERD:
                 "__command_file", "__detector_file", "__foils_file", \
                 "__presimulation_file", "__seed"
 
-    def __init__(self, seed, settings, filename, optimize_fluence=False):
+    # These are the keys that exist in the parsed output from MCERD
+    SEED = "seed"
+    NAME = "name"
+    IS_RUNNING = "is_running"
+    MSG = "msg"
+    CALCULATED = "calculated"
+    TOTAL = "total"
+    PERCENTAGE = "percentage"
+    PRESIM = "presim"
+
+    # Messages
+    SIM_STOPPED = "Simulation was stopped"
+    SIM_TIMEOUT = "Simulation timed out"
+
+    # Some predetermined outputs from MCERD
+    PRESIM_FINISHED = "Presimulation finished"
+    _INIT_STARTS = "Reading input files."
+    _INIT_ENDS = "Starting simulation."
+    # Note: these last two are not full lines. Use line.startswith to check
+    # matches for these
+    _FINAL_STARTS = "Opening target file "
+    _FINAL_ENDS = "angave "
+
+    def __init__(self, seed: int, settings: Dict, file_prefix: str,
+                 optimize_fluence=False):
         """Create an MCERD object.
 
         Args:
+            seed: seed for RNG
             settings: All settings that MCERD needs in one dictionary.
+            file_prefix: prefix used for various simulation files
+            optimize_fluence: whether fluence is optimized or not
         """
         self.__seed = seed
         self.__settings = settings
@@ -72,7 +101,7 @@ class MCERD:
         else:
             self.__rec_filename = rec_elem.get_full_name()
 
-        self.__filename = filename
+        self.__filename = file_prefix
 
         self.sim_dir = Path(self.__settings["sim_dir"])
 
@@ -91,7 +120,7 @@ class MCERD:
         self.__foils_file = self.sim_dir / f"{self.__filename}.foils"
         self.__presimulation_file = self.sim_dir / f"{self.__filename}.pre"
 
-    def get_command(self):
+    def get_command(self) -> StrTuple:
         """Returns the command that is used to start the MCERD process.
         """
         if platform.system() == "Windows":
@@ -101,13 +130,13 @@ class MCERD:
 
         return cmd, str(self.__command_file)
 
-    def run(self, print_to_console=False, cancellation_token=None,
+    def run(self, print_output=False, ct: Optional[CancellationToken] = None,
             poll_interval=10, first_check=0.2, max_time=None, ct_check=0.2):
         """Starts the MCERD process.
 
         Args:
-            print_to_console: whether MCERD output is also printed to console
-            cancellation_token: token that is checked periodically to see if
+            print_output: whether MCERD output is also printed to console
+            ct: token that is checked periodically to see if
                 the simulation should be stopped.
             poll_interval: seconds between each check to see if the simulation
                 process is still running.
@@ -123,15 +152,15 @@ class MCERD:
         self.__create_mcerd_files()
 
         cmd = self.get_command()
-        if cancellation_token is None:
-            cancellation_token = CancellationToken()
+        if ct is None:
+            ct = CancellationToken()
 
         process = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            cwd=gf.get_bin_dir())
+            cwd=gf.get_bin_dir(), universal_newlines=True)
 
-        errs = rx.from_iterable(iter(process.stderr.readline, b""))
-        outs = rx.from_iterable(iter(process.stdout.readline, b""))
+        errs = rx.from_iterable(iter(process.stderr.readline, ""))
+        outs = rx.from_iterable(iter(process.stdout.readline, ""))
 
         is_running = rx.timer(first_check, poll_interval).pipe(
             # TODO change this to run at an increasing interval, i.e:
@@ -141,7 +170,7 @@ class MCERD:
             #   MCERD is likely to crash early (?) so it makes sense to
             #   run the check more frequently at the beginning.
             ops.map(lambda _: {
-                "is_running": MCERD.is_running(process)
+                MCERD.IS_RUNNING: MCERD.is_running(process)
             })
         )
 
@@ -150,12 +179,11 @@ class MCERD:
             # updates every time cancellation is checked as there is nothing
             # to update.
             ops.map(
-                lambda _: MCERD._stop_if_cancelled(
-                    process, cancellation_token)),
+                lambda _: MCERD._stop_if_cancelled(process, ct)),
             ops.filter(lambda x: not x),
             ops.map(lambda _: {
-                "is_running": False,
-                "msg": "Simulation was stopped"
+                MCERD.IS_RUNNING: False,
+                MCERD.MSG: MCERD.SIM_STOPPED
             })
         )
 
@@ -169,10 +197,10 @@ class MCERD:
                     #   implement its own timeout check when multiple processes
                     #   are being run.
                     on_next=lambda _:
-                    cancellation_token.request_cancellation()),
+                    ct.request_cancellation()),
                 ops.map(lambda _: {
-                    "is_running": bool(MCERD.stop_process(process)),
-                    "msg": "Simulation timed out"
+                    MCERD.IS_RUNNING: bool(MCERD.stop_process(process)),
+                    MCERD.MSG: MCERD.SIM_TIMEOUT
                 })
             )
         else:
@@ -189,12 +217,13 @@ class MCERD:
             )),
             ops.map(lambda x: {
                 **x[0], **x[1],
-                "is_running": x[0]["is_running"] and x[1]["is_running"]
+                MCERD.IS_RUNNING: x[0][MCERD.IS_RUNNING] and x[1][
+                    MCERD.IS_RUNNING]
             }),
-            ops.take_while(lambda x: x["is_running"], inclusive=True),
+            ops.take_while(lambda x: x[MCERD.IS_RUNNING], inclusive=True),
         )
 
-        if print_to_console:
+        if print_output:
             merged = merged.pipe(
                 observing.get_printer(
                     f"simulation process with seed {self.__seed}.")
@@ -204,7 +233,7 @@ class MCERD:
         # inclusive so this is a quick fix to get the files deleted.
         # TODO surely there is a way to get the on_completed called?
         def del_if_not_running(x):
-            if not x["is_running"]:
+            if not x[MCERD.IS_RUNNING]:
                 self.delete_unneeded_files()
 
         return merged.pipe(
@@ -215,13 +244,12 @@ class MCERD:
         )
 
     @staticmethod
-    def _stop_if_cancelled(process: subprocess.Popen,
-                           cancellation_token: CancellationToken):
+    def _stop_if_cancelled(process: subprocess.Popen, ct: CancellationToken):
         """Stops the process if cancellation has been requested. Returns
         True if cancellation has not been requested and simulation is still
         running, False otherwise.
         """
-        if cancellation_token.is_cancellation_requested():
+        if ct.is_cancellation_requested():
             MCERD.stop_process(process)
             return False
         return True
@@ -254,47 +282,37 @@ class MCERD:
             name: name of the process (usually the name of the recoil element)
         """
         # TODO add handling for fatal error messages
-        # The first line that MCERD prints out is either 'MCERD is alive'
-        # or 'Initializing parameters' depending on whether debug mode is on.
-        # We let either one of these messages pass to observers and start
-        # reducing from the next line which is:
-        first_line_init = "Reading input files."
-        last_line_init = "Starting simulation."
-        # Note: there are quite a bit of lines between those two, some of which
-        # maybe of interest for the user. Maybe implement parsing for them too.
-
-        first_line_end = "Opening target file "
-        last_line_end = "angave "
-
         return rx.pipe(
-            ops.map(lambda x: x.decode("utf-8").strip()),
+            ops.map(lambda x: x.strip()),
             observing.get_printer(),
             observing.reduce_while(
                 reducer=str_reducer,
-                start_from=lambda x: x == first_line_init,
-                end_at=lambda x: x == last_line_init
+                start_from=lambda x: x == MCERD._INIT_STARTS,
+                end_at=lambda x: x == MCERD._INIT_ENDS
             ),
             observing.reduce_while(
                 reducer=str_reducer,
-                start_from=lambda x: x.startswith(first_line_end),
-                end_at=lambda x: x.startswith(last_line_end)
+                start_from=lambda x: x.startswith(MCERD._FINAL_STARTS),
+                end_at=lambda x: x.startswith(MCERD._FINAL_ENDS)
             ),
             ops.scan(lambda acc, x: {
-                "presim": acc["presim"] and x != "Presimulation finished",
+                MCERD.PRESIM: acc[MCERD.PRESIM] and x != MCERD.PRESIM_FINISHED,
                 **parse_raw_output(
-                    x, end_at=lambda y: y.startswith(first_line_end))
-            }, seed={"presim": True}),
-            ops.scan(lambda acc, x: {
-                "seed": seed,
-                "name": name,
-                "presim": x["presim"],
-                "calculated": x.get("calculated", acc["calculated"]),
-                "total": x.get("total", acc["total"]),
-                "percentage": x.get("percentage", acc["percentage"]),
-                "msg": x.get("msg", ""),
-                "is_running": x.get("is_running", True)
-            }, seed={"calculated": 0, "total": 0, "percentage": 0}),
-            ops.take_while(lambda x: x["is_running"], inclusive=True)
+                    x, end_at=lambda y: y.startswith(MCERD._FINAL_STARTS))
+            }, seed={MCERD.PRESIM: True}),
+            ops.scan(lambda acc, x: dict_accumulator(
+                acc, x, default={
+                    MCERD.SEED: seed,
+                    MCERD.NAME: name,
+                    MCERD.MSG: "",
+                    MCERD.IS_RUNNING: True
+                }
+            ), seed={
+                MCERD.CALCULATED: 0,
+                MCERD.TOTAL: 0,
+                MCERD.PERCENTAGE: 0
+            }),
+            ops.take_while(lambda x: x[MCERD.IS_RUNNING], inclusive=True)
         )
 
     @staticmethod
@@ -330,13 +348,13 @@ class MCERD:
         with open(self.recoil_file, "w") as file:
             file.write(self.get_recoil_file_contents())
 
-    def get_recoil_file_contents(self):
+    def get_recoil_file_contents(self) -> str:
         """Returns the contents of the recoil file.
         """
         recoil_element = self.__settings["recoil_element"]
         return "\n".join(recoil_element.get_mcerd_params())
 
-    def get_command_file_contents(self):
+    def get_command_file_contents(self) -> str:
         """Returns the contents of MCERD's command file as a string.
         """
         beam = self.__settings["beam"]
@@ -371,7 +389,7 @@ class MCERD:
             f"Seed number of the random number generator: {self.__seed}",
         ])
 
-    def get_detector_file_contents(self):
+    def get_detector_file_contents(self) -> str:
         """Returns the contents of the detector file as a string.
         """
         detector = self.__settings["detector"]
@@ -385,7 +403,7 @@ class MCERD:
             foils
         ])
 
-    def get_target_file_contents(self):
+    def get_target_file_contents(self) -> str:
         """Returns the contents of the target file as a string.
         """
         target = self.__settings["target"]
@@ -409,7 +427,7 @@ class MCERD:
 
         return "\n".join(cont)
 
-    def get_foils_file_contents(self):
+    def get_foils_file_contents(self) -> str:
         """Returns the contents of the foils file.
         """
         detector = self.__settings["detector"]
@@ -437,20 +455,6 @@ class MCERD:
 
         return "\n".join(cont)
 
-    def copy_results(self, destination):
-        """Copies MCERD result file (.erd) and recoil file into given
-        destination.
-
-        Args:
-            destination: Destination folder.
-        """
-        try:
-            shutil.copy(self.result_file, destination)
-            shutil.copy(self.recoil_file, destination)
-        except OSError:
-            # TODO log
-            pass
-
     def delete_unneeded_files(self):
         """
         Delete mcerd files that are not needed anymore.
@@ -477,25 +481,25 @@ def parse_raw_output(raw_line, end_at=None):
     m = _pattern.match(raw_line)
     try:
         return {
-            "calculated": int(m.group("calculated")),
-            "total": int(m.group("total")),
-            "percentage": int(m.group("percentage"))
+            MCERD.CALCULATED: int(m.group("calculated")),
+            MCERD.TOTAL: int(m.group("total")),
+            MCERD.PERCENTAGE: int(m.group("percentage"))
         }
     except AttributeError:
-        if raw_line == "Presimulation finished":
+        if raw_line == MCERD.PRESIM_FINISHED:
             return {
-                "calculated": 0,
-                "percentage": 0,
-                "msg": raw_line
+                MCERD.CALCULATED: 0,
+                MCERD.PERCENTAGE: 0,
+                MCERD.MSG: raw_line
             }
         elif end_at is not None and end_at(raw_line):
             return {
-                "msg": raw_line,
-                "percentage": 100,
-                "is_running": False
+                MCERD.MSG: raw_line,
+                MCERD.PERCENTAGE: 100,
+                MCERD.IS_RUNNING: False
             }
         return {
-            "msg": raw_line
+            MCERD.MSG: raw_line
         }
 
 
@@ -504,3 +508,17 @@ def str_reducer(acc, x):
     Appends a newline and x to the previously accumulated string.
     """
     return f"{acc}\n{x}"
+
+
+def dict_accumulator(old: Dict, new: Dict, default: Optional[Dict] = None) \
+        -> Dict:
+    """Combines values from three dictionaries into one. In case same keys
+    exist in multiple dictionaries, the key-value pairs from 'new' take
+    precedence, then key-value pairs from 'default' dictionary.
+    """
+    if default is None:
+        default = {}
+
+    return {
+        **old, **default, **new
+    }

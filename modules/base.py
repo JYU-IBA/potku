@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,7 +24,11 @@ along with this program (file named 'LICENCE').
 __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
-import collections
+from typing import List
+from typing import NamedTuple
+from typing import Dict
+from typing import Any
+from typing import Union
 
 # This is a collection of base classes for various backend components that share
 # similar functions. Logically these base classes would be ABCs, but in
@@ -33,11 +37,14 @@ import collections
 # version of Python, these classes should be made into ABCs.
 # TODO possibly add a class for objects that run external programs
 
-simulations = collections.namedtuple(
-    "Simulations",
-    ("running_simulations", "finished_simulations",
-     "running_optimizations", "finished_optimizations"),
-)
+ElemSimList = List["ElementSimulation"]
+
+
+class ElementSimulations(NamedTuple):
+    running_simulations: ElemSimList
+    finished_simulations: ElemSimList
+    running_optimizations: ElemSimList
+    finished_optimizations: ElemSimList
 
 
 class ElementSimulationContainer:
@@ -46,35 +53,35 @@ class ElementSimulationContainer:
     """
     __slots__ = ()
 
-    def get_active_simulations(self) -> simulations:
+    def get_active_simulations(self) -> ElementSimulations:
         """Returns simulations that are either running, finished or are being
         used in optimization. Simulations that have not yet started, are not
         included.
         """
-        return simulations(
+        return ElementSimulations(
             self.get_running_simulations(),
             self.get_finished_simulations(),
             self.get_running_optimizations(),
             self.get_finished_optimizations()
         )
 
-    def get_running_simulations(self):
+    def get_running_simulations(self) -> ElemSimList:
         """Returns a list of currently running ElementSimulations.
         """
         raise NotImplementedError
 
-    def get_finished_simulations(self):
+    def get_finished_simulations(self) -> ElemSimList:
         """Returns a list of ElementSimulations that have finished.
         """
         raise NotImplementedError
 
-    def get_running_optimizations(self):
+    def get_running_optimizations(self) -> ElemSimList:
         """Returns a list of ElementSimulations that are being used in a
         currently running optimization.
         """
         raise NotImplementedError
 
-    def get_finished_optimizations(self):
+    def get_finished_optimizations(self) -> ElemSimList:
         """Returns a list of ElementSimulations that have been used in a
         finished optimization.
         """
@@ -88,7 +95,7 @@ class Serializable:
     __slots__ = ()
 
     @classmethod
-    def from_file(cls, *args, **kwargs):
+    def from_file(cls, *args, **kwargs) -> "Serializable":
         """Deserializes an object from file.
         """
         raise NotImplementedError
@@ -105,7 +112,7 @@ class AdjustableSettings:
     """
     __slots__ = ()
 
-    def get_settings(self) -> dict:
+    def get_settings(self) -> Dict[str, Any]:
         """Returns a dictionary that contains the names of the settings and
         their current values.
         """
@@ -122,7 +129,7 @@ class MCERDParameterContainer:
     """
     __slots__ = ()
 
-    def get_mcerd_params(self):
+    def get_mcerd_params(self) -> Union[List, str]:
         """Returns either a single string or a list of strings that contain
         parameters used by MCERD.
         """

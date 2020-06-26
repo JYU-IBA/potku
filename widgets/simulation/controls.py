@@ -37,6 +37,7 @@ from rx import operators as ops
 
 from modules.element_simulation import SimulationState
 from modules.element_simulation import ElementSimulation
+from modules.mcerd import MCERD
 from modules.global_settings import GlobalSettings
 from modules.enums import IonDivision
 from widgets.gui_utils import GUIObserver
@@ -175,20 +176,20 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
             start_enabled = not (self.element_simulation.is_simulation_running()
                                  and starting)
             stop_enabled = not (
-                    start_enabled or
-                    self.element_simulation.is_optimization_running())
+                start_enabled or
+                self.element_simulation.is_optimization_running())
         self.run_button.setEnabled(start_enabled)
         self.stop_button.setEnabled(stop_enabled)
         self.processes_spinbox.setEnabled(start_enabled)
 
     def start_simulation(self):
-        """ Calls ElementSimulation's start method.
+        """Calls ElementSimulation's start method.
         """
         # Ask the user if they want to write old simulation results over (if
         # they exist), or continue
         status = self.element_simulation.get_current_status()
 
-        if status["state"] == SimulationState.DONE:
+        if status[ElementSimulation.STATE] == SimulationState.DONE:
             reply = QtWidgets.QMessageBox.question(
                 self, "Confirmation",
                 "Do you want to continue this simulation?\n\n"
@@ -202,7 +203,7 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
                 use_old_erd_files = False
             else:
                 use_old_erd_files = True
-        elif status["state"] == SimulationState.NOTRUN:
+        elif status[ElementSimulation.STATE] == SimulationState.NOTRUN:
             use_old_erd_files = False
         else:
             self.mcerd_error = "Simulation currently running. Cannot start a " \
@@ -213,7 +214,6 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         self.mcerd_error_lbl.hide()
 
         # Lock full edit
-        # TODO move this to ElementSimulation's start method
         self.element_simulation.lock_edit()
         if self.recoil_dist_widget.current_element_simulation is \
            self.element_simulation:
@@ -231,7 +231,7 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
             self.__unsub = observable.pipe(
                 ops.scan(lambda acc, x: {
                     **x,
-                    "started":  x["is_running"] and not acc["started"]
+                    "started":  x[MCERD.IS_RUNNING] and not acc["started"]
                 }, seed={"started": False})
             ).subscribe(self)
         else:
@@ -246,8 +246,8 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         Args:
             status: status of the ElementSimulation object
         """
-        self.observed_atoms = status["atom_count"]
-        self.simulation_state = status["state"]
+        self.observed_atoms = status[ElementSimulation.ATOMS]
+        self.simulation_state = status[ElementSimulation.STATE]
 
     def settings_update_handler(
             self, settings: Optional[GlobalSettings] = None):
@@ -291,15 +291,15 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         Args:
             status: status update sent by ElementSimulation or observable stream
         """
-        if status["msg"] == "Presimulation finished":
+        if status[MCERD.MSG] == MCERD.PRESIM_FINISHED:
             style = SimulationControlsWidget.SIM_PROGRESS_STYLE
         else:
             style = None
         self.update_progress_bar(
-            status["seed"], status["percentage"], stylesheet=style)
+            status[MCERD.SEED], status[MCERD.PERCENTAGE], stylesheet=style)
 
         self.finished_processes = (
-            status["finished_processes"], status["total_processes"])
+            status[ElementSimulation.FINISHED], status[ElementSimulation.TOTAL])
 
         if status["started"]:
             self.enable_buttons(starting=True)

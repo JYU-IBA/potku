@@ -7,7 +7,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2019 Heta Rekilä
+Copyright (C) 2019 Heta Rekilä, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -205,17 +205,16 @@ class Nsgaii(Observable):
             ]
 
         if not self._skip_simulation:
-            def stop_if_cancelled(optim_ct, mcerd_ct):
-                if optim_ct.is_cancellation_requested():
-                    mcerd_ct.request_cancellation()
+            def stop_if_cancelled(
+                    optim_ct: CancellationToken, mcerd_ct: CancellationToken):
+                optim_ct.stop_if_cancelled(mcerd_ct)
                 return mcerd_ct.is_cancellation_requested()
 
             ct = CancellationToken()
             observable = self.element_simulation.start(
                 self.number_of_processes, start_value=201,
                 optimization_type=self.optimization_type,
-                cancellation_token=ct, print_to_console=True,
-                max_time=self.check_max,
+                ct=ct, print_output=True, max_time=self.check_max,
                 ion_division=ion_division)
 
             if observable is not None:
