@@ -28,6 +28,7 @@ __version__ = "2.0"
 
 import widgets.gui_utils as gutils
 
+from typing import Optional
 from modules.recoil_element import RecoilElement
 
 from PyQt5 import QtWidgets
@@ -38,7 +39,8 @@ from PyQt5.QtCore import QLocale
 class MultiplyAreaDialog(QtWidgets.QDialog):
     """Dialog for choosing area multiplication parameters.
     """
-    def __init__(self, main_recoil: RecoilElement):
+    def __init__(self, main_recoil: RecoilElement, low: Optional[float] = None,
+                 high: Optional[float] = None):
         """
         Initializes the dialog.
 
@@ -60,7 +62,7 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
         self.fractionDoubleSpinBox.valueChanged.connect(
             self.calculate_new_area)
 
-        self.main_area = self.main_recoil.calculate_area()
+        self.main_area = self.main_recoil.calculate_area(start=low, end=high)
         text = str(round(self.main_area, 2))
 
         self.mainAreaLabel.setText(text)

@@ -28,9 +28,12 @@ __version__ = "2.0"
 import tempfile
 import random
 import rx
+import tests.utils as utils
 
 import modules.masses as masses
 
+from typing import List
+from typing import Tuple
 from pathlib import Path
 
 from modules.detector import Detector
@@ -247,3 +250,31 @@ def get_mcerd_stream() -> rx.Observable:
     """
     return rx.from_iterable([{"is_running": False, "msg": ""}])
 
+
+def get_sample_depth_files_and_elements() -> \
+        Tuple[Path, List[Element], List[Element]]:
+    """Returns path to a directory containing depth files and two lists
+    of elements, one that contains all elements corresponding to the depth
+    files and the other containing a portion of the elements.
+    """
+    depth_dir = Path(
+        utils.get_sample_data_dir(), "Ecaart-11-mini", "Tof-E_65-mini",
+        "depthfiles"
+    )
+    all_elements = [
+        Element.from_string("C"),
+        Element.from_string("F"),
+        Element.from_string("H"),
+        Element.from_string("Li"),
+        Element.from_string("Mn"),
+        Element.from_string("O"),
+        Element.from_string("Si")
+    ]
+    some_elements = [
+        Element.from_string("F"),
+        Element.from_string("H"),
+        Element.from_string("Mn"),
+        Element.from_string("Si")
+    ]
+
+    return depth_dir, all_elements, some_elements

@@ -53,6 +53,7 @@ from PyQt5 import QtWidgets
 
 from widgets.matplotlib.base import MatplotlibWidget
 from widgets.gui_utils import StatusBarHandler
+from widgets.matplotlib import mpl_utils
 
 
 class MatplotlibHistogramWidget(MatplotlibWidget):
@@ -369,11 +370,10 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
     def __fork_toolbar_buttons(self):
         self.mpl_toolbar.mode_tool = 0
-        self.__tool_label = self.mpl_toolbar.children()[24]
-        self.__button_drag = self.mpl_toolbar.children()[12]
-        self.__button_zoom = self.mpl_toolbar.children()[14]
-        self.__button_drag.clicked.connect(self.__toggle_tool_drag)
-        self.__button_zoom.clicked.connect(self.__toggle_tool_zoom)
+        self.__tool_label, self.__button_drag, self.__button_zoom = \
+            mpl_utils.get_toolbar_elements(
+                self.mpl_toolbar, drag_callback=self.__toggle_tool_drag,
+                zoom_callback=self.__toggle_tool_zoom)
 
         # Make own buttons
         self.mpl_toolbar.addSeparator()

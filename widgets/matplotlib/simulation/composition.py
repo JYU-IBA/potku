@@ -263,11 +263,10 @@ class _CompositionWidget(MatplotlibWidget):
         Forks the toolbar into custom buttons.
         """
         self.mpl_toolbar.mode_tool = 0
-        self.__tool_label = self.mpl_toolbar.children()[24]
-        self.__button_drag = self.mpl_toolbar.children()[12]
-        self.__button_zoom = self.mpl_toolbar.children()[14]
-        self.__button_drag.clicked.connect(self.__toggle_tool_drag)
-        self.__button_zoom.clicked.connect(self.__toggle_tool_zoom)
+        self.__tool_label, self.__button_drag, self.__button_zoom = \
+            mpl_utils.get_toolbar_elements(
+                self.mpl_toolbar, drag_callback=self.__toggle_tool_drag,
+                zoom_callback=self.__toggle_tool_zoom)
 
         # Make own buttons
         self.mpl_toolbar.addSeparator()
@@ -324,15 +323,12 @@ class _CompositionWidget(MatplotlibWidget):
         if type(self.parent) is widgets.simulation.target.TargetWidget:
             tab = self.parent.tab
 
-        dialog = LayerPropertiesDialog(tab,
-                                       simulation=self.simulation,
-                                       first_layer=first)
+        dialog = LayerPropertiesDialog(
+            tab, simulation=self.simulation, first_layer=first)
 
         if dialog.layer and dialog.placement_under and not self.__selected_layer:
             # Add the first layer
-            depth = 0.0
-            for layer in self.layers:
-                depth += layer.thickness
+            depth = sum(layer.thickness for layer in self.layers)
             dialog.layer.start_depth = depth
             self.layers.append(dialog.layer)
             self.__selected_layer = dialog.layer

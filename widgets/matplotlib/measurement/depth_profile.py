@@ -34,12 +34,23 @@ __version__ = "2.0"
 
 import modules.math_functions as mf
 
+from typing import List
+from typing import Optional
+from typing import Dict
+
+from pathlib import Path
+
 from dialogs.measurement.depth_profile_ignore_elements \
     import DepthProfileIgnoreElements
 from widgets.matplotlib.base import MatplotlibWidget
+from widgets.matplotlib import mpl_utils
+from widgets.matplotlib.mpl_utils import AlternatingLimits
+from widgets.matplotlib.mpl_utils import LineChart
 
 from modules.depth_files import DepthProfileHandler
+from modules.depth_files import DepthProfile
 from modules.element import Element
+from modules.general_functions import Range
 
 from PyQt5 import QtWidgets
 
@@ -48,9 +59,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
     """Depth profile widget that handles drawing depth profiles.
     """
 
-    def __init__(self, parent, depth_dir, elements, rbs_list, depth_scale,
-                 used_cuts, x_units='nm', legend=True, line_zero=False,
-                 line_scale=False, systematic_error=3.0, progress=None):
+    def __init__(self, parent, depth_dir: Path, elements: List[Element],
+                 rbs_list, x_units="nm", depth_scale: Optional[Range] = None,
+                 add_legend=True, add_line_zero=False, systematic_error=3.0,
+                 progress=None):
         """Inits depth profile widget.
 
         Args:
@@ -58,15 +70,12 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             depth_dir: A directory where the depth files are located.
             elements: A list of Element objects.
             rbs_list: A dictionary of RBS selection elements containing
-                      scatter elements.
+                scatter elements.
             depth_scale: A tuple of depth scaling values.
-            used_cuts: List of cut file paths that are sed to create depth
-            profile.
             x_units: An unit to be used as x axis.
-            legend: A boolean of whether to show the legend.
-            line_zero: A boolean representing if vertical line is drawn at zero.
-            line_scale: A boolean representing if horizontal line is drawn at
-                        the defined depth scale.
+            add_legend: A boolean of whether to show the legend.
+            add_line_zero: A boolean representing if vertical line is drawn at
+                zero.
             systematic_error: A double representing systematic error.
             progress: a ProgressReporter object
         """
@@ -76,28 +85,14 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.axes.fmt_xdata = lambda x: "{0:1.2f}".format(x)
         self.axes.fmt_ydata = lambda y: "{0:1.2f}".format(y)
         self.x_units = x_units
-        self.draw_legend = legend
         self.elements = elements
-        self.depth_dir = depth_dir
-        self.__depth_scale = depth_scale
-        self.__used_cuts = used_cuts
-        self.__line_zero = line_zero
-        self.__line_scale = line_scale
         self.__systerr = systematic_error
 
         self.profile_handler = DepthProfileHandler()
-        self.profile_handler.read_directory(self.depth_dir,
-                                            self.elements,
-                                            depth_units=self.x_units)
+        self.profile_handler.read_directory(
+            depth_dir, self.elements, depth_units=self.x_units)
         if progress is not None:
             progress.report(50)
-
-        lim_a, lim_b = self.profile_handler.get_depth_range()
-        if lim_a is not None and lim_b is not None:
-            self.limit = LimitLines(a=lim_a, b=lim_b)
-        else:
-            self.limit = LimitLines()
-        self.energy_plots = {}
 
         self.__ignore_from_graph = set()
         self.__ignore_from_ratio = set()
@@ -107,22 +102,50 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.selection_colors = parent.measurement.selector.get_colors()
         self.icon_manager = parent.icon_manager
 
-        self.lim_icons = {'a': 'depth_profile_lim_all.svg',
-                          'b': 'depth_profile_lim_in.svg',
-                          'c': 'depth_profile_lim_ex.svg'}
-        self.lim_mode = 'a'
+        self.lim_icons = {
+            "a": "depth_profile_lim_all.svg",
+            "b": "depth_profile_lim_in.svg",
+            "c": "depth_profile_lim_ex.svg"
+        }
+        self.lim_mode = "a"
 
-        self.canvas.mpl_connect('button_press_event', self.onclick)
+        self.canvas.mpl_connect("button_press_event", self.onclick)
 
-        self.__limits_set = False
         self.__position_set = False
         self.__rel_graph = False
-        self.__log_scale = False
         self.__absolute_values = False
-        self.__enable_norm_over_range = False
         self.__rbs_list = rbs_list
         self.__fork_toolbar_buttons()
-        self.on_draw()
+
+        self.axes.set_xlabel(f"Depth ({self.x_units})")
+        self.axes.set_ylabel('Concentration (at.%)')
+
+        self.limit = AlternatingLimits(
+            self.canvas, self.axes, xs=self.profile_handler.get_depth_range(),
+            colors=("blue", "red"))
+        self._line_chart = None
+        self.depth_plots = {}
+        self._update_depth_plots(self.get_profiles_to_use())
+        self.axes.set_ylim(bottom=0.0)
+
+        self.add_legend = add_legend
+        if self.add_legend:
+            self.__make_legend_box()
+
+        self.axes.axhline(y=0, color="#000000")
+        if add_line_zero:
+            self._line_zero = self.axes.axvline(
+                x=0, linestyle="-", linewidth=3, color="#C0C0C0", alpha=0.75)
+        else:
+            self._line_zero = None
+
+        if depth_scale:
+            self._vspan = self.axes.axvspan(
+                *depth_scale, color="#C0C0C0", alpha=0.20, edgecolor=None)
+        else:
+            self._vspan = None
+
+        self.remove_axes_ticks()
 
         if progress is not None:
             progress.report(100)
@@ -134,20 +157,21 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             event: A click event on the graph
         """
         if event.button == 1 and self.limButton.isChecked():
-            self.limit.set(event.xdata)
-            self.on_draw()
+            self.limit.update_graph(event.xdata)
+            if self.add_legend:
+                self.__make_legend_box()
 
-    def get_profiles_to_use(self):
+    def get_profiles_to_use(self) -> Dict[str, DepthProfile]:
         """Determines what files to use for plotting. Either relative, absolute
         or a merger of the two.
         """
         if not self.__rel_graph:
             return self.profile_handler.get_absolute_profiles()
-        elif self.lim_mode == 'a':
+        elif self.lim_mode == "a":
             return self.profile_handler.get_relative_profiles()
 
-        lim_a, lim_b = self.limit.get_limits()
-        if self.lim_mode == 'b':
+        lim_a, lim_b = self.limit.get_range()
+        if self.lim_mode == "b":
             return self.profile_handler.merge_profiles(
                 lim_a, lim_b, method="abs_rel_abs"
             )
@@ -156,115 +180,58 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             lim_a, lim_b, method="rel_abs_rel"
         )
 
-    def on_draw(self):
-        """Draws the depth profile graph
-        """
-        # Values for zoom
-        x_min, x_max = self.axes.get_xlim()
-        y_min, y_max = self.axes.get_ylim()
+    def _update_depth_plots(self, profiles: Dict[str, DepthProfile]):
+        profiles_to_use = {
+            k: v for k, v in profiles.items() if k != "total"
+        }
+        if self._line_chart is None:
+            lineargs = []
+            for key, profile in sorted(
+                    profiles_to_use.items(), key=lambda tpl: tpl[1].element):
 
-        # Clear axes for a new draw.
-        self.axes.clear()
+                # Check RBS selection
+                element = profile.element
+                if key in self.__rbs_list.values():
+                    color_key = f"RBS_{element}0"
+                else:
+                    color_key = f"{element}0"
 
-        self.axes.set_xlabel('Depth (%s)' % self.x_units)
-        self.axes.set_ylabel('Concentration (at.%)')
+                lineargs.append(LineChart.get_line_args(
+                    element, profile.depths, profile.concentrations,
+                    color=self.selection_colors.get(color_key, "red")))
 
-        # Plot the limits a and b
-        # if self.__show_limits:
-        # Currently limits are always drawn
-        self.limit.draw(self.axes)
+            self._line_chart = LineChart(self.canvas, self.axes, lineargs)
+        else:
+            lineargs = ({
+                "key": v.element,
+                "ys": v.concentrations
+            } for v in profiles_to_use.values())
+            self._line_chart.update_graph(lineargs)
 
-        self.axes.axhline(y=0, color="#000000")
-        if self.__line_zero:
-            self.axes.axvline(x=0, linestyle="-", linewidth=3,
-                              color="#C0C0C0", alpha=0.75)
-
-        if self.__line_scale:
-            self.axes.axvspan(self.__depth_scale[0], self.__depth_scale[1],
-                              color='#C0C0C0', alpha=0.20, edgecolor=None)
-
-        self.__update_energy_plots(self.get_profiles_to_use(),
-                                   draw_first_time=True)
-
-        if not self.__position_set:
-            self.fig.tight_layout(pad=0.5)
-
-        # Set up the legend
-        if self.draw_legend:
-            self.__make_legend_box()
-
-        # If drawing for "the first time", get limits from the drawn data.
-        if 0.09 < x_max < 1.01:  # This works...
-            x_min, x_max = self.axes.get_xlim()
-        if 0.09 < y_max < 1.01:
-            y_max = self.axes.get_ylim()[1]
-
-        # Set limits accordingly
-        self.axes.set_ylim([y_min, y_max])
-        self.axes.set_xlim([x_min, x_max])
-
-        if self.__log_scale:
-            self.axes.set_yscale('symlog')
-
-        self.remove_axes_ticks()
-        self.canvas.draw()
-
-    def __update_energy_plots(self, profiles_to_use, draw_first_time=False):
-        sorted_profile_names = sorted(filter(lambda x: x != "total",
-                                             profiles_to_use),
-                                      key=lambda x: profiles_to_use[x].element)
-
-        for profile_name in sorted_profile_names:
-            if profile_name == "total":
-                continue
-            if profile_name in self.__ignore_from_graph:
-                continue
-
-            element = profiles_to_use[profile_name].element
-
-            # Check RBS selection
-            if profile_name in self.__rbs_list.values():
-                color_key = "RBS_{0}0".format(str(element))
-            else:
-                color_key = "{0}0".format(str(element))
-            # TODO: erd_depth for multiple selections of same element.
-
-            axe1 = profiles_to_use[profile_name].depths
-            axe2 = profiles_to_use[profile_name].concentrations
-
-            label = str(element)        # TODO rbs string
-
-            if draw_first_time:
-                self.energy_plots[profile_name] = self.axes.plot(
-                    axe1, axe2, label=label,
-                    color=self.selection_colors[color_key])
-            else:
-                # TODO testing plot updating
-                self.energy_plots[profile_name].set_ydata(axe2)
-                self.canvas.draw()
-                self.canvas.flush_events()
-
+    @mpl_utils.draw_and_flush
     def __make_legend_box(self):
         """Make legend box for the graph.
         """
         box = self.axes.get_position()
         if not self.__position_set:
-            self.axes.set_position([box.x0, box.y0,
-                                    box.width * 0.8, box.height])
+            self.axes.set_position(
+                [box.x0, box.y0, box.width * 0.8, box.height])
             self.__position_set = True
         handles, labels = self.axes.get_legend_handles_labels()
-        # self.__ignore_from_ratio = ["Si"]
-
-        # TODO don't recalculate these if lim selection is unchanged
 
         # Calculate values to be displayed in the legend box
-        lim_a, lim_b = self.limit.get_limits()
+        # TODO make profile_handler use Element objects as keys so
+        #   there is no need to do this conversion
+        ignored_str = set(str(elem) for elem in self.__ignore_from_ratio)
+        lim_a, lim_b = self.limit.get_range()
         if self.__absolute_values:
             concentrations = self.profile_handler.integrate_concentrations(
                 lim_a, lim_b)
+            percentages, moe = {}, {}
         else:
             percentages, moe = self.profile_handler.calculate_ratios(
-                self.__ignore_from_ratio, lim_a, lim_b, self.__systerr)
+                ignored_str, lim_a, lim_b, self.__systerr)
+            concentrations = {}
 
         # Fix labels to proper format, with MoE
         labels_w_percentages = []
@@ -319,10 +286,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         """Custom toolbar buttons be here.
         """
         # But first, let's play around with the existing MatPlotLib buttons.
-        self.__button_drag = self.mpl_toolbar.children()[12]
-        self.__button_zoom = self.mpl_toolbar.children()[14]
-        self.__button_drag.clicked.connect(self.__uncheck_custom_buttons)
-        self.__button_zoom.clicked.connect(self.__uncheck_custom_buttons)
+        _, self.__button_drag, self.__button_zoom = \
+            mpl_utils.get_toolbar_elements(
+                self.mpl_toolbar, drag_callback=self.__uncheck_custom_buttons,
+                zoom_callback=self.__uncheck_custom_buttons)
 
         self.limButton = QtWidgets.QToolButton(self)
         self.limButton.clicked.connect(self.__toggle_lim_lines)
@@ -334,7 +301,6 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
 
         self.modeButton = QtWidgets.QToolButton(self)
         self.modeButton.clicked.connect(self.__toggle_lim_mode)
-        #self.modeButton.setEnabled(False)
         self.modeButton.setToolTip(
             "Toggles between selecting the entire " +
             "histogram, area included in the limits and " +
@@ -372,30 +338,29 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__button_ignores = QtWidgets.QToolButton(self)
         self.__button_ignores.clicked.connect(self.__ignore_elements_dialog)
         self.__button_ignores.setToolTip(
-            "Select elements which are included in" +
-            " ratio calculation.")
+            "Select elements which are included in "
+            "ratio calculation.")
         self.icon_manager.set_icon(self.__button_ignores, "gear.svg")
         self.mpl_toolbar.addWidget(self.__button_ignores)
 
     def __uncheck_custom_buttons(self):
-        """
-        Uncheck custom buttons.
+        """Uncheck custom buttons.
         """
         self.limButton.setChecked(False)
 
     def __uncheck_built_in_buttons(self):
-        """
-        Uncheck built.in buttons.
+        """Uncheck built.in buttons.
         """
         self.__button_drag.setChecked(False)
         self.__button_zoom.setChecked(False)
 
-    def __toggle_lim_mode(self):
-        """
-        Toggle lim mode.
+    def __toggle_lim_mode(self, *_):
+        """Toggle lim mode.
+
+        Args:
+            *_: unused event args
         """
         self.__switch_lim_mode()
-        self.on_draw()
 
     def __switch_lim_mode(self, mode=""):
         """Switch between the three modes:
@@ -411,8 +376,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             self.lim_mode = "c"
         else:
             self.lim_mode = "a"
-        self.icon_manager.set_icon(self.modeButton,
-                                   self.lim_icons[self.lim_mode])
+        self.icon_manager.set_icon(
+            self.modeButton, self.lim_icons[self.lim_mode])
+        self._update_depth_plots(self.get_profiles_to_use())
 
     def __toggle_lim_lines(self):
         """Toggles the usage of limit lines.
@@ -429,7 +395,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         else:
             self.icon_manager.set_icon(self.viewButton, "depth_profile_abs.svg")
 
-        self.on_draw()
+        self._update_depth_plots(self.get_profiles_to_use())
 
     def __toggle_drag_zoom(self):
         """Toggles drag zoom.
@@ -442,87 +408,36 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__button_drag.setChecked(False)
         self.__button_zoom.setChecked(False)
 
-    def __ignore_elements_dialog(self):
+    def __ignore_elements_dialog(self, *_):
         """Ignore elements from elements ratio calculation.
         """
-        dialog = DepthProfileIgnoreElements(self.elements,
-                                            self.__ignore_from_graph,
-                                            self.__ignore_from_ratio)
-        self.__ignore_from_graph = dialog.ignore_from_graph
-        self.__ignore_from_ratio = dialog.ignore_from_ratio
-        self.on_draw()
+        dialog = DepthProfileIgnoreElements(
+            self.elements, self.__ignore_from_graph, self.__ignore_from_ratio)
+
+        if not dialog.exec_():
+            return
+
+        self._update_ignored(
+            dialog.ignored_from_graph, dialog.ignored_from_ratio)
+
+    def _update_ignored(self, ignored_graph, ignored_ratio):
+        self.__ignore_from_graph = set(ignored_graph)
+        self.__ignore_from_ratio = set(ignored_ratio)
+        self._line_chart.hide_lines(self.__ignore_from_graph)
+        if self.add_legend:
+            self.__make_legend_box()
 
     def __toggle_absolute_values(self):
         """Toggle absolute values for the elements in the graph.
         """
         self.__absolute_values = self.__button_toggle_absolute.isChecked()
-        self.on_draw()  # TODO dont redraw everything, just update legend
+        if self.add_legend:
+            self.__make_legend_box()
 
-    def __toggle_log_scale(self):
+    def __toggle_log_scale(self, *_):
         """Toggle log scaling for Y axis in depth profile graph.
         """
-        self.__log_scale = self.__button_toggle_log.isChecked()
-        self.on_draw()
-
-
-class LimitLines:
-    """Stores values for limits used in depth calculations. Also used to draw
-    lines on canvas.
-    """
-
-    def __init__(self, a=0.0, b=0.0):
-        """Inits LimitLines object
-
-        Args:
-            a: position of the first limit line on x-axis
-            b: position of the second limit line on x-axis
-        """
-
-        # Internally, LimitLine object does not care if a is bigger than b
-        # or vice versa so we just store them in a list without sorting
-        # them.
-        self.__limits = [a, b]
-        self.__next_limit = 1
-
-    def __switch(self):
-        """Switches the current limit between first and last.
-        """
-        self.__next_limit = abs(1 - self.__next_limit)
-
-    def set(self, value, switch=True):
-        """Sets the value for current limit.
-
-        Args:
-            value: float value for the current limit
-            switch: sets if the current limit is switched after setting
-            the value
-        """
-        self.__limits[self.__next_limit] = value
-        if switch:
-            self.__switch()
-
-    def draw(self, axes, highlight_last=False):
-        """Draws limit lines on the given axes.
-
-        Args:
-            axes: axes object that the lines will be drawn
-            highlight_last: highlights the last set limit with a different
-                            color
-        """
-        #TODO better highlighting OR draggable 2d lines
-        for i in range(len(self.__limits)):
-            if highlight_last and self.__next_limit != i:
-                axes.axvline(x=self.__limits[i], linestyle="-",
-                             color="yellow")
-                axes.axvline(x=self.__limits[i], linestyle="--")
-            else:
-                axes.axvline(x=self.__limits[i], linestyle="--")
-
-    def get_limits(self):
-        """Returns limits sorted by value (lowest first).
-        """
-        # Here we check the order of limits and return smaller one first
-        # and bigger one last
-        if self.__limits[0] <= self.__limits[1]:
-            return self.__limits[0], self.__limits[1]
-        return self.__limits[1], self.__limits[0]
+        if self.__button_toggle_log.isChecked():
+            self._line_chart.set_yscale("symlog")
+        else:
+            self._line_chart.set_yscale("linear")

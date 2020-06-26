@@ -30,6 +30,7 @@ __version__ = "2.0"
 from PyQt5 import QtWidgets
 
 from widgets.matplotlib.base import MatplotlibWidget
+from widgets.matplotlib import mpl_utils
 
 
 class MatplotlibImportTimingWidget(MatplotlibWidget):
@@ -126,17 +127,17 @@ class MatplotlibImportTimingWidget(MatplotlibWidget):
     def __fork_toolbar_buttons(self):
         """Custom toolbar buttons be here.
         """
-        self.__tool_label = self.mpl_toolbar.children()[24]
-        self.__button_drag = self.mpl_toolbar.children()[12]
-        self.__button_zoom = self.mpl_toolbar.children()[14]
-        self.__button_drag.clicked.connect(self.__uncheck_custom_buttons)
-        self.__button_zoom.clicked.connect(self.__uncheck_custom_buttons)
+        self.__tool_label, self.__button_drag, self.__button_zoom = \
+            mpl_utils.get_toolbar_elements(
+                self.mpl_toolbar, drag_callback=self.__uncheck_custom_buttons,
+                zoom_callback=self.__uncheck_custom_buttons)
 
         self.limButton = QtWidgets.QToolButton(self)
         self.limButton.clicked.connect(self.__limit_button_click)
         self.limButton.setCheckable(True)
-        self.limButton.setToolTip("Change timing's low and high limits for "
-                                  "more accurate coincidence reading.")
+        self.limButton.setToolTip(
+            "Change timing's low and high limits for more accurate coincidence "
+            "reading.")
         self.icon_manager.set_icon(self.limButton, "amarok_edit.svg")
         self.mpl_toolbar.addWidget(self.limButton)
 

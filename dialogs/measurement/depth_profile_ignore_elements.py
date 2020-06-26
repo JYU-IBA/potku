@@ -28,12 +28,17 @@ MatplotlibDepthProfileWidget handles the drawing and operation of the
 depth profile graph.
 """
 __author__ = "Timo Konu \n Severi Jääskeläinen \n Samuel Kaiponen \n Heta " \
-             "Rekilä \n Sinikka Siironen"
+             "Rekilä \n Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import widgets.gui_utils as gutils
+import widgets.binding as bnd
 
-from PyQt5 import QtCore
+from modules.element import Element
+
+from typing import Set
+from typing import List
+
 from PyQt5 import uic
 from PyQt5 import QtWidgets
 
@@ -42,88 +47,55 @@ class DepthProfileIgnoreElements(QtWidgets.QDialog):
     """
     Dialog for ignoring elements in a depth profile.
     """
-    def __init__(self, elements, ignored_graph, ignored_ratio):
+
+    included_in_graph = bnd.bind("tree_elements")
+    included_in_ratio = bnd.bind("tree_ratio")
+
+    @property
+    def ignored_from_graph(self):
+        try:
+            return self._get_ignored(set(self.included_in_graph))
+        except AttributeError:
+            return set()
+
+    @property
+    def ignored_from_ratio(self):
+        try:
+            return self._get_ignored(set(self.included_in_ratio))
+        except AttributeError:
+            return set()
+
+    def _get_ignored(self, included):
+        return {
+            elem for elem in self._elements if elem not in included
+        }
+
+    def __init__(self, elements: List[Element], ignored_graph: Set[Element],
+                 ignored_ratio: Set[Element]):
         """Init the dialog.
         
         Args:
             elements: A list of elements in Depth Profile.
             ignored_graph: A list of elements ignored previously for the graph.
             ignored_ratio: A list of elements ignored previously for ratio
-                           calculation.
+                calculation.
         """
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_depth_profile_ignored.ui", self)
 
-        self.__elements = elements
-        self.ignore_from_graph = ignored_graph
-        self.ignore_from_ratio = ignored_ratio
-        self.button_ok.clicked.connect(self.__ok_button)
-        self.button_cancel.clicked.connect(self.close)
-        self.tree_elements.itemChanged.connect(self.__element_toggle_graph)
-        self.__set_values()
-        self.exec_()
+        self._elements = sorted(set(elements))
+        self.button_ok.clicked.connect(self.accept)
+        self.button_cancel.clicked.connect(self.reject)
 
-    def __element_toggle_graph(self, item, col):
-        """Catch item changed event from element tree.
-        """
-        if col != 0:
-            return
-        root = self.tree_ratio.invisibleRootItem()
-        child_count = root.childCount()
-        for i in range(child_count):
-            ratio_element = root.child(i)
-            if ratio_element.element != item.element:
-                continue
-            ratio_element.setDisabled(not item.checkState(0))
-            ratio_element.setCheckState(0, item.checkState(0))
+        # Fill the trees
+        gutils.fill_tree(
+            self.tree_elements.invisibleRootItem(), self._elements)
+        gutils.fill_tree(
+            self.tree_ratio.invisibleRootItem(), self._elements)
 
-    def __set_values(self):
-        """Set elements to tree widget.
-        """
-
-        for element in self.__elements:
-            element_str = str(element)
-            # Add to graph list
-            item = QtWidgets.QTreeWidgetItem([element_str])
-            item.element = element_str
-            if item.element not in self.ignore_from_graph:
-                item.setCheckState(0, QtCore.Qt.Checked)
-            else:
-                item.setCheckState(0, QtCore.Qt.Unchecked)
-            self.tree_elements.addTopLevelItem(item)
-
-            # Add to ratio list
-            item2 = QtWidgets.QTreeWidgetItem([element_str])
-            item2.element = element_str
-            if item2.element not in self.ignore_from_ratio and \
-                    item2.element not in self.ignore_from_graph:
-                item2.setCheckState(0, QtCore.Qt.Checked)
-            elif item2.element in self.ignore_from_graph:
-                item2.setCheckState(0, QtCore.Qt.Unchecked)
-                item2.setDisabled(True)
-            else:
-                item2.setCheckState(0, QtCore.Qt.Unchecked)
-            self.tree_ratio.addTopLevelItem(item2)
-
-    def __ok_button(self):
-        """Accept selected elements to be used in ratio calculation.
-        """
-        self.ignore_from_graph.clear()
-        self.ignore_from_ratio.clear()
-        # Graph
-        root = self.tree_elements.invisibleRootItem()
-        child_count = root.childCount()
-
-        for i in range(child_count):
-            item = root.child(i)
-            if not item.checkState(0):
-                self.ignore_from_graph.add(item.element)
-
-        self.ignore_from_ratio.update(self.ignore_from_graph)
-        root = self.tree_ratio.invisibleRootItem()
-        child_count = root.childCount()
-        for i in range(child_count):
-            item = root.child(i)
-            if not item.checkState(0):
-                self.ignore_from_ratio.add(item.element)
-        self.close()
+        self.included_in_graph = set(
+            elem for elem in self._elements if elem not in ignored_graph
+        )
+        self.included_in_ratio = set(
+            elem for elem in self._elements if elem not in ignored_ratio
+        )

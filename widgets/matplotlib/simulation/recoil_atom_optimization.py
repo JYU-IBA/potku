@@ -33,6 +33,7 @@ from typing import Optional
 from modules.element_simulation import ElementSimulation
 from modules.concurrency import CancellationToken
 from modules.target import Target
+from modules.recoil_element import RecoilElement
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QLocale
@@ -72,7 +73,7 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         self.layer_colors = [(0.9, 0.9, 0.9), (0.85, 0.85, 0.85)]
         self.axes.format_coord = mpl_utils.format_coord
 
-        self.current_recoil = None
+        self.current_recoil: Optional[RecoilElement] = None
 
         self.radios = QtWidgets.QButtonGroup(self)
         self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
@@ -149,11 +150,11 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         Fork navigation tool bar button into custom ones.
         """
         self.mpl_toolbar.mode_tool = 0
-        self.__tool_label = self.mpl_toolbar.children()[24]
-        self.__button_drag = self.mpl_toolbar.children()[12]
-        self.__button_zoom = self.mpl_toolbar.children()[14]
-        self.__button_drag.clicked.connect(self.__toggle_tool_drag)
-        self.__button_zoom.clicked.connect(self.__toggle_tool_zoom)
+
+        self.__tool_label, self.__button_drag, self.__button_zoom = \
+            mpl_utils.get_toolbar_elements(
+                self.mpl_toolbar, drag_callback=self.__toggle_tool_drag,
+                zoom_callback=self.__toggle_tool_zoom)
 
         # Make own buttons
         self.mpl_toolbar.addSeparator()
@@ -184,7 +185,7 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
             line_contains, line_info = self.selected_line.contains(event)
             if line_contains:
                 i = line_info["ind"][0]
-                clicked_point = self.current_recoil.get_point_by_i(i)
+                clicked_point = self.current_recoil.get_point(i)
 
                 if clicked_point is not None:
                     self.highlighted_marker.set_data(clicked_point.get_x(),
@@ -260,18 +261,12 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
             self.move_results_btn.setEnabled(True)
             self.stop_optim_btn.setEnabled(False)
 
-        self.selected_line, = self.axes.plot(0, 0,
-                                             marker="o",
-                                             markersize=10,
-                                             linestyle="None",
-                                             zorder=15,
-                                             visible=False)
-        self.highlighted_marker, = self.axes.plot(0, 0, marker="o",
-                                                  markersize=10,
-                                                  linestyle="None",
-                                                  color="yellow",
-                                                  zorder=20,
-                                                  visible=False)
+        self.selected_line, = self.axes.plot(
+            0, 0, marker="o", markersize=10, linestyle="None", zorder=15,
+            visible=False)
+        self.highlighted_marker, = self.axes.plot(
+            0, 0, marker="o", markersize=10, linestyle="None", color="yellow",
+            zorder=20, visible=False)
 
         self.radios.buttons()[0].setChecked(True)
 
@@ -297,18 +292,6 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
             self.mpl_toolbar.mode_tool = 0
         # self.canvas.draw_idle()
 
-    def __toggle_drag_zoom(self):
-        """
-        Toggle drag zoom.
-        """
-        self.__tool_label.setText("")
-        if self.__button_drag.isChecked():
-            self.mpl_toolbar.pan()
-        if self.__button_zoom.isChecked():
-            self.mpl_toolbar.zoom()
-        self.__button_drag.setChecked(False)
-        self.__button_zoom.setChecked(False)
-
     def update_plot(self):
         for recoil, line in self.lines.items():
             if recoil == self.current_recoil:
@@ -323,8 +306,7 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
 
         self.highlighted_marker.set_visible(False)
 
-        last_point = self.current_recoil.get_point_by_i(len(
-            self.current_recoil.get_points()) - 1)
+        last_point = self.current_recoil.get_last_point()
         last_point_x = last_point.get_x()
         x_min, x_max = self.axes.get_xlim()
         if x_max < last_point_x:
@@ -358,11 +340,11 @@ class RecoilAtomParetoFront(MatplotlibWidget):
         self.x_range = None, None
         self.y_range = None, None
         self.home_btn = self.mpl_toolbar.children()[4]
-        self.drag_btn = self.mpl_toolbar.children()[12]
-        self.zoom_btn = self.mpl_toolbar.children()[14]
+        _, self.drag_btn, self.zoom_btn = mpl_utils.get_toolbar_elements(
+            self.mpl_toolbar,
+            drag_callback=lambda: self.set_autoadjustment(False),
+            zoom_callback=lambda: self.set_autoadjustment(False))
         self.home_btn.clicked.connect(lambda: self.set_autoadjustment(True))
-        self.drag_btn.clicked.connect(lambda: self.set_autoadjustment(False))
-        self.zoom_btn.clicked.connect(lambda: self.set_autoadjustment(False))
 
     def update_pareto_front(self, pareto_front):
         xs, ys = tuple(zip(*pareto_front))
@@ -370,10 +352,10 @@ class RecoilAtomParetoFront(MatplotlibWidget):
             self.pareto_front.set_xdata(xs)
             self.pareto_front.set_ydata(ys)
 
-            self.x_range = self._fix_range(self.x_range, xs,
-                                           *RecoilAtomParetoFront.PADDING)
-            self.y_range = self._fix_range(self.y_range, ys,
-                                           *RecoilAtomParetoFront.PADDING)
+            self.x_range = self._fix_range(
+                self.x_range, xs, *RecoilAtomParetoFront.PADDING)
+            self.y_range = self._fix_range(
+                self.y_range, ys, *RecoilAtomParetoFront.PADDING)
 
             if self.automatic_readjustment:
                 self.axes.set_xlim(self.x_range)

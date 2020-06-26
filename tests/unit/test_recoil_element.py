@@ -188,8 +188,8 @@ class TestPoints(unittest.TestCase):
             rec_elem.add_point(p_0)
             rec_elem.add_point(p_n)
 
-            self.assertIs(p_0, rec_elem.get_points()[0])
-            self.assertIs(p_n, rec_elem.get_points()[-1])
+            self.assertIs(p_0, rec_elem.get_first_point())
+            self.assertIs(p_n, rec_elem.get_last_point())
 
     def test_remove_point(self):
         self.rec_elem.remove_point(self.p1)
@@ -229,6 +229,15 @@ class TestPoints(unittest.TestCase):
         self.assertTrue(self.rec_elem.between_zeros(Point(1, 1)))
         self.assertRaises(
             ValueError, lambda: self.rec_elem.between_zeros(Point(0.5, 1)))
+
+    def test_dist_length(self):
+        self.assertEqual(2, self.rec_elem.distribution_length())
+        self.rec_elem.add_point(Point(10.5, 0))
+        self.assertEqual(10.5, self.rec_elem.distribution_length())
+        for p in list(self.rec_elem.get_points()):
+            self.rec_elem.remove_point(p)
+
+        self.assertRaises(IndexError, self.rec_elem.distribution_length)
 
 
 if __name__ == '__main__':

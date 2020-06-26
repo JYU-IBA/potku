@@ -35,6 +35,8 @@ from modules.recoil_element import RecoilElement
 from enum import Enum
 
 from typing import List
+from typing import Tuple
+from typing import Dict
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -45,9 +47,9 @@ from widgets.gui_utils import QtABCMeta
 
 
 class IntervalType(Enum):
-    COMMON = "Common areas"
-    INDIVIDUAL = "Individual areas"
-    NO_LIMITS = "No limits"
+    COMMON = "Common interval"
+    INDIVIDUAL = "Individual intervals"
+    NO_LIMITS = "No interval"
 
     def __str__(self):
         return self.value
@@ -58,9 +60,8 @@ class PercentageWidget(QtWidgets.QWidget):
     Class for a widget that calculates the percentages for given recoils and
     intervals.
     """
-    # Interval is either same interval for all elements or individual interval
-    # for each element.
     interval_type = bnd.bind("comboBox")
+    status_msg = bnd.bind("label_status")
 
     def __init__(self, recoil_elements: List[RecoilElement],
                  icon_manager, distribution_changed=None,
@@ -123,21 +124,23 @@ class PercentageWidget(QtWidgets.QWidget):
             pass
         event.accept()
 
-    def row_unselected(self, recoil: RecoilElement) -> bool:
-        """Checks if the given recoil has a row that is unselected.
+    def row_selected(self, recoil: RecoilElement) -> bool:
+        """Checks if the given recoil has a row that is selected.
         """
-        row = self._percentage_rows.get(recoil)
-        return row is not None and not row.selected
+        row = self._percentage_rows.get(recoil, None)
+        # Row is None when it has not been created yet.
+        # Row will be created after area has been calculated
+        # for the first time so we can return True
+        return row is None or row.selected
 
-    def _calculate_areas_and_percentages(self, rounding=2):
+    def _calculate_areas_and_percentages(self, rounding=2) -> Tuple[Dict, Dict]:
         """Calculate areas and percents for recoil elements within the given
         interval.
 
         Args:
-            interval_type: type of interval to use
             rounding: rounding accuracy of percentage calculation
         Return:
-
+            areas and percentages as a dict
         """
         if self.get_limits is not None:
             limits = self.get_limits()
@@ -147,20 +150,20 @@ class PercentageWidget(QtWidgets.QWidget):
         interval_type = self.interval_type
 
         if interval_type is IntervalType.NO_LIMITS:
-            def get_range(recoil: RecoilElement):
+            def get_range(_):
                 return None, None
 
         elif interval_type is IntervalType.COMMON:
-            def get_range(recoil: RecoilElement):
+            def get_range(_):
                 try:
                     start, end = limits["common"]
                 except (ValueError, KeyError):
                     start, end = None, None
                 return start, end
         else:
-            def get_range(recoil: RecoilElement):
+            def get_range(rec: RecoilElement):
                 try:
-                    start, end = limits[recoil]
+                    start, end = limits[rec]
                 except (ValueError, KeyError):
                     start, end = None, None
                 return start, end
@@ -168,13 +171,11 @@ class PercentageWidget(QtWidgets.QWidget):
         areas = {}
         percentages = {}
         for recoil in self._percentage_rows:
-            if self.row_unselected(recoil):
-                area = 0
-            elif recoil not in limits:
-                # Recoil has been removed
+            if not self.row_selected(recoil):
                 area = 0
             else:
-                area = recoil.calculate_area(*get_range(recoil))
+                s, e = get_range(recoil)
+                area = recoil.calculate_area(s, e)
 
             if not self.__relative_values:
                 # TODO label text needs to reformatted when using absolute
@@ -191,15 +192,14 @@ class PercentageWidget(QtWidgets.QWidget):
         return areas, percentages
 
     def __show_abs_or_rel_values(self):
-        """
-        Show recoil area in absolute or relative format.
+        """Show recoil area in absolute or relative format.
         """
         if self.__relative_values:
             self.icon_manager.set_icon(
                 self.absRelButton, "depth_profile_abs.svg")
         else:
-            self.icon_manager.set_icon(self.absRelButton,
-                                       "depth_profile_rel.svg")
+            self.icon_manager.set_icon(
+                self.absRelButton, "depth_profile_rel.svg")
 
         self.__relative_values = not self.__relative_values
         self.__show_percents_and_areas()
@@ -289,6 +289,7 @@ class PercentageRow(QtWidgets.QWidget, bnd.PropertyBindingWidget,
             kwargs: percentage and area.
         """
         super().__init__()
+        self.setMinimumHeight(20)
         layout = QtWidgets.QHBoxLayout()
         layout.setAlignment(Qt.AlignBottom)
 
@@ -309,8 +310,8 @@ class PercentageRow(QtWidgets.QWidget, bnd.PropertyBindingWidget,
         self.percentageLabel.setMaximumWidth(80)
 
         self.areaLabel = QtWidgets.QLabel()
-        self.areaLabel.setMinimumWidth(40)
-        self.areaLabel.setMaximumWidth(40)
+        self.areaLabel.setMinimumWidth(60)
+        self.areaLabel.setMaximumWidth(60)
 
         self.selectedCheckbox = QtWidgets.QCheckBox()
         self.selectedCheckbox.setToolTip(

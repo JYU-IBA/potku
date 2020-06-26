@@ -153,6 +153,9 @@ class Element(MCERDParameterContainer):
         return f"Element(symbol={self.symbol}, isotope={self.isotope}, " \
                f"amount={self.amount})"
 
+    def __hash__(self):
+        return hash((self.isotope, self.symbol, self.amount))
+
     def get_prefix(self):
         """Returns a string representation of an element without amount.
 
@@ -236,14 +239,11 @@ class Element(MCERDParameterContainer):
                     masses.MASS_KEY: st_mass
                 })
 
-        isotopes.extend(
-            {
+        isotopes.extend({
                 "element": cls(symbol, iso.pop("number")),
                 **iso
             }
-            for iso in masses.get_isotopes(symbol,
-                                           filter_unlikely=True,
-                                           sort_by_abundance=True)
-            )
+            for iso in masses.get_isotopes(
+                symbol, filter_unlikely=True, sort_by_abundance=True))
 
         return isotopes
