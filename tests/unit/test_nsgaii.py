@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -26,7 +26,13 @@ __version__ = "2.0"
 
 import unittest
 import random
+import tests.mock_objects as mo
+import tempfile
 
+from pathlib import Path
+from unittest.mock import patch
+
+from modules.nsgaii import Nsgaii
 from modules.nsgaii import pick_final_solutions
 
 
@@ -95,6 +101,30 @@ class TestPickFinalSolutions(unittest.TestCase):
                           lambda: pick_final_solutions([], [], count=0))
         self.assertRaises(ValueError,
                           lambda: pick_final_solutions([], [], count=4))
+
+
+class TestNsga(unittest.TestCase):
+    @patch("modules.mcerd.MCERD.run", return_value=mo.get_mcerd_stream())
+    def test_nsga(self, mock_run):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_dir = Path(tmp_dir)
+            sim_dir = tmp_dir / "sim"
+            mesu_dir = tmp_dir / "mesu"
+            cut = tmp_dir / "foo.cut"
+            sim_dir.mkdir(parents=True)
+            elem_sim = mo.get_element_simulation()
+            elem_sim.directory = sim_dir
+            mesu = mo.get_measurement()
+            mesu.create_folder_structure(mesu_dir)
+
+            obs = mo.TestObserver()
+            n = Nsgaii(5, elem_sim, measurement=mo.get_measurement(),
+                       cut_file=cut, skip_simulation=False)
+            n.subscribe(obs)
+            n.start_optimization()
+
+            self.assertEqual([], obs.errs)
+            mock_run.assert_called_once()
 
 
 if __name__ == '__main__':

@@ -213,12 +213,12 @@ class ElementLossesWidget(QtWidgets.QWidget):
 
             title = "{0} - Reference cut: {1}".format(
                 self.windowTitle(),
-                os.path.basename(self.reference_cut_file))
+                self.reference_cut_file.name)
             self.setWindowTitle(title)
 
             # Calculate elemental losses
             self.losses = ElementLosses(
-                self.measurement.directory_cuts,
+                self.measurement.get_cuts_dir(),
                 self.measurement.get_composition_changes_dir(),
                 self.reference_cut_file,
                 self.checked_cuts,
@@ -284,16 +284,15 @@ class ElementLossesWidget(QtWidgets.QWidget):
         """
         changes_dir = self.measurement.get_changes_dir()
 
-        df.update_cuts(self.checked_cuts,
-                       self.measurement.directory_cuts,
-                       changes_dir)
+        df.update_cuts(
+            self.checked_cuts, self.measurement.get_cuts_dir(), changes_dir)
 
         self.losses.checked_cuts = self.checked_cuts
 
         # Update reference cut
         _, suffix = self.reference_cut_file.name.split(".", 1)
         self.reference_cut_file = Path(
-            self.measurement.directory_cuts,
+            self.measurement.get_cuts_dir(),
             f"{self.measurement.name}.{suffix}")
         self.losses.reference_cut_file = self.reference_cut_file
 

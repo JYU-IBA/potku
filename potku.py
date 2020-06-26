@@ -277,12 +277,16 @@ class Potku(QtWidgets.QMainWindow):
                     QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 clicked_item.setText(0, clicked_item.obj.name)
                 return
+            # FIXME after renaming a Measurement, old .info file remains
+            #   as the name is already changed here
+            # TODO do all the necessary updates in a obj.rename function
             clicked_item.obj.name = new_name
             clicked_item.setText(0, clicked_item.obj.name)
 
             clicked_item.obj.update_directory_references(new_dir)
 
             if type(clicked_item.obj) is Measurement:
+                clicked_item.obj: Measurement
                 try:
                     clicked_item.obj.rename_info_file(new_name)
                 except OSError as e:
@@ -292,19 +296,10 @@ class Potku(QtWidgets.QMainWindow):
 
                 # Rename all cut files
                 try:
-                    clicked_item.obj.rename_files_in_directory(
-                        clicked_item.obj.directory_cuts)
+                    clicked_item.obj.rename_cut_files()
                 except OSError as e:
                     QtWidgets.QMessageBox.critical(
                         self, "Error", f"Failed to rename cut files: {e}.",
-                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-                # Rename all split files
-                try:
-                    clicked_item.obj.rename_files_in_directory(
-                        clicked_item.obj.get_changes_dir())
-                except OSError as e:
-                    QtWidgets.QMessageBox.critical(
-                        self, "Error", f"Failed to rename splits {e}",
                         QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
                 # Update Energy spectrum, Composition changes and Depth profile

@@ -85,7 +85,7 @@ def stopwatch(log_file=None):
     return outer
 
 
-def rename_file(old_path, new_name):
+def rename_file(old_path: Path, new_name: Union[str, Path]) -> Path:
     """Renames file or directory and returns new path.
 
     Args:
@@ -94,7 +94,7 @@ def rename_file(old_path, new_name):
     """
     if not new_name:
         return
-    dir_path, old_name = os.path.split(old_path)
+    dir_path = old_path.parent
     new_file = Path(dir_path, new_name)
     if new_file.exists():
         # os.rename should raise this if directory or file exists on the

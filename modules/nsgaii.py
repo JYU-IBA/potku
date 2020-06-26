@@ -63,9 +63,8 @@ class Nsgaii(Observable):
     (https://github.com/ChengHust/NSGA-II).
     """
 
-    def __init__(self, gen, element_simulation: ElementSimulation = None,
-                 pop_size=100, sol_size=5,
-                 upper_limits=None, lower_limits=None,
+    def __init__(self, gen: int, element_simulation: ElementSimulation = None,
+                 pop_size=100, sol_size=5, upper_limits=None, lower_limits=None,
                  optimization_type=OptimizationType.RECOIL,
                  recoil_type="box", number_of_processes=1, cross_p=0.9, mut_p=1,
                  stop_percent=0.3, check_time=20, ch=0.025,
@@ -274,11 +273,10 @@ class Nsgaii(Observable):
             **kwargs
         }
 
-    @classmethod
-    def crowding_distance(cls, front_no, objective_values):
-        """
-        Calculate crowding distnce for each solution in the population, by the
-        Pareto front it belongs to.
+    @staticmethod
+    def crowding_distance(front_no, objective_values):
+        """Calculate crowding distance for each solution in the population, by
+        the Pareto front it belongs to.
 
         Args:
             front_no: Front numbers for all solutions.
@@ -801,8 +799,8 @@ class Nsgaii(Observable):
             i += 1
         self.measured_espe = new
 
-    @classmethod
-    def nd_sort(cls, pop_obj, n, r_n=np.inf):
+    @staticmethod
+    def nd_sort(pop_obj, n, r_n=np.inf):
         """
         Sort population pop_obj according to non-domination.
 
@@ -872,8 +870,8 @@ class Nsgaii(Observable):
             fronts += 1
         return front_no, fronts
 
-    @classmethod
-    def new_population_selection(cls, population, pop_size):
+    @staticmethod
+    def new_population_selection(population, pop_size):
         """
         Select individuals to a new population based on crowded comparison
         operator.

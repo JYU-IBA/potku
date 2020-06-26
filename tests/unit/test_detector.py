@@ -165,12 +165,11 @@ class TestEfficiencyFiles(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             # The efficiency directory does not exists yet, get_efficiency_files
             # returns an empty list
-            self.assertIsNone(self.det.efficiency_directory)
             self.assertEqual([], self.det.get_efficiency_files())
 
             self.det.update_directories(Path(tmp_dir))
-            self.assertTrue(self.det.efficiency_directory.exists())
-            self.create_eff_files(self.det.efficiency_directory, self.eff_files)
+            self.assertTrue(self.det.get_efficiency_dir().exists())
+            self.create_eff_files(self.det.get_efficiency_dir(), self.eff_files)
             self.assertNotEqual(
                 sorted(self.eff_files.keys()),
                 sorted(self.det.get_efficiency_files()))
@@ -178,25 +177,23 @@ class TestEfficiencyFiles(unittest.TestCase):
                 self.filtered_effs, sorted(self.det.get_efficiency_files()))
 
             # full_path parameter returns the eff files with full paths
-            full_paths = sorted(Path(self.det.efficiency_directory, f)
+            full_paths = sorted(Path(self.det.get_efficiency_dir(), f)
                                 for f in self.filtered_effs)
             self.assertEqual(
                 full_paths, sorted(self.det.get_efficiency_files(
                     return_full_paths=True)))
 
             # directories are not returned
-            dir_path = Path(self.det.efficiency_directory, "O.eff")
+            dir_path = Path(self.det.get_efficiency_dir(), "O.eff")
             dir_path.mkdir()
             self.assertTrue(dir_path.is_dir())
             self.assertNotIn(Path("O.eff"), self.det.get_efficiency_files())
             dir_path.rmdir()
 
-            # If the Used_efficiency files directory is removed, OSError is
-            # raised
-            shutil.rmtree(self.det.efficiency_directory)
-            self.assertRaises(
-                OSError, lambda: self.det.get_efficiency_files()
-            )
+            # If the Used_efficiency files directory is removed, empty list
+            # is returned
+            shutil.rmtree(self.det.get_efficiency_dir())
+            self.assertEqual([], self.det.get_efficiency_files())
 
     def test_add_efficiencies(self):
         """When a new efficiency file is added, it will be copied to the
@@ -213,21 +210,21 @@ class TestEfficiencyFiles(unittest.TestCase):
             tmp_path = Path(tmp_dir)
             self.assertTrue(path.exists())
             self.assertRaises(
-                TypeError, lambda: self.det.add_efficiency_file(path))
+                FileNotFoundError, lambda: self.det.add_efficiency_file(path))
 
             self.det.update_directories(tmp_path)
 
-            self.assertEqual([], os.listdir(self.det.efficiency_directory))
+            self.assertEqual([], os.listdir(self.det.get_efficiency_dir()))
             for file in self.eff_files:
                 self.det.add_efficiency_file(Path(tmp_path, file))
 
             self.assertNotEqual(
                 sorted(self.eff_files.keys()),
-                sorted(os.listdir(self.det.efficiency_directory))
+                sorted(os.listdir(self.det.get_efficiency_dir()))
             )
             self.assertEqual(
                 sorted([str(f) for f in self.filtered_effs]),
-                sorted(os.listdir(self.det.efficiency_directory))
+                sorted(os.listdir(self.det.get_efficiency_dir()))
             )
             # The used eff files directory is not yet created
             self.assertFalse(self.det.get_used_efficiencies_dir().exists())
@@ -259,14 +256,14 @@ class TestEfficiencyFiles(unittest.TestCase):
             tmp_path = Path(tmp_dir)
             self.det.update_directories(tmp_path)
 
-            self.assertEqual(effs_folder, self.det.efficiency_directory)
+            self.assertEqual(effs_folder, self.det.get_efficiency_dir())
             self.assertEqual(used_folder, self.det.get_used_efficiencies_dir())
             self.assertTrue(effs_folder.exists())
             self.assertFalse(used_folder.exists())
 
             expected = sorted(
                 [f for f in self.eff_files.values() if f is not None])
-            self.create_eff_files(self.det.efficiency_directory, self.eff_files)
+            self.create_eff_files(self.det.get_efficiency_dir(), self.eff_files)
 
             self.det.copy_efficiency_files()
             self.assertTrue(used_folder.exists())
@@ -287,10 +284,10 @@ class TestEfficiencyFiles(unittest.TestCase):
         """
         with tempfile.TemporaryDirectory() as tmp_dir:
             self.det.update_directories(Path(tmp_dir))
-            self.create_eff_files(self.det.efficiency_directory, self.eff_files)
+            self.create_eff_files(self.det.get_efficiency_dir(), self.eff_files)
 
             self.det.copy_efficiency_files()
-            self.assertNotEqual([], os.listdir(self.det.efficiency_directory))
+            self.assertNotEqual([], os.listdir(self.det.get_efficiency_dir()))
             self.assertNotEqual(
                 [], os.listdir(self.det.get_used_efficiencies_dir()))
 
@@ -299,13 +296,13 @@ class TestEfficiencyFiles(unittest.TestCase):
 
             self.assertEqual(
                 [Detector.USED_EFFICIENCIES_DIR],
-                os.listdir(self.det.efficiency_directory))
+                os.listdir(self.det.get_efficiency_dir()))
             self.assertEqual(
                 [], os.listdir(self.det.get_used_efficiencies_dir()))
 
             # If the file is a directory, exceptions will be handled by the
             # remove method
-            path = self.det.efficiency_directory / "O.eff"
+            path = self.det.get_efficiency_dir() / "O.eff"
             path.mkdir()
             self.det.remove_efficiency_file(path.name)
             self.assertTrue(path.exists())
@@ -322,22 +319,19 @@ class TestEfficiencyFiles(unittest.TestCase):
 
     def test_update_directory(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
-            self.assertIsNone(self.det.efficiency_directory)
-            self.assertIsNone(self.det.get_used_efficiencies_dir())
             expected = Path(tmp_dir, Detector.EFFICIENCY_DIR)
             self.assertFalse(expected.exists())
 
             self.det.update_directories(Path(tmp_dir))
 
-            self.assertTrue(self.det.efficiency_directory.exists())
-            self.assertEqual(expected, self.det.efficiency_directory)
+            self.assertTrue(self.det.get_efficiency_dir().exists())
+            self.assertEqual(expected, self.det.get_efficiency_dir())
             self.assertEqual(expected / Detector.USED_EFFICIENCIES_DIR,
                              self.det.get_used_efficiencies_dir())
 
     def test_directory_reference_update(self):
         self.assertEqual(
             Path(tempfile.gettempdir(), "Detector", ".detector"), self.det.path)
-        self.assertIsNone(self.det.efficiency_directory)
 
         mesu = mo.get_measurement()
         mesu_path = Path(tempfile.gettempdir(), "mesu")
@@ -348,9 +342,9 @@ class TestEfficiencyFiles(unittest.TestCase):
         self.assertEqual(mesu_path / "Detector" / ".detector", self.det.path)
         self.assertEqual(
             mesu_path / "Detector" / Detector.EFFICIENCY_DIR,
-            self.det.efficiency_directory)
+            self.det.get_efficiency_dir())
         # Directory is not yet created
-        self.assertFalse(self.det.efficiency_directory.exists())
+        self.assertFalse(self.det.get_efficiency_dir().exists())
 
     @staticmethod
     def create_eff_files(directory, eff_files):

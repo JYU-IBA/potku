@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -27,6 +27,7 @@ __version__ = "2.0"
 import unittest
 import tempfile
 import copy
+import os
 
 import tests.utils as utils
 import tests.mock_objects as mo
@@ -92,8 +93,6 @@ class TestFolderStructure(unittest.TestCase):
             utils.assert_folder_structure_equal(
                 self.after_to_file, Path(tmp_dir))
 
-            utils.disable_logging()
-
     def test_get_measurement_files(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             path = Path(tmp_dir, self.mesu_folder)
@@ -118,4 +117,38 @@ class TestFolderStructure(unittest.TestCase):
             self.assertEqual(
                 path / "Detector" / f"measurement.detector", det_file)
 
-            utils.disable_logging()
+    def test_rename_cuts(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            path = Path(tmp_dir, self.mesu_folder)
+            mesu = Measurement(
+                mo.get_request(), path / f"foo.info",
+                name="foo",
+                measurement_setting_file_name=self.settings_file,
+                profile_name=self.profile_name, save_on_creation=False,
+                enable_logging=False)
+            mesu.create_folder_structure(path)
+            mesu.to_file()
+
+            cuts = [
+                "foo.H.0.0.cut",
+                "foo.He.0.0.cut"
+            ]
+            for cut in cuts:
+                fp = mesu.get_cuts_dir() / cut
+                fp.open("w").close()
+                fp = mesu.get_changes_dir() / cut
+                fp.open("w").close()
+
+            mesu.name = "bar"
+            mesu.rename_cut_files()
+            expected = sorted([
+                "bar.H.0.0.cut",
+                "bar.He.0.0.cut"
+            ])
+            self.assertEqual(
+                expected, sorted(os.listdir(mesu.get_cuts_dir()))
+            )
+            self.assertEqual(
+                expected, sorted(os.listdir(mesu.get_changes_dir()))
+            )
+

@@ -92,8 +92,8 @@ class Measurements:
             return None
         return self.measurements[key]
 
-    def add_measurement_file(self, sample, file_path: Path, tab_id, name,
-                             import_evnt_or_binary, selector_cls=None):
+    def add_measurement_file(self, sample: "Sample", file_path: Path, tab_id,
+                             name, import_evnt_or_binary, selector_cls=None):
         """Add a new file to measurements. If selector_cls is given,
         selector will be initialized as an object of that class.
 
@@ -202,7 +202,7 @@ class Measurements:
                         measurement_directory, new_data_file,
                         selector_cls=selector_cls)
                     if file_directory != Path(
-                            measurement_directory, measurement.directory_data) \
+                            measurement_directory, measurement.get_data_dir()) \
                             and file_directory:
                         measurement.copy_file_into_measurement(file_path)
                     serial_number = next_serial
@@ -324,9 +324,8 @@ class Measurement(Logger, AdjustableSettings, Serializable):
 
         self.serial_number = 0
         self.directory = self.path.parent
+        # TODO rename this to data_file
         self.measurement_file = None
-        self.directory_cuts = None
-        self.directory_data = None
 
         if run is None:
             self.run = Run()
@@ -378,21 +377,12 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         Args:
             selector_cls: class of the selector.
         """
-        for entry in os.scandir(self.directory):
-            # TODO if the directory we are looking for does not exist (for
-            #  example "Energy_spectra", this will cause a crash later on
-            #  as self.directory_energy_spectra remains None. Maybe initialize
-            #  some default values for each folder
-            # TODO it makes little sense to just iterate all these
-            path = Path(entry.path)
-            if path.name == "Data":
-                self.directory_data = path
-                for e in os.scandir(path):
-                    p = Path(e.path)
-                    if p.suffix == ".asc":
-                        self.measurement_file = p
-                    elif p.name == "Cuts":
-                        self.directory_cuts = p
+        with os.scandir(self.get_data_dir()) as scdir:
+            for entry in scdir:
+                path = Path(entry.path)
+                if path.is_file() and path.suffix == ".asc":
+                    self.measurement_file = path
+                    break
 
         self.set_loggers(self.directory, self.request.directory)
 
@@ -407,8 +397,6 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             new_dir: Path to measurement folder with new name.
         """
         self.directory = new_dir
-        self.directory_data = Path(self.directory, "Data")
-        self.directory_cuts = Path(self.directory_data, "Cuts")
 
         self.detector.update_directory_references(self)
 
@@ -555,6 +543,16 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             **obj_info, **prof_gen, **depth, **comp, **mesu_general,
             use_default_profile_settings=use_default_profile_settings,
             sample=sample)
+
+    def get_data_dir(self) -> Path:
+        """Returns path to Data directory.
+        """
+        return self.directory / "Data"
+
+    def get_cuts_dir(self) -> Path:
+        """Returns path to Cuts directory.
+        """
+        return self.get_data_dir() / "Cuts"
 
     def get_energy_spectra_dir(self) -> Path:
         """Returns the path to energy spectra directory.
@@ -721,7 +719,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
     def create_folder_structure(self, measurement_folder: Path,
                                 measurement_file: Path = None,
                                 selector_cls=None):
-        """ Creates folder structure for the measurement. If selector_cls is
+        """Creates folder structure for the measurement. If selector_cls is
         given, selector will be initialized as an object of that class.
 
         Args:
@@ -729,21 +727,12 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             measurement_file: Path of the measurement file. (under Data)
             selector_cls: class of the selector.
         """
-        # TODO refactor this and update_directory references
-        if measurement_file is None:
-            measurement_data_folder = measurement_folder / "Data"
-            self.measurement_file = None
-        else:
-            measurement_data_folder = measurement_file.parent
-            self.measurement_file = measurement_file.name  # With extension
-
         self.directory = measurement_folder
-        self.directory_data = measurement_data_folder
-        self.directory_cuts = self.directory_data / "Cuts"
+        self.measurement_file = measurement_file
 
         self.__make_directories(self.directory)
-        self.__make_directories(self.directory_data)
-        self.__make_directories(self.directory_cuts)
+        self.__make_directories(self.get_data_dir())
+        self.__make_directories(self.get_cuts_dir())
         self.__make_directories(self.get_composition_changes_dir())
         self.__make_directories(self.get_changes_dir())
         self.__make_directories(self.get_depth_profile_dir())
@@ -773,14 +762,14 @@ class Measurement(Logger, AdjustableSettings, Serializable):
                     f"Failed to create a directory: {e}."
                 )
 
-    def copy_file_into_measurement(self, file_path):
+    def copy_file_into_measurement(self, file_path: Path):
         """Copies the given file into the measurement's data folder
 
         Args:
             file_path: The file that needs to be copied.
         """
-        file_name = os.path.basename(file_path)
-        new_path = Path(self.directory, self.directory_data, file_name)
+        file_name = file_path.name
+        new_path = self.get_data_dir() / file_name
         shutil.copyfile(file_path, new_path)
 
     def load_data(self):
@@ -791,20 +780,14 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         # pr.enable()
         n = 0
         try:
-            measurement_name, extension = os.path.splitext(
-                self.measurement_file)
-            extension = extension.lower()
+            filename = Path(self.measurement_file)
+
+            measurement_name, extension = filename.stem, filename.suffix.lower()
             if extension == ".asc":
-                file_to_open = Path(
-                    self.directory, self.directory_data,
-                    f"{measurement_name}.asc")
-                # TODO this could maybe be done with CSVParser, but variable
-                #      column counts are going to be a problem
-                with open(file_to_open, "r") as fp:
+                file_to_open = self.get_data_dir() / f"{measurement_name}.asc"
+                with file_to_open.open("r") as fp:
                     for line in fp:
                         n += 1  # Event number
-                        # TODO: Figure good way to split into columns.
-                        # REGEX too slow.
                         split = line.split()
                         split_len = len(split)
                         if split_len == 2:  # At least two columns
@@ -839,15 +822,13 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         self.name = new_name
         self._info_to_file()
 
-    def rename_files_in_directory(self, directory: Path):
-        if not directory.exists():
-            return
-        for file in os.listdir(directory):
-            if file.endswith(".cut"):
-                old_path = Path(directory, file)
-                # Get everything except old measurement name from cut file
-                new_name = self.name + "." + file.split('.', 1)[1]
-                gf.rename_file(old_path, new_name)
+    def rename_cut_files(self):
+        """Renames .cut files with the new measurement name.
+        """
+        cuts, splits = self.get_cut_files()
+        for cut in (*cuts, *splits):
+            new_name = self.name + "." + cut.name.split(".", 1)[1]
+            gf.rename_file(cut, new_name)
 
     def set_axes(self, axes, progress=None):
         """Set axes information to selector within measurement.
@@ -871,9 +852,8 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             progress: ProgressReporter object
         """
         try:
-            selection_file = Path(self.directory, self.directory_data,
-                                  "{0}.selections".format(self.name))
-            with open(selection_file):
+            selection_file = self.get_data_dir() / f"{self.name}.selections"
+            with selection_file.open("r"):
                 self.load_selection(selection_file, progress)
         except OSError:
             # TODO: Is it necessary to inform user with this?
@@ -990,15 +970,11 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         if self.selector.is_empty():
             self.__remove_old_cut_files()
             # Remove .selections file
-            selection_file = Path(self.directory_data,
-                                  f"{self.name}.selections")
-            try:
-                os.remove(selection_file)
-            except OSError:
-                pass
+            selection_file = self.get_data_dir() / f"{self.name}.selections"
+            gf.remove_files(selection_file)
             return 0
 
-        self.__make_directories(self.directory_cuts)
+        self.__make_directories(self.get_cuts_dir())
 
         starttime = time.time()
 
@@ -1033,7 +1009,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         for i, points in enumerate(points_in_selection):
             if points:  # If not empty selection -> save
                 selection = self.selector.get_at(i)
-                cut_file = CutFile(Path(self.directory, self.directory_cuts))
+                cut_file = CutFile(self.get_cuts_dir())
                 cut_file.set_info(selection, points)
                 cut_file.save()
             if progress is not None:
@@ -1048,9 +1024,8 @@ class Measurement(Logger, AdjustableSettings, Serializable):
     def __remove_old_cut_files(self):
         """Remove old cut files.
         """
-        gf.remove_matching_files(self.directory_cuts, exts={".cut"})
-        directory_changes = self.get_changes_dir()
-        gf.remove_matching_files(directory_changes, exts={".cut"})
+        gf.remove_matching_files(self.get_cuts_dir(), exts={".cut"})
+        gf.remove_matching_files(self.get_changes_dir(), exts={".cut"})
 
     @staticmethod
     def _get_cut_files(directory: Path) -> List[Path]:
@@ -1065,7 +1040,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         Return:
             Returns a list of cut files in measurement.
         """
-        cuts = self._get_cut_files(self.directory_cuts)
+        cuts = self._get_cut_files(self.get_cuts_dir())
         elem_losses = self._get_cut_files(self.get_changes_dir())
         return cuts, elem_losses
 

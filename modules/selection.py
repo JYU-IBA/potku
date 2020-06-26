@@ -105,7 +105,7 @@ class AxesLimits:
 class Selector:
     """Selector objects handles all selections within measurement.
     """
-    def __init__(self, measurement, element_colormap):
+    def __init__(self, measurement: "Measurement", element_colormap):
         """Inits Selector.
         
         Inits Selector object.
@@ -118,8 +118,7 @@ class Selector:
         # self.settings = measurement.measurement_settings
         self.measurement = measurement
         self.measurement_name = measurement.name
-        self.directory = Path(measurement.directory,
-                              self.measurement.directory_data)
+        self.directory = self.measurement.get_data_dir()
         self.selection_file = Path(self.directory,
                                    f"{self.measurement_name}.selections")
         # List is sufficient enough
@@ -240,7 +239,7 @@ class Selector:
         if not sel.is_closed:
             sel.undo_last()
 
-    def update_references(self, measurement):
+    def update_references(self, measurement: "Measurement"):
         """
         Update references with values form Measurement.
 
@@ -248,22 +247,21 @@ class Selector:
              measurement: Measurement object.
         """
         self.measurement_name = measurement.name
-        self.directory = measurement.directory_data
+        self.directory = measurement.get_data_dir()
 
         selection_file_without_path = self.selection_file.name
-        old_selection_file_in_new_path = Path(self.directory,
-                                              selection_file_without_path)
+        old_selection_file_in_new_path = Path(
+            self.directory, selection_file_without_path)
         try:
             if old_selection_file_in_new_path.exists():
                 new_file = gf.rename_file(old_selection_file_in_new_path,
                                           self.measurement_name + ".selections")
                 self.selection_file = Path(self.directory, new_file)
         except OSError:
-            QtWidgets.QMessageBox.critical(self, "Error",
-                                           "Something went wrong while "
-                                           "renaming the selections file.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.critical(
+                self, "Error",
+                "Something went wrong while renaming the selections file.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def purge(self):
         """Purges (removes) all open selections and allows new selection to be

@@ -437,6 +437,6 @@ class DepthProfileWidget(QtWidgets.QWidget):
         """
         changes_dir = self.measurement.get_changes_dir()
         df.update_cuts(
-            self.use_cuts, self.measurement.directory_cuts, changes_dir)
+            self.use_cuts, self.measurement.get_cuts_dir(), changes_dir)
 
         self.output_dir = self.measurement.get_depth_profile_dir()

@@ -28,12 +28,12 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 __version__ = "2.0"
 
 import json
-import os
 import shutil
 import time
 from typing import Optional
 from typing import Iterable
 from typing import Set
+from typing import List
 from pathlib import Path
 
 from . import general_functions as gf
@@ -57,7 +57,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
     __slots__ = "name", "description", "date", "type", "foils",\
                 "tof_foils", "virtual_size", "tof_slope", "tof_offset",\
                 "angle_slope", "angle_offset", "path", "modification_time",\
-                "efficiency_directory", "timeres", "detector_theta"
+                "timeres", "detector_theta"
 
     EFFICIENCY_DIR = "Efficiency_files"
     USED_EFFICIENCIES_DIR = "Used_efficiencies"
@@ -134,9 +134,6 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         self.angle_offset = angle_offset
         self.detector_theta = detector_theta
 
-        # Efficiency file paths and directory
-        self.efficiency_directory = None
-
         if save_on_creation:
             self.to_file(self.path, measurement_file)
 
@@ -148,8 +145,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         self.path = directory / self.path.name
         directory.mkdir(exist_ok=True)
 
-        self.efficiency_directory = directory / Detector.EFFICIENCY_DIR
-        self.efficiency_directory.mkdir(exist_ok=True)
+        self.get_efficiency_dir().mkdir(exist_ok=True)
 
     def update_directory_references(self, obj):
         """
@@ -163,9 +159,8 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
 
         self.path = Path(new_path, det_file)
 
-        self.efficiency_directory = Path(new_path, Detector.EFFICIENCY_DIR)
-
-    def get_efficiency_files(self, return_full_paths: bool = False):
+    def get_efficiency_files(self, return_full_paths: bool = False) ->  \
+            List[Path]:
         """Returns efficiency files that are in detector's efficiency file
         folder, either with full path or just the file name.
 
@@ -173,21 +168,16 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             return_full_paths: whether full paths are returned or not
 
         Return:
-            Returns a string list of efficiency files.
+            Paths to efficiency files either as full paths or just file names
         """
-        def filter_func(dir_entry):
-            fp = Path(dir_entry)
-            if fp.is_file() and fp.suffix == ".eff":
-                if return_full_paths:
-                    return fp
-                return Path(fp.name)
-            return None
-        return [
-            *filter(
-                lambda f: f is not None,
-                (filter_func(file) for file in os.scandir(
-                    self.efficiency_directory)))
-        ]
+        try:
+            return [
+                fp if return_full_paths else Path(fp.name)
+                for fp in gf.find_files_by_extension(
+                    self.get_efficiency_dir(), ".eff")[".eff"]
+            ]
+        except OSError:
+            return []
 
     def add_efficiency_file(self, file_path: Path):
         """Copies efficiency file to detector's efficiency folder. Existing
@@ -201,7 +191,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         fp = Path(file_path)
         if fp.suffix == ".eff":
             try:
-                shutil.copy(fp, self.efficiency_directory)
+                shutil.copy(fp, self.get_efficiency_dir())
             except shutil.SameFileError:
                 pass
 
@@ -239,19 +229,16 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             file_name: Name of the efficiency file.
         """
         file_name = Path(file_name)
+
         try:
-            Path(self.efficiency_directory, file_name).unlink()
-        except OSError:
-            pass
-        try:
-            used_eff_file = \
-                self.get_used_efficiencies_dir() / \
-                Detector.get_used_efficiency_file_name(file_name)
-            used_eff_file.unlink()
-        except (OSError, ValueError):
-            # File was not found in efficiency file folder or the file extension
-            # was wrong.
-            pass
+            used_path = self.get_used_efficiencies_dir() / \
+                Detector.get_used_efficiency_file_name(file_name),
+        except ValueError:
+            used_path = tuple()
+
+        gf.remove_files(
+            self.get_efficiency_dir() / file_name, *used_path
+        )
 
     @classmethod
     def from_file(cls, detector_file: Path, measurement_file: Path,
@@ -427,16 +414,16 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             return Path(first_part)
         return Path(f"{first_part}.eff")
 
-    def get_used_efficiencies_dir(self):
+    def get_efficiency_dir(self) -> Path:
+        """Returns the path to efficiency directory.
+        """
+        return self.path.parent / Detector.EFFICIENCY_DIR
+
+    def get_used_efficiencies_dir(self) -> Path:
         """Returns the path to efficiency folder where the files used when
         running tof_list are located.
         """
-        try:
-            return Path(
-                self.efficiency_directory, Detector.USED_EFFICIENCIES_DIR)
-        except TypeError:
-            # efficiency directory is None, this should also return None
-            return None
+        return self.get_efficiency_dir() / Detector.USED_EFFICIENCIES_DIR
 
     def copy_efficiency_files(self):
         """Copies efficiency files to the directory where tof_list will be
@@ -453,7 +440,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
                 used_file = Detector.get_used_efficiency_file_name(eff)
             except ValueError:
                 continue
-            old_file = Path(self.efficiency_directory, eff)
+            old_file = Path(self.get_efficiency_dir(), eff)
             shutil.copy(old_file, destination / used_file)
 
     def get_matching_efficiency_files(self, cut_files: Iterable[Path]) \
