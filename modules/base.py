@@ -29,6 +29,7 @@ from typing import NamedTuple
 from typing import Dict
 from typing import Any
 from typing import Union
+from typing import Tuple
 
 # This is a collection of base classes for various backend components that share
 # similar functions. Logically these base classes would be ABCs, but in
@@ -37,7 +38,10 @@ from typing import Union
 # version of Python, these classes should be made into ABCs.
 # TODO possibly add a class for objects that run external programs
 
+# Type hint aliases that can be imported to other modules
 ElemSimList = List["ElementSimulation"]
+Range = Tuple[Union[float, int], Union[float, int]]
+StrTuple = Tuple[str, str]
 
 
 class ElementSimulations(NamedTuple):

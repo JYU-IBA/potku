@@ -1045,7 +1045,7 @@ class Nsgaii(Observable):
             self.element_simulation.optimized_fluence = avg
 
         self.clean_up(cancellation_token)
-        self.save_results_to_file()
+        self.element_simulation.optimization_results_to_file(self.cut_file)
 
         self.on_completed(self._get_message(
             OptimizationState.FINISHED,
@@ -1065,23 +1065,6 @@ class Nsgaii(Observable):
                     os.remove(Path(self.element_simulation.directory, file))
                 except OSError:
                     pass
-
-    def save_results_to_file(self):
-        if self.optimization_type is OptimizationType.RECOIL:
-            # Save optimized recoils
-            for recoil in self.element_simulation.optimization_recoils:
-                recoil.to_file(self.element_simulation.directory)
-            save_file_name = f"{self.element_simulation.name_prefix}" \
-                             f"-opt.measured"
-            with open(Path(self.element_simulation.directory, save_file_name),
-                      "w") as f:
-                f.write(self.cut_file.stem)
-        elif self.element_simulation.optimized_fluence != 0:
-            # save found fluence value
-            file_name = f"{self.element_simulation.name_prefix}-optfl.result"
-            with open(Path(self.element_simulation.directory, file_name),
-                      "w") as f:
-                f.write(str(self.element_simulation.optimized_fluence))
 
     def variation(self, pop_sols):
         """

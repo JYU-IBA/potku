@@ -50,13 +50,8 @@ from typing import List
 from typing import Set
 from typing import Callable
 from typing import Optional
-from typing import Tuple
 from typing import Union
 from typing import Iterable
-
-# Helpers for type hints, maybe move these to another module
-Range = Tuple[Union[float, int], Union[float, int]]
-StrTuple = Tuple[str, str]
 
 
 # TODO this could still be organized into smaller modules
@@ -122,7 +117,7 @@ def rename_file(old_path: Path, new_name: Union[str, Path]) -> Path:
         # os.rename should raise this if directory or file exists on the
         # same name, but it seems it always doesn't.
         raise OSError(f"File {new_file} already exists")
-    os.rename(old_path, new_file)
+    old_path.rename(new_file)
     return new_file
 
 
@@ -149,6 +144,8 @@ def remove_matching_files(directory: Path, exts: Optional[Set[str]] = None,
             be deleted.
         filter_func: additional filter function applied to the file name.
     """
+    # TODO change the filter function so that it takes the Path as an argument,
+    #   not just file name.
     def _filter_func(fp: Path):
         if exts is not None and filter_func is None:
             return fp.suffix in exts

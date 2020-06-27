@@ -115,18 +115,20 @@ def get_target() -> Target:
     return Target()
 
 
-def get_recoil_element(recoil_widget=None, **kwargs) -> RecoilElement:
+def get_recoil_element(recoil_widget=None, name="Default", **kwargs) -> \
+        RecoilElement:
     """Returns a RecoilElement object.
 
     Args:
         recoil_widget: object that gets added to RecoilElement's collection
             of widgets if not 'None'.
+        name: name of the recoil
         **kwargs: keyword arguments passed down to get_element
     """
     re = RecoilElement(get_element(**kwargs), [
         Point((1, 1)),
         Point((2, 2)),
-    ], "red")
+    ], "red", name=name)
     if recoil_widget is not None:
         re.widgets.append(recoil_widget)
     return re
@@ -278,3 +280,22 @@ def get_sample_depth_files_and_elements() -> \
     ]
 
     return depth_dir, all_elements, some_elements
+
+
+def get_simulation_folder_contents(elem_sim: ElementSimulation, folder: Path,
+                                   create_files=False) -> List[Path]:
+    simu_exts = [
+        ".mcsimu", ".recoil", ".rec", ".simu", ".101.erd", ".102.erd",
+    ]
+    opt_exts = [
+        "-optfirst.rec", "-optmed.rec", "-optlast.rec"
+    ]
+    files = [
+        *(folder / f"{elem_sim.get_full_name()}{se}" for se in simu_exts),
+        *(folder / f"{elem_sim.name}{oe}" for oe in opt_exts)
+    ]
+    random.shuffle(files)
+    if create_files:
+        for f in files:
+            f.open("w").close()
+    return files

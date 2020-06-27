@@ -39,13 +39,13 @@ from . import observing
 
 from typing import Optional
 from typing import Dict
-from .general_functions import StrTuple
 from pathlib import Path
 from rx import operators as ops
 from rx.scheduler import ThreadPoolScheduler
 
 from .layer import Layer
 from .concurrency import CancellationToken
+from .base import StrTuple
 
 
 class MCERD:

@@ -50,7 +50,7 @@ from widgets.matplotlib.mpl_utils import LineChart
 from modules.depth_files import DepthProfileHandler
 from modules.depth_files import DepthProfile
 from modules.element import Element
-from modules.general_functions import Range
+from modules.base import Range
 
 from PyQt5 import QtWidgets
 
