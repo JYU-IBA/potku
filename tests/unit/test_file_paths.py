@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -27,6 +27,8 @@ __version__ = "2.0"
 import unittest
 
 import modules.file_paths as fp
+
+from pathlib import Path
 
 from modules.nsgaii import OptimizationType
 from modules.recoil_element import RecoilElement
@@ -59,37 +61,49 @@ class TestFilePaths(unittest.TestCase):
     def test_recoil_filter(self):
         filter_func = fp.recoil_filter("C")
 
-        self.assertTrue(filter_func("C.rec"))
-        self.assertTrue(filter_func("C.optfl.rec"))
-        self.assertTrue(filter_func("C.sct"))
-        self.assertFalse(filter_func("Cu.sct"))
-        self.assertFalse(filter_func("Cu.rec"))
+        self.assertTrue(filter_func(Path("C.rec")))
+        self.assertTrue(filter_func(Path("C.optfl.rec")))
+        self.assertTrue(filter_func(Path("C.sct")))
+        self.assertFalse(filter_func(Path("Cu.sct")))
+        self.assertFalse(filter_func(Path("Cu.rec")))
 
         # Testing with some irregular inputs
-        self.assertTrue(filter_func("C..rec"))
-        self.assertFalse(filter_func("C!rec"))
-        self.assertFalse(filter_func("C.re"))
-        self.assertFalse(filter_func("c.rec"))
-        self.assertFalse(filter_func("C4rec"))
-        self.assertFalse(filter_func("Crec"))
+        self.assertTrue(filter_func(Path("C..rec")))
+        self.assertFalse(filter_func(Path("C!rec")))
+        self.assertFalse(filter_func(Path("C.re")))
+        self.assertFalse(filter_func(Path("c.rec")))
+        self.assertFalse(filter_func(Path("C4rec")))
+        self.assertFalse(filter_func(Path("Crec")))
 
         # Testing the other way around
         filter_func = fp.recoil_filter("Cu")
 
-        self.assertTrue(filter_func("Cu.rec"))
-        self.assertTrue(filter_func("Cu.sct"))
-        self.assertFalse(filter_func("C.sct"))
-        self.assertFalse(filter_func("C.rec"))
+        self.assertTrue(filter_func(Path("Cu.rec")))
+        self.assertTrue(filter_func(Path("Cu.sct")))
+        self.assertFalse(filter_func(Path("C.sct")))
+        self.assertFalse(filter_func(Path("C.rec")))
 
     def test_is_optfl_res(self):
-        self.assertTrue(fp.is_optfl_result("C", "C-optfl.result"))
-        self.assertFalse(fp.is_optfl_result("C", "Cu-optfl.result"))
+        self.assertTrue(fp.is_optfl_result("C", Path("C-optfl.result")))
+        self.assertFalse(fp.is_optfl_result("C", Path("Cu-optfl.result")))
 
-        self.assertTrue(fp.is_optfl_result("Cu", "Cu-optfl.result"))
-        self.assertFalse(fp.is_optfl_result("Cu", "C-optfl.result"))
+        self.assertTrue(fp.is_optfl_result("Cu", Path("Cu-optfl.result")))
+        self.assertFalse(fp.is_optfl_result("Cu", Path("C-optfl.result")))
 
-        self.assertTrue(fp.is_optfl_result("Cu", "Cu.foo-optfl.result"))
-        self.assertFalse(fp.is_optfl_result("Cu", "Cu.optfl.result"))
+        self.assertTrue(fp.is_optfl_result("Cu", Path("Cu.foo-optfl.result")))
+        self.assertFalse(fp.is_optfl_result("Cu", Path("Cu.optfl.result")))
+
+    def test_assert_raises(self):
+        # Function only accept Path objects
+        self.assertRaises(
+            AttributeError, lambda: fp.is_optfl_result("C", "C-optfl.result"))
+
+        self.assertRaises(
+            AttributeError, lambda: fp.is_optfirst("C", "C-optfl.result"))
+        self.assertRaises(
+            AttributeError, lambda: fp.is_optmed("C", "C-optfl.result"))
+        self.assertRaises(
+            AttributeError, lambda: fp.is_optfl_result("C", "C-optfl.result"))
 
 
 if __name__ == '__main__':

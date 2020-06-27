@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -775,9 +775,6 @@ class Measurement(Logger, AdjustableSettings, Serializable):
     def load_data(self):
         """Loads measurement data from filepath
         """
-        # import cProfile, pstats
-        # pr = cProfile.Profile()
-        # pr.enable()
         n = 0
         try:
             filename = Path(self.measurement_file)
@@ -807,10 +804,6 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         except Exception as e:
             error_log = "Unexpected error: {0}".format(e)
             logging.getLogger('request').error(error_log)
-        # pr.disable()
-        # ps = pstats.Stats(pr)
-        # ps.sort_stats("time")
-        # ps.print_stats(10)
 
     def rename_info_file(self, new_name):
         """Renames the measurement data file.

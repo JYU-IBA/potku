@@ -138,14 +138,14 @@ class TestGeneralFunctions(unittest.TestCase):
     def test_nonexisting_files(self):
         self.assertRaises(
             FileNotFoundError,
-            lambda: gf.count_lines_in_file("this file does not exist"))
+            lambda: gf.count_lines_in_file(Path("this file does not exist")))
         self.assertRaises(
             FileNotFoundError,
-            lambda: gf.count_lines_in_file("this file does not exist",
+            lambda: gf.count_lines_in_file(Path("this file does not exist"),
                                            check_file_exists=False))
         self.assertEqual(
             0,
-            gf.count_lines_in_file("this file does not exist",
+            gf.count_lines_in_file(Path("this file does not exist"),
                                    check_file_exists=True))
 
         # Test what happens, when file path points to a folder
@@ -157,6 +157,11 @@ class TestGeneralFunctions(unittest.TestCase):
             self.assertRaises(
                 IsADirectoryError,
                 lambda: gf.count_lines_in_file(utils.get_sample_data_dir()))
+
+    def test_assert_raises(self):
+        # only Path objects are allowed
+        self.assertRaises(
+            AttributeError, lambda: gf.count_lines_in_file(__file__))
 
     def test_tmp_files(self):
         # Test with an empty file

@@ -7,7 +7,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -74,33 +74,32 @@ class TestErdFileHandler(unittest.TestCase):
         ]
 
         cls.expected_values = [
-            (f, s + 101)
+            (Path(f), s + 101)
             for s, f in enumerate(cls.valid_erd_files)
         ]
 
     def test_get_seed(self):
         # get_seed looks for an integer in the second part of the string
         # split by dots
-        self.assertEqual(102, fp.get_seed("O.102.erd"))
-        self.assertEqual(0, fp.get_seed("..3.2.1.0."))
-        self.assertEqual(-1, fp.get_seed("..-1.2"))
+        self.assertEqual(102, fp.get_seed(Path("O.102.erd")))
+        self.assertEqual(0, fp.get_seed(Path("..3.2.1.0.")))
+        self.assertEqual(-1, fp.get_seed(Path("..-1.2")))
+        self.assertEqual(101, fp.get_seed(Path("/tmp/.101.erd")))
+        self.assertEqual(101, fp.get_seed(Path("\\tmp\\.101.erd")))
 
-        # File paths are also valid arguments
-        self.assertEqual(101, fp.get_seed("/tmp/.101.erd"))
-        self.assertEqual(101, fp.get_seed("\\tmp\\.101.erd"))
+        self.assertIsNone(fp.get_seed(Path(".101./erd")))
+        self.assertEqual(101, fp.get_seed(Path(".101.\\erd")))
 
-        # get_seed makes no attempt to check if the entire string
-        # is a valid file name or path to an erd file
-        self.assertEqual(101, fp.get_seed(".101./erd"))
-        self.assertEqual(101, fp.get_seed(".101.\\erd"))
+        # strings cause AttributeError
+        self.assertRaises(AttributeError, lambda: fp.get_seed("O.102.erd"))
 
         # Having less split parts before or after returns None
-        self.assertIsNone(fp.get_seed("111."))
-        self.assertIsNone(fp.get_seed("0-111."))
-        self.assertIsNone(fp.get_seed(".111.."))
+        self.assertIsNone(fp.get_seed(Path("111.")))
+        self.assertIsNone(fp.get_seed(Path("0-111.")))
+        self.assertIsNone(fp.get_seed(Path(".111..")))
 
         # So does having no splits at all
-        self.assertIsNone(fp.get_seed("100"))
+        self.assertIsNone(fp.get_seed(Path("100")))
 
     # Expect failure on *nix systems because they accept different file names
     # compared to Windows.
@@ -155,7 +154,7 @@ class TestErdFileHandler(unittest.TestCase):
                           lambda: handler.add_active_file("4He-New.101.erd"))
 
         # new file can be added, but only once
-        new_file = "4He-Default.103.erd"
+        new_file = Path("4He-Default.103.erd")
         handler.add_active_file(new_file)
 
         self.assertRaises(ValueError, lambda: handler.add_active_file(new_file))

@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -52,6 +52,7 @@ from typing import Callable
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from typing import Iterable
 
 # Helpers for type hints, maybe move these to another module
 Range = Tuple[Union[float, int], Union[float, int]]
@@ -60,7 +61,7 @@ StrTuple = Tuple[str, str]
 
 # TODO this could still be organized into smaller modules
 
-def stopwatch(log_file=None):
+def stopwatch(log_file: Optional[Path] = None):
     """Decorator that measures the time it takes to execute a function
     and prints the results or writes them to a log file if one is provided
     as an argument.
@@ -78,11 +79,32 @@ def stopwatch(log_file=None):
             if log_file is None:
                 print(msg)
             else:
-                with open(log_file, "a") as file:
+                with log_file.open("a") as file:
                     file.write(msg)
             return res
         return inner
     return outer
+
+
+def profile(func):
+    """Decorator that prints cProfiler information about a decorated function.
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        import cProfile
+        import pstats
+
+        pr = cProfile.Profile()
+        pr.enable()
+
+        res = func(*args, **kwargs)
+
+        pr.disable()
+        ps = pstats.Stats(pr)
+        ps.sort_stats("time")
+        ps.print_stats(10)
+        return res
+    return wrapper
 
 
 def rename_file(old_path: Path, new_name: Union[str, Path]) -> Path:
@@ -421,27 +443,8 @@ def to_superscript(string):
 
 
 def lower_case_first(s: str) -> str:
+    """Returns a string where the first character is lower cased."""
     return s[0].lower() + s[1:] if s else ""
-
-
-def find_y_on_line(point1, point2, x):
-    """
-    Find the y(x) based on a line that goes through point1 and 2.
-
-    Args:
-         point1: Point object.
-         point2: Point object.
-         x: Value whose corresponding y is wanted.
-
-    Return:
-        Y for x.
-    """
-    y_part = point2.get_y() - point1.get_y()
-    x_part = point2.get_x() - point1.get_x()
-    k = y_part / x_part
-
-    y = k * x - (k * point1.get_x()) + point1.get_y()
-    return y
 
 
 def find_nearest(x, lst):
@@ -550,43 +553,44 @@ def round_value_by_four_biggest(value):
     return sol_flnal
 
 
-def count_lines_in_file(file_path, check_file_exists=False):
+def count_lines_in_file(file_path: Path, check_file_exists=False):
     """Returns the number of lines in given file.
 
     Args:
         file_path: absolute path to a file
         check_file_exists: if True, function checks if the file exists before
-                           counting lines. Returns 0 if the file does not exist.
+            counting lines. Returns 0 if the file does not exist.
 
     Return:
         number of lines in a file
     """
-    if check_file_exists and not os.path.isfile(file_path):
-        return 0
-
     # Start counting from -1 so we can return 0 if there are no lines in the
     # file
     counter = -1
 
     # https://stackoverflow.com/questions/845058/how-to-get-line-count-of-a \
     # -large-file-cheaply-in-python
-    with open(file_path) as f:
-        # Set value of counter to the index of each line
-        for counter, _ in enumerate(f):
-            pass
+    try:
+        with file_path.open("r") as f:
+            # Set value of counter to the index of each line
+            for counter, _ in enumerate(f):
+                pass
+    except FileNotFoundError:
+        if not check_file_exists:
+            raise
 
     # Add +1 to get the total number of lines
     return counter + 1
 
 
 @stopwatch()
-def combine_files(file_paths, destination):
+def combine_files(file_paths: Iterable[Path], destination: Path):
     """Combines an iterable of files into a single file.
     """
-    with open(destination, "w") as dest:
+    with destination.open("w") as dest:
         for file in file_paths:
             try:
-                with open(file) as src:
+                with file.open("r") as src:
                     for line in src:
                         dest.write(line)
             except OSError:

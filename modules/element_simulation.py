@@ -383,41 +383,49 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         recoil_elements = deque()
         optimized_recoils_dict = {}
 
-        for file in os.listdir(simulation_folder):
-            if fp.is_recoil_file(prefix, file):
-                # Initialize a recoil element
-                rec_elem = RecoilElement.from_file(
-                    Path(simulation_folder, file), rec_type=rec_type, **kwargs
-                )
+        # TODO change implementation to this
+        files = gf.find_files_by_extension(
+            simulation_folder, ".recoil", ".erd", ".result")
 
-                if rec_elem.name == main_recoil_name:
-                    main_recoil = rec_elem
+        with os.scandir(simulation_folder) as scdir:
+            for entry in scdir:
+                file = Path(entry.path)
+                if fp.is_recoil_file(prefix, file):
+                    # Initialize a recoil element
+                    rec_elem = RecoilElement.from_file(
+                        file, rec_type=rec_type, **kwargs
+                    )
 
-                # Check whether element in regular or part of optimized recoils
-                if fp.is_optfirst(prefix, file):
-                    optimized_recoils_dict[0] = rec_elem
-                elif fp.is_optmed(prefix, file):
-                    optimized_recoils_dict[1] = rec_elem
-                elif fp.is_optlast(prefix, file):
-                    optimized_recoils_dict[2] = rec_elem
-                else:
-                    # Find if file has a matching erd file (=has been simulated)
-                    for f in os.listdir(simulation_folder):
-                        if fp.is_erd_file(rec_elem, f):
-                            recoil_elements.appendleft(rec_elem)
-                            main_recoil = rec_elem
-                            break
+                    if rec_elem.name == main_recoil_name:
+                        main_recoil = rec_elem
+
+                    # Check whether element in regular or part of optimized
+                    # recoils
+                    if fp.is_optfirst(prefix, file):
+                        optimized_recoils_dict[0] = rec_elem
+                    elif fp.is_optmed(prefix, file):
+                        optimized_recoils_dict[1] = rec_elem
+                    elif fp.is_optlast(prefix, file):
+                        optimized_recoils_dict[2] = rec_elem
                     else:
-                        # No matching erd file was found
-                        if rec_elem is main_recoil:
-                            recoil_elements.appendleft(rec_elem)
+                        # Find if file has a matching erd file
+                        # (=has been simulated)
+                        for f in os.listdir(simulation_folder):
+                            if fp.is_erd_file(rec_elem, Path(f)):
+                                recoil_elements.appendleft(rec_elem)
+                                main_recoil = rec_elem
+                                break
                         else:
-                            recoil_elements.append(rec_elem)
+                            # No matching erd file was found
+                            if rec_elem is main_recoil:
+                                recoil_elements.appendleft(rec_elem)
+                            else:
+                                recoil_elements.append(rec_elem)
 
-            # Check if fluence has been optimized
-            elif fp.is_optfl_result(prefix, file):
-                with Path(simulation_folder, file).open("r") as f:
-                    optimized_fluence = float(f.readline())
+                # Check if fluence has been optimized
+                elif fp.is_optfl_result(prefix, file):
+                    with file.open("r") as f:
+                        optimized_fluence = float(f.readline())
         optimized_recoils = [
             val for key, val
             in sorted(optimized_recoils_dict.items())
@@ -992,8 +1000,7 @@ class ERDFileHandler:
             new ERDFileHandler.
         """
         try:
-            full_paths = (Path(directory, file)
-                          for file in os.scandir(directory))
+            full_paths = gf.find_files_by_extension(directory, ".erd")[".erd"]
         except OSError:
             full_paths = []
         return cls(full_paths, recoil_element)
@@ -1024,6 +1031,7 @@ class ERDFileHandler:
         Args:
             erd_file: file name of an .erd file
         """
+        erd_file = Path(erd_file)
         if erd_file in self.__active_files:
             raise ValueError("Given .erd file is an already active file")
         if erd_file in self.__old_files:
