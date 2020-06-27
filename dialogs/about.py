@@ -30,9 +30,8 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
-
 import widgets.gui_utils as gutils
+import modules.general_functions as gf
 
 from math import sin
 
@@ -56,9 +55,10 @@ class AboutDialog(QtWidgets.QDialog):
         self.OKButton.clicked.connect(self.close)
         self.DiscoButton.clicked.connect(self.__disco)
 
-        pixmap = QtGui.QPixmap(os.path.join("images", "potku_logo_icon.svg"))
-        scaled_pixmap = pixmap.scaled(self.picture.size(),
-                                      QtCore.Qt.KeepAspectRatio)
+        image = gf.get_root_dir() / "images" / "potku_logo_icon.svg"
+        pixmap = QtGui.QPixmap(str(image))
+        scaled_pixmap = pixmap.scaled(
+            self.picture.size(), QtCore.Qt.KeepAspectRatio)
         self.picture.setPixmap(scaled_pixmap)
 
         self.x = 0

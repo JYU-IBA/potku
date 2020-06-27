@@ -30,11 +30,12 @@ __version__ = "2.0"
 
 import copy
 import time
-import os
 
 import widgets.binding as bnd
 import widgets.input_validation as iv
 import widgets.gui_utils as gutils
+import modules.general_functions as gf
+
 from widgets.scientific_spinbox import ScientificSpinBox
 
 from typing import Union
@@ -129,8 +130,8 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         uic.loadUi(gutils.get_ui_dir() / "ui_measurement_settings_tab.ui", self)
         self.fluenceDoubleSpinBox = ScientificSpinBox()
         # QPixmap does not accept Path object, so use os.path.join instead
-        pixmap = QtGui.QPixmap(os.path.join(
-            "images", "measurement_setup_angles.png"))
+        image = gf.get_root_dir() / "images" / "measurement_setup_angles.png"
+        pixmap = QtGui.QPixmap(str(image))
         self.picture.setScaledContents(True)
         self.picture.setPixmap(pixmap)
 
