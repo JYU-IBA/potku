@@ -341,8 +341,6 @@ class PropertyTrackingWidget(PropertyBindingWidget, abc.ABC):
     """Widget that stores the original values of its properties, and is
     able to check if the values have changed.
     """
-    # TODO possibly add methods for resetting and clearing original property
-    #  values.
 
     @abc.abstractmethod
     def get_original_property_values(self):
@@ -351,7 +349,6 @@ class PropertyTrackingWidget(PropertyBindingWidget, abc.ABC):
         The purpose of this function is to provide a dictionary for a
         TrackingProperty to store values.
         """
-        # TODO make this an underscore method
         pass
 
     def are_values_changed(self):
@@ -391,11 +388,14 @@ class PropertySavingWidget(PropertyBindingWidget, abc.ABC):
         event.accept()
 
     def save_on_close(self) -> bool:
+        """Whether properties are automatically saved when the widget is
+        closed.
+        """
         return True
 
     def save_properties_to_file(self, file_path: Optional[Path] = None,
                                 values: Optional[Dict[str, Any]] = None,
-                                create_folder=True):
+                                create_folder=True, **kwargs):
         """Saves properties to a file.
 
         Args:
@@ -404,6 +404,7 @@ class PropertySavingWidget(PropertyBindingWidget, abc.ABC):
             values: values to save to file. If None, default values are saved.
             create_folder: whether folder is created before saving. If folder
                 does not exist and this is 'False', file will not be saved
+            kwargs: keyword arguments passed down to json.dump
         """
         if file_path is None:
             file_path = self.get_property_file_path()
@@ -411,36 +412,43 @@ class PropertySavingWidget(PropertyBindingWidget, abc.ABC):
         if values is None:
             values = self.get_properties()
 
-        self._save_json_file(file_path, values, create_folder)
+        self._save_json_file(file_path, values, create_folder, **kwargs)
 
     @staticmethod
-    def _save_json_file(file_path: Path, values, create_folder, intend=4,
+    def _save_json_file(file_path: Path, values: Dict, create_folder: bool,
+                        error_func: Optional[Callable] = None, intend=4,
                         **kwargs):
         try:
             if create_folder:
                 file_path.parent.mkdir(exist_ok=True, parents=True)
             with file_path.open("w") as file:
                 json.dump(values, file, indent=intend, **kwargs)
-        except OSError:
-            pass
+        except OSError as e:
+            if error_func is not None:
+                error_func(e)
 
-    def load_properties_from_file(self, file_path: Optional[Path] = None):
+    def load_properties_from_file(self, file_path: Optional[Path] = None,
+                                  **kwargs):
         """Loads properties from a file.
 
         Args:
             file_path: Path object to a file that is used for loading. If None,
                 widget's default property file location is used.
+            kwargs: keyword arguments passed down to json.load
         """
         if file_path is None:
             file_path = self.get_property_file_path()
-        self.set_properties(**self._load_json_file(file_path))
+        self.set_properties(**self._load_json_file(file_path, **kwargs))
 
     @staticmethod
-    def _load_json_file(file_path: Path, **kwargs) -> Dict:
+    def _load_json_file(file_path: Path, error_func: Optional[Callable] = None,
+                        **kwargs) -> Dict:
         try:
             with file_path.open("r") as file:
                 return json.load(file, **kwargs)
-        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError) as e:
+            if error_func is not None:
+                error_func(e)
             return {}
 
 

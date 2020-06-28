@@ -8,7 +8,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -140,6 +140,17 @@ class SimulationSettingsWidget(QtWidgets.QWidget, PropertyTrackingWidget,
         self._save_json_file(file_path, self.get_properties(), True)
         if self.preset_widget is not None:
             self.preset_widget.load_files(selected=file_path)
+
+    def load_properties_from_file(self, file_path: Path):
+        # TODO create a base class for settings widgets to get rid of this
+        #   copy-paste code
+
+        def err_func(err: Exception):
+            if self.preset_widget is not None:
+                self.preset_widget.set_status_msg(
+                    f"Failed to load preset:{err}")
+        bnd.PropertySavingWidget.load_properties_from_file(
+            self, file_path, error_func=err_func)
 
     def get_original_property_values(self):
         """Returns a dictionary of original property values.
