@@ -123,8 +123,13 @@ class ProfileSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
     def save_on_close(self) -> bool:
         return False
 
-    def save_properties_to_file(self, file_path):
-        self._save_json_file(file_path, self.get_properties(), True)
+    def save_properties_to_file(self, file_path: Path):
+        def err_func(err: Exception):
+            if self.preset_widget is not None:
+                self.preset_widget.set_status_msg(
+                    f"Failed to save preset: {err}")
+        self._save_json_file(
+            file_path, self.get_properties(), True, error_func=err_func())
         if self.preset_widget is not None:
             self.preset_widget.load_files(selected=file_path)
 
@@ -135,7 +140,7 @@ class ProfileSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         def err_func(err: Exception):
             if self.preset_widget is not None:
                 self.preset_widget.set_status_msg(
-                    f"Failed to load preset:{err}")
+                    f"Failed to load preset: {err}")
         bnd.PropertySavingWidget.load_properties_from_file(
             self, file_path, error_func=err_func)
 

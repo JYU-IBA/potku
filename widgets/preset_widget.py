@@ -188,12 +188,12 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
                     cur_preset = self.preset
                     new_file = Path(
                         self._folder, f"{cur_txt}{PresetWidget.PRESET_SUFFIX}")
-                    if not new_file.exists() and new_file != cur_preset and \
-                            self.is_valid_preset(self._folder, new_file):
+                    if new_file != cur_preset and self.is_valid_preset(
+                            self._folder, new_file):
                         cur_preset.rename(new_file)
                         self.load_files(selected=new_file)
-                except OSError:
-                    pass
+                except OSError as e:
+                    self.set_status_msg(f"Failed to rename preset: {e}")
         return super().eventFilter(source, event)
 
     def _remove_file(self):
@@ -209,8 +209,8 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
         if reply == QMessageBox.Yes:
             try:
                 file.unlink()
-            except OSError:
-                pass
+            except OSError as e:
+                self.set_status_msg(f"Failed to remove preset: {e}")
             self.load_files()
             self._activate_actions(self.preset)
 

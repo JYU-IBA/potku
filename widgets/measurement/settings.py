@@ -221,9 +221,15 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         return False
 
     def save_properties_to_file(self, file_path: Path):
+        def err_func(err: Exception):
+            if self.preset_widget is not None:
+                self.preset_widget.set_status_msg(
+                    f"Failed to save preset: {err}")
+
         values = self.get_properties()
         values["beam_ion"] = str(values["beam_ion"])
-        self._save_json_file(file_path, values, True)
+        self._save_json_file(
+            file_path, values, True, error_func=err_func)
         if self.preset_widget is not None:
             self.preset_widget.load_files(selected=file_path)
 
