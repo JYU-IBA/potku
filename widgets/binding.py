@@ -385,27 +385,42 @@ class PropertySavingWidget(PropertyBindingWidget, abc.ABC):
         """Overrides QWidgets closeEvent. Saves the properties to default
         file.
         """
-        self.save_properties_to_file(file_path=self.get_property_file_path())
+        if self.save_on_close():
+            self.save_properties_to_file(
+                file_path=self.get_property_file_path())
         event.accept()
 
+    def save_on_close(self) -> bool:
+        return True
+
     def save_properties_to_file(self, file_path: Optional[Path] = None,
-                                values: Optional[Dict[str, Any]] = None):
+                                values: Optional[Dict[str, Any]] = None,
+                                create_folder=True):
         """Saves properties to a file.
 
         Args:
             file_path: Path object to a file that is used for saving. If None,
                 widget's default property file location is used.
             values: values to save to file. If None, default values are saved.
+            create_folder: whether folder is created before saving. If folder
+                does not exist and this is 'False', file will not be saved
         """
         if file_path is None:
             file_path = self.get_property_file_path()
 
         if values is None:
             values = self.get_properties()
+
+        self._save_json_file(file_path, values, create_folder)
+
+    @staticmethod
+    def _save_json_file(file_path: Path, values, create_folder, intend=4,
+                        **kwargs):
         try:
-            file_path.parent.mkdir(exist_ok=True, parents=True)
+            if create_folder:
+                file_path.parent.mkdir(exist_ok=True, parents=True)
             with file_path.open("w") as file:
-                json.dump(values, file, indent=4)
+                json.dump(values, file, indent=intend, **kwargs)
         except OSError:
             pass
 
@@ -418,12 +433,15 @@ class PropertySavingWidget(PropertyBindingWidget, abc.ABC):
         """
         if file_path is None:
             file_path = self.get_property_file_path()
+        self.set_properties(**self._load_json_file(file_path))
+
+    @staticmethod
+    def _load_json_file(file_path: Path, **kwargs) -> Dict:
         try:
             with file_path.open("r") as file:
-                params = json.load(file)
-                self.set_properties(**params)
-        except (OSError, json.JSONDecodeError, UnicodeDecodeError,):
-            pass
+                return json.load(file, **kwargs)
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            return {}
 
 
 class TrackingProperty(property):

@@ -43,6 +43,9 @@ from widgets.gui_utils import StatusBarHandler
 from dialogs.measurement.import_timing_graph import ImportTimingGraphDialog
 from dialogs.file_dialogs import open_files_dialog
 
+from modules.request import Request
+from widgets.icon_manager import IconManager
+
 from PyQt5 import uic
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -54,7 +57,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
     """Measurement importing class. Used to import measurement data
     from detecting unit into potku.
     """
-    def __init__(self, request, icon_manager, statusbar, parent):
+    def __init__(self, request: Request, icon_manager: IconManager,
+                 statusbar: QtWidgets.QStatusBar, parent: "Potku"):
         """Init measurement import dialog.
         
         Args:
@@ -101,10 +105,12 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
     def __add_file(self):
         """Add a file to list of files to be imported.
         """
-        files = open_files_dialog(self,
-                                  self.request.directory,
-                                  "Select an event collection to be imported",
-                                  "Event collection (*.evnt)")
+        files = open_files_dialog(
+            self, self.request.directory,
+            "Select an event collection to be imported",
+            "Event collection (*.evnt)")
+        if not files:
+            return
         df.add_imported_files_to_tree(self, files)
         self.__load_files()
         self.__check_if_import_allowed()
@@ -181,10 +187,9 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
             item_name = iv.validate_text_input(item_name, regex)
 
-            measurement = self.parent.add_new_tab("measurement", "",
-                                                  sample,
-                                                  object_name=item_name,
-                                                  import_evnt_or_binary=True)
+            measurement = self.parent.add_new_tab(
+                "measurement", "", sample, object_name=item_name,
+                import_evnt_or_binary=True)
             output_file = os.path.join(measurement.directory_data, item_name
                                        + ".asc")
             n = 2
@@ -289,7 +294,6 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                                           reverse=True))
         adc_keys = sorted(self.adc_occurance.keys())
 
-        # FIXME crashes here if no file to import was chosen
         self.spin_skiplines.setValue(skip_length)
         self.spin_adctrigger.setMinimum(int(adc_keys[0]))
         self.spin_adctrigger.setMaximum(int(adc_keys[-1]))

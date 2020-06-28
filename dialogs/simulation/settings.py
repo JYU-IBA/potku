@@ -81,9 +81,11 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.applyButton.clicked.connect(self.__update_parameters)
         self.cancelButton.clicked.connect(self.close)
 
+        preset_folder = gutils.get_preset_dir(
+            self.simulation.request.global_settings)
         # Add measurement settings view to the settings view
         self.measurement_settings_widget = MeasurementSettingsWidget(
-            self.simulation)
+            self.simulation, preset_folder=preset_folder)
         self.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
         self.measurement_settings_widget.beam_selection_ok.connect(
@@ -107,13 +109,14 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
         self.use_request_settings = self.simulation.use_request_settings
 
-        self.measurement_settings_widget.nameLineEdit.setText(
-            self.simulation.measurement_setting_file_name)
-        self.measurement_settings_widget.descriptionPlainTextEdit \
-            .setPlainText(
-                self.simulation.measurement_setting_file_description)
-        self.measurement_settings_widget.dateLabel.setText(time.strftime(
-            "%c %z %Z", time.localtime(self.simulation.modification_time)))
+        # TODO
+        # self.measurement_settings_widget.nameLineEdit.setText(
+        #     self.simulation.measurement_setting_file_name)
+        # self.measurement_settings_widget.descriptionPlainTextEdit \
+        #     .setPlainText(
+        #         self.simulation.measurement_setting_file_description)
+        # self.measurement_settings_widget.dateLabel.setText(time.strftime(
+        #     "%c %z %Z", time.localtime(self.simulation.modification_time)))
 
         self.tabs.currentChanged.connect(lambda: df.check_for_red(self))
 

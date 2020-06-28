@@ -40,6 +40,7 @@ from modules.observing import ProgressReporter
 from modules.observing import Observer
 from modules.element import Element
 from modules.measurement import Measurement
+from modules.global_settings import GlobalSettings
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -118,6 +119,14 @@ def get_icon_dir() -> Path:
     """Returns absolute path to directory that contains Potku's icons.
     """
     return gf.get_root_dir() / "ui_icons"
+
+
+def get_preset_dir(settings: Optional[GlobalSettings]) -> Optional[Path]:
+    """Returns the absolute path to directory that contains presets.
+    """
+    if settings is None:
+        return None
+    return settings.get_config_dir() / "presets"
 
 
 if platform.system() == "Darwin":
@@ -453,10 +462,16 @@ def block_treewidget_signals(func):
 
 
 def fill_combobox(combobox: QtWidgets.QComboBox, values: Iterable[Any],
-                  text_func: Callable = str):
+                  text_func: Callable = str, block_signals=False):
     """Fills the combobox with given values. Stores the values as user data
     and displays the string representations as item labels. Previous items
     are removed from the combobox.
+
+    Args:
+        combobox: combobox to fill
+        values: collection of values to be added to the combobox
+        text_func: function that detenmines how values are presented in
+            text form
     """
     combobox.clear()
     for value in values:
