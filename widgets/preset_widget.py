@@ -80,9 +80,7 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
         self.load_btn: QPushButton
         self.preset_combobox: QComboBox
 
-        self.save_btn.clicked.connect(
-            lambda: self.save_file.emit(self.get_next_available_file())
-        )
+        self.save_btn.clicked.connect(self._emit_save_file)
 
         self._load_btn_enabled = enable_load_btn
         self.load_btn.setVisible(self._load_btn_enabled)
@@ -136,6 +134,16 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
         """
         if preset is not None:
             self.load_file.emit(preset)
+
+    def _emit_save_file(self):
+        """Emits save_file signal if new file name can be generated.
+        """
+        next_file = self.get_next_available_file(
+            starting_index=self.preset_combobox.count() - 1)
+        if next_file is None:
+            self.set_status_msg("Could not generate a name for preset.")
+        else:
+            self.save_file.emit(next_file)
 
     def load_files(self, max_count=MAX_COUNT, selected: Optional[Path] = None):
         """Loads preset files to combobox.
@@ -229,12 +237,13 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
             widget.load_file.connect(load_callback)
         return widget
 
-    def get_next_available_file(self, max_iterations=100) -> Optional[Path]:
+    def get_next_available_file(self, starting_index=0, max_iterations=100) \
+            -> Optional[Path]:
         """Returns the next available file name or None, if no available
         file name was found within maximum number of iterations.
         """
         # TODO this could be generalized and moved to general_functions module
-        for i in range(max_iterations):
+        for i in range(starting_index, max_iterations):
             fname = f"{self._prefix}-{i + 1:03}{PresetWidget.PRESET_SUFFIX}"
             fpath = self._folder / fname
             if not fpath.exists():
