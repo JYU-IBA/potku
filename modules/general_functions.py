@@ -580,7 +580,6 @@ def count_lines_in_file(file_path: Path, check_file_exists=False):
     return counter + 1
 
 
-@stopwatch()
 def combine_files(file_paths: Iterable[Path], destination: Path):
     """Combines an iterable of files into a single file.
     """
@@ -592,6 +591,25 @@ def combine_files(file_paths: Iterable[Path], destination: Path):
                         dest.write(line)
             except OSError:
                 pass
+
+
+def rename_entity(entity: Union["Measurement", "Simulation"], new_name):
+    # TODO this method should be in a common base class for Measurement
+    #   and Simulation objects
+    try:
+        new_folder = entity.DIRECTORY_PREFIX + "%02d" % \
+            entity.serial_number + "-" + new_name
+
+        # Close and remove logs
+        entity.remove_and_close_log(entity.defaultlog)
+        entity.remove_and_close_log(entity.errorlog)
+
+        new_dir = rename_file(entity.directory, new_folder)
+        entity.update_directory_references(new_dir)
+    except OSError as e:
+        e.args = f"A file or folder already exists on name {new_name}",
+        raise
+
 
 
 def _get_external_dir() -> Path:

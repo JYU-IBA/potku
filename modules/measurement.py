@@ -442,8 +442,8 @@ class Measurement(Logger, AdjustableSettings, Serializable):
 
     @classmethod
     def from_file(cls, info_file: Path, measurement_file: Path,
-                  profile_file: Path, request, detector=None, run=None,
-                  target=None, sample=None):
+                  profile_file: Path, request: "Request", detector=None,
+                  run=None, target=None, sample=None) -> "Measurement":
         """Read Measurement information from file.
 
         Args:
@@ -591,6 +591,8 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         return self.directory / "tof_in"
 
     def _get_info_file(self) -> Path:
+        """Returns the path to this Measurment's .info file.
+        """
         return self.directory / f"{self.name}.info"
 
     def to_file(self, measurement_file: Optional[Path] = None,
@@ -804,6 +806,23 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         except Exception as e:
             error_log = "Unexpected error: {0}".format(e)
             logging.getLogger('request').error(error_log)
+
+    def rename(self, new_name: str):
+        """Renames Measurement with given name and updates folders and cut
+        files.
+        """
+        # TODO should this also rename spectra files?
+        gf.rename_entity(self, new_name)
+        try:
+            self.rename_info_file(new_name)
+        except OSError as e:
+            e.args = f"Failed to rename info file: {e}",
+            raise
+        try:
+            self.rename_cut_files()
+        except OSError as e:
+            e.args = f"Failed to rename .cut files: {e}",
+            raise
 
     def rename_info_file(self, new_name):
         """Renames the measurement data file.

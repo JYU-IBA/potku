@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -27,7 +27,7 @@ along with this program (file named 'LICENCE').
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli " \
              "Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n Samuel " \
-             "Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+             "Kaiponen \n Heta Rekilä \n Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import gc
@@ -38,7 +38,6 @@ import subprocess
 import sys
 import functools
 
-import modules.general_functions as gf
 import dialogs.dialog_functions as df
 import widgets.input_validation as iv
 import widgets.gui_utils as gutils
@@ -46,6 +45,7 @@ import widgets.gui_utils as gutils
 from datetime import datetime
 from datetime import timedelta
 from pathlib import Path
+from typing import Union
 
 from dialogs.about import AboutDialog
 from dialogs.global_settings import GlobalSettingsDialog
@@ -237,113 +237,72 @@ class Potku(QtWidgets.QMainWindow):
         """
         clicked_item = self.treeWidget.currentItem()
 
-        if clicked_item:
-            regex = "^[A-Za-z0-9-ÖöÄäÅå]+"
-            valid_text = iv.validate_text_input(clicked_item.text(0), regex)
+        if not clicked_item:
+            return
+        # TODO do all name validation in the backend modules
+        regex = "^[A-Za-z0-9-ÖöÄäÅå]+"
+        valid_text = iv.validate_text_input(clicked_item.text(0), regex)
 
-            if valid_text != clicked_item.text(0):
-                QtWidgets.QMessageBox.information(
-                    self, "Notice",
-                    "You can't use special characters other than '-' in the "
-                    "name.",
-                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-                clicked_item.setText(0, clicked_item.obj.name)
-                return
-
-            if valid_text == "":
-                clicked_item.setText(0, clicked_item.obj.name)
-                return
-
-            if valid_text == clicked_item.obj.name:
-                clicked_item.setText(0, clicked_item.obj.name)
-                return
-
-            new_name = valid_text
-            try:
-                # TODO function that returns full name of Simu/Mesu
-                new_path = clicked_item.obj.DIRECTORY_PREFIX + "%02d" % \
-                    clicked_item.obj.serial_number + "-" + new_name
-
-                # Close and remove logs
-                clicked_item.obj.remove_and_close_log(
-                    clicked_item.obj.defaultlog)
-                clicked_item.obj.remove_and_close_log(clicked_item.obj.errorlog)
-
-                new_dir = gf.rename_file(clicked_item.obj.directory, new_path)
-            except OSError:
-                QtWidgets.QMessageBox.critical(
-                    self, "Error",
-                    f"A file or folder already exists on name {new_name}",
-                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-                clicked_item.setText(0, clicked_item.obj.name)
-                return
-            # FIXME after renaming a Measurement, old .info file remains
-            #   as the name is already changed here
-            # TODO do all the necessary updates in a obj.rename function
-            clicked_item.obj.name = new_name
+        if valid_text != clicked_item.text(0):
+            QtWidgets.QMessageBox.information(
+                self, "Notice",
+                "You can't use special characters other than '-' in the name.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             clicked_item.setText(0, clicked_item.obj.name)
+            return
 
-            clicked_item.obj.update_directory_references(new_dir)
+        if valid_text == "":
+            clicked_item.setText(0, clicked_item.obj.name)
+            return
 
-            if type(clicked_item.obj) is Measurement:
-                clicked_item.obj: Measurement
-                try:
-                    clicked_item.obj.rename_info_file(new_name)
-                except OSError as e:
-                    QtWidgets.QMessageBox.critical(
-                        self, "Error", f"Failed to rename info file: {e}.",
-                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+        if valid_text == clicked_item.obj.name:
+            clicked_item.setText(0, clicked_item.obj.name)
+            return
 
-                # Rename all cut files
-                try:
-                    clicked_item.obj.rename_cut_files()
-                except OSError as e:
-                    QtWidgets.QMessageBox.critical(
-                        self, "Error", f"Failed to rename cut files: {e}.",
-                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+        new_name = valid_text
+        try:
+            clicked_item.obj: Union[Measurement, Simulation]
+            clicked_item.obj.rename(new_name)
+        except OSError as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Error", str(e),
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
-                # Update Energy spectrum, Composition changes and Depth profile
-                # save files.
-                for i in range(self.tabs.count()):
-                    tab_widget = self.tabs.widget(i)
-                    if tab_widget.obj is clicked_item.obj:
-                        if tab_widget.energy_spectrum_widget:
-                            tab_widget.energy_spectrum_widget.update_use_cuts()
-                            tab_widget.energy_spectrum_widget.save_to_file()
+        if type(clicked_item.obj) is Measurement:
+            # Update Energy spectrum, Composition changes and Depth profile
+            # save files.
+            for i in range(self.tabs.count()):
+                tab_widget = self.tabs.widget(i)
+                if tab_widget.obj is clicked_item.obj:
+                    if tab_widget.energy_spectrum_widget:
+                        tab_widget.energy_spectrum_widget.update_use_cuts()
+                        tab_widget.energy_spectrum_widget.save_to_file()
 
-                        if tab_widget.elemental_losses_widget:
-                            tab_widget.elemental_losses_widget.update_cuts()
-                            tab_widget.elemental_losses_widget.save_to_file()
+                    if tab_widget.elemental_losses_widget:
+                        tab_widget.elemental_losses_widget.update_cuts()
+                        tab_widget.elemental_losses_widget.save_to_file()
 
-                        if tab_widget.depth_profile_widget:
-                            tab_widget.depth_profile_widget.update_use_cuts()
-                            tab_widget.depth_profile_widget.save_to_file()
+                    if tab_widget.depth_profile_widget:
+                        tab_widget.depth_profile_widget.update_use_cuts()
+                        tab_widget.depth_profile_widget.save_to_file()
 
-                        self.remove_tab(i)
-                        self.tabs.insertTab(i, tab_widget,
-                                            clicked_item.obj.name)
-                        self.tabs.setCurrentWidget(tab_widget)
-                        break
+                    self.remove_tab(i)
+                    self.tabs.insertTab(i, tab_widget,
+                                        clicked_item.obj.name)
+                    self.tabs.setCurrentWidget(tab_widget)
+                    break
 
-            elif type(clicked_item.obj) is Simulation:
-                try:
-                    clicked_item.obj.rename_simulation_file()
-                    clicked_item.obj.to_file(
-                        Path(new_dir, f"{clicked_item.obj.name}.simulation"))
-                except OSError as e:
-                    QtWidgets.QMessageBox.critical(
-                        self, "Error", f"Failed to rename info file: {e}.",
-                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-
-                # Update Tab name
-                for i in range(self.tabs.count()):
-                    tab_widget = self.tabs.widget(i)
-                    if tab_widget.obj is clicked_item.obj:
-                        self.remove_tab(i)
-                        self.tabs.insertTab(i, tab_widget,
-                                            clicked_item.obj.name)
-                        self.tabs.setCurrentWidget(tab_widget)
-                        break
+        elif type(clicked_item.obj) is Simulation:
+            # Update Tab name
+            for i in range(self.tabs.count()):
+                tab_widget = self.tabs.widget(i)
+                if tab_widget.obj is clicked_item.obj:
+                    self.remove_tab(i)
+                    self.tabs.insertTab(i, tab_widget,
+                                        clicked_item.obj.name)
+                    self.tabs.setCurrentWidget(tab_widget)
+                    break
+        clicked_item.setText(0, clicked_item.obj.name)
 
     @gutils.block_treewidget_signals
     def __remove_tree_item(self):
