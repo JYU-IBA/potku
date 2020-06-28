@@ -89,7 +89,7 @@ class GlobalSettings:
         if config_dir is None:
             self.__config_directory = Path.home() / "potku"
         else:
-            self.__config_directory = Path(config_dir)
+            self.__config_directory = Path(config_dir).resolve()
 
         self.__config = configparser.ConfigParser()
 
@@ -121,12 +121,17 @@ class GlobalSettings:
     def set_config_dir(self, directory: Path):
         """Sets the directory of the config file.
         """
-        self.__config_directory = Path(directory)
+        self.__config_directory = Path(directory).resolve()
+
+    def get_config_dir(self) -> Path:
+        """Returns the path to config directory.
+        """
+        return self.__config_directory
 
     def get_config_file(self) -> Path:
         """Returns the path to the config file.
         """
-        return self.__config_directory / self._CONFIG_FILE
+        return self.get_config_dir() / self._CONFIG_FILE
 
     def __load_config(self):
         """Load old settings and set values.

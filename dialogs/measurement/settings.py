@@ -78,9 +78,11 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         self.applyButton.clicked.connect(self.__update_parameters)
         self.cancelButton.clicked.connect(self.close)
 
+        preset_folder = gutils.get_preset_dir(
+            self.measurement.request.global_settings)
         # Add measurement settings view to the settings view
         self.measurement_settings_widget = MeasurementSettingsWidget(
-            self.measurement)
+            self.measurement, preset_folder=preset_folder)
         self.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
         self.measurement_settings_widget.beam_selection_ok.connect(
@@ -96,6 +98,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
 
         self.defaultSettingsCheckBox.setChecked(
             self.measurement.use_default_profile_settings)
+        # TODO
         self.measurement_settings_widget.nameLineEdit.setText(
             self.measurement.measurement_setting_file_name)
         self.measurement_settings_widget.descriptionPlainTextEdit.setPlainText(
@@ -104,7 +107,8 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             "%c %z %Z", time.localtime(self.measurement.modification_time)))
 
         # Add profile settings view to the settings view
-        self.profile_settings_widget = ProfileSettingsWidget(self.measurement)
+        self.profile_settings_widget = ProfileSettingsWidget(
+            self.measurement, preset_folder=preset_folder)
         self.tabs.addTab(self.profile_settings_widget, "Profile")
 
         self.tabs.currentChanged.connect(lambda: df.check_for_red(self))

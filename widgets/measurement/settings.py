@@ -30,6 +30,7 @@ __version__ = "2.0"
 
 import copy
 import time
+import json
 
 import widgets.binding as bnd
 import widgets.input_validation as iv
@@ -38,12 +39,14 @@ import modules.general_functions as gf
 
 from widgets.scientific_spinbox import ScientificSpinBox
 
+from pathlib import Path
 from typing import Union
 from modules.enums import Profile
 from modules.element import Element
 from modules.simulation import Simulation
 from modules.measurement import Measurement
 from widgets.gui_utils import QtABCMeta
+from widgets.preset_widget import PresetWidget
 from dialogs.element_selection import ElementSelectionDialog
 
 from PyQt5 import QtWidgets
@@ -86,11 +89,10 @@ def element_to_gui(instance, attrs, value: Element):
 
 class MeasurementSettingsWidget(QtWidgets.QWidget,
                                 bnd.PropertyTrackingWidget,
+                                bnd.PropertySavingWidget,
                                 metaclass=QtABCMeta):
     """Class for creating a measurement settings tab.
     """
-    # TODO fix floating point precision when checking changes in values
-
     # Signal that indicates whether the beam selection was ok or not (i.e. can
     # the selected element be used in measurements or simulations)
     beam_selection_ok = pyqtSignal(bool)
@@ -119,7 +121,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
     target_theta = bnd.bind("targetThetaDoubleSpinBox", track_change=True)
     detector_theta = bnd.bind("detectorThetaDoubleSpinBox", track_change=True)
 
-    def __init__(self, obj: Union[Measurement, Simulation]):
+    def __init__(self, obj: Union[Measurement, Simulation], preset_folder=None):
         """Initializes the widget.
 
         Args:
@@ -129,7 +131,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_measurement_settings_tab.ui", self)
         self.fluenceDoubleSpinBox = ScientificSpinBox()
-        # QPixmap does not accept Path object, so use os.path.join instead
         image = gf.get_root_dir() / "images" / "measurement_setup_angles.png"
         pixmap = QtGui.QPixmap(str(image))
         self.picture.setScaledContents(True)
@@ -201,7 +202,38 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
 
         self.energyDoubleSpinBox.setToolTip("Energy set in MeV with.")
 
+        if preset_folder is not None:
+            self.preset_widget = PresetWidget.add_preset_widget(
+                preset_folder / "measurement", "mea",
+                lambda w: self.layout().insertWidget(0, w),
+                save_callback=self.save_properties_to_file,
+                load_callback=self.load_properties_from_file
+            )
+        else:
+            self.preset_widget = None
+
         self.show_settings()
+
+    def get_property_file_path(self) -> Path:
+        raise NotImplementedError
+
+    def save_on_close(self) -> bool:
+        return False
+
+    def save_properties_to_file(self, file_path: Path):
+        values = self.get_properties()
+        values["beam_ion"] = str(values["beam_ion"])
+        self._save_json_file(file_path, values, True)
+        if self.preset_widget is not None:
+            self.preset_widget.load_files(selected=file_path)
+
+    def load_properties_from_file(self, file_path: Path):
+        try:
+            values = self._load_json_file(file_path)
+            values["beam_ion"] = Element.from_string(values["beam_ion"])
+            self.set_properties(**values)
+        except (ValueError, KeyError):
+            pass
 
     def get_original_property_values(self):
         """Returns the values of the properties when they were first set.

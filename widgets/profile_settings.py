@@ -29,7 +29,12 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 import widgets.input_validation as iv
 import widgets.binding as bnd
 import widgets.gui_utils as gutils
+
+from pathlib import Path
+
 from modules.measurement import Measurement
+
+from widgets.preset_widget import PresetWidget
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -37,6 +42,7 @@ from PyQt5.QtCore import QLocale
 
 
 class ProfileSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
+                            bnd.PropertySavingWidget,
                             metaclass=gutils.QtABCMeta):
     """Class for creating a profile settings tab.
     """
@@ -67,7 +73,7 @@ class ProfileSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
     normalization = bnd.bind(
         "normalizationComboBox", track_change=True)
 
-    def __init__(self, measurement: Measurement):
+    def __init__(self, measurement: Measurement, preset_folder=None):
         """
         Initializes the widget.
 
@@ -100,6 +106,27 @@ class ProfileSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             self.depthForConcentrationToDoubleSpinBox,
             min_diff=0.01
         )
+
+        if preset_folder is not None:
+            self.preset_widget = PresetWidget.add_preset_widget(
+                preset_folder / "profile", "pro",
+                lambda w: self.layout().insertWidget(0, w),
+                save_callback=self.save_properties_to_file,
+                load_callback=self.load_properties_from_file
+            )
+        else:
+            self.preset_widget = None
+
+    def get_property_file_path(self) -> Path:
+        raise NotImplementedError
+
+    def save_on_close(self) -> bool:
+        return False
+
+    def save_properties_to_file(self, file_path):
+        self._save_json_file(file_path, self.get_properties(), True)
+        if self.preset_widget is not None:
+            self.preset_widget.load_files(selected=file_path)
 
     def get_original_property_values(self):
         """Returns the original values of this Widget's properties.

@@ -65,8 +65,10 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
         self.element_simulation = element_simulation
         self.tab = tab
 
+        preset_folder = gutils.get_preset_dir(
+            self.element_simulation.simulation.request.global_settings)
         self.sim_widget = SimulationSettingsWidget(
-            self.element_simulation)
+            self.element_simulation, preset_folder=preset_folder)
         self.tabs.addTab(self.sim_widget, "Element Settings")
         self.tabs.setEnabled(True)
         self.tabs.setTabBarAutoHide(True)
