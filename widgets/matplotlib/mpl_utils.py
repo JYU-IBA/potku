@@ -105,8 +105,13 @@ def draw_and_flush(func):
     @functools.wraps(func)
     def wrapper(canvas_wrapper: GraphWrapper, *args, **kwargs):
         res = func(canvas_wrapper, *args, **kwargs)
-        canvas_wrapper.canvas.draw()
-        canvas_wrapper.canvas.flush_events()
+        # TODO using getattr here as this function could be used by classes
+        #   other than GraphWrapper. If in the future all plotting is done
+        #   via GraphWrapper class, this should just be a regular attribute
+        #   check
+        if getattr(canvas_wrapper, "do_flush", False):
+            canvas_wrapper.canvas.draw()
+            canvas_wrapper.canvas.flush_events()
         return res
     return wrapper
 
@@ -114,9 +119,17 @@ def draw_and_flush(func):
 class GraphWrapper(abc.ABC):
     """Class that wraps Matplotlib canvas and axes and draws plots on them.
     """
-    def __init__(self, canvas, axes):
+    def __init__(self, canvas, axes, flush=True):
+        """Initializes a new GraphWrapper.
+        Args:
+            canvas: mpl canvas
+            axes: mpl axes
+            flush: whether canvas.draw and canvas.flush_events are called
+                after every function that update graph
+        """
         self.canvas = canvas
         self.axes = axes
+        self.do_flush = flush
 
     @abc.abstractmethod
     def update_graph(self, *args, **kwargs):
@@ -126,12 +139,12 @@ class GraphWrapper(abc.ABC):
 class VerticalLimits(GraphWrapper):
     """Draws two vertical limit lines on the given axes.
     """
-    _LINE_STYLE = "--"
+    DEFAULT_LINESTYLE = "--"
     _DEFAULT_X = 0.0
     _DEFAULT_COLOR = "blue"
 
     def __init__(self, canvas, axes, xs: Optional[Range] = None, colors:
-                 Optional[StrTuple] = None):
+                 Optional[StrTuple] = None, **kwargs):
         """Initializes a new VerticalLimits object
         
         Args:
@@ -145,7 +158,7 @@ class VerticalLimits(GraphWrapper):
             colors: tuple of strings that define the colors of each limit line.
                 Values are unpacked in the same way as x coordinates.
         """
-        GraphWrapper.__init__(self, canvas, axes)
+        GraphWrapper.__init__(self, canvas, axes, **kwargs)
         self._visible = True
         self._limit_lines = self._init_draw(xs, colors)
 
@@ -157,9 +170,9 @@ class VerticalLimits(GraphWrapper):
 
         return (
             self.axes.axvline(
-                x=x0, linestyle=self._LINE_STYLE, color=x0_col),
+                x=x0, linestyle=self.DEFAULT_LINESTYLE, color=x0_col),
             self.axes.axvline(
-                x=x1, linestyle=self._LINE_STYLE, color=x1_col)
+                x=x1, linestyle=self.DEFAULT_LINESTYLE, color=x1_col)
         )
 
     @staticmethod
@@ -192,9 +205,19 @@ class VerticalLimits(GraphWrapper):
         """Sets the visibility of the limit lines.
         """
         self._visible = b
-        linestyle = self._LINE_STYLE if b else "None"
+        linestyle = self.DEFAULT_LINESTYLE if b else "None"
         for line in self._limit_lines:
             line.set_linestyle(linestyle)
+
+    @draw_and_flush
+    def set_alpha(self, alpha: float):
+        for line in self._limit_lines:
+            line.set_alpha(alpha)
+
+    @draw_and_flush
+    def remove(self):
+        for line in self._limit_lines:
+            line.remove()
 
     def is_visible(self):
         """Returns whether the limit lines are currently visible.

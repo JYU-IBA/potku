@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -27,7 +27,8 @@ along with this program (file named 'LICENCE').
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
-             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n " \
+             "Juhani Sundell"
 __version__ = "2.0"
 
 import copy
@@ -187,9 +188,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         all_areas = []
         for line_points in self.lines_of_area:
             points = list(line_points.values())[0]
-            all_areas.append(list(mf.get_continuous_range(points,
-                                                          a=start,
-                                                          b=end)))
+            all_areas.append(list(mf.get_continuous_range(
+                points, a=start, b=end)))
 
         area = mf.calculate_area(all_areas[0], all_areas[1])
 
@@ -302,12 +302,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             if line.get_linestyle() != "None"
         }
         if len(drawn_lines) != 2:
-            QtWidgets.QMessageBox.critical(self.parent.parent, "Warning",
-                                           "Limits can only be set when two "
-                                           "elements are drawn.\n\nPlease add"
-                                           " or remove elements accordingly.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.critical(
+                self.parent.parent, "Warning",
+                "Limits can only be set when two elements are drawn.\n\n"
+                "Please add or remove elements accordingly.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             return
 
         low_x = round(xmin, 3)
@@ -389,7 +388,10 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
     def __sortt(key):
         cut_file = key.split('.')
         # TODO sort by RBS selection
-        # TODO provide elements as parameters, do not initialize them here
+        # TODO provide elements as parameters, do not initialize them here.
+        #   Better yet, use CutFile objects here.
+        # TODO is measurement removed from the cut file at this point? If
+        #   not, this sorts by measurement instead of element
         return Element.from_string(cut_file[0].strip())
 
     def __find_used_recoils(self):
@@ -695,7 +697,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.canvas.draw()
         self.canvas.flush_events()
 
-    @gf.stopwatch()
     def update_spectra(self, rec_elem: RecoilElement,
                        elem_sim: ElementSimulation):
         """Updates spectra line that belongs to given recoil element.
@@ -705,11 +706,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             elem_sim: ElementSimulation object that is used to calculate
                 the spectrum
         """
-        # TODO this just assumes that the recoil is a simulated one,
-        #      not optimized. This should perhaps be changed.
-        # TODO add a checkbox that toggles automatic updates on and off
-        # TODO might want to prevent two widgets running this simultaneously
-        #      as they are writing/reading the same files
         # TODO change plot range if necessary
 
         if rec_elem is None or elem_sim is None:

@@ -8,7 +8,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -153,7 +153,7 @@ class ElementManager:
                 return recoil_element
 
     def add_new_element_simulation(
-            self, element, color, spectra_changed=None,
+            self, element: Element, color: str, spectra_changed=None,
             recoil_name_changed=None, settings_updated=None,
             **kwargs) -> ElementSimulation:
         """
@@ -173,6 +173,7 @@ class ElementManager:
         Return:
             Created ElementSimulation
         """
+        # TODO check that element does not exist
         # Default points
         xs = [0.00]
         ys = [1.0]
@@ -689,13 +690,20 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 AlternatingLimits(
                     self.canvas, self.axes,
                     xs=self.current_recoil_element.get_range(),
-                    colors=("orange", "green")
+                    colors=("orange", "green"), flush=False
             )
 
-    def set_current_interval_visible(self, b: bool):
-        interval = self.get_current_interval()
-        if interval is not None:
+    def set_individual_intervals_visible(self, b: bool):
+        for interval in self.individual_intervals.values():
             interval.set_visible(b)
+
+    def highlight_selected_interval(self):
+        selected = self.get_current_interval()
+        if selected is not None:
+            selected.set_alpha(1.0)
+        for interval in self.individual_intervals.values():
+            if interval is not selected:
+                interval.set_alpha(0.2)
 
     def get_individual_limits(self) -> Dict[RecoilElement, Tuple[float, float]]:
         """Returns individual area limits for each recoil element.
@@ -731,7 +739,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         for element_simulation in self.simulation.element_simulations:
             self.add_element(
                 element_simulation.get_main_recoil().element,
-                element_simulation, **kwargs)
+                element_simulation=element_simulation, **kwargs)
 
         self.simulation.element_simulations[0].get_main_recoil(). \
             widgets[0].radio_button.setChecked(True)
@@ -873,9 +881,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if not checked:
             return
         # Update limit and area parts
-        self.set_current_interval_visible(False)
-        if self.anchored_box is not None:
-            self.anchored_box.set_visible(False)
+        # self.set_individual_intervals_visible(False)
+        # if self.anchored_box is not None:
+        #     self.anchored_box.set_visible(False)
 
         # Do necessary changes in adding and deleting recoil elements pt 1
         if self.current_recoil_element:
@@ -920,9 +928,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.selected_points.clear()
         self.point_remove_action.setEnabled(False)
 
+        self.highlight_selected_interval()
+        self.set_individual_intervals_visible(self.area_limits_individual_on)
+
         # Update limit and area parts
         if self.area_limits_individual_on:
-            self.set_current_interval_visible(True)
             self.__calculate_selected_area()
 
         # Make all other recoils grey
@@ -1196,11 +1206,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Args:
             element_simulation: An ElementSimulation object.
         """
-        # FIXME should also remove individual limit lines of all recoils
         self.element_manager.remove_element_simulation(element_simulation)
         for recoil in element_simulation.recoil_elements:
             if recoil in self.individual_intervals:
-                self.individual_intervals.pop(recoil)
+                self.individual_intervals.pop(recoil).remove()
 
     def remove_recoil_element(
             self, recoil_widget,
@@ -1215,6 +1224,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         recoil_to_delete = recoil_element
         element_simulation = element_simulation
+
         if not recoil_to_delete and not element_simulation:
             for elem_sim in self.element_manager.element_simulations:
                 for recoil_element in elem_sim.recoil_elements:
@@ -1222,42 +1232,46 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                         recoil_to_delete = recoil_element
                         element_simulation = elem_sim
                         break
-        if recoil_to_delete and element_simulation:
-            if recoil_widget.radio_button.isChecked():
-                element_simulation.get_main_recoil(). \
-                    widgets[0].radio_button.setChecked(True)
-            # Remove radio button from list
-            self.radios.removeButton(recoil_widget.radio_button)
-            # Remove recoil widget from view
-            recoil_widget.deleteLater()
-            # Remove recoil element from element simulation
-            element_simulation.recoil_elements.remove(recoil_to_delete)
-            # Remove other recoil line
-            try:
-                self.other_recoils.remove(recoil_to_delete)
-            except ValueError:
-                pass  # Recoil was not in list
-            self.show_other_recoils()
-            # Delete rec, recoil and simu files.
-            if element_simulation.simulation_type == SimulationType.ERD:
-                rec_suffix = ".rec"
-                recoil_suffix = ".recoil"
-            else:
-                rec_suffix = ".sct"
-                recoil_suffix = ".scatter"
-            rec_file = Path(
-                element_simulation.directory,
-                f"{recoil_to_delete.get_full_name()}{rec_suffix}")
+        if recoil_to_delete is None or element_simulation is None:
+            return
 
-            recoil_file = Path(
-                element_simulation.directory,
-                f"{recoil_to_delete.get_full_name()}{recoil_suffix}")
+        if recoil_widget.radio_button.isChecked():
+            element_simulation.get_main_recoil(). \
+                widgets[0].radio_button.setChecked(True)
+        # Remove radio button from list
+        self.radios.removeButton(recoil_widget.radio_button)
+        # Remove recoil widget from view
+        recoil_widget.deleteLater()
+        # Remove recoil element from element simulation
+        element_simulation.recoil_elements.remove(recoil_to_delete)
+        # Remove other recoil line
+        try:
+            self.other_recoils.remove(recoil_to_delete)
+        except ValueError:
+            pass  # Recoil was not in list
+        self.show_other_recoils()
+        # Delete rec, recoil and simu files.
+        if element_simulation.simulation_type == SimulationType.ERD:
+            rec_suffix = ".rec"
+            recoil_suffix = ".recoil"
+        else:
+            rec_suffix = ".sct"
+            recoil_suffix = ".scatter"
+        rec_file = Path(
+            element_simulation.directory,
+            f"{recoil_to_delete.get_full_name()}{rec_suffix}")
 
-            simu_file = Path(
-                element_simulation.directory,
-                f"{recoil_to_delete.get_full_name()}.simu")
+        recoil_file = Path(
+            element_simulation.directory,
+            f"{recoil_to_delete.get_full_name()}{recoil_suffix}")
 
-            gf.remove_files(rec_file, recoil_file, simu_file)
+        simu_file = Path(
+            element_simulation.directory,
+            f"{recoil_to_delete.get_full_name()}.simu")
+
+        gf.remove_files(rec_file, recoil_file, simu_file)
+        if recoil_to_delete in self.individual_intervals:
+            self.individual_intervals.pop(recoil_to_delete).remove()
 
     def remove_current_element(self):
         """Remove current element simulation.
@@ -1458,17 +1472,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def __toggle_individual_limits(self):
         """Toggle individual limits visible and non-visible.
         """
+        self.area_limits_individual_on = not self.area_limits_individual_on
+        self.set_individual_intervals_visible(self.area_limits_individual_on)
+        if self.anchored_box:
+            self.anchored_box.set_visible(self.area_limits_individual_on)
         if self.current_recoil_element is None:
             return
-        if self.area_limits_individual_on:
-            self.set_current_interval_visible(False)
-            if self.anchored_box:
-                self.anchored_box.set_visible(False)
-            self.area_limits_individual_on = False
-        else:
-            self.update_current_interval()
-            self.set_current_interval_visible(True)
-            self.area_limits_individual_on = True
+
+        if self.area_limits_individual_on and self.current_recoil_element is \
+                not None:
             self.__calculate_selected_area()
 
         self.__button_individual_limits.setChecked(
@@ -1479,25 +1491,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def __toggle_span_limits(self):
         """Toggle span limits visible and non-visible.
         """
-        if self.current_recoil_element is None:
-            return
-        if self.area_limits_for_all_on:
-            if self.common_interval is not None:
-                self.common_interval.set_visible(False)
-            self.area_limits_for_all_on = False
-            self.span_selector.set_active(False)
-        else:
-            if self.common_interval is not None:
-                self.common_interval.set_visible(True)
-            else:
-                self.common_interval = VerticalLimits(
-                    self.canvas, self.axes,
-                    xs=self.current_recoil_element.get_range(),
-                    colors=("blue", "red")
-                )
-            self.area_limits_for_all_on = True
-            self.span_selector.set_active(True)
-            self.limit_changed.emit()
+        self.area_limits_for_all_on = not self.area_limits_for_all_on
+        if self.common_interval is not None:
+            self.common_interval.set_visible(self.area_limits_for_all_on)
+        elif self.area_limits_for_all_on:
+            self.common_interval = VerticalLimits(
+                self.canvas, self.axes,
+                xs=self.current_recoil_element.get_range(),
+                colors=("blue", "red"), flush=False
+            )
+        self.span_selector.set_active(self.area_limits_for_all_on)
+
+        self.limit_changed.emit()
 
         self.__button_span_limits.setChecked(self.area_limits_for_all_on)
         self.canvas.draw_idle()
