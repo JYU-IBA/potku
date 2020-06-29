@@ -7,7 +7,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2018 Heta Rekilä
+Copyright (C) 2018 Heta Rekilä, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -35,6 +35,7 @@ from widgets.input_validation import ScientificValidator
 
 from decimal import Decimal
 from typing import Union
+from typing import Tuple
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -44,11 +45,9 @@ class ScientificSpinBox(QtWidgets.QWidget):
     """
     Class for custom double spinbox that handles scientific notation.
     """
-    _UP = 0
-    _DOWN = 1
 
-    def __init__(self, value=0.0, minimum=0.0, maximum=math.inf, decimals=17,
-                 show_btns=True):
+    def __init__(self, value=0.0, minimum=0.0, maximum=math.inf,
+                 decimal_places=17, show_btns=True):
         """
         Initializes the spinbox.
 
@@ -56,7 +55,7 @@ class ScientificSpinBox(QtWidgets.QWidget):
             value: value of spinbox
             minimum: minimum allowed value
             maximum: maximum allowed value
-            decimals: maximum number of decimals to show
+            decimal_places: maximum number of decimals to show
             show_btns: Whether buttons that increase or decrease the value
                 are shown.
         """
@@ -66,14 +65,16 @@ class ScientificSpinBox(QtWidgets.QWidget):
         self._value = Decimal(str(value))
         self.minimum = minimum
         self.maximum = maximum
-        if 1 <= decimals <= 17:
-            self.decimals = decimals
+        if decimal_places < 1:
+            self._decimal_places = 1
+        elif decimal_places > 17:
+            self._decimal_places = 17
         else:
-            self.decimals = decimals
+            self._decimal_places = decimal_places
 
         self.scientificLineEdit: QtWidgets.QLineEdit
         self._validator = ScientificValidator(
-            self.minimum, self.maximum, self.decimals, self,
+            self.minimum, self.maximum, self._decimal_places, self,
             accepted=lambda: iv.set_input_field_white(self.scientificLineEdit),
             intermediate=lambda: iv.set_input_field_yellow(
                 self.scientificLineEdit),
@@ -85,9 +86,9 @@ class ScientificSpinBox(QtWidgets.QWidget):
 
         if show_btns:
             self.upButton.clicked.connect(lambda *_: self._step_adjustment(
-                self._UP))
+                self._up_step))
             self.downButton.clicked.connect(lambda *_: self._step_adjustment(
-                self._DOWN))
+                self._down_step))
         else:
             self.upButton.hide()
             self.downButton.hide()
@@ -107,11 +108,12 @@ class ScientificSpinBox(QtWidgets.QWidget):
             value = self.maximum
 
         self.scientificLineEdit.setText(
-            self._format_value(value, self.decimals))
+            self._format_value(value, self._decimal_places))
 
     @staticmethod
     def _format_value(value: Decimal, decimals: int) -> str:
-        """Helper function for formatting Decimal into string.
+        """Helper function for formatting Decimal into scientific
+        notation string. Removes trailing zeroes from the decimal part.
         """
         if not value:
             return "0.0e+0"
@@ -124,21 +126,58 @@ class ScientificSpinBox(QtWidgets.QWidget):
             v = f"{v}.0"
         return f"{v}e{m}"
 
-    def _step_adjustment(self, direction):
+    def _step_adjustment(self, step_func: callable):
         """Adjusts current value of the spinbox either up or down a step.
         """
-        # TODO currently this does not take into account changes in magnitude.
-        #   So for example when stepping down, this goes
-        #       10.1e10 -> 10.0e10 -> 9.0e9, instead of
-        #       10.1e10 -> 10.0e10 -> 9.9e9
         try:
             cur_val = self._get_value()
         except decimal.InvalidOperation:
             return
-        sign, digits, exp = cur_val.as_tuple()
-        adj_digits = 1, *(0 for _ in range(len(digits) - 2))
-        adjustment = Decimal((direction, adj_digits, exp))
-        self.set_value(cur_val + adjustment)
+        new_value = step_func(cur_val)
+
+        self.set_value(new_value)
+
+    @staticmethod
+    def _down_step(value: Decimal) -> Decimal:
+        """Returns a new value where the first decimal place of the given value
+        has been decremented by one (for example 1.0e10 -> 9.9e9).
+        """
+        return ScientificSpinBox._step(value, -1, (1, 0), (9, 9))
+
+    @staticmethod
+    def _up_step(value: Decimal) -> Decimal:
+        """Returns a new value where the first decimal place of the given value
+        has been incremented by one (for example 9.9e10 -> 1.0e11).
+        """
+        return ScientificSpinBox._step(value, 1, (9, 9), (1, 0))
+
+    @staticmethod
+    def _step(value: Decimal, coef: int, c1: Tuple, c2: Tuple):
+        """Helper function for incrementing and decrementing first decimal in
+        scientific notation.
+
+        We need to check if the decimal part starts with 9.9 or 1.0 depending
+        on the direction of the step and sign of the value as simple
+        addition or subtraction here would cause a too big of a gap in step
+        size.
+        """
+        # TODO this stuff could be done in the math_functions module
+        sign, digits, exp = value.as_tuple()
+        padded_digits = *digits, 0, 0
+        if sign:
+            c1, c2 = c2, c1
+
+        if padded_digits[:2] == c1:
+            # Handle special cases where incrementing or decrementing a decimal
+            # causes a change in the exponent part.
+            digits = *c2, *digits[2:]
+            if sign:
+                coef *= -1
+            exp += coef * 1
+            return Decimal((sign, digits, exp))
+        diff_sign = 1 if coef < 0 else 0
+        diff = Decimal((diff_sign, (1, *(0 for _ in digits)), exp - 2))
+        return value + diff
 
     def get_value(self) -> float:
         """Returns the value of the spinbox as a float.

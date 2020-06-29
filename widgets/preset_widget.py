@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Optional
 from typing import Callable
 from typing import List
+from typing import Any
 
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QComboBox
@@ -54,6 +55,7 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
     MAX_COUNT = 10
     NONE_TEXT = "<None>"
     preset = bnd.bind("preset_combobox")
+    status_msg = bnd.bind("status_label")
 
     save_file = pyqtSignal(Path)
     load_file = pyqtSignal(Path)
@@ -78,9 +80,7 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
         self.load_btn: QPushButton
         self.preset_combobox: QComboBox
 
-        self.save_btn.clicked.connect(
-            lambda: self.save_file.emit(self.get_next_available_file())
-        )
+        self.save_btn.clicked.connect(self._emit_save_file)
 
         self._load_btn_enabled = enable_load_btn
         self.load_btn.setVisible(self._load_btn_enabled)
@@ -88,6 +88,8 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
         if self._load_btn_enabled:
             self.load_btn.clicked.connect(
                 lambda: self._emit_file_to_load(self.preset))
+
+        self.status_label.setVisible(False)
 
         self.preset_combobox: QComboBox
         self.preset_combobox.setContextMenuPolicy(Qt.ActionsContextMenu)
@@ -107,24 +109,41 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
         self.preset_combobox.installEventFilter(self)
 
         self.load_files()
-        self._index_changed()
+        self._activate_actions(self.preset)
 
     def _index_changed(self):
         """Event handler for index changes in the combobox. Actions are
         disabled if the selected item is 'None'. If 'Load preset' button
         is not enabled, this will also emit a load_file signal.
         '"""
+        self.set_status_msg("")
         preset = self.preset
-        self._action_remove.setEnabled(preset is not None)
-        self._action_rename.setEnabled(preset is not None)
+        self._activate_actions(preset)
         if not self._load_btn_enabled:
             self._emit_file_to_load(preset)
+
+    def _activate_actions(self, preset: Optional[Path]):
+        """Activates or deactives actions depending on whether the given
+        preset is None or not.
+        """
+        self._action_remove.setEnabled(preset is not None)
+        self._action_rename.setEnabled(preset is not None)
 
     def _emit_file_to_load(self, preset: Optional[Path]):
         """Emits a load file signal if the given preset is not 'None'.
         """
         if preset is not None:
             self.load_file.emit(preset)
+
+    def _emit_save_file(self):
+        """Emits save_file signal if new file name can be generated.
+        """
+        next_file = self.get_next_available_file(
+            starting_index=self.preset_combobox.count() - 1)
+        if next_file is None:
+            self.set_status_msg("Could not generate a name for preset.")
+        else:
+            self.save_file.emit(next_file)
 
     def load_files(self, max_count=MAX_COUNT, selected: Optional[Path] = None):
         """Loads preset files to combobox.
@@ -138,8 +157,6 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
                 return PresetWidget.NONE_TEXT
             return fp.stem
 
-        self.preset_combobox.blockSignals(True)
-
         preset_files = PresetWidget.get_preset_files(
             self._folder, max_count, keep=selected)
         if not self._load_btn_enabled:
@@ -148,16 +165,20 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
             preset_files = [None, *preset_files]
 
         gutils.fill_combobox(
-            self.preset_combobox, preset_files, text_func=text_func)
+            self.preset_combobox, preset_files, text_func=text_func,
+            block_signals=True)
         self.preset = selected
 
-        self.preset_combobox.blockSignals(False)
-
     def _rename_file(self):
+        """Activates edit if preset is selected.
+        """
         self.preset_combobox: QComboBox
         self.preset_combobox.setEditable(self.preset is not None)
 
     def eventFilter(self, source: QObject, event: QEvent) -> bool:
+        """Filters combobox events. If combobox is currently editable,
+        capture FocusOut event and try to rename selected file.
+        """
         self.preset_combobox: QComboBox
         if source is self.preset_combobox and isinstance(event, QFocusEvent):
             if self.preset_combobox.isEditable():
@@ -167,15 +188,17 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
                     cur_preset = self.preset
                     new_file = Path(
                         self._folder, f"{cur_txt}{PresetWidget.PRESET_SUFFIX}")
-                    if not new_file.exists() and new_file != cur_preset and \
-                            self.is_valid_preset(self._folder, new_file):
+                    if new_file != cur_preset and self.is_valid_preset(
+                            self._folder, new_file):
                         cur_preset.rename(new_file)
                         self.load_files(selected=new_file)
-                except OSError:
-                    pass
+                except OSError as e:
+                    self.set_status_msg(f"Failed to rename preset: {e}")
         return super().eventFilter(source, event)
 
     def _remove_file(self):
+        """Removes file with a confirmation.
+        """
         file = self.preset
         if file is None:
             return
@@ -186,15 +209,26 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
         if reply == QMessageBox.Yes:
             try:
                 file.unlink()
-            except OSError:
-                pass
+            except OSError as e:
+                self.set_status_msg(f"Failed to remove preset: {e}")
             self.load_files()
+            self._activate_actions(self.preset)
+
+    def set_status_msg(self, msg: Any):
+        """Sets the status message and shows or hides the label.
+        """
+        self.status_msg = msg
+        self.status_label.setVisible(bool(msg))
 
     @classmethod
     def add_preset_widget(cls, folder: Path, prefix, add_func: Callable,
                           save_callback: Optional[Callable] = None,
                           load_callback: Optional[Callable] = None) -> \
             "PresetWidget":
+        """Creates a PresetWidget, adds it to a parent widget by calling the
+        add_func and connects save and load callbacks if they are provided.
+        Returns the created widget.
+        """
         widget = cls(folder, prefix)
         add_func(widget)
         if save_callback is not None:
@@ -203,12 +237,13 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
             widget.load_file.connect(load_callback)
         return widget
 
-    def get_next_available_file(self, max_iterations=100) -> Optional[Path]:
+    def get_next_available_file(self, starting_index=0, max_iterations=100) \
+            -> Optional[Path]:
         """Returns the next available file name or None, if no available
         file name was found within maximum number of iterations.
         """
-        # TODO this could be generalized
-        for i in range(max_iterations):
+        # TODO this could be generalized and moved to general_functions module
+        for i in range(starting_index, max_iterations):
             fname = f"{self._prefix}-{i + 1:03}{PresetWidget.PRESET_SUFFIX}"
             fpath = self._folder / fname
             if not fpath.exists():
@@ -218,7 +253,7 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
     @staticmethod
     def get_preset_files(folder: Path, max_count: int = MAX_COUNT,
                          keep: Optional[Path] = None) -> List[Path]:
-        """Returns a list of .preset files from the given folder.
+        """Returns a sorted list of .preset files from the given folder.
 
         Args:
             folder: folder path
@@ -237,7 +272,7 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
                         break
                     path = Path(entry.path)
                     if PresetWidget.is_valid_preset(folder, path) and \
-                            path != keep:
+                            path != keep and path.is_file():
                         files.append(path)
         except OSError:
             pass
@@ -247,6 +282,9 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
     def is_valid_preset(folder: Path, file: Optional[Path]) -> bool:
         """Checks if the given file is a valid .preset file.
         """
+        # TODO might want to add checks for characters that are forbidden
+        #   on one platform but allowed on another to ensure the portability
+        #   of presets.
         if file is None:
             return False
         if not file.stem:

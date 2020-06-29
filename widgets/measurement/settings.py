@@ -8,7 +8,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -221,19 +221,35 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         return False
 
     def save_properties_to_file(self, file_path: Path):
+        def err_func(err: Exception):
+            if self.preset_widget is not None:
+                self.preset_widget.set_status_msg(
+                    f"Failed to save preset: {err}")
+
         values = self.get_properties()
         values["beam_ion"] = str(values["beam_ion"])
-        self._save_json_file(file_path, values, True)
+        self._save_json_file(
+            file_path, values, True, error_func=err_func)
         if self.preset_widget is not None:
             self.preset_widget.load_files(selected=file_path)
 
     def load_properties_from_file(self, file_path: Path):
+        # TODO create a base class for settings widgets to get rid of this
+        #   copy-paste code
+        def err_func(err: Exception):
+            if self.preset_widget is not None:
+                self.preset_widget.set_status_msg(
+                    f"Failed to load preset: {err}")
+        values = self._load_json_file(file_path, error_func=err_func)
+        if not values:
+            return
         try:
-            values = self._load_json_file(file_path)
             values["beam_ion"] = Element.from_string(values["beam_ion"])
             self.set_properties(**values)
-        except (ValueError, KeyError):
-            pass
+        except KeyError as e:
+            err_func(f"file contained no {e} key.")
+        except ValueError as e:
+            err_func(e)
 
     def get_original_property_values(self):
         """Returns the values of the properties when they were first set.

@@ -27,6 +27,7 @@ __version__ = "2.0"
 import unittest
 import tests.gui
 import math
+import random
 
 from widgets.scientific_spinbox import ScientificSpinBox
 
@@ -82,27 +83,51 @@ class TestSciSpinbox(unittest.TestCase):
         self.assertRaises(TypeError, lambda: self.sbox.get_value())
 
     def test_decrease(self):
+        self.sbox.minimum = -math.inf
         self.sbox.set_value(5.5e+22)
         self.click_down()
         self.assertEqual(5.4e+22, self.sbox.get_value())
 
-        # Note: following behaviour may change
         self.sbox.set_value(1.0001e+22)
         self.click_down()
-        self.assertEqual(9.001e+21, self.sbox.get_value())
+        self.assertEqual(9.9001e+21, self.sbox.get_value())
+
+        self.sbox.set_value(0.0e0)
+        self.click_down()
+        self.assertEqual(-1.0e-2, self.sbox.get_value())
+
+        self.sbox.set_value(1.05e-3)
+        self.click_down()
+        self.assertEqual(9.95e-4, self.sbox.get_value())
+
+        self.sbox.set_value(-9.95e-4)
+        self.click_down()
+        self.assertEqual(-1.05e-3, self.sbox.get_value())
 
         self.sbox.scientificLineEdit.setText("foo")
         self.click_down()
         self.assertEqual("foo", self.sbox.scientificLineEdit.text())
 
     def test_increase(self):
+        self.sbox.minimum = -math.inf
         self.sbox.set_value(9.81e+22)
         self.click_up()
         self.assertEqual(9.91e+22, self.sbox.get_value())
 
-        # Note: following behaviour may change
         self.click_up()
-        self.assertEqual(1.001e+23, self.sbox.get_value())
+        self.assertEqual(1.01e+23, self.sbox.get_value())
+
+        self.sbox.set_value(0.0e0)
+        self.click_up()
+        self.assertEqual(1.0e-2, self.sbox.get_value())
+
+        self.sbox.set_value(9.9e0)
+        self.click_up()
+        self.assertEqual(1.0e1, self.sbox.get_value())
+
+        self.sbox.set_value(-1.05e-10)
+        self.click_up()
+        self.assertEqual(-9.95e-11, self.sbox.get_value())
 
     def test_set_value(self):
         self.sbox.set_value(5e22)
@@ -119,3 +144,35 @@ class TestSciSpinbox(unittest.TestCase):
         # Try setting a string
         self.sbox.set_value("5e21")
         self.assertEqual(5e21, self.sbox.get_value())
+
+    def test_value_properties(self):
+        # After n up clicks and n down clicks, value of the spinbox should
+        # be the same as it was when started
+        self.sbox.minimum = -math.inf
+        self.sbox.maximum = math.inf
+        value_min = -10.0e-10
+        value_max = 10.0e-10
+        max_clicks = 25
+        n = 15
+
+        for i in range(n):
+            value = random.uniform(value_min, value_max)
+            self.sbox.set_value(value)
+            x0 = self.sbox.get_value()
+            clicks = random.randint(1, max_clicks)
+            click_order = [
+                *[self.click_down] * clicks,
+                *[self.click_up] * clicks
+            ]
+            random.shuffle(click_order)
+
+            for cl in click_order:
+                x1 = self.sbox.get_value()
+                cl()
+                x2 = self.sbox.get_value()
+                if cl is self.click_down:
+                    self.assertLess(x2, x1)
+                else:
+                    self.assertLess(x1, x2)
+
+            self.assertEqual(x0, self.sbox.get_value())
