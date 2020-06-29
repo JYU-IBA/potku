@@ -40,28 +40,29 @@ from modules.observing import ProgressReporter
 from modules.observing import Observer
 from modules.element import Element
 from modules.measurement import Measurement
+from modules.global_settings import GlobalSettings
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QSettings
 
-# TODO check the preferred name for the org
+NumSpinBox = Union[QtWidgets.QSpinBox, QtWidgets.QDoubleSpinBox]
+
 # Potku uses QSettings to store non-portable settings such as window
 # geometries and recently opened requests.
 # For settings that can be ported from one installation to another, use global
 # settings or PropertySavingWidget
-_SETTINGS_KEY = ("JYU-IBA", f"Potku {__version__}")
+# Note: the name 'Potku 2.0' is a relic from earlier development. Even if
+# Potku's version number is changed to 2.1 or something, this key should remain
+# the same so users can have the same settings they had previously. Only change
+# this after a more major update (i.e. 'Potku 3')
+_SETTINGS_KEY = ("JYU-IBA", "Potku 2.0")
 
 
 def _get_potku_settings() -> QSettings:
     """Returns a QSettings object that can be used to store Potku's
     settings.
     """
-    # TODO decide on app name given. Either with or without the version number:
-    #   'Potku' => all versions of Potku use the same settings
-    #   'Potku 2' => all Potku versions 2.* use the same settings
-    #   'Potku 2.0' (currently in use) => Potku only uses the settings that
-    #       strictly match the version
     return QSettings(*_SETTINGS_KEY)
 
 
@@ -78,7 +79,7 @@ def remove_potku_setting(key: Optional[str] = None):
     settings.remove(key)
 
 
-def get_potku_setting(key: str, default_value, value_type=None):
+def get_potku_setting(key: str, default_value, value_type=None) -> Any:
     """Returns a value that has been stored for the given key.
 
     Args:
@@ -95,7 +96,7 @@ def get_potku_setting(key: str, default_value, value_type=None):
     return settings.value(key, default_value, value_type)
 
 
-def set_potku_setting(key: str, value):
+def set_potku_setting(key: str, value: Any):
     """Stores a value for the given key. If a value has been previously stored
     with this key, the old value is overwritten.
 
@@ -103,7 +104,6 @@ def set_potku_setting(key: str, value):
         key: a string identifying the value to be stored
         value: value to be stored
     """
-    # TODO check which types are supported by QSettings
     settings = _get_potku_settings()
     settings.setValue(key, value)
 
@@ -120,9 +120,17 @@ def get_icon_dir() -> Path:
     return gf.get_root_dir() / "ui_icons"
 
 
+def get_preset_dir(settings: Optional[GlobalSettings]) -> Optional[Path]:
+    """Returns the absolute path to directory that contains presets.
+    """
+    if settings is None:
+        return None
+    return settings.get_config_dir() / "presets"
+
+
 if platform.system() == "Darwin":
     # Mac needs event processing to display changes in the status bar
-    # TODO calling processEvents may cause problems with signal handling so
+    # FIXME calling processEvents may cause problems with signal handling so
     #   we should get rid of this. Getting rid of this requires moving all
     #   long running operations away from the main thread.
     def _process_event_loop():
@@ -155,22 +163,14 @@ class QtABCMeta(type(QtCore.QObject), abc.ABCMeta):
     pass
 
 
-# TODO this is for debugging purposes. Remove or comment out this code once
-#   it is no longer needed
-_debug_progress = False
-if _debug_progress:
-    from collections import defaultdict
-    _p_bars = defaultdict(list)
-else:
-    _p_bars = None
-
-
 class GUIReporter(ProgressReporter):
     """GUI Progress reporter that updates the value of a progress bar.
 
     Uses pyqtSignal to ensure that the progress bar is updated in the
     Main thread.
     """
+    # TODO this class could be a generic reporter instead of one that
+    #   only updates a ProgressBar
     class Signaller(QtCore.QObject):
         # Helpers class that has a signal for emitting status bar updates
         sig = QtCore.pyqtSignal(float)
@@ -182,23 +182,10 @@ class GUIReporter(ProgressReporter):
         Args:
             progress_bar: GUI progress bar that will be updated
         """
-        # TODO remove progress_bar argument and just make this a generic
-        #  reporter that does its reporting in main thread
         @process_event_loop
         def __update_func(value):
             # Callback function that will be connected to the signal
             if progress_bar is not None:
-                if _p_bars is not None:
-                    # TODO for debugging purposes save values to a dict
-                    #   so it easier to inspect them later
-                    vals = _p_bars.get(progress_bar, [-1])
-                    if vals[-1] > value or value > 100 or value < 0:
-                        print("Value was smaller than previous value or out "
-                              "of range.")
-                    _p_bars[progress_bar].append(value)
-
-                # TODO make transitions smoother when gaps between values are
-                #   big
                 progress_bar.setValue(value)
 
         self.signaller = self.Signaller()
@@ -210,7 +197,8 @@ class StatusBarHandler:
     """Helper class to show, hide and update a progress bar in the
     given statusbar.
     """
-    # TODO make this a ProgressReporter
+    # TODO this class could itself be a ProgressReporter that takes a
+    #   statusbar as its parameter
 
     @process_event_loop
     def __init__(self, statusbar: QtWidgets.QStatusBar, autoremove=True):
@@ -221,8 +209,6 @@ class StatusBarHandler:
             autoremove: automatically hides the progress bar when its
                 surpasses 99
         """
-        # TODO could also use a remove_at parameter that defines when
-        #      the progress bar is removed
         # TODO remove previous progress bars
         self.statusbar = statusbar
         if self.statusbar is not None:
@@ -297,7 +283,8 @@ def change_arrow(qbutton: QtWidgets.QPushButton, arrow=None):
     qbutton.setText(arrow)
 
 
-def load_isotopes(symbol, combobox, current_isotope=None, show_std_mass=False):
+def load_isotopes(symbol: str, combobox: QtWidgets.QComboBox,
+                  current_isotope=None, show_std_mass=False):
     """Load isotopes of given element into given combobox.
 
     Args:
@@ -407,7 +394,6 @@ def fill_cuts_treewidget(measurement: Measurement,
     def text_func(fp: Path):
         return fp.name
 
-    # TODO possibly use cuts and elements
     fill_tree(root, cuts, text_func=text_func)
 
     if use_elemloss:
@@ -439,7 +425,7 @@ def fill_tree(root: QtWidgets.QTreeWidgetItem, data: Iterable[Any],
         root.addChild(item)
 
 
-def block_treewidget_signals(func):
+def block_treewidget_signals(func: Callable):
     """Decorator that blocks signals from an instance's treeWidget so that
     the tree can be edited.
     """
@@ -453,14 +439,25 @@ def block_treewidget_signals(func):
 
 
 def fill_combobox(combobox: QtWidgets.QComboBox, values: Iterable[Any],
-                  text_func: Callable = str):
+                  text_func: Callable = str, block_signals=False):
     """Fills the combobox with given values. Stores the values as user data
     and displays the string representations as item labels. Previous items
     are removed from the combobox.
+
+    Args:
+        combobox: combobox to fill
+        values: collection of values to be added to the combobox
+        text_func: function that detenmines how values are presented in
+            text form
+        block_signals: whether signals from combobox are blocked during filling
     """
+    if block_signals:
+        combobox.blockSignals(True)
     combobox.clear()
     for value in values:
         combobox.addItem(text_func(value), userData=value)
+    if block_signals:
+        combobox.blockSignals(False)
 
 
 def set_btn_group_data(button_group: QtWidgets.QButtonGroup, values:
@@ -480,10 +477,8 @@ def set_btn_group_data(button_group: QtWidgets.QButtonGroup, values:
         btn.data_item = value
 
 
-def set_min_max_handlers(
-        lower_box: Union[QtWidgets.QSpinBox, QtWidgets.QDoubleSpinBox],
-        upper_box: Union[QtWidgets.QSpinBox, QtWidgets.QDoubleSpinBox],
-        min_diff=0):
+def set_min_max_handlers(lower_box: NumSpinBox, upper_box: NumSpinBox,
+                         min_diff=0):
     """Adds valueChanged handlers that automatically adjust the minimum
     and maximum values of spin boxes. Automatically adjusts current values
     if lower_box has a higher value than upper_box.
@@ -501,7 +496,7 @@ def set_min_max_handlers(
     upper_box.valueChanged.connect(lambda x: lower_box.setMaximum(x - min_diff))
 
 
-def disable_widget(func):
+def disable_widget(func: Callable):
     """Decorator that disables a QWidget for the duration of the function.
     The decorated function must take the QWidget as its first argument (for
     example decorating an instance method works fine).

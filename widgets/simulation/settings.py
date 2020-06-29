@@ -8,7 +8,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -40,7 +40,9 @@ from modules.enums import SimulationMode
 from modules.enums import SimulationType
 
 from widgets.binding import PropertyTrackingWidget
+from widgets.binding import PropertySavingWidget
 from widgets.gui_utils import QtABCMeta
+from widgets.preset_widget import PresetWidget
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -49,7 +51,7 @@ from PyQt5.QtCore import pyqtSignal
 
 
 class SimulationSettingsWidget(QtWidgets.QWidget, PropertyTrackingWidget,
-                               metaclass=QtABCMeta):
+                               PropertySavingWidget, metaclass=QtABCMeta):
     """Class for creating a simulation settings tab.
     """
     # TODO name, desc should perhaps not be tracked
@@ -77,7 +79,8 @@ class SimulationSettingsWidget(QtWidgets.QWidget, PropertyTrackingWidget,
 
     settings_updated = pyqtSignal()
 
-    def __init__(self, element_simulation: ElementSimulation):
+    def __init__(self, element_simulation: ElementSimulation,
+                 preset_folder=None):
         """
         Initializes the widget.
 
@@ -116,6 +119,43 @@ class SimulationSettingsWidget(QtWidgets.QWidget, PropertyTrackingWidget,
             description=self.element_simulation.description,
             modification_time=self.element_simulation.modification_time,
             **self.element_simulation.get_settings())
+
+        if preset_folder is not None:
+            self.preset_widget = PresetWidget.add_preset_widget(
+                preset_folder / "simulation", "sim",
+                lambda w: self.layout().insertWidget(0, w),
+                save_callback=self.save_properties_to_file,
+                load_callback=self.load_properties_from_file
+            )
+        else:
+            self.preset_widget = None
+
+    def get_property_file_path(self) -> Path:
+        raise NotImplementedError
+
+    def save_on_close(self) -> bool:
+        return False
+
+    def save_properties_to_file(self, file_path: Path):
+        def err_func(err: Exception):
+            if self.preset_widget is not None:
+                self.preset_widget.set_status_msg(
+                    f"Failed to save preset: {err}")
+        self._save_json_file(
+            file_path, self.get_properties(), True, error_func=err_func)
+        if self.preset_widget is not None:
+            self.preset_widget.load_files(selected=file_path)
+
+    def load_properties_from_file(self, file_path: Path):
+        # TODO create a base class for settings widgets to get rid of this
+        #   copy-paste code
+
+        def err_func(err: Exception):
+            if self.preset_widget is not None:
+                self.preset_widget.set_status_msg(
+                    f"Failed to load preset: {err}")
+        bnd.PropertySavingWidget.load_properties_from_file(
+            self, file_path, error_func=err_func)
 
     def get_original_property_values(self):
         """Returns a dictionary of original property values.

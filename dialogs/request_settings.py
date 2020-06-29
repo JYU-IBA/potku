@@ -85,9 +85,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.applyButton.clicked.connect(self.__update_settings)
         self.cancelButton.clicked.connect(self.close)
 
+        preset_folder = gutils.get_preset_dir(request.global_settings)
         # Add measurement settings view to the settings view
         self.measurement_settings_widget = MeasurementSettingsWidget(
-            self.request.default_measurement)
+            self.request.default_measurement, preset_folder=preset_folder)
         self.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
         # Connect the enabling of the OKButton to a signal that indicates
@@ -104,14 +105,15 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # Add simulation settings view to the settings view
         self.simulation_settings_widget = SimulationSettingsWidget(
-            self.request.default_element_simulation)
+            self.request.default_element_simulation,
+            preset_folder=preset_folder)
         self.tabs.addTab(self.simulation_settings_widget, "Simulation")
 
         self.simulation_settings_widget.setEnabled(True)
 
         # Add profile settings view to the settings view
         self.profile_settings_widget = ProfileSettingsWidget(
-            self.request.default_measurement)
+            self.request.default_measurement, preset_folder=preset_folder)
         self.tabs.addTab(self.profile_settings_widget, "Profile")
 
         self.tabs.currentChanged.connect(self.__check_for_red)
