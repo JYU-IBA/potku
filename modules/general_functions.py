@@ -707,6 +707,12 @@ def round_value_by_four_biggest(value):
 def count_lines_in_file(file_path, check_file_exists=False):
     """Returns the number of newline symbols in given file (ignores last line).
 
+    Used for determining the shape of the ndarray which holds
+    measurement data in memory.
+
+    Source:
+    https://stackoverflow.com/questions/845058/how-to-get-line-count-of-a-large-file-cheaply-in-python/27518377#27518377
+
     Args:
         file_path: absolute path to a file
         check_file_exists: if True, function checks if the file exists before
@@ -719,19 +725,9 @@ def count_lines_in_file(file_path, check_file_exists=False):
         return 0
 
     # source: https://stackoverflow.com/a/27518377
-    f = open(file_path, 'rb')
-    bufgen = takewhile(lambda x: x, (f.raw.read(1024*1024) for _ in repeat(None)))
-    return sum( buf.count(b'\n') for buf in bufgen )
-
-def rawincount(self, filename):
-    """
-        Reads the number of lines in a text file. Used for determining the shape
-        of the ndarray which holds measurement data in memory.
-        Source: https://stackoverflow.com/questions/845058/how-to-get-line-count-of-a-large-file-cheaply-in-python/27518377#27518377
-    """
-    f = open(filename, 'rb')
-    bufgen = takewhile(lambda x: x, (f.raw.read(1024*1024) for _ in repeat(None)))
-    return sum( buf.count(b'\n') for buf in bufgen )
+    with open(file_path, 'rb') as f:
+        bufgen = takewhile(lambda x: x, (f.raw.read(1024*1024) for _ in repeat(None)))
+    return sum(buf.count(b'\n') for buf in bufgen)
 
 
 @stopwatch()
