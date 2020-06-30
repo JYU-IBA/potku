@@ -7,7 +7,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2019 Heta Rekilä
+Copyright (C) 2019 Heta Rekilä, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -33,23 +33,25 @@ import widgets.binding as bnd
 import widgets.gui_utils as gutils
 
 from pathlib import Path
+from typing import Dict
+from typing import Any
 
 from modules.nsgaii import Nsgaii
 from modules.concurrency import CancellationToken
 from modules.simulation import Simulation
+from modules.element_simulation import ElementSimulation
 from modules.enums import OptimizationType
 
 from widgets.binding import PropertySavingWidget
 from widgets.gui_utils import QtABCMeta
-
-from PyQt5 import uic
-from PyQt5.QtCore import QLocale
-from PyQt5 import QtWidgets
-
 from widgets.simulation.optimization_parameters import \
     OptimizationFluenceParameterWidget
 from widgets.simulation.optimization_parameters import \
     OptimizationRecoilParameterWidget
+
+from PyQt5 import uic
+from PyQt5.QtCore import QLocale
+from PyQt5 import QtWidgets
 
 
 class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
@@ -57,30 +59,30 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
     """User may either optimize fluence or recoil atom distribution.
     Optimization is done by comparing simulated spectrum to measured spectrum.
     """
-    ch = bnd.bind("histogramTicksDoubleSpinBox")
-    use_efficiency = bnd.bind("eff_file_check_box")
-    selected_cut_file = bnd.bind(
+    ch: float = bnd.bind("histogramTicksDoubleSpinBox")
+    use_efficiency: bool = bnd.bind("eff_file_check_box")
+    selected_cut_file: Path = bnd.bind(
         "measurementTreeWidget", fget=bnd.get_selected_tree_item,
         fset=bnd.set_selected_tree_item)
-    selected_element_simulation = bnd.bind(
+    selected_element_simulation: ElementSimulation = bnd.bind(
         "simulationTreeWidget", fget=bnd.get_selected_tree_item,
         fset=bnd.set_selected_tree_item)
-    auto_adjust_x = bnd.bind("auto_adjust_x_box")
+    auto_adjust_x: bool = bnd.bind("auto_adjust_x_box")
 
     @property
-    def fluence_parameters(self):
+    def fluence_parameters(self) -> Dict[str, Any]:
         return self.fluence_widget.get_properties()
 
     @fluence_parameters.setter
-    def fluence_parameters(self, value):
+    def fluence_parameters(self, value: Dict[str, Any]):
         self.fluence_widget.set_properties(**value)
 
     @property
-    def recoil_parameters(self):
+    def recoil_parameters(self) -> Dict[str, Any]:
         return self.recoil_widget.get_properties()
 
     @recoil_parameters.setter
-    def recoil_parameters(self, value):
+    def recoil_parameters(self, value: Dict[str, Any]):
         self.recoil_widget.set_properties(**value)
 
     def __init__(self, simulation: Simulation, parent):
@@ -92,7 +94,6 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             parent: a SimulationTabWidget
         """
         super().__init__()
-
         self.simulation = simulation
         self.tab = parent
         self.current_mode = OptimizationType.RECOIL
@@ -191,7 +192,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
                     root.addChild(loss_node)
                     root.setExpanded(True)
 
-    def get_property_file_path(self):
+    def get_property_file_path(self) -> Path:
         """Returns absolute path to the file that is used for saving and
         loading parameters.
         """
@@ -208,15 +209,21 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             self.selected_element_simulation is not None)
 
     def _adjust_x(self):
-        if self.auto_adjust_x:
-            elem_sim = self.selected_element_simulation
-            _, max_x = elem_sim.get_main_recoil().get_range()
-            _, prev_y = self.recoil_widget.upper_limits
-            self.recoil_widget.upper_limits = max_x, prev_y
+        """Adjusts the upper limit value on x axis based on the distribution
+        length of the main recoil of currently selected ElementSimulation.
+        """
+        if not self.auto_adjust_x:
+            return
+        elem_sim = self.selected_element_simulation
+        if elem_sim is None:
+            return
+
+        _, max_x = elem_sim.get_main_recoil().get_range()
+        _, prev_y = self.recoil_widget.upper_limits
+        self.recoil_widget.upper_limits = max_x, prev_y
 
     def choose_optimization_mode(self, button, checked):
-        """
-        Choose whether to optimize recoils or fluence. Show correct ui.
+        """Choose whether to optimize recoils or fluence. Show correct widget.
         """
         if checked:
             if button.text() == "Recoil":
