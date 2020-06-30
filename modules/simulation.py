@@ -8,7 +8,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -43,6 +43,7 @@ from typing import List
 from . import general_functions as gf
 
 from .recoil_element import RecoilElement
+from .element import Element
 from .base import ElementSimulationContainer
 from .base import Serializable
 from .enums import SimulationType
@@ -147,6 +148,7 @@ class Simulations:
                         self.request, prefix, simulation_folder,
                         mcsimu_file, profile_file, simulation=simulation
                     )
+                    # TODO need to check that element simulation can be added
                     simulation.element_simulations.append(
                         element_simulation)
 
@@ -368,15 +370,30 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             target_file, mesu_file, res[".mcsimu"], res[".profile"],
             detector_file)
 
+    def has_element(self, element: Element) -> bool:
+        return any((elem_sim.has_element(element)
+                   for elem_sim in self.element_simulations))
+
+    def can_add_recoil(self, recoil_element: RecoilElement) -> bool:
+        """Checks whether RecoilElement can be added.
+        """
+        # Note: currently Potku cannot properly differentiate recoils with exact
+        # same Element that are used within the same simulation, so return
+        # False if an Element already exists.
+        return not self.has_element(recoil_element.element)
+
     def add_element_simulation(self, recoil_element: RecoilElement,
                                save_on_creation=True) -> ElementSimulation:
-        """Adds ElementSimulation to Simulation.
+        """Adds ElementSimulation to Simulation. Raises ValueError if
+        RecoilElement cannot be added.
 
         Args:
             recoil_element: RecoilElement that is simulated.
             save_on_creation: whether ElementSimulation is saved upon
                 initialization.
         """
+        if not self.can_add_recoil(recoil_element):
+            raise ValueError("Cannot add RecoilElement to Simulation")
         element_str = recoil_element.element.get_prefix()
         name = self.request.default_element_simulation.name
 

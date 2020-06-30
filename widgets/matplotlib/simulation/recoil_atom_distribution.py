@@ -201,8 +201,8 @@ class ElementManager:
         rec_type = self.simulation.request.default_element_simulation\
             .simulation_type.get_recoil_type()
 
-        recoil_element = RecoilElement(element, points, color,
-                                       rec_type=rec_type)
+        recoil_element = RecoilElement(
+            element, points, color, rec_type=rec_type)
         element_simulation = self.simulation.add_element_simulation(
             recoil_element)
         element_widget = ElementWidget(
@@ -1158,19 +1158,20 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """Add new element simulation with dialog.
         """
         dialog = RecoilElementSelectionDialog(self)
-        if dialog.isOk:
-            isotope = dialog.isotope
+        if not dialog.isOk:
+            return
+        isotope = dialog.isotope
 
-            # Pass the color down as hex code
-            element_simulation = self.add_element(Element(
-                dialog.element, isotope), color=dialog.color.name(), **kwargs)
-
+        # Pass the color down as hex code
+        element_simulation = self.add_element(Element(
+            dialog.element, isotope), color=dialog.color.name(), **kwargs)
+        if element_simulation is not None:
             element_simulation.get_main_recoil().widgets[0].radio_button \
                 .setChecked(True)
 
     def add_element(self, element: Element,
                     element_simulation: Optional[ElementSimulation] = None,
-                    color=None, **kwargs) -> ElementSimulation:
+                    color=None, **kwargs) -> Optional[ElementSimulation]:
         """Adds a new ElementSimulation based on the element. If elem_sim is
         not None, only UI widgets need to be added.
 
@@ -1182,10 +1183,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         if element_simulation is None:
             # Create new ElementSimulation
-            element_simulation = \
-                self.element_manager.add_new_element_simulation(
-                    element, color, spectra_changed=self.recoil_dist_changed,
-                    recoil_name_changed=self.recoil_name_changed, **kwargs)
+            try:
+                element_simulation = \
+                    self.element_manager.add_new_element_simulation(
+                        element, color, spectra_changed=self.recoil_dist_changed,
+                        recoil_name_changed=self.recoil_name_changed, **kwargs)
+            except ValueError as e:
+                QtWidgets.QMessageBox.critical(
+                    self, "Error",
+                    f"Could not add element {element}. Elements must be "
+                    f"unique.",
+                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+                return
         else:
             self.element_manager.add_element_simulation(
                 element_simulation, spectra_changed=self.recoil_dist_changed,

@@ -293,7 +293,7 @@ class Request(ElementSimulationContainer):
                 description="These are default simulation parameters.",
                 use_default_settings=False,
                 save_on_creation=save_on_creation, **kwargs)
-
+        # TODO need to check that elem sim can be added
         sim.element_simulations.append(elem_sim)
         return sim, elem_sim
 
