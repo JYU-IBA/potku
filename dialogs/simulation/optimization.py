@@ -65,26 +65,23 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
     selected_element_simulation = bnd.bind(
         "simulationTreeWidget", fget=bnd.get_selected_tree_item,
         fset=bnd.set_selected_tree_item)
+    auto_adjust_x = bnd.bind("auto_adjust_x_box")
 
     @property
     def fluence_parameters(self):
-        if self.current_mode != OptimizationType.RECOIL:
-            self._fluence_parameters = self.parameters_widget.get_properties()
-        return self._fluence_parameters
+        return self.fluence_widget.get_properties()
 
     @fluence_parameters.setter
     def fluence_parameters(self, value):
-        self._fluence_parameters = value
+        self.fluence_widget.set_properties(**value)
 
     @property
     def recoil_parameters(self):
-        if self.current_mode == OptimizationType.RECOIL:
-            self._recoil_parameters = self.parameters_widget.get_properties()
-        return self._recoil_parameters
+        return self.recoil_widget.get_properties()
 
     @recoil_parameters.setter
     def recoil_parameters(self, value):
-        self._recoil_parameters = value
+        self.recoil_widget.set_properties(**value)
 
     def __init__(self, simulation: Simulation, parent):
         """Initializes an OptimizationDialog that displays various optimization
@@ -98,17 +95,14 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
 
         self.simulation = simulation
         self.tab = parent
-
-        self._fluence_parameters = {}
-        self._recoil_parameters = {}
         self.current_mode = OptimizationType.RECOIL
 
         uic.loadUi(gutils.get_ui_dir() / "ui_optimization_params.ui", self)
 
-        self.load_properties_from_file()
+        self.recoil_widget = OptimizationRecoilParameterWidget()
+        self.fluence_widget = OptimizationFluenceParameterWidget()
 
-        self.parameters_widget = OptimizationRecoilParameterWidget(
-            **self._recoil_parameters)
+        self.load_properties_from_file()
 
         locale = QLocale.c()
         self.histogramTicksDoubleSpinBox.setLocale(locale)
@@ -121,7 +115,9 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         self.radios = QtWidgets.QButtonGroup(self)
         self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
             self.choose_optimization_mode)
-        self.parametersLayout.addWidget(self.parameters_widget)
+        self.parametersLayout.addWidget(self.recoil_widget)
+        self.parametersLayout.addWidget(self.fluence_widget)
+        self.fluence_widget.hide()
 
         self.radios.addButton(self.fluenceRadioButton)
         self.radios.addButton(self.recoilRadioButton)
@@ -133,6 +129,8 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
 
         self.simulationTreeWidget.itemSelectionChanged.connect(
             self._enable_ok_button)
+        self.simulationTreeWidget.itemSelectionChanged.connect(
+            self._adjust_x)
 
         self._fill_measurement_widget()
 
@@ -209,33 +207,26 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             self.selected_cut_file is not None and
             self.selected_element_simulation is not None)
 
+    def _adjust_x(self):
+        if self.auto_adjust_x:
+            elem_sim = self.selected_element_simulation
+            _, max_x = elem_sim.get_main_recoil().get_range()
+            _, prev_y = self.recoil_widget.upper_limits
+            self.recoil_widget.upper_limits = max_x, prev_y
+
     def choose_optimization_mode(self, button, checked):
         """
         Choose whether to optimize recoils or fluence. Show correct ui.
         """
         if checked:
             if button.text() == "Recoil":
-                self._fluence_parameters = \
-                    self.parameters_widget.get_properties()
-                self.current_mode = "recoil"
-                # Clear fluence stuff
-                self.parametersLayout.removeWidget(self.parameters_widget)
-                # Add recoil stuff
-                self.parameters_widget.deleteLater()
-                self.parameters_widget = OptimizationRecoilParameterWidget(
-                    **self._recoil_parameters)
-                self.parametersLayout.addWidget(self.parameters_widget)
+                self.current_mode = OptimizationType.RECOIL
+                self.fluence_widget.hide()
+                self.recoil_widget.show()
             else:
-                self._recoil_parameters = \
-                    self.parameters_widget.get_properties()
-                self.current_mode = "fluence"
-                # Clear recoil stuff
-                self.parametersLayout.removeWidget(self.parameters_widget)
-                self.parameters_widget.deleteLater()
-                # Add fluence stuff
-                self.parameters_widget = OptimizationFluenceParameterWidget(
-                    **self._fluence_parameters)
-                self.parametersLayout.addWidget(self.parameters_widget)
+                self.recoil_widget.hide()
+                self.fluence_widget.show()
+                self.current_mode = OptimizationType.FLUENCE
 
     def start_optimization(self):
         """Find necessary cut file and make energy spectrum with it, and start
@@ -254,11 +245,15 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
 
         self.close()
 
+        if self.current_mode == OptimizationType.RECOIL:
+            params = self.recoil_widget.get_properties()
+        else:
+            params = self.fluence_widget.get_properties()
+
         # TODO move following code to the result widget
         nsgaii = Nsgaii(
             element_simulation=elem_sim, measurement=measurement, cut_file=cut,
-            ch=self.ch, **self.parameters_widget.get_properties(),
-            use_efficiency=self.use_efficiency)
+            ch=self.ch, **params, use_efficiency=self.use_efficiency)
 
         # Optimization running thread
         ct = CancellationToken()
