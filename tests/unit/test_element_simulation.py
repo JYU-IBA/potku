@@ -87,7 +87,6 @@ class TestErdFileHandler(unittest.TestCase):
         self.assertEqual(101, fp.get_seed(Path("\\tmp\\.101.erd")))
 
         self.assertIsNone(fp.get_seed(Path(".101./erd")))
-        self.assertEqual(101, fp.get_seed(Path(".101.\\erd")))
 
         # strings cause AttributeError
         self.assertRaises(AttributeError, lambda: fp.get_seed("O.102.erd"))

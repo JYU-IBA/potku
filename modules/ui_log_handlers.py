@@ -177,5 +177,6 @@ class Logger:
             log_filehandler: Log's filehandler.
         """
         logging.getLogger(self.logger_name).removeHandler(log_filehandler)
-        log_filehandler.flush()
-        log_filehandler.close()
+        if log_filehandler is not None:
+            log_filehandler.flush()
+            log_filehandler.close()

@@ -152,3 +152,47 @@ class TestFolderStructure(unittest.TestCase):
                 expected, sorted(os.listdir(mesu.get_changes_dir()))
             )
 
+    def test_rename_measurement(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            path = Path(tmp_dir)
+            mesu_path = path / "mesu"
+            mesu_name = "foo"
+            measurement = Measurement(
+                mo.get_request(), path=mesu_path / f"{mesu_name}.info",
+                name=mesu_name, save_on_creation=False, enable_logging=False)
+            measurement.create_folder_structure(mesu_path)
+            measurement.to_file()
+
+            utils.assert_folder_structure_equal(
+                get_extected_folder_structure("mesu", "foo"),
+                path)
+
+            measurement.rename("bar")
+
+            utils.assert_folder_structure_equal(
+                get_extected_folder_structure('Measurement_00-bar', "bar"),
+                path
+            )
+
+
+def get_extected_folder_structure(root, name):
+    return {
+        root: {
+            f"{name}.info": None,
+            "Default.measurement": None,
+            "Default.profile": None,
+            "Default.target": None,
+            "Detector": {
+                "measurement.detector": None
+            },
+            "Composition_changes": {
+                "Changes": {}
+            },
+            "Data": {
+                "Cuts": {}
+            },
+            "Depth_profiles": {},
+            "Energy_spectra": {},
+            "tof_in": {}
+        }
+    }

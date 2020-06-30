@@ -113,10 +113,6 @@ def rename_file(old_path: Path, new_name: Union[str, Path]) -> Path:
         return
     dir_path = old_path.parent
     new_file = Path(dir_path, new_name)
-    if new_file.exists():
-        # os.rename should raise this if directory or file exists on the
-        # same name, but it seems it always doesn't.
-        raise OSError(f"File {new_file} already exists")
     old_path.rename(new_file)
     return new_file
 
@@ -605,11 +601,11 @@ def rename_entity(entity: Union["Measurement", "Simulation"], new_name):
         entity.remove_and_close_log(entity.errorlog)
 
         new_dir = rename_file(entity.directory, new_folder)
+        entity.name = new_name
         entity.update_directory_references(new_dir)
     except OSError as e:
-        e.args = f"A file or folder already exists on name {new_name}",
+        e.args = f"Failed to rename measurement folder {new_name}",
         raise
-
 
 
 def _get_external_dir() -> Path:

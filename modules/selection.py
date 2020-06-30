@@ -46,8 +46,6 @@ from pathlib import Path
 
 from .element import Element
 
-from PyQt5 import QtWidgets
-
 
 class AxesLimits:
     """
@@ -257,11 +255,9 @@ class Selector:
                 new_file = gf.rename_file(old_selection_file_in_new_path,
                                           self.measurement_name + ".selections")
                 self.selection_file = Path(self.directory, new_file)
-        except OSError:
-            QtWidgets.QMessageBox.critical(
-                self, "Error",
-                "Something went wrong while renaming the selections file.",
-                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+        except OSError as e:
+            e.args = f"Failed to rename selections: {e}",
+            raise
 
     def purge(self):
         """Purges (removes) all open selections and allows new selection to be

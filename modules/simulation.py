@@ -331,6 +331,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         """Renames Simulation with the given name and updates folders and
         saved files.
         """
+        # TODO should .measurement file also be renamed?
         old_file_name = self.simulation_file
         gf.rename_entity(self, new_name)
         # self.name is updated during gf.rename_entity, so no need to

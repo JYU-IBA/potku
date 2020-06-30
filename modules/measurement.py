@@ -400,7 +400,8 @@ class Measurement(Logger, AdjustableSettings, Serializable):
 
         self.detector.update_directory_references(self)
 
-        self.selector.update_references(self)
+        if self.selector is not None:
+            self.selector.update_references(self)
 
         self.set_loggers(self.directory, self.request.directory)
 
@@ -814,7 +815,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         # TODO should this also rename spectra files?
         gf.rename_entity(self, new_name)
         try:
-            self.rename_info_file(new_name)
+            self.rename_info_file()
         except OSError as e:
             e.args = f"Failed to rename info file: {e}",
             raise
@@ -824,14 +825,11 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             e.args = f"Failed to rename .cut files: {e}",
             raise
 
-    def rename_info_file(self, new_name):
+    def rename_info_file(self):
         """Renames the measurement data file.
         """
-        try:
-            self._get_info_file().unlink()
-        except OSError:
-            pass
-        self.name = new_name
+        # Remove existing files and create a new one
+        gf.remove_matching_files(self.directory, exts={".info"})
         self._info_to_file()
 
     def rename_cut_files(self):
