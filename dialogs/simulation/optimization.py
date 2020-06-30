@@ -7,7 +7,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2019 Heta Rekilä
+Copyright (C) 2019 Heta Rekilä, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -33,23 +33,25 @@ import widgets.binding as bnd
 import widgets.gui_utils as gutils
 
 from pathlib import Path
+from typing import Dict
+from typing import Any
 
 from modules.nsgaii import Nsgaii
 from modules.concurrency import CancellationToken
 from modules.simulation import Simulation
+from modules.element_simulation import ElementSimulation
 from modules.enums import OptimizationType
 
 from widgets.binding import PropertySavingWidget
 from widgets.gui_utils import QtABCMeta
-
-from PyQt5 import uic
-from PyQt5.QtCore import QLocale
-from PyQt5 import QtWidgets
-
 from widgets.simulation.optimization_parameters import \
     OptimizationFluenceParameterWidget
 from widgets.simulation.optimization_parameters import \
     OptimizationRecoilParameterWidget
+
+from PyQt5 import uic
+from PyQt5.QtCore import QLocale
+from PyQt5 import QtWidgets
 
 
 class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
@@ -57,34 +59,31 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
     """User may either optimize fluence or recoil atom distribution.
     Optimization is done by comparing simulated spectrum to measured spectrum.
     """
-    ch = bnd.bind("histogramTicksDoubleSpinBox")
-    use_efficiency = bnd.bind("eff_file_check_box")
-    selected_cut_file = bnd.bind(
+    ch: float = bnd.bind("histogramTicksDoubleSpinBox")
+    use_efficiency: bool = bnd.bind("eff_file_check_box")
+    selected_cut_file: Path = bnd.bind(
         "measurementTreeWidget", fget=bnd.get_selected_tree_item,
         fset=bnd.set_selected_tree_item)
-    selected_element_simulation = bnd.bind(
+    selected_element_simulation: ElementSimulation = bnd.bind(
         "simulationTreeWidget", fget=bnd.get_selected_tree_item,
         fset=bnd.set_selected_tree_item)
+    auto_adjust_x: bool = bnd.bind("auto_adjust_x_box")
 
     @property
-    def fluence_parameters(self):
-        if self.current_mode != OptimizationType.RECOIL:
-            self._fluence_parameters = self.parameters_widget.get_properties()
-        return self._fluence_parameters
+    def fluence_parameters(self) -> Dict[str, Any]:
+        return self.fluence_widget.get_properties()
 
     @fluence_parameters.setter
-    def fluence_parameters(self, value):
-        self._fluence_parameters = value
+    def fluence_parameters(self, value: Dict[str, Any]):
+        self.fluence_widget.set_properties(**value)
 
     @property
-    def recoil_parameters(self):
-        if self.current_mode == OptimizationType.RECOIL:
-            self._recoil_parameters = self.parameters_widget.get_properties()
-        return self._recoil_parameters
+    def recoil_parameters(self) -> Dict[str, Any]:
+        return self.recoil_widget.get_properties()
 
     @recoil_parameters.setter
-    def recoil_parameters(self, value):
-        self._recoil_parameters = value
+    def recoil_parameters(self, value: Dict[str, Any]):
+        self.recoil_widget.set_properties(**value)
 
     def __init__(self, simulation: Simulation, parent):
         """Initializes an OptimizationDialog that displays various optimization
@@ -95,20 +94,16 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             parent: a SimulationTabWidget
         """
         super().__init__()
-
         self.simulation = simulation
         self.tab = parent
-
-        self._fluence_parameters = {}
-        self._recoil_parameters = {}
         self.current_mode = OptimizationType.RECOIL
 
         uic.loadUi(gutils.get_ui_dir() / "ui_optimization_params.ui", self)
 
-        self.load_properties_from_file()
+        self.recoil_widget = OptimizationRecoilParameterWidget()
+        self.fluence_widget = OptimizationFluenceParameterWidget()
 
-        self.parameters_widget = OptimizationRecoilParameterWidget(
-            **self._recoil_parameters)
+        self.load_properties_from_file()
 
         locale = QLocale.c()
         self.histogramTicksDoubleSpinBox.setLocale(locale)
@@ -121,7 +116,9 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         self.radios = QtWidgets.QButtonGroup(self)
         self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
             self.choose_optimization_mode)
-        self.parametersLayout.addWidget(self.parameters_widget)
+        self.parametersLayout.addWidget(self.recoil_widget)
+        self.parametersLayout.addWidget(self.fluence_widget)
+        self.fluence_widget.hide()
 
         self.radios.addButton(self.fluenceRadioButton)
         self.radios.addButton(self.recoilRadioButton)
@@ -133,6 +130,8 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
 
         self.simulationTreeWidget.itemSelectionChanged.connect(
             self._enable_ok_button)
+        self.simulationTreeWidget.itemSelectionChanged.connect(
+            self._adjust_x)
 
         self._fill_measurement_widget()
 
@@ -193,7 +192,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
                     root.addChild(loss_node)
                     root.setExpanded(True)
 
-    def get_property_file_path(self):
+    def get_property_file_path(self) -> Path:
         """Returns absolute path to the file that is used for saving and
         loading parameters.
         """
@@ -209,33 +208,32 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             self.selected_cut_file is not None and
             self.selected_element_simulation is not None)
 
-    def choose_optimization_mode(self, button, checked):
+    def _adjust_x(self):
+        """Adjusts the upper limit value on x axis based on the distribution
+        length of the main recoil of currently selected ElementSimulation.
         """
-        Choose whether to optimize recoils or fluence. Show correct ui.
+        if not self.auto_adjust_x:
+            return
+        elem_sim = self.selected_element_simulation
+        if elem_sim is None:
+            return
+
+        _, max_x = elem_sim.get_main_recoil().get_range()
+        _, prev_y = self.recoil_widget.upper_limits
+        self.recoil_widget.upper_limits = max_x, prev_y
+
+    def choose_optimization_mode(self, button, checked):
+        """Choose whether to optimize recoils or fluence. Show correct widget.
         """
         if checked:
             if button.text() == "Recoil":
-                self._fluence_parameters = \
-                    self.parameters_widget.get_properties()
-                self.current_mode = "recoil"
-                # Clear fluence stuff
-                self.parametersLayout.removeWidget(self.parameters_widget)
-                # Add recoil stuff
-                self.parameters_widget.deleteLater()
-                self.parameters_widget = OptimizationRecoilParameterWidget(
-                    **self._recoil_parameters)
-                self.parametersLayout.addWidget(self.parameters_widget)
+                self.current_mode = OptimizationType.RECOIL
+                self.fluence_widget.hide()
+                self.recoil_widget.show()
             else:
-                self._recoil_parameters = \
-                    self.parameters_widget.get_properties()
-                self.current_mode = "fluence"
-                # Clear recoil stuff
-                self.parametersLayout.removeWidget(self.parameters_widget)
-                self.parameters_widget.deleteLater()
-                # Add fluence stuff
-                self.parameters_widget = OptimizationFluenceParameterWidget(
-                    **self._fluence_parameters)
-                self.parametersLayout.addWidget(self.parameters_widget)
+                self.recoil_widget.hide()
+                self.fluence_widget.show()
+                self.current_mode = OptimizationType.FLUENCE
 
     def start_optimization(self):
         """Find necessary cut file and make energy spectrum with it, and start
@@ -254,11 +252,15 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
 
         self.close()
 
+        if self.current_mode == OptimizationType.RECOIL:
+            params = self.recoil_widget.get_properties()
+        else:
+            params = self.fluence_widget.get_properties()
+
         # TODO move following code to the result widget
         nsgaii = Nsgaii(
             element_simulation=elem_sim, measurement=measurement, cut_file=cut,
-            ch=self.ch, **self.parameters_widget.get_properties(),
-            use_efficiency=self.use_efficiency)
+            ch=self.ch, **params, use_efficiency=self.use_efficiency)
 
         # Optimization running thread
         ct = CancellationToken()

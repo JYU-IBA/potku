@@ -112,20 +112,56 @@ class TestSimulation(unittest.TestCase):
     def test_get_recoils(self):
         sim = mo.get_simulation()
         n = 10
+        elems = set(mo.get_element(randomize=True) for _ in range(n))
         rec_elems = [
-            mo.get_recoil_element() for _ in range(n)
+            mo.get_recoil_element(element=elem) for elem in elems
         ]
         for rec in rec_elems:
             sim.add_element_simulation(rec, save_on_creation=False)
 
         self.assertEqual(rec_elems, sim.get_recoil_elements())
 
-        elem_sim0 = sim.element_simulations[0]
-        rec_elem = mo.get_recoil_element()
-        elem_sim0.recoil_elements.append(rec_elem)
+    def test_has_element(self):
+        sim = mo.get_simulation()
+        elem = mo.get_element()
 
-        self.assertEqual([
-            rec_elems[0], rec_elem, *rec_elems[1:]
-        ], sim.get_recoil_elements())
+        self.assertFalse(sim.has_element(elem))
+
+        rec = mo.get_recoil_element(symbol=elem.symbol)
+
+        sim.add_element_simulation(rec, save_on_creation=False)
+
+        self.assertTrue(sim.has_element(elem))
+
+    def test_can_add_recoil(self):
+        sim = mo.get_simulation()
+        rec = mo.get_recoil_element()
+        self.assertTrue(sim.can_add_recoil(rec))
+        sim.add_element_simulation(rec, save_on_creation=False)
+
+        rec2 = mo.get_recoil_element()
+        self.assertFalse(sim.can_add_recoil(rec2))
+
+        rec2.element.isotope = 1
+        self.assertTrue(sim.can_add_recoil(rec2))
+
+    def test_add_simulation(self):
+        sim = mo.get_simulation()
+        rec_c = mo.get_recoil_element(symbol="C")
+        rec_16c = mo.get_recoil_element(symbol="C", isotope=16)
+
+        elem_sim_c = sim.add_element_simulation(rec_c, save_on_creation=False)
+        elem_sim_16c = sim.add_element_simulation(
+            rec_16c, save_on_creation=False)
+
+        self.assertEqual([elem_sim_c, elem_sim_16c], sim.element_simulations)
+
+    def test_raises_exception_if_recoil_added_twice(self):
+        sim = mo.get_simulation()
+        rec = mo.get_recoil_element()
+        sim.add_element_simulation(rec, save_on_creation=False)
+        self.assertRaises(
+            ValueError, lambda: sim.add_element_simulation(
+                rec, save_on_creation=False))
 
 

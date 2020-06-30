@@ -115,17 +115,21 @@ def get_target() -> Target:
     return Target()
 
 
-def get_recoil_element(recoil_widget=None, name="Default", **kwargs) -> \
-        RecoilElement:
+def get_recoil_element(recoil_widget=None, name="Default", element=None,
+                       **kwargs) -> RecoilElement:
     """Returns a RecoilElement object.
 
     Args:
         recoil_widget: object that gets added to RecoilElement's collection
             of widgets if not 'None'.
         name: name of the recoil
-        **kwargs: keyword arguments passed down to get_element
+        element: element object.
+        **kwargs: if element is not given, these are the keyword arguments
+            that get passed down to get_element
     """
-    re = RecoilElement(get_element(**kwargs), [
+    if element is None:
+        element = get_element(**kwargs)
+    re = RecoilElement(element, [
         Point((1, 1)),
         Point((2, 2)),
     ], "red", name=name)
