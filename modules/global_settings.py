@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -153,7 +153,7 @@ class GlobalSettings:
     def get_request_directory(self) -> Path:
         """Get default request directory.
         """
-        return Path(self.__config[self._DEFAULT]["request_directory"])
+        return Path(self.__config[self._DEFAULT]["request_directory"]).resolve()
 
     def set_request_directory(self, directory: Path):
         """Save default request directory.
@@ -162,13 +162,16 @@ class GlobalSettings:
             directory: String representing folder where requests will be saved
             by default.
         """
-        self.__config[self._DEFAULT]["request_directory"] = str(directory)
+        self.__config[self._DEFAULT]["request_directory"] = str(
+            directory.resolve())
 
     @handle_exceptions(attr="_request_directory_last_open")
     def get_request_directory_last_open(self) -> Path:
         """Get directory where last request was opened.
         """
-        return Path(self.__config[self._DEFAULT]["request_directory_last_open"])
+        return Path(
+            self.__config[self._DEFAULT][
+                "request_directory_last_open"]).resolve()
 
     def set_request_directory_last_open(self, directory: Path):
         """Save last opened request directory.
@@ -178,7 +181,7 @@ class GlobalSettings:
         """
         # TODO use qsettings to do this
         self.__config[self._DEFAULT]["request_directory_last_open"] = str(
-            directory)
+            directory.resolve())
         self.save_config()
 
     def get_element_colors(self):
