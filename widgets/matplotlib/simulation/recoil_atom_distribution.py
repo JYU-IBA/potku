@@ -321,7 +321,7 @@ class ElementManager:
                             == main_element_widget:
                         self.parent.recoil_vertical_layout.insertWidget(
                             i + 1, rw)
-                    break
+                        break
         if rw is not None:
             rw.radio_button.setChecked(True)
 
