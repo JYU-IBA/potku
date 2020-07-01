@@ -130,7 +130,7 @@ class MCERD:
 
         return cmd, str(self.__command_file)
 
-    def run(self, print_output=False, ct: Optional[CancellationToken] = None,
+    def run(self, print_output=True, ct: Optional[CancellationToken] = None,
             poll_interval=10, first_check=0.2, max_time=None, ct_check=0.2):
         """Starts the MCERD process.
 
@@ -196,8 +196,7 @@ class MCERD:
                     #   to stop before max_time has elapsed. Maybe let caller
                     #   implement its own timeout check when multiple processes
                     #   are being run.
-                    on_next=lambda _:
-                    ct.request_cancellation()),
+                    on_next=lambda _: ct.request_cancellation()),
                 ops.map(lambda _: {
                     MCERD.IS_RUNNING: bool(MCERD.stop_process(process)),
                     MCERD.MSG: MCERD.SIM_TIMEOUT
@@ -211,23 +210,17 @@ class MCERD:
 
         merged = rx.merge(errs, outs).pipe(
             ops.subscribe_on(pool_scheduler),
-            MCERD.get_pipeline(self.__seed, self.__rec_filename),
+            MCERD.get_pipeline(
+                self.__seed, self.__rec_filename, print_output=print_output),
             ops.combine_latest(rx.merge(
                 is_running, ct_check, timeout
             )),
-            ops.map(lambda x: {
-                **x[0], **x[1],
-                MCERD.IS_RUNNING: x[0][MCERD.IS_RUNNING] and x[1][
-                    MCERD.IS_RUNNING]
+            ops.starmap(lambda x, y: {
+                **x, **y,
+                MCERD.IS_RUNNING: x[MCERD.IS_RUNNING] and y[MCERD.IS_RUNNING]
             }),
             ops.take_while(lambda x: x[MCERD.IS_RUNNING], inclusive=True),
         )
-
-        if print_output:
-            merged = merged.pipe(
-                observing.get_printer(
-                    f"simulation process with seed {self.__seed}.")
-            )
 
         # on_completed does not get called if the take_while condition is
         # inclusive so this is a quick fix to get the files deleted.
@@ -268,7 +261,7 @@ class MCERD:
             f"MCERD stopped with an error code {res}.")
 
     @staticmethod
-    def get_pipeline(seed: int, name: str) -> rx.pipe:
+    def get_pipeline(seed: int, name: str, print_output=False) -> rx.pipe:
         """Returns an rx pipeline that parses the raw output from MCERD
         into dictionaries.
 
@@ -280,11 +273,13 @@ class MCERD:
         Args:
             seed: seed used in the MCERD process
             name: name of the process (usually the name of the recoil element)
+            print_output: whether output is printed to console
         """
         # TODO add handling for fatal error messages
         return rx.pipe(
             ops.map(lambda x: x.strip()),
-            observing.get_printer(),
+            MCERD._conditional_printer(
+                print_output, f"simulation process with seed {seed}."),
             observing.reduce_while(
                 reducer=str_reducer,
                 start_from=lambda x: x == MCERD._INIT_STARTS,
@@ -314,6 +309,15 @@ class MCERD:
             }),
             ops.take_while(lambda x: x[MCERD.IS_RUNNING], inclusive=True)
         )
+
+    @staticmethod
+    def _conditional_printer(cond: bool, msg: str):
+        if cond:
+            return observing.get_printer(msg)
+
+        def passer(*_):
+            pass
+        return ops.do_action(passer)
 
     @staticmethod
     def stop_process(process: subprocess.Popen):
@@ -456,8 +460,7 @@ class MCERD:
         return "\n".join(cont)
 
     def delete_unneeded_files(self):
-        """
-        Delete mcerd files that are not needed anymore.
+        """Delete mcerd files that are not needed anymore.
         """
         gf.remove_files(
             self.__command_file, self.__detector_file, self.__target_file,

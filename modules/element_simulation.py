@@ -636,7 +636,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                     lambda _: not ct.is_cancellation_requested(),
                     inclusive=True),
             )),
-            ops.map(lambda x: {**x[0], **x[1]}),
+            ops.starmap(lambda x, y: {**x, **y}),
             ops.take_while(
                 lambda x: x[ElementSimulation.FINISHED] < x[
                     ElementSimulation.TOTAL] and

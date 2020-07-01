@@ -22,7 +22,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Heta Rekilä"
+__author__ = "Heta Rekilä \n Juhani Sundell"
 __version__ = "2.0"
 
 import numpy as np
@@ -43,6 +43,7 @@ from rx import operators as ops
 
 from .recoil_element import RecoilElement
 from .element_simulation import ElementSimulation
+from .mcerd import MCERD
 from .point import Point
 from .parsing import CSVParser
 from .energy_spectrum import EnergySpectrum
@@ -247,7 +248,7 @@ class Nsgaii(Observable):
                 )
                 merged = rx.merge(observable, spectra_chk).pipe(
                     ops.take_while(
-                        lambda x: not isinstance(x, dict) or x["is_running"],
+                        lambda x: not isinstance(x, dict) or x[MCERD.IS_RUNNING],
                         inclusive=True)
                 )
                 # Simulation needs to finish before optimization can start
@@ -977,7 +978,16 @@ class Nsgaii(Observable):
                 np.array(self.population[1])
             pool = [pop_sol[pool_ind, :], pop_obj[pool_ind, :]]
             # Form offspring solutions with this pool, and do variation on them
-            offspring = self.variation(pool[0])
+            try:
+                # FIXME using automatically adjusted upper limit for x may
+                #  cause an IndexError here. Find out why and handle it properly
+                offspring = self.variation(pool[0])
+            except IndexError as e:
+                self.on_error(self._get_message(
+                    OptimizationState.FINISHED,
+                    error=f"Failed to process offspring: {e}"))
+                self.clean_up(cancellation_token)
+                return
             # Evaluate offspring solutions to get offspring population
             offspring_pop = self.evaluate_solutions(offspring)
             # Join parent population and offspring population
@@ -1166,7 +1176,7 @@ class Nsgaii(Observable):
                     offspring[i][j] = np.array(int_list)
                 # Flatten the row
                 offspring[i] = np.ndarray.flatten(np.array(offspring[i]))
-            # Transform offspring into numpy arrya
+            # Transform offspring into numpy array
             offspring = np.array(offspring)
             # Use mutation mask
             offspring[total_mutation_bool] = offspring[total_mutation_bool] ^ 1
