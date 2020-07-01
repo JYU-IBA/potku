@@ -283,7 +283,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
 
         if detector is None:
             self.detector = Detector(
-                self.directory / "Detector" / "simulation.detector",
+                self.directory / "Detector" / "Default.detector",
                 self.get_measurement_file(),
                 save_on_creation=save_on_creation)
         else:

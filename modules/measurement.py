@@ -336,7 +336,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             # Detector will be saved when self.to_file is called so
             # save_on_creation is false here
             self.detector = Detector(
-                self.directory / "Detector" / "measurement.detector",
+                self.directory / "Detector" / "Default.detector",
                 self.get_measurement_file(),
                 save_on_creation=False)
         else:

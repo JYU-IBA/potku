@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -26,7 +26,7 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen"
+             "\n Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import time
@@ -98,7 +98,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
 
         self.defaultSettingsCheckBox.setChecked(
             self.measurement.use_default_profile_settings)
-        # TODO
+        # TODO these should be set in the widget, not here
         self.measurement_settings_widget.nameLineEdit.setText(
             self.measurement.measurement_setting_file_name)
         self.measurement_settings_widget.descriptionPlainTextEdit.setPlainText(
@@ -172,6 +172,9 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                 gf.remove_matching_files(
                     self.measurement.directory,
                     exts={".measurement", ".profile"})
+                gf.remove_matching_files(
+                    det_folder_path, exts={".detector"}
+                )
 
                 # Save general measurement settings parameters.
                 self.measurement.to_file()
