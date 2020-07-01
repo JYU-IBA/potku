@@ -22,7 +22,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Heta Rekilä"
+__author__ = "Heta Rekilä \n Juhani Sundell"
 __version__ = "2.0"
 
 import numpy as np
@@ -43,6 +43,7 @@ from rx import operators as ops
 
 from .recoil_element import RecoilElement
 from .element_simulation import ElementSimulation
+from .mcerd import MCERD
 from .point import Point
 from .parsing import CSVParser
 from .energy_spectrum import EnergySpectrum
@@ -63,9 +64,8 @@ class Nsgaii(Observable):
     (https://github.com/ChengHust/NSGA-II).
     """
 
-    def __init__(self, gen, element_simulation: ElementSimulation = None,
-                 pop_size=100, sol_size=5,
-                 upper_limits=None, lower_limits=None,
+    def __init__(self, gen: int, element_simulation: ElementSimulation = None,
+                 pop_size=100, sol_size=5, upper_limits=None, lower_limits=None,
                  optimization_type=OptimizationType.RECOIL,
                  recoil_type="box", number_of_processes=1, cross_p=0.9, mut_p=1,
                  stop_percent=0.3, check_time=20, ch=0.025,
@@ -248,7 +248,7 @@ class Nsgaii(Observable):
                 )
                 merged = rx.merge(observable, spectra_chk).pipe(
                     ops.take_while(
-                        lambda x: not isinstance(x, dict) or x["is_running"],
+                        lambda x: not isinstance(x, dict) or x[MCERD.IS_RUNNING],
                         inclusive=True)
                 )
                 # Simulation needs to finish before optimization can start
@@ -274,11 +274,10 @@ class Nsgaii(Observable):
             **kwargs
         }
 
-    @classmethod
-    def crowding_distance(cls, front_no, objective_values):
-        """
-        Calculate crowding distnce for each solution in the population, by the
-        Pareto front it belongs to.
+    @staticmethod
+    def crowding_distance(front_no, objective_values):
+        """Calculate crowding distance for each solution in the population, by
+        the Pareto front it belongs to.
 
         Args:
             front_no: Front numbers for all solutions.
@@ -801,8 +800,8 @@ class Nsgaii(Observable):
             i += 1
         self.measured_espe = new
 
-    @classmethod
-    def nd_sort(cls, pop_obj, n, r_n=np.inf):
+    @staticmethod
+    def nd_sort(pop_obj, n, r_n=np.inf):
         """
         Sort population pop_obj according to non-domination.
 
@@ -872,8 +871,8 @@ class Nsgaii(Observable):
             fronts += 1
         return front_no, fronts
 
-    @classmethod
-    def new_population_selection(cls, population, pop_size):
+    @staticmethod
+    def new_population_selection(population, pop_size):
         """
         Select individuals to a new population based on crowded comparison
         operator.
@@ -979,7 +978,16 @@ class Nsgaii(Observable):
                 np.array(self.population[1])
             pool = [pop_sol[pool_ind, :], pop_obj[pool_ind, :]]
             # Form offspring solutions with this pool, and do variation on them
-            offspring = self.variation(pool[0])
+            try:
+                # FIXME using automatically adjusted upper limit for x may
+                #  cause an IndexError here. Find out why and handle it properly
+                offspring = self.variation(pool[0])
+            except IndexError as e:
+                self.on_error(self._get_message(
+                    OptimizationState.FINISHED,
+                    error=f"Failed to process offspring: {e}"))
+                self.clean_up(cancellation_token)
+                return
             # Evaluate offspring solutions to get offspring population
             offspring_pop = self.evaluate_solutions(offspring)
             # Join parent population and offspring population
@@ -1047,7 +1055,7 @@ class Nsgaii(Observable):
             self.element_simulation.optimized_fluence = avg
 
         self.clean_up(cancellation_token)
-        self.save_results_to_file()
+        self.element_simulation.optimization_results_to_file(self.cut_file)
 
         self.on_completed(self._get_message(
             OptimizationState.FINISHED,
@@ -1067,23 +1075,6 @@ class Nsgaii(Observable):
                     os.remove(Path(self.element_simulation.directory, file))
                 except OSError:
                     pass
-
-    def save_results_to_file(self):
-        if self.optimization_type is OptimizationType.RECOIL:
-            # Save optimized recoils
-            for recoil in self.element_simulation.optimization_recoils:
-                recoil.to_file(self.element_simulation.directory)
-            save_file_name = f"{self.element_simulation.name_prefix}" \
-                             f"-opt.measured"
-            with open(Path(self.element_simulation.directory, save_file_name),
-                      "w") as f:
-                f.write(self.cut_file.stem)
-        elif self.element_simulation.optimized_fluence != 0:
-            # save found fluence value
-            file_name = f"{self.element_simulation.name_prefix}-optfl.result"
-            with open(Path(self.element_simulation.directory, file_name),
-                      "w") as f:
-                f.write(str(self.element_simulation.optimized_fluence))
 
     def variation(self, pop_sols):
         """
@@ -1185,7 +1176,7 @@ class Nsgaii(Observable):
                     offspring[i][j] = np.array(int_list)
                 # Flatten the row
                 offspring[i] = np.ndarray.flatten(np.array(offspring[i]))
-            # Transform offspring into numpy arrya
+            # Transform offspring into numpy array
             offspring = np.array(offspring)
             # Use mutation mask
             offspring[total_mutation_bool] = offspring[total_mutation_bool] ^ 1

@@ -44,6 +44,7 @@ from typing import Iterable
 from typing import Tuple
 from typing import Dict
 from typing import Set
+from typing import Union
 from rx import operators as ops
 from pathlib import Path
 from collections import deque
@@ -210,7 +211,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self._erd_filehandler = ERDFileHandler.from_directory(
             self.directory, self.get_main_recoil())
 
-        # TODO check if all optimization stuff can be moved to another module
+        # TODO there should be a clearer boundary between optimization stuff
+        #   and simulation stuff. Everything should not just be contained in
+        #   this one class.
         if optimization_recoils is None:
             self.optimization_recoils = []
         else:
@@ -222,7 +225,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self._running_event = Event()
         self._running_event.set()
 
-        # TODO get rid of this reference
+        # TODO get rid of this GUI reference
         self.optimization_widget = None
         # Store fluence optimization results
         self.optimized_fluence = optimized_fluence
@@ -274,7 +277,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self.recoil_elements.extend(self.optimization_recoils)
         self.optimization_recoils = []
 
-    def update_recoil_element(self, recoil_element, new_values):
+    def update_recoil_element(self, recoil_element: RecoilElement, new_values):
         """Updates RecoilElement object with new values.
 
         Args:
@@ -323,9 +326,10 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 gf.rename_file(simu_file, new_name)
 
     @classmethod
-    def from_file(cls, request, prefix: str, simulation_folder: Path,
-                  mcsimu_file_path: Path, profile_file_path: Path,
-                  simulation=None) -> "ElementSimulation":
+    def from_file(cls, request: "Request", prefix: str, simulation_folder: Path,
+                  mcsimu_file: Path, profile_file: Path,
+                  simulation: Optional["Simulation"] = None,
+                  save_on_creation=True) -> "ElementSimulation":
         """Initialize ElementSimulation from JSON files.
 
         Args:
@@ -334,13 +338,18 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 ElementSimulation.
             simulation_folder: A file path to simulation folder that contains
                 files ending with ".rec".
-            mcsimu_file_path: A file path to JSON file containing the
+            mcsimu_file: A file path to JSON file containing the
                 simulation parameters.
-            profile_file_path: A file path to JSON file containing the
+            profile_file: A file path to JSON file containing the
                 channel width.
             simulation: parent Simulation object of this ElementSimulation
+            save_on_creation: whether ElementSimulation object is saved after
+                it has been initialized
+
+        Return:
+            ElementSimulation object
         """
-        with mcsimu_file_path.open("r") as mcsimu_file:
+        with mcsimu_file.open("r") as mcsimu_file:
             mcsimu = json.load(mcsimu_file)
 
         # Pop the recoil name so it can be converted to a RecoilElement
@@ -365,70 +374,79 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         # Read channel width from .profile file.
         try:
-            with profile_file_path.open("r") as prof_file:
+            with profile_file.open("r") as prof_file:
                 prof = json.load(prof_file)
             kwargs = {
                 "channel_width": prof["energy_spectra"]["channel_width"]
             }
-        except (json.JSONDecodeError, OSError, KeyError) as e:
+        except (json.JSONDecodeError, OSError, KeyError, AttributeError) as e:
             logging.getLogger("request").error(
-                f"Failed to read data from file {profile_file_path}: {e}."
+                f"Failed to read data from file {profile_file}: {e}."
             )
             kwargs = {}
 
         rec_type = mcsimu["simulation_type"].get_recoil_type()
 
         main_recoil = None
-        optimized_fluence = None
         recoil_elements = deque()
         optimized_recoils_dict = {}
 
-        for file in os.listdir(simulation_folder):
-            if fp.is_recoil_file(prefix, file):
-                # Initialize a recoil element
-                rec_elem = RecoilElement.from_file(
-                    Path(simulation_folder, file), rec_type=rec_type, **kwargs
-                )
+        files = gf.find_files_by_extension(
+            simulation_folder, ".recoil", ".erd", ".result", ".rec", ".sct")
 
-                if rec_elem.name == main_recoil_name:
-                    main_recoil = rec_elem
+        for r in (*files[".rec"], *files[".sct"]):
+            if fp.is_recoil_file(prefix, r):
+                recoil = RecoilElement.from_file(r, rec_type=rec_type, **kwargs)
 
-                # Check whether element in regular or part of optimized recoils
-                if fp.is_optfirst(prefix, file):
-                    optimized_recoils_dict[0] = rec_elem
-                elif fp.is_optmed(prefix, file):
-                    optimized_recoils_dict[1] = rec_elem
-                elif fp.is_optlast(prefix, file):
-                    optimized_recoils_dict[2] = rec_elem
+                # Check if main recoil
+                if recoil.name == main_recoil_name:
+                    main_recoil = recoil
+
+                # Sort out optimization results
+                # TODO main recoil cannot be opt_first? could change this
+                #   to elif
+                if fp.is_optfirst(prefix, r):
+                    optimized_recoils_dict[0] = recoil
+                elif fp.is_optmed(prefix, r):
+                    optimized_recoils_dict[1] = recoil
+                elif fp.is_optlast(prefix, r):
+                    optimized_recoils_dict[2] = recoil
+
                 else:
-                    # Find if file has a matching erd file (=has been simulated)
-                    for f in os.listdir(simulation_folder):
-                        if fp.is_erd_file(rec_elem, f):
-                            recoil_elements.appendleft(rec_elem)
-                            main_recoil = rec_elem
+                    # Find if file has a matching erd file
+                    # (=has been simulated)
+                    for erd_file in files[".erd"]:
+                        if fp.is_erd_file(recoil, erd_file):
+                            recoil_elements.appendleft(recoil)
+                            main_recoil = recoil
                             break
                     else:
                         # No matching erd file was found
-                        if rec_elem is main_recoil:
-                            recoil_elements.appendleft(rec_elem)
+                        if recoil is main_recoil:
+                            recoil_elements.appendleft(recoil)
                         else:
-                            recoil_elements.append(rec_elem)
+                            recoil_elements.append(recoil)
 
-            # Check if fluence has been optimized
-            elif fp.is_optfl_result(prefix, file):
-                with Path(simulation_folder, file).open("r") as f:
-                    optimized_fluence = float(f.readline())
+        # Sort optimized recoils into proper order
         optimized_recoils = [
             val for key, val
             in sorted(optimized_recoils_dict.items())
         ]
+
+        # Check if fluence has been optimized
+        optimized_fluence = None
+        for file in files[".result"]:
+            if fp.is_optfl_result(prefix, file):
+                with file.open("r") as f:
+                    optimized_fluence = float(f.readline())
+                break
 
         return cls(
             directory=simulation_folder, request=request,
             recoil_elements=list(recoil_elements), name_prefix=name_prefix,
             name=name, optimization_recoils=optimized_recoils,
             optimized_fluence=optimized_fluence, **kwargs, **mcsimu,
-            simulation=simulation)
+            simulation=simulation, save_on_creation=save_on_creation)
 
     def get_full_name(self):
         """Returns the full name of the ElementSimulation object.
@@ -469,14 +487,21 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         """
         return Path(self.directory, f"{self.get_full_name()}.mcsimu")
 
-    def to_file(self, file_path: Optional[Path] = None):
+    def to_file(self, file_path: Optional[Path] = None,
+                save_optim_results=False):
         """Save mcsimu settings to file.
 
         Args:
             file_path: File in which the mcsimu settings will be saved.
+            save_optim_results: whether to save optimization results or not (
+                nothing is saved if no results exist)
         """
+        # TODO call profile_to_file and recoil.to_file in here instead of having
+        #   the caller call each function separately
         if file_path is None:
             file_path = self.get_default_file_path()
+        if save_optim_results:
+            self.optimization_results_to_file()
         with file_path.open("w") as file:
             json.dump(self.get_json_content(), file, indent=4)
 
@@ -611,7 +636,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                     lambda _: not ct.is_cancellation_requested(),
                     inclusive=True),
             )),
-            ops.map(lambda x: {**x[0], **x[1]}),
+            ops.starmap(lambda x, y: {**x, **y}),
             ops.take_while(
                 lambda x: x[ElementSimulation.FINISHED] < x[
                     ElementSimulation.TOTAL] and
@@ -871,6 +896,23 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         return settings, run, detector
 
+    def optimization_results_to_file(self, cut_file: Optional[Path] = None):
+        """Saves optimizations results to file if they exist.
+        """
+        if self.optimization_recoils:
+            # Save recoils
+            for recoil in self.optimization_recoils:
+                recoil.to_file(self.directory)
+            if cut_file is not None:
+                save_file_name = f"{self.name_prefix}-opt.measured"
+                with (self.directory / save_file_name).open("w") as f:
+                    f.write(cut_file.stem)
+        if self.optimized_fluence:
+            # save found fluence value
+            file_name = f"{self.name_prefix}-optfl.result"
+            with (self.directory / file_name).open("w") as f:
+                f.write(str(self.optimized_fluence))
+
     def delete_optimization_results(self, optim_mode=None):
         """Deletes optimization results. Also stops the optimization if
         it is running.
@@ -959,7 +1001,8 @@ class ERDFileHandler:
 
     Handles counting atoms and getting seeds.
     """
-    def __init__(self, files: Iterable[Path], recoil_element: RecoilElement):
+    def __init__(self, files: Iterable[Union[Path, str]],
+                 recoil_element: RecoilElement):
         """Initializes a new ERDFileHandler that tracks old and new .erd files
         belonging to the given recoil element
 
@@ -992,8 +1035,7 @@ class ERDFileHandler:
             new ERDFileHandler.
         """
         try:
-            full_paths = (Path(directory, file)
-                          for file in os.scandir(directory))
+            full_paths = gf.find_files_by_extension(directory, ".erd")[".erd"]
         except OSError:
             full_paths = []
         return cls(full_paths, recoil_element)
@@ -1015,7 +1057,7 @@ class ERDFileHandler:
         """
         return len(self.__active_files) + len(self.__old_files)
 
-    def add_active_file(self, erd_file: Path):
+    def add_active_file(self, erd_file: Union[Path, str]):
         """Adds an active ERD file to the handler.
 
         File must not already exist in active or old files, otherwise
@@ -1024,6 +1066,7 @@ class ERDFileHandler:
         Args:
             erd_file: file name of an .erd file
         """
+        erd_file = Path(erd_file)
         if erd_file in self.__active_files:
             raise ValueError("Given .erd file is an already active file")
         if erd_file in self.__old_files:

@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -29,17 +29,24 @@ __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 from pathlib import Path
+from typing import Union
+from typing import Optional
+from typing import Iterable
+from typing import Tuple
+from typing import Callable
+from typing import Iterator
 
 from .enums import OptimizationType
 
 
-def get_erd_file_name(recoil_element, seed, optim_mode=None):
+def get_erd_file_name(recoil_element: "RecoilElement", seed: Union[int, str],
+                      optim_mode: Optional[OptimizationType] = None) -> str:
     """Returns the name of a file that corresponds to given
     recoil element, seed and optimization mode.
 
     Args:
         recoil_element: recoil element
-        seed: seed of the simulation or '*'
+        seed: seed of the simulation (or '*' when used to glob multiple files)
         optim_mode: either None, 'recoil' or 'fluence'
 
     Return:
@@ -56,7 +63,7 @@ def get_erd_file_name(recoil_element, seed, optim_mode=None):
     raise ValueError(f"Unknown optimization mode '{optim_mode}'")
 
 
-def get_seed(erd_file):
+def get_seed(erd_file: Path) -> Optional[int]:
     """Returns seed value from given .erd file path.
 
     Does not check if the 'erd_file' parameter is a valid
@@ -70,14 +77,16 @@ def get_seed(erd_file):
         parsed.
     """
     try:
-        return int(erd_file.rsplit('.', 2)[1])
+        return int(erd_file.name.rsplit('.', 2)[1])
     except (ValueError, IndexError):
         # int could not be parsed or the splitted string did not contain
         # two parts
         return None
 
 
-def validate_erd_file_names(erd_files, recoil_element):
+def validate_erd_file_names(erd_files: Iterable[Union[Path, str]],
+                            recoil_element: "RecoilElement") -> \
+                            Iterator[Tuple[Path, int]]:
     """Checks if the iterable of .erd files contains valid file names
     for the given recoil element.
 
@@ -95,66 +104,68 @@ def validate_erd_file_names(erd_files, recoil_element):
         #  '4He-default.\.101.erd' to be valid but on Win this is not the
         #  case. Not sure how to specify what the correct behaviour should
         #  be
-        erd_file = Path(erd_file_path).name
+        erd_file = Path(erd_file_path)
         seed = get_seed(erd_file)
         if seed is None:
             continue
 
         if is_erd_file(recoil_element, erd_file):
-            yield erd_file_path, seed
+            yield erd_file, seed
 
 
-def is_erd_file(recoil_element, file_name) -> bool:
+def is_erd_file(recoil_element: "RecoilElement", file: Path) -> bool:
     """Checks if the file is a valid ERD file name for the given
     recoil element.
     """
-    return file_name.startswith(recoil_element.get_full_name()) and \
-        file_name.endswith(".erd")
+    return file.name.startswith(recoil_element.get_full_name()) and \
+        file.suffix == ".erd"
 
 
-def recoil_filter(prefix):
+def recoil_filter(prefix: str) -> Callable:
     """Returns a filter function that accepts recoil element file names
     that begin with the given prefix and end in either 'rec' or 'sct'.
     """
+    exts = {".rec", ".sct"}
     # Last line ensures that e.g. C and Cu are handled separately
-    return lambda file: file.startswith(prefix) and \
-        (file.endswith(".rec") or file.endswith(".sct")) and \
-        not file[file.index(prefix) + len(prefix)].isalpha()
+    return lambda file: file.name.startswith(prefix) and \
+        file.suffix in exts and \
+        not file.name[file.name.index(prefix) + len(prefix)].isalpha()
 
 
 # TODO document what the prefix actually is in the following functions
-def is_recoil_file(prefix, file_name) -> bool:
+def is_recoil_file(prefix: str, file: Path) -> bool:
     """Checks whether a file name is a recoil name for the given prefix.
     """
-    return recoil_filter(prefix)(file_name)
+    return recoil_filter(prefix)(file)
 
 
-def get_recoil_file_path(recoil_element, directory) -> Path:
+def get_recoil_file_path(recoil_element: "RecoilElement", directory: Path) \
+        -> Path:
     return Path(directory,
                 f"{recoil_element.get_full_name()}.{recoil_element.type}")
 
 
-def is_optfl_result(prefix, file_name) -> bool:
+def is_optfl_result(prefix: str, file: Path) -> bool:
     """Checks whether a file name is a optfl result for the given prefix.
     """
-    return file_name.startswith(prefix) and \
-        file_name.endswith("-optfl.result") and \
-        not file_name[file_name.index(prefix) + len(prefix)].isalpha()
+    return file.name.startswith(prefix) and \
+        file.name.endswith("-optfl.result") and \
+        not file.name[file.name.index(prefix) + len(prefix)].isalpha()
 
 
-def is_optfirst(prefix, file_name) -> bool:
+def is_optfirst(prefix: str, file: Path) -> bool:
     """Checks whether a file name is a optfirst file for the given prefix.
     """
-    return f"{prefix}-optfirst.rec" == file_name
+    return f"{prefix}-optfirst.rec" == file.name
 
 
-def is_optmed(prefix, file_name) -> bool:
+def is_optmed(prefix: str, file: Path) -> bool:
     """Checks whether a file name is a optmed file for the given prefix.
     """
-    return f"{prefix}-optmed.rec" == file_name
+    return f"{prefix}-optmed.rec" == file.name
 
 
-def is_optlast(prefix, file_name) -> bool:
+def is_optlast(prefix: str, file: Path) -> bool:
     """Checks whether a file name is a optlast file for the given prefix.
     """
-    return f"{prefix}-optlast.rec" == file_name
+    return f"{prefix}-optlast.rec" == file.name

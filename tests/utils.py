@@ -152,7 +152,6 @@ class PlatformSwitcher:
     platforms = {"Windows", "Linux", "Darwin"}
 
     def __init__(self, system):
-        # TODO find a way to switch os specific separator chars in paths
         if system not in self.platforms:
             raise ValueError(f"PlatformSwitcher was given an unsupported os "
                              f"{system}")

@@ -321,7 +321,7 @@ class ElementManager:
                             == main_element_widget:
                         self.parent.recoil_vertical_layout.insertWidget(
                             i + 1, rw)
-                    break
+                        break
         if rw is not None:
             rw.radio_button.setChecked(True)
 
@@ -2398,24 +2398,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         return area
 
-    def add_area_point(self, x, points_list):
-        """Add a point to points list.
-
-        Args:
-             x: X coordinate.
-             points_list: Tuple list of points.
-        """
-        i = 0
-        points = self.current_recoil_element.get_points()
-        while i + 1 in range(len(points)):
-            c_p = points[i].get_x()
-            n_p = points[i + 1].get_x()
-            if c_p < x < n_p:
-                y = gf.find_y_on_line(points[i], points[i + 1], x)
-                # Add point to limited_points
-                points_list.insert(i + 1, (x, y))
-                break
-            i += 1
 
     def on_rectangle_select(self, eclick, erelease):
         """Select multiple points.

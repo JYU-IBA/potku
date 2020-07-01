@@ -283,7 +283,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
 
         if detector is None:
             self.detector = Detector(
-                self.directory / "Detector" / "simulation.detector",
+                self.directory / "Detector" / "Default.detector",
                 self.get_measurement_file(),
                 save_on_creation=save_on_creation)
         else:
@@ -327,14 +327,34 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         return Path(self.path.parent,
                     f"{self.measurement_setting_file_name}.measurement")
 
-    def rename_simulation_file(self):
-        """Renames the simulation files with self.simulation_file.
+    def rename(self, new_name: str):
+        """Renames Simulation with the given name and updates folders and
+        saved files.
         """
-        for file in os.listdir(self.directory):
-            if file.endswith(".simulation"):
-                gf.rename_file(
-                    Path(self.directory, file),
-                    self.simulation_file)
+        # TODO should .measurement file also be renamed?
+        old_file_name = self.simulation_file
+        gf.rename_entity(self, new_name)
+        # self.name is updated during gf.rename_entity, so no need to
+        # update simulation file here
+        # TODO add function get_simulation_file to dynamically
+        #   get the right file name
+        # TODO too confusing to have separate attributes for path
+        #   and simulation_file
+        old_file_path = self.directory / old_file_name
+        try:
+            gf.rename_file(old_file_path, self.simulation_file)
+            self.to_file()
+        except OSError as e:
+            e.args = f"Failed to rename .simulation file: {e}",
+            raise
+
+    def rename_simulation_file(self):
+        """Renames the simulation file with self.simulation_file.
+        """
+        files = gf.find_files_by_extension(self.directory, ".simulation")
+        for file in files[".simulation"]:
+            gf.rename_file(Path(self.directory, file), self.simulation_file)
+            break
 
     @staticmethod
     def find_simulation_files(simulation_dir: Path) -> namedtuple:

@@ -1,7 +1,6 @@
 # coding=utf-8
 """
 Created on 2.2.2020
-Updated on 5.2.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -32,10 +31,10 @@ import os
 import time
 import platform
 import threading
+import tests.utils as utils
+import tests.mock_objects as mo
 
 import modules.file_paths as fp
-import tests.mock_objects as mo
-import tests.utils as utils
 
 from modules.recoil_element import RecoilElement
 from modules.element import Element
@@ -74,33 +73,31 @@ class TestErdFileHandler(unittest.TestCase):
         ]
 
         cls.expected_values = [
-            (f, s + 101)
+            (Path(f), s + 101)
             for s, f in enumerate(cls.valid_erd_files)
         ]
 
     def test_get_seed(self):
         # get_seed looks for an integer in the second part of the string
         # split by dots
-        self.assertEqual(102, fp.get_seed("O.102.erd"))
-        self.assertEqual(0, fp.get_seed("..3.2.1.0."))
-        self.assertEqual(-1, fp.get_seed("..-1.2"))
+        self.assertEqual(102, fp.get_seed(Path("O.102.erd")))
+        self.assertEqual(0, fp.get_seed(Path("..3.2.1.0.")))
+        self.assertEqual(-1, fp.get_seed(Path("..-1.2")))
+        self.assertEqual(101, fp.get_seed(Path("/tmp/.101.erd")))
+        self.assertEqual(101, fp.get_seed(Path("\\tmp\\.101.erd")))
 
-        # File paths are also valid arguments
-        self.assertEqual(101, fp.get_seed("/tmp/.101.erd"))
-        self.assertEqual(101, fp.get_seed("\\tmp\\.101.erd"))
+        self.assertIsNone(fp.get_seed(Path(".101./erd")))
 
-        # get_seed makes no attempt to check if the entire string
-        # is a valid file name or path to an erd file
-        self.assertEqual(101, fp.get_seed(".101./erd"))
-        self.assertEqual(101, fp.get_seed(".101.\\erd"))
+        # strings cause AttributeError
+        self.assertRaises(AttributeError, lambda: fp.get_seed("O.102.erd"))
 
         # Having less split parts before or after returns None
-        self.assertIsNone(fp.get_seed("111."))
-        self.assertIsNone(fp.get_seed("0-111."))
-        self.assertIsNone(fp.get_seed(".111.."))
+        self.assertIsNone(fp.get_seed(Path("111.")))
+        self.assertIsNone(fp.get_seed(Path("0-111.")))
+        self.assertIsNone(fp.get_seed(Path(".111..")))
 
         # So does having no splits at all
-        self.assertIsNone(fp.get_seed("100"))
+        self.assertIsNone(fp.get_seed(Path("100")))
 
     # Expect failure on *nix systems because they accept different file names
     # compared to Windows.
@@ -155,7 +152,7 @@ class TestErdFileHandler(unittest.TestCase):
                           lambda: handler.add_active_file("4He-New.101.erd"))
 
         # new file can be added, but only once
-        new_file = "4He-Default.103.erd"
+        new_file = Path("4He-Default.103.erd")
         handler.add_active_file(new_file)
 
         self.assertRaises(ValueError, lambda: handler.add_active_file(new_file))
@@ -456,6 +453,8 @@ class TestElementSimulation(unittest.TestCase):
             self.assert_files_equal(
                 mock_get_espe, kwargs, rec_file, erd_file, espe_file)
 
+            self.assertEqual(mock_run.call_count, 3)
+
     def assert_files_equal(self, mock_get_espe, kwargs, rec_file, erd_file,
                            espe_file):
         _, file = self.elem_sim.calculate_espe(**kwargs)
@@ -528,6 +527,52 @@ class TestElementSimulation(unittest.TestCase):
         self.assertTrue(self.elem_sim.has_element(rec_he.element))
         self.assertTrue(self.elem_sim.has_element(rec_1he.element))
         self.assertTrue(self.elem_sim.has_element(rec_1he_2.element))
+
+    def test_serialization(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_dir = Path(tmp_dir)
+            elem = mo.get_element()
+            prefix = elem.symbol
+            re1 = mo.get_recoil_element(symbol=prefix)
+            re2 = mo.get_recoil_element(name="secondary", symbol=prefix)
+
+            o_re_first = mo.get_recoil_element(name="optfirst")
+            o_re_med = mo.get_recoil_element(name="optmed")
+            o_re_last = mo.get_recoil_element(name="optlast")
+
+            es1 = ElementSimulation(
+                tmp_dir, mo.get_request(), [re1, re2],
+                name_prefix=prefix, save_on_creation=True,
+                optimized_fluence=5e12,
+                optimization_recoils=[o_re_first, o_re_med, o_re_last])
+            es1.to_file(save_optim_results=True)
+
+            mcsimu = es1.get_default_file_path()
+            es2 = ElementSimulation.from_file(
+                mo.get_request(), prefix, tmp_dir, mcsimu_file=mcsimu,
+                profile_file=None, simulation=mo.get_simulation(),
+                save_on_creation=False
+            )
+
+            utils.assert_all_equal(
+                "He-Default", es1.get_full_name(), es2.get_full_name())
+            self.assertEqual(
+                "He-Default", es1.get_main_recoil().get_full_name(),
+                es2.get_main_recoil().get_full_name())
+
+            utils.assert_all_equal(
+                ["Default", "secondary"],
+                [r.name for r in es1.recoil_elements],
+                [r.name for r in es2.recoil_elements])
+
+            utils.assert_all_equal(
+                5e12, es1.optimized_fluence, es2.optimized_fluence
+            )
+
+            utils.assert_all_equal(
+                ["optfirst", "optmed", "optlast"],
+                [r.name for r in es1.optimization_recoils],
+                [r.name for r in es2.optimization_recoils])
 
 
 def write_line(file):

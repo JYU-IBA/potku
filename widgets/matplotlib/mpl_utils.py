@@ -40,8 +40,8 @@ from typing import Any
 from typing import Hashable
 from typing import List
 from typing import Callable
-from modules.general_functions import Range
-from modules.general_functions import StrTuple
+from modules.base import Range
+from modules.base import StrTuple
 
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QLabel

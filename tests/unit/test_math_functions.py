@@ -469,7 +469,6 @@ class TestPointInside(unittest.TestCase):
         self.assertFalse(mf.point_inside_polygon(Point(1, 0), rectangle))
         self.assertFalse(mf.point_inside_polygon(Point(1, 1), rectangle))
 
-        # TODO why are these two True?
         self.assertTrue(mf.point_inside_polygon(Point(1.5, 1), rectangle))
         self.assertTrue(mf.point_inside_polygon(Point(2, 1), rectangle))
 

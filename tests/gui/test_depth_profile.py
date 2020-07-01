@@ -39,9 +39,6 @@ class TestDepthProfile(unittest.TestCase):
     def test_initialization(self):
         parent = QWidget()
         parent.measurement = mo.get_measurement()
-        # TODO measurement should have a get_data_dir function
-        parent.measurement.directory_data = \
-            parent.measurement.directory / "Data"
         parent.measurement.selector = Selector(
             parent.measurement, mo.get_global_settings().get_default_colors())
         parent.icon_manager = Mock()
