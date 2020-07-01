@@ -16,6 +16,14 @@ echo(
 pip install pipenv
 pipenv install || (echo [91mInstalling dependencies failed[0m && goto :error)
 
+echo
+echo [92mPython libraries used:[0m
+echo
+pip freeze
+mkdir dist
+pip freeze > dist/python_libs.txt
+echo [92mList of libraries written to dist/python_libs.txt[0m
+
 cd %cur_dir%
 echo(
 echo [92mRunning tests[0m

@@ -22,6 +22,15 @@ echo
 pip install pipenv
 pipenv install || exit 1
 
+echo
+echo -e "${GREEN}Python libraries used:${NC}"
+echo
+pip freeze
+mkdir -p dist
+pip freeze > dist/python_libs.txt
+
+echo -e "${GREEN}List of libraries written to dist/python_libs.txt${NC}"
+
 cd ${CUR_DIR}
 echo
 echo -e "${GREEN}Running tests${NC}"
@@ -33,7 +42,6 @@ echo
 echo -e "${GREEN}Installing and running PyInstaller${NC}"
 echo
 
-# FIXME for some reason python -m pyinstaller is not working
 pip install pyinstaller
 pyinstaller -y --clean --windowed potku.spec || exit 1
 
