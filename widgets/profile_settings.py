@@ -129,7 +129,7 @@ class ProfileSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
                 self.preset_widget.set_status_msg(
                     f"Failed to save preset: {err}")
         self._save_json_file(
-            file_path, self.get_properties(), True, error_func=err_func())
+            file_path, self.get_properties(), True, error_func=err_func)
         if self.preset_widget is not None:
             self.preset_widget.load_files(selected=file_path)
 
