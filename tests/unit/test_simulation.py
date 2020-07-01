@@ -112,7 +112,8 @@ class TestSimulation(unittest.TestCase):
     def test_get_recoils(self):
         sim = mo.get_simulation()
         n = 10
-        elems = set(mo.get_element(randomize=True) for _ in range(n))
+        elems = set(mo.get_element(randomize=True, amount_p=0) for _ in
+                    range(n))
         rec_elems = [
             mo.get_recoil_element(element=elem) for elem in elems
         ]
@@ -145,7 +146,7 @@ class TestSimulation(unittest.TestCase):
         rec2.element.isotope = 1
         self.assertTrue(sim.can_add_recoil(rec2))
 
-    def test_add_simulation(self):
+    def test_add_element_simulation(self):
         sim = mo.get_simulation()
         rec_c = mo.get_recoil_element(symbol="C")
         rec_16c = mo.get_recoil_element(symbol="C", isotope=16)
