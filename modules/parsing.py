@@ -1,13 +1,12 @@
 # coding=utf-8
 """
 Created on 15.1.2020
-Updated on 28.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -26,7 +25,7 @@ File parsing is used for parsing files that contain csv-formatted
 data.
 """
 __author__ = "Juhani Sundell"
-__version__ = ""    # TODO
+__version__ = "2.0"
 
 
 class CSVParser:

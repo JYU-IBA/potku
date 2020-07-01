@@ -36,7 +36,6 @@ from typing import Tuple
 # Python3.6, ABC does not have a __slots__ declaration, which would make
 # __slots__ useless in inheriting classes. If Potku is upgraded to a higher
 # version of Python, these classes should be made into ABCs.
-# TODO possibly add a class for objects that run external programs
 
 # Type hint aliases that can be imported to other modules
 ElemSimList = List["ElementSimulation"]

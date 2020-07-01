@@ -235,11 +235,9 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         # Remove axis ticks and draw
         self.remove_axes_ticks()
 
-        # TODO next line may shows a warning 'Tight layout not applied. The left
+        # TODO next line may show a warning 'Tight layout not applied. The left
         #      and right margins cannot be made large enough to accommodate all
         #      axes decorations.'
-        #      Window won't be drawn but it can still be opened by clicking
-        #      on the simulation again. Progress bar gets stuck though.
         self.canvas.draw()
         self.canvas.flush_events()
 
