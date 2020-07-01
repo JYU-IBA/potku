@@ -193,8 +193,6 @@ class TestGeneralFunctions(unittest.TestCase):
                          msg="Temporary directory {0} was not removed "
                              "after the test".format(tmp_dir))
 
-        # TODO test opening file in another process and then trying to count it
-
     def test_rounding(self):
         self.assertEqual(1000, gf.round_value_by_four_biggest(1000))
         self.assertEqual(12340, gf.round_value_by_four_biggest(12345))

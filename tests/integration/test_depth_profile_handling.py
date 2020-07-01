@@ -101,7 +101,7 @@ class TestDepthProfileHandling(unittest.TestCase):
 
     def test_get_depth_range(self):
         """Tests depth ranges with different depth units"""
-        # First read files while using TODO depth units
+        # First read files while using depth units other than nanometers
         self.handler.read_directory(
             self.depth_dir, self.some_elements, depth_units="")
         fst_range = self.handler.get_depth_range()

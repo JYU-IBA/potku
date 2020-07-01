@@ -54,15 +54,12 @@ class TestFolderStructure(unittest.TestCase):
                 "Composition_changes": {
                     "Changes": {}
                 },
-                # TODO
-                # "default.log": None,
-                # "errors.log": None
             }
         }
         self.after_to_file = copy.deepcopy(self.folder_structure)
         self.after_to_file["mesu"].update({
             "Detector": {
-                "measurement.detector": None
+                "Default.detector": None
             },
             f"{self.mesu_name}.info": None,
             f"{self.profile_name}.profile": None,
@@ -115,7 +112,7 @@ class TestFolderStructure(unittest.TestCase):
             self.assertEqual(
                 path / f"Default.target", tgt_file)
             self.assertEqual(
-                path / "Detector" / f"measurement.detector", det_file)
+                path / "Detector" / f"Default.detector", det_file)
 
     def test_rename_cuts(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -183,7 +180,7 @@ def get_extected_folder_structure(root, name):
             "Default.profile": None,
             "Default.target": None,
             "Detector": {
-                "measurement.detector": None
+                "Default.detector": None
             },
             "Composition_changes": {
                 "Changes": {}
