@@ -724,7 +724,8 @@ def count_lines_in_file(file_path, check_file_exists=False):
     # Source: https://stackoverflow.com/a/27518377
     with open(file_path, 'rb') as f:
         bufgen = takewhile(lambda x: x, (f.raw.read(1024*1024) for _ in repeat(None)))
-    return sum(buf.count(b'\n') for buf in bufgen)
+        line_count = sum(buf.count(b'\n') for buf in bufgen)
+    return line_count
 
 
 @stopwatch()
