@@ -54,6 +54,10 @@ from typing import Union
 from typing import Iterable
 
 
+from .parsing import ToFListParser
+from subprocess import Popen
+from itertools import (takewhile, repeat)
+
 # TODO this could still be organized into smaller modules
 
 def stopwatch(log_file: Optional[Path] = None):
@@ -242,10 +246,10 @@ def copy_file_to_temp(file: Path) -> Path:
 
 def convert_mev_to_joule(energy_in_MeV: float) -> float:
     """Converts MeV (mega electron volts) to joules.
-    
+
     Args:
         energy_in_MeV: Value to be converted (float)
-    
+
     Returns:
         Returns energy in MeVs (float)
     """
@@ -256,10 +260,10 @@ def convert_mev_to_joule(energy_in_MeV: float) -> float:
 
 def convert_amu_to_kg(mass_in_amus: float) -> float:
     """Converts amus (atomic mass units) to kilograms.
-    
+
     Args:
         mass_in_amus: Value to be converted (float)
-    
+
     Returns:
         Returns mass in kilograms (float)
     """
@@ -546,6 +550,7 @@ def round_value_by_four_biggest(value):
     return sol_flnal
 
 
+# TODO: Does this return 0 or raise a FileNotFoundError if file is not found?
 def count_lines_in_file(file_path: Path, check_file_exists=False):
     """Returns the number of lines in given file.
 
@@ -574,6 +579,31 @@ def count_lines_in_file(file_path: Path, check_file_exists=False):
 
     # Add +1 to get the total number of lines
     return counter + 1
+
+
+# TODO: ePotku version, is this faster?
+def count_lines_in_file2(file_path, check_file_exists=False):
+    """Returns the number of newline symbols in given file (ignores last line).
+
+    Used for determining the shape of the ndarray which holds
+    measurement data in memory.
+
+    Args:
+        file_path: absolute path to a file
+        check_file_exists: if True, function checks if the file exists before
+                           counting lines. Returns 0 if the file does not exist.
+
+    Return:
+        number of newline symbols in a file
+    """
+    if check_file_exists and not os.path.isfile(file_path):
+        return 0
+
+    # Source: https://stackoverflow.com/a/27518377
+    with open(file_path, 'rb') as f:
+        bufgen = takewhile(lambda x: x, (f.raw.read(1024*1024) for _ in repeat(None)))
+        line_count = sum(buf.count(b'\n') for buf in bufgen)
+    return line_count
 
 
 def combine_files(file_paths: Iterable[Path], destination: Path):
