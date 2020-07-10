@@ -779,65 +779,26 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         shutil.copyfile(file_path, new_path)
 
     def load_data(self):
-        """Loads measurement data from filepath
-        """
-        n = 0
-        try:
-            filename = Path(self.measurement_file)
-
-            measurement_name, extension = filename.stem, filename.suffix.lower()
-            if extension == ".asc":
-                file_to_open = self.get_data_dir() / f"{measurement_name}.asc"
-                with file_to_open.open("r") as fp:
-                    for line in fp:
-                        n += 1  # Event number
-                        split = line.split()
-                        split_len = len(split)
-                        if split_len == 2:  # At least two columns
-                            self.data.append([int(split[0]), int(split[1]), n])
-                        if split_len == 3:
-                            self.data.append([int(split[0]), int(split[1]),
-                                              int(split[2]), n])
-            self.selector.measurement = self
-        except IOError as e:
-            error_log = "Error while loading the {0} {1}. {2}".format(
-                "measurement date for the measurement",
-                self.name,
-                "The error was:")
-            error_log_2 = "I/O error ({0}): {1}".format(e.errno, e.strerror)
-            logging.getLogger('request').error(error_log)
-            logging.getLogger('request').error(error_log_2)
-        except Exception as e:
-            error_log = "Unexpected error: {0}".format(e)
-            logging.getLogger('request').error(error_log)
-
-
-    # TODO: ePotku version, does this work better / faster?
-    def load_data2(self):
-        """Loads measurement data from filepath
-        """
+        """Loads measurement data from filepath"""
+        # # Profiling stuff:
         # import cProfile, pstats
         # pr = cProfile.Profile()
         # pr.enable()
 
         try:
-            measurement_name, extension = os.path.splitext(
-                self.measurement_file)
-            file_to_open = str(Path(
-                            self.directory, self.directory_data,
-                            measurement_name))
-            file_npy = file_to_open + '.npy'
-            file_asc = file_to_open + '.asc'
+            file_npy = self.get_data_dir() / f"{self.name}.npy"
+            file_asc = self.get_data_dir() / f"{self.name}.asc"
 
             # load array directly from .npy file instead of reading .asc
-            if os.path.isfile(file_npy):
+            if file_npy.exists():
+                # np.load can use Path objects
                 self.data = np.load(file_npy)
                 self.selector.measurement = self
 
             # read .asc and save it as .npy to speed up access later
-            elif os.path.isfile(file_asc):
+            elif file_asc.exists():
                 num_of_lines = gf.count_lines_in_file(file_asc)
-                with open(file_asc, "r") as fp:
+                with file_asc.open("r") as fp:
                     # initialize ndarray with the right shape
                     int_array = np.ndarray((2, num_of_lines), dtype=int)
 
@@ -848,10 +809,18 @@ class Measurement(Logger, AdjustableSettings, Serializable):
                         int_array[1, i] = int(split[1])
                         #TODO: can .asc files have more than two columns?
 
-                    # TODO: can values exceed 65k?
-                    uint16_array = int_array.astype(np.uint16) # reduce array size
-                    np.save(file_npy, uint16_array)
-                    self.data = uint16_array
+                    # Reduce array size by using a smaller data type
+                    # TODO: Is checking for max size expensive?
+                    array_data_type = np.uint16
+                    max_value = int_array.max()
+                    if max_value > np.iinfo(array_data_type).max:
+                        raise ValueError(
+                            f"'{max_value}' was too big for an array of type {array_data_type}")
+
+                    small_array = int_array.astype(array_data_type)
+                    # np.save can use Path objects
+                    np.save(file_npy, small_array)
+                    self.data = small_array
                     self.selector.measurement = self
 
         except IOError as e:
