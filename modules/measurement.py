@@ -1037,7 +1037,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
                                                 int(index+1)))             # event
 
                 selection = self.selector.get_at(i)
-                cut_file = CutFile(Path(self.directory, self.directory_cuts))
+                cut_file = CutFile(Path(self.directory, self.get_cuts_dir()))
                 cut_file.set_info(selection, points_in_selection)
                 cut_file = CutFile(self.get_cuts_dir())
                 cut_file.set_info(selection, points)
