@@ -789,11 +789,16 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             file_npy = self.get_data_dir() / f"{self.name}.npy"
             file_asc = self.get_data_dir() / f"{self.name}.asc"
 
-            # load array directly from .npy file instead of reading .asc
-            if file_npy.exists():
-                # np.load can use Path objects
-                self.data = np.load(file_npy)
-                self.selector.measurement = self
+            # # TODO: Make sure that file_npy is up-to-date (newer than file_asc)
+            # # load array directly from .npy file instead of reading .asc
+            # if file_npy.exists():
+            #     # np.load can use Path objects
+            #     self.data = np.load(file_npy)
+            #     self.selector.measurement = self
+
+            # TODO: file_npy reading temporarily disabled
+            if False:
+                pass
 
             # read .asc and save it as .npy to speed up access later
             elif file_asc.exists():
