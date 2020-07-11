@@ -201,11 +201,15 @@ class CutFile:
                 my_file.write(f"Split count: {self.split_count}\n")
                 my_file.write("\n")
                 my_file.write("ToF, Energy, Event number\n")
-                lines = '\n'.join(' '.join(map(str, p)) for p in self.data)
-                # calling write() once instead of N times is much faster
+                # TODO: Fails with
+                #       "TypeError: 'NoneType' object is not callable"
+                #       if stepped on in debugger. Why?
+                # lines = '\n'.join(' '.join(map(str, p)) for p in self.data)
+                lines = "\n".join([f"{p[0]} {p[1]} {p[2]}" for p in self.data])
                 my_file.write(lines)
                 my_file.write('\n')
                 my_file.close()
+
     def split(self, reference_cut, splits=10, save=True):
         """Splits cut file into X splits based on reference cut.
 
