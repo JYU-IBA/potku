@@ -98,9 +98,10 @@ class DepthFileGenerator:
         bin_dir = gf.get_bin_dir()
         tof, erd = self.get_command()
 
-        # FIXME: Including tof.in breaks the pipeline (at least on Windows)
+        # FIXME: Including tof.in breaks the pipeline (at least on Windows).
         #        See commit c95c39ac37903b5d899cf0ab359f68b142eced18
-        tof = (tof[0], tof[2])
+        # FIXME: Supplying more than one .cut file will break the pipeline too
+        tof = tof[0:1] + tof[2:]
 
         # # Pipe the output from tof_list to erd_depth
         # tof_process = subprocess.Popen(tof, cwd=bin_dir, stdout=subprocess.PIPE)
