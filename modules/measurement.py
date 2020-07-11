@@ -1018,6 +1018,8 @@ class Measurement(Logger, AdjustableSettings, Serializable):
 
         self.__remove_old_cut_files()
 
+        # TODO: ePotku uses a different way to figure out which points
+        #       are within a selection. Unify them?
         for i, selection in enumerate(self.selector.selections):
             selection_points = selection.get_points_tuple()
             polygon = plt.path.Path(selection_points)  # matplotlib polygon
@@ -1038,10 +1040,8 @@ class Measurement(Logger, AdjustableSettings, Serializable):
                                                 int(index+1)))             # event
 
                 selection = self.selector.get_at(i)
-                cut_file = CutFile(Path(self.directory, self.get_cuts_dir()))
-                cut_file.set_info(selection, points_in_selection)
                 cut_file = CutFile(self.get_cuts_dir())
-                cut_file.set_info(selection, points)
+                cut_file.set_info(selection, points_in_selection)
                 cut_file.save()
 
         print(time.time() - starttime)
