@@ -405,6 +405,8 @@ def coinc(input_file, output_file, skip_lines, tablesize, trigger, adc_count,
             )
     # print(command)
     try:
+        # TODO: shell=True is dangerous:
+        #       https://docs.python.org/3.6/library/subprocess.html#security-considerations
         subprocess.call(command, shell=True)
         return True
     except:
