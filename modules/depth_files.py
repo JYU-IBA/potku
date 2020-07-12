@@ -98,29 +98,12 @@ class DepthFileGenerator:
         bin_dir = gf.get_bin_dir()
         tof, erd = self.get_command()
 
-        # FIXME: Including tof.in breaks the pipeline (at least on Windows).
-        #        See commit c95c39ac37903b5d899cf0ab359f68b142eced18
-        # FIXME: Supplying more than one .cut file will break the pipeline too
-        tof = tof[0:1] + tof[2:]
-
-        # # Pipe the output from tof_list to erd_depth
-        # tof_process = subprocess.Popen(tof, cwd=bin_dir, stdout=subprocess.PIPE)
-        # ret = subprocess.run(
-        #     erd, cwd=bin_dir, stdin=tof_process.stdout).returncode
-        # if ret != 0:
-        #     print(f"tof_list|erd_depth pipeline returned an error code: {ret}")
-
-        # FIXME: Looped because sometimes the pipeline does not work
         # Pipe the output from tof_list to erd_depth
-        for _ in range(10):
-            tof_process = subprocess.Popen(tof, cwd=bin_dir, stdout=subprocess.PIPE)
-            ret = subprocess.run(
-                erd, cwd=bin_dir, stdin=tof_process.stdout).returncode
-            if ret != 0:
-                print(f"tof_list|erd_depth pipeline returned an error code: {ret}")
-            else:
-                print("pipeline worked")
-                break
+        tof_process = subprocess.Popen(tof, cwd=bin_dir, stdout=subprocess.PIPE)
+        ret = subprocess.run(
+            erd, cwd=bin_dir, stdin=tof_process.stdout).returncode
+        if ret != 0:
+            print(f"tof_list|erd_depth pipeline returned an error code: {ret}")
 
 
 def generate_depth_files(cut_files: List[Path], output_dir: Path,
