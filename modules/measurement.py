@@ -373,6 +373,10 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         return Path(self.path.parent,
                     f"{self.measurement_setting_file_name}.measurement")
 
+    def get_selections_file(self) -> Path:
+        """Returns the path to .selections file whether it exists or not"""
+        return Path(self.get_data_dir(), f"{self.name}.selections")
+
     def update_folders_and_selector(self, selector_cls=None):
         """Update folders and selector. Initializes a new selector if
         selector_cls argument is given.
@@ -881,16 +885,16 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         """
         self.selector.axes = axes
         # We've set axes information, check for old selection.
-        self.__check_for_old_selection(progress)
+        self.check_for_old_selection(progress)
 
-    def __check_for_old_selection(self, progress=None):
+    def check_for_old_selection(self, progress=None):
         """Use old selection file_path if exists.
 
         Args:
             progress: ProgressReporter object
         """
         try:
-            selection_file = self.get_data_dir() / f"{self.name}.selections"
+            selection_file = self.get_selections_file()
             with selection_file.open("r"):
                 self.load_selection(selection_file, progress)
         except OSError:
@@ -1008,7 +1012,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         if self.selector.is_empty():
             self.__remove_old_cut_files()
             # Remove .selections file
-            selection_file = self.get_data_dir() / f"{self.name}.selections"
+            selection_file = self.get_selections_file()
             gf.remove_files(selection_file)
             return 0
 
