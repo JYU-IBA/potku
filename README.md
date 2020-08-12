@@ -116,6 +116,19 @@ activated, they can be run from the root directory of the project with:
 $ python -m unittest discover
 ````
 
+## External dependencies
+
+Potku needs a copy of AWK to import data. It is probably installed on Linux 
+systems and possibly macOS too. Windows users will need to manually download
+it. [GNU AWK](https://www.gnu.org/software/gawk/) is tested and confirmed to be
+working on Windows.
+
+Place AWK under `external/bin/`. The executable must be named `awk` or 
+(`awk.exe` on Windows) for Potku detect and use it.
+
+Packaged distributions of Potku require manually adding AWK, at least on 
+Windows. Copy AWK to `external/bin/` in the package.
+
 ## Packaging Potku into a standalone executable (work in progress)
 
 Potku can be packaged into a standalone executable using [PyInstaller](https://www.pyinstaller.org/). 
