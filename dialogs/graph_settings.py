@@ -49,8 +49,7 @@ class TofeGraphSettingsWidget(QtWidgets.QDialog):
             parent: MatplotlibHistogramWidget which settings are being changed.
         """
         super().__init__()
-        uic.loadUi(
-            gutils.get_ui_dir() / "ui_files", "ui_tofe_graph_settings.ui", self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_tofe_graph_settings.ui", self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         self.parent = parent
