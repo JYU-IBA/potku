@@ -1306,7 +1306,7 @@ class Potku(QtWidgets.QMainWindow):
                         item_reporter.report(60)
 
                         # Load selection
-                        directory = master.directory_data
+                        directory = master.get_data_dir()
                         selection_file = Path(directory,
                                               f"{master_name}.selections")
                         tab.obj.selector.load(selection_file)
