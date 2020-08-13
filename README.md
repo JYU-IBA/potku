@@ -127,7 +127,7 @@ Place AWK under `external/bin/`. The executable must be named `awk` or
 (`awk.exe` on Windows) for Potku detect and use it.
 
 Packaged distributions of Potku require manually adding AWK, at least on 
-Windows. Copy AWK to `external/bin/` in the package.
+Windows. Copy AWK to `potku/dist/potku/external/bin/` in the package.
 
 ## Packaging Potku into a standalone executable (work in progress)
 
