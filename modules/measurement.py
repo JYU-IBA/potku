@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, Tuomas Pitkänen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,7 +28,7 @@ along with this program (file named 'LICENCE').
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n " \
-             "Juhani Sundell"
+             "Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import hashlib
@@ -121,9 +121,9 @@ class Measurements:
                      directory_prefix + "%02d" % next_serial + "-" + name)
             sample.increase_running_int_measurement_by_1()
             measurement_directory.mkdir(exist_ok=True)
+            mesu_file = measurement_directory / f"{name}.info"
             measurement = Measurement(
-                self.request, measurement_directory, tab_id, name,
-                sample=sample)
+                self.request, mesu_file, tab_id, name, sample=sample)
 
             measurement.create_folder_structure(
                 measurement_directory, None, selector_cls=selector_cls)

@@ -478,7 +478,7 @@ class Request(ElementSimulationContainer):
             measurement: A measurement class object that issued save cuts.
             progress: ProgressReporter object.
         """
-        directory = measurement.directory_data
+        directory = measurement.get_data_dir()
         name = measurement.name
         selection_file = "{0}.selections".format(Path(directory, name))
         master = self.has_master()

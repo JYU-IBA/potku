@@ -190,13 +190,13 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             measurement = self.parent.add_new_tab(
                 "measurement", "", sample, object_name=item_name,
                 import_evnt_or_binary=True)
-            output_file = os.path.join(measurement.directory_data, item_name
+            output_file = os.path.join(measurement.get_data_dir(), item_name
                                        + ".asc")
             n = 2
             while True:  # Allow import of same named files.
                 if not os.path.isfile(output_file):
                     break
-                output_file = "{0}-{2}.{1}".format(measurement.directory_data
+                output_file = "{0}-{2}.{1}".format(measurement.get_data_dir()
                  + os.sep + item_name, "asc", n)
                 n += 1
             imported_files[sample] = output_file

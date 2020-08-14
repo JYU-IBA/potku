@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell, Tuomas Pitkänen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -26,7 +26,8 @@ along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen" \
              " \n Samuli Rahkonen \n Miika Raunio \n Severi Jääskelänen \n " \
-             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen" \
+             "Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import widgets.binding as bnd
@@ -49,8 +50,7 @@ class TofeGraphSettingsWidget(QtWidgets.QDialog):
             parent: MatplotlibHistogramWidget which settings are being changed.
         """
         super().__init__()
-        uic.loadUi(
-            gutils.get_ui_dir() / "ui_files", "ui_tofe_graph_settings.ui", self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_tofe_graph_settings.ui", self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         self.parent = parent
