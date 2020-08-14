@@ -103,6 +103,13 @@ $ curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && \
 tar -xvf data.tar.gz -C external/share/jibal
 ````
 
+Potku requires `srim2013.tot` in `external/share/` for some operations. This 
+file can be copied from a 
+[binary distribution of Potku](https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/release_versions)
+or generated with 
+[Potku-gsto](https://github.com/JYU-IBA/potku/tree/master/external/Potku-gsto) 
+(no instructions available). `srim2013.tot` will be phased out in the future.
+
 ### Tests
 
 Tests are located in the ``tests`` package. They are divided into unit tests 
