@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.  
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell, Tuomas Pitkänen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Timo Konu \n Severi Jääskeläinen \n Samuel Kaiponen \n Heta " \
-             "Rekilä \n Sinikka Siironen"
+             "Rekilä \n Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import logging
@@ -242,24 +242,45 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             adc = keys[i]
             self.__add_import_column(i, adc, removable=False)
 
-    def __load_file_preview(self, file=None):
+    def __load_file_preview(self, file=None, preview_max_len=64,
+                            preview_data_max_len=4):
         """Load beginning of the file to preview window.
         
         Args:
             file: A string representing full path to the file.
+            preview_max_len: Maximum amount of lines to show in preview.
+            preview_data_max_len: Maximum amount of data lines to show
+                in preview.
         """
         if not file:
             self.textEdit.clear()
             self.button_coinc.setEnabled(False)
             return
         self.button_coinc.setEnabled(True)
-        string = file + "\r\n\r\n"
-        for i in range(1, 31):
-            line = self.__files_preview[file][i]
-            if line.strip()[-9:] == "Timestamp" or i > 30:
+
+        preview_file_lines = self.__files_preview[file]
+        preview_max_len = min(preview_max_len, len(preview_file_lines))
+        data_title_line_index = None
+
+        # Find data title line
+        for i in range(preview_max_len):
+            line = preview_file_lines[i]
+            # Data title line ends with "Timestamp"
+            if line.strip()[-9:] == "Timestamp":
+                data_title_line_index = i
                 break
-            string += "{0}: {1}\n".format(i, line)
-        self.textEdit.setText(string)
+
+        if data_title_line_index is not None:
+            preview_max_len = \
+                min(preview_max_len,
+                    data_title_line_index + preview_data_max_len + 1)
+
+        preview_string = f"{file} + \n\n"
+        for i in range(preview_max_len):
+            line = preview_file_lines[i]
+            preview_string += f"{i+1}: {line}\n"
+        preview_string += "...\n"
+        self.textEdit.setText(preview_string)
 
     def __load_files(self):
         """Loads X lines of the data for rough estimation of values.
