@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.  
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2020 Juhani Sundell, Tuomas Pitkänen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,7 +28,8 @@ Selection.py handles Selector and Selection objects.
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
-             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen" \
+             "Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 # TODO move this module under widgets.matplotlib
 
@@ -544,6 +545,17 @@ class Selector:
 
         for selection in self.selections:
             selection.events_counted = True
+
+    def update_selection_beams(self):
+        """Update all RBS selections' beam ions."""
+        for selection in self.selections:
+            if selection.type == "RBS":
+                if selection.measurement.use_default_profile_settings:
+                    ion = self.measurement.request.default_measurement.run.beam\
+                        .ion
+                else:
+                    ion = selection.measurement.run.beam.ion
+                selection.element = ion
 
 
 class Selection:
