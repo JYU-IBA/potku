@@ -556,7 +556,6 @@ class Selector:
                 else:
                     ion = selection.measurement.run.beam.ion
                 selection.element = ion
-        self.auto_save()
 
 
 class Selection:

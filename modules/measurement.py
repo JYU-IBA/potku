@@ -1010,6 +1010,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
                     points_in_selection[i].append(point)
 
         self.selector.update_selection_beams()
+        self.selector.auto_save()
 
         # Save all found data points into appropriate element cut files
         # Firstly clear old cut files so those won't be accidentally
