@@ -36,13 +36,11 @@ sure they are added to your PATH. Then install Pipenv:
 $ pip install --user pipenv
 ````
 
-Once these prerequisites are met, you can clone the repository and 
-checkout the development branch to get the most up-to-date version of Potku.
+Once these prerequisites are met, you can clone the repository.
  
 ````
 $ git clone --recursive https://github.com/JYU-IBA/potku.git
 $ cd potku
-$ git checkout development
 ````
 
 Install and activate the virtual environment with Pipenv:
