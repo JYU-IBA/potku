@@ -50,7 +50,7 @@ from PyQt5 import uic
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 
-from time import clock
+from timeit import default_timer as timer
 
 
 class ImportMeasurementsDialog(QtWidgets.QDialog):
@@ -171,7 +171,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             if coinc_timing.is_not_trigger:
                 timing[coinc_timing.adc] = (coinc_timing.low.value(),
                                             coinc_timing.high.value())
-        start_time = clock()
+        start_time = timer()
 
         sbh.reporter.report(10)
         
@@ -214,7 +214,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             sbh.reporter.report(10 + (i + 1) / root_child_count * 90)
 
         filenames = ", ".join(filename_list)
-        elapsed = clock() - start_time
+        elapsed = timer() - start_time
         log = "Imported measurements to request: {0}".format(filenames)
         log_var = "Variables used: {0} {1} {2} {3} {4}".format(
             "Skip lines: " + str(self.spin_skiplines.value()),
