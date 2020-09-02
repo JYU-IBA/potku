@@ -6,7 +6,7 @@ name = "pypi"
 [packages]
 numpy = "*"
 scipy = "*"
-matplotlib = "*"
+matplotlib = "==3.2.2"
 PyQt5 = "==5.14.2"
 Shapely = "*"
 wheel = "*"
