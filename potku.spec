@@ -41,12 +41,16 @@ else:
 
 block_cipher = None
 
+bins = [
+    (f"external/bin/{file.name}", "external/bin/")
+    for file in os.scandir("external/bin")
+    if file.name != "jibal.conf"
+]
+
 a = Analysis(
     ["potku.py"],
      pathex=[],
-     binaries=[
-        ("external/bin/[!jibal.conf]*", "external/bin/")
-     ],
+     binaries=bins,
      datas=[
         ("external/bin/jibal.conf", "external/bin/"),
         ("external/share", "external/share"),
