@@ -388,11 +388,11 @@ def coinc(input_file, output_file, skip_lines, tablesize, trigger, adc_count,
             "> {0}".format(output_file)
         )
     else:
-        if platform.system() == "Darwin":
+        if platform.system() != "Windows":
             command = "{0} {1}".format(
                 command, "| awk {0} > {1}".format(
                     "'{print " + columns + "}'", output_file))
-            # mac needs '' # around awk print
+            # mac and linux need '' around awk print
         else:
             command = "{0} {1}".format(
                 command,
