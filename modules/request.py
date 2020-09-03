@@ -365,10 +365,11 @@ class Request(ElementSimulationContainer):
                 if match_object:
                     number_str = item[match_object.start()]
                     if number_str == "0":
-                        self._running_int = int(item[match_object.start() + 1])
+                        n = int(item[match_object.start() + 1])
                     else:
-                        self._running_int = int(item[match_object.start():
-                                                     match_object.start() + 2])
+                        n = int(
+                            item[match_object.start():match_object.start() + 2])
+                    self._running_int = max(self._running_int, n)
         return samples
 
     def get_running_int(self):
