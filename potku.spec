@@ -35,7 +35,7 @@ elif system == "Windows":
     icon = "ui_icons/potku/potku_logo_icons/potku_icon.ico"
     console = True
 else:
-    extras = []
+    extras = [("external/lib/*.so*", ".")]
     icon = "ui_icons/potku/potku_logo_icons/potku_icon.ico"
     console = True
 
