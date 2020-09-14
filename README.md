@@ -161,19 +161,6 @@ or
 $ pipenv run ./create_bundle.sh
 `````
 
-### Missing binaries
-
-Currently, the packaging process does not include all necessary binary files. The
-following files are not copied:
-
-- awk (manually placed, see section External dependencies)
-- coinc
-- jibal_bootstrap
-- jibaltool
-
-A manual workaround is to copy the files from `potku/external/bin` to 
-`potku/dist/potku/external/bin/`.
-
 ## Licence
 
 Potku is licensed under GNU General Public License. See [LICENSE](LICENSE) for details.
