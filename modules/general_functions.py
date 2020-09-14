@@ -52,6 +52,7 @@ from typing import Callable
 from typing import Optional
 from typing import Union
 from typing import Iterable
+from typing import Any
 
 
 # TODO this could still be organized into smaller modules
@@ -640,3 +641,10 @@ def get_root_dir() -> Path:
     """Returns the absolute path to Potku's root directory.
     """
     return _ROOT_DIR
+
+
+def find_next(iterable: Iterable[Any], cond: Callable[[Any], bool]) -> Any:
+    try:
+        return next(i for i in iterable if cond(i))
+    except StopIteration:
+        raise ValueError("Value not found in iterable.")

@@ -28,6 +28,7 @@ import unittest
 
 import modules.file_paths as fp
 
+import tempfile
 from pathlib import Path
 
 from modules.nsgaii import OptimizationType
@@ -104,6 +105,53 @@ class TestFilePaths(unittest.TestCase):
             AttributeError, lambda: fp.is_optmed("C", "C-optfl.result"))
         self.assertRaises(
             AttributeError, lambda: fp.is_optfl_result("C", "C-optfl.result"))
+
+
+class TestFindNextAvailableFilePath(unittest.TestCase):
+    def test_with_non_existing_files(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_dir = Path(tmp_dir)
+            file_paths = (tmp_dir / f"foo_{i}.bar" for i in range(10))
+            self.assertEqual(
+                tmp_dir / "foo_0.bar",
+                fp.find_available_file_path(file_paths)
+            )
+
+    def test_with_some_existing_files(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_dir = Path(tmp_dir)
+            file_paths = (tmp_dir / f"foo_{i}.bar" for i in range(10))
+            (tmp_dir / "foo_0.bar").open("w").close()
+            (tmp_dir / "foo_1.bar").open("w").close()
+            self.assertEqual(
+                tmp_dir / "foo_2.bar",
+                fp.find_available_file_path(file_paths)
+            )
+
+    def test_all_files_existing_raises_error(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_dir = Path(tmp_dir)
+            file_paths = (tmp_dir / f"foo_{i}.bar" for i in range(10))
+            for j in range(10):
+                (tmp_dir / f"foo_{j}.bar").open("w").close()
+            self.assertRaises(
+                ValueError,
+                lambda: fp.find_available_file_path(file_paths)
+            )
+
+    def test_empty_file_list_raises_error(self):
+        self.assertRaises(
+            ValueError,
+            lambda: fp.find_available_file_path([])
+        )
+
+    def test_with_a_folder_instead_of_a_file(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            paths = [Path(tmp_dir), Path(tmp_dir, "foo")]
+            self.assertEqual(
+                Path(tmp_dir, "foo"),
+                fp.find_available_file_path(paths)
+            )
 
 
 if __name__ == '__main__':

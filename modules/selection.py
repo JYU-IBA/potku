@@ -35,6 +35,7 @@ __version__ = "2.0"
 
 import logging
 import os
+import itertools
 
 from . import math_functions as mf
 from . import general_functions as gf
@@ -164,8 +165,8 @@ class Selector:
         """Get currently selected selection.
         
         Return:
-            Returns Selection of selected Selection on matplotlib graph. If none 
-            selected, returns None.
+            Returns Selection of selected Selection on matplotlib graph. If
+            none selected, returns None.
         """
         if self.selected_id is None:
             return None
@@ -411,19 +412,20 @@ class Selector:
                     isotope = ""
             else:
                 prefix = ""
-            dirtyinteger = 0
-            # Use dirtyinteger to differentiate multiple selections of same 
-            # selection. This is roundabout method, but works as it should with
-            # cut files.
-            while True:
-                color_string = "{0}{1}{2}{3}".format(prefix, isotope,
-                                                     element,
-                                                     dirtyinteger)
-                if color_string not in color_dict:
-                    break
-                dirtyinteger += 1
+            color_string = self._find_next_color_string(
+                prefix, isotope, element, color_dict)
             color_dict[color_string] = sel.default_color
         return color_dict
+
+    @staticmethod
+    def _find_next_color_string(prefix, isotope, element, color_dict) -> str:
+        """Helper function for returning new color string.
+        """
+        def color_generator():
+            for i in itertools.count(start=0):
+                yield f"{prefix}{isotope}{element}{i}"
+
+        return gf.find_next(color_generator(), lambda s: s not in color_dict)
 
     def grey_out_except(self, selected_id):
         """Grey out all selections except selected one.

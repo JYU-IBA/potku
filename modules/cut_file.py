@@ -29,6 +29,8 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
+import itertools
+
 from pathlib import Path
 from typing import List
 from typing import Dict
@@ -36,6 +38,7 @@ from typing import Optional
 from typing import Any
 
 from .element import Element
+from . import file_paths as fp
 
 
 class CutFile:
@@ -114,8 +117,8 @@ class CutFile:
         self.element = Element.from_string(element_information)
 
         # print("Load cut: {0} {1}".format(self.element, self.isotope))
-        with file.open("r") as fp:
-            for i, line in enumerate(fp):
+        with file.open("r") as cut_file:
+            for i, line in enumerate(cut_file):
                 if i < 10:  # Probably not the best way.
                     line_split = line.strip().split(':')
                     if len(line_split) > 1: 
@@ -175,20 +178,13 @@ class CutFile:
                         measurement_name, element, suffix, element_count,
                         self.split_number))
             else:
-                # Has to run until file that doesn't exist is found.
-                while True:
-                    file = Path(
-                        self.directory, "{0}.{1}.{2}.{3}.cut".format(
-                            measurement_name, element, suffix, element_count))
-                    if file.exists() and file.is_file():
-                        element_count += 1
-                    else:
-                        break
+                file = self._find_available_cut_file_name(
+                    measurement_name, element, suffix, element_count)
             if self.element_scatter is not "":
                 element_scatter = str(self.element_scatter)
             else:
                 element_scatter = ""
-            with open(file, "w") as my_file:
+            with file.open("w") as my_file:
                 my_file.write(f"Count: {self.count}\n")
                 my_file.write(f"Type: {self.type}\n")
                 my_file.write(f"Weight Factor: {self.weight_factor}\n")
@@ -230,6 +226,17 @@ class CutFile:
         if save:
             self.__save_splits(splits, cut_splits)
         return cut_splits
+
+    def _find_available_cut_file_name(self, measurement_name, element, suffix,
+                                      elem_count: int) -> Path:
+        """Helper function for finding available file name.
+        """
+        def cut_file_generator():
+            for i in itertools.count(start=elem_count):
+                yield Path(
+                    self.directory,
+                    f"{measurement_name}.{element}.{suffix}.{i}.cut")
+        return fp.find_available_file_path(cut_file_generator())
 
     def __save_splits(self, splits, cut_splits):
         """Save splits into new CutFiles.
@@ -276,8 +283,8 @@ def is_rbs(file: Path) -> bool:
     Return:
         Returns True if cut file is RBS and False if not.
     """
-    with file.open("r") as fp:
-        for i, line in enumerate(fp):
+    with file.open("r") as cut_file:
+        for i, line in enumerate(cut_file):
             if i >= 10:
                 return False
             line_split = line.strip().split(':')
@@ -298,8 +305,8 @@ def get_scatter_element(file: Path) -> Optional[Element]:
         Returns an Element class object of scatter element. Returns an empty 
         Element class object if there is no scatter element (in case of ERD).
     """
-    with file.open("r") as fp:
-        for i, line in enumerate(fp):
+    with file.open("r") as cut_file:
+        for i, line in enumerate(cut_file):
             if i >= 10:
                 return None
             line_split = line.strip().split(':')
