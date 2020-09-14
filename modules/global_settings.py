@@ -370,7 +370,7 @@ class GlobalSettings:
         Return:
             ToFEColorSchemeValue.
         """
-        return ToFEColorScheme(
+        return ToFEColorScheme.from_string(
             self.__config[self._TOFE]["color_scheme"])
 
     def set_tofe_color(self, value: ToFEColorScheme):

@@ -169,6 +169,13 @@ class CrossSection(IntEnum):
         return "Andersen"
 
 
+_TOFE_MAPPING = {
+    "Default color": "jet",
+    "Greyscale": "Greys",
+    "Greyscale (inverted)": "gray",
+}
+
+
 @enum.unique
 class ToFEColorScheme(str, Enum):
     DEFAULT = "jet"
@@ -181,6 +188,10 @@ class ToFEColorScheme(str, Enum):
         if self is ToFEColorScheme.GREYSCALE:
             return "Greyscale"
         return "Greyscale (inverted)"
+
+    @classmethod
+    def from_string(cls, string: str) -> "ToFEColorScheme":
+        return cls(_TOFE_MAPPING.get(string, string))
 
 
 @enum.unique
