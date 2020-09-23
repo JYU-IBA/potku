@@ -87,57 +87,57 @@ class GlobalSettings:
         """Inits GlobalSettings class.
         """
         if config_dir is None:
-            self.__config_directory = Path.home() / "potku"
+            self._config_directory = Path.home() / "potku"
         else:
-            self.__config_directory = Path(config_dir).resolve()
+            self._config_directory = Path(config_dir).resolve()
 
-        self.__config = configparser.ConfigParser()
+        self._config = configparser.ConfigParser()
 
-        self._request_directory = Path(self.__config_directory, "requests")
+        self._request_directory = Path(self._config_directory, "requests")
 
         self._request_directory_last_open = self._request_directory
 
-        self.__create_sections()
+        self._create_sections()
         if not self.get_config_file().exists():
             # Set default request directory
             self.set_request_directory(self._request_directory)
             if save_on_creation:
                 self.save_config()
         else:
-            self.__load_config()
+            self._load_config()
 
-    def __create_sections(self):
+    def _create_sections(self):
         """Creates sections for the configparser.
         """
-        self.__config.add_section(self._DEFAULT)
-        self.__config.add_section(self._COLORS)
-        self.__config.add_section(self._TIMING)
-        self.__config.add_section(self._DEPTH_PROFILE)
-        self.__config.add_section(self._TOFE)
-        self.__config.add_section(self._SIMULATION)
+        self._config.add_section(self._DEFAULT)
+        self._config.add_section(self._COLORS)
+        self._config.add_section(self._TIMING)
+        self._config.add_section(self._DEPTH_PROFILE)
+        self._config.add_section(self._TOFE)
+        self._config.add_section(self._SIMULATION)
 
-        self.__config[self._COLORS] = GlobalSettings.get_default_colors()
+        self._config[self._COLORS] = GlobalSettings.get_default_colors()
 
     def set_config_dir(self, directory: Path):
         """Sets the directory of the config file.
         """
-        self.__config_directory = Path(directory).resolve()
+        self._config_directory = Path(directory).resolve()
 
     def get_config_dir(self) -> Path:
         """Returns the path to config directory.
         """
-        return self.__config_directory
+        return self._config_directory
 
     def get_config_file(self) -> Path:
         """Returns the path to the config file.
         """
         return self.get_config_dir() / self._CONFIG_FILE
 
-    def __load_config(self):
+    def _load_config(self):
         """Load old settings and set values.
         """
         try:
-            self.__config.read(self.get_config_file())
+            self._config.read(self.get_config_file())
         except (configparser.ParsingError, configparser.DuplicateOptionError):
             pass
 
@@ -147,13 +147,13 @@ class GlobalSettings:
         config_file = self.get_config_file()
         config_file.parent.mkdir(exist_ok=True)
         with config_file.open("wt+") as file:
-            self.__config.write(file)
+            self._config.write(file)
 
     @handle_exceptions(attr="_request_directory")
     def get_request_directory(self) -> Path:
         """Get default request directory.
         """
-        return Path(self.__config[self._DEFAULT]["request_directory"]).resolve()
+        return Path(self._config[self._DEFAULT]["request_directory"]).resolve()
 
     def set_request_directory(self, directory: Path):
         """Save default request directory.
@@ -162,7 +162,7 @@ class GlobalSettings:
             directory: String representing folder where requests will be saved
             by default.
         """
-        self.__config[self._DEFAULT]["request_directory"] = str(
+        self._config[self._DEFAULT]["request_directory"] = str(
             directory.resolve())
 
     @handle_exceptions(attr="_request_directory_last_open")
@@ -170,7 +170,7 @@ class GlobalSettings:
         """Get directory where last request was opened.
         """
         return Path(
-            self.__config[self._DEFAULT][
+            self._config[self._DEFAULT][
                 "request_directory_last_open"]).resolve()
 
     def set_request_directory_last_open(self, directory: Path):
@@ -180,7 +180,7 @@ class GlobalSettings:
             directory: String representing request folder.
         """
         # TODO use qsettings to do this
-        self.__config[self._DEFAULT]["request_directory_last_open"] = str(
+        self._config[self._DEFAULT]["request_directory_last_open"] = str(
             directory.resolve())
         self.save_config()
 
@@ -190,7 +190,7 @@ class GlobalSettings:
         Return:
             Returns a dictionary of elements' colors.
         """
-        return self.__config[self._COLORS]
+        return self._config[self._COLORS]
 
     @handle_exceptions(return_value="red")
     def get_element_color(self, element):
@@ -202,7 +202,7 @@ class GlobalSettings:
         Return:
             Returns a color (string) for a specific element.
         """
-        return self.__config[self._COLORS][element]
+        return self._config[self._COLORS][element]
 
     def set_element_color(self, element, color):
         """Set default color for an element.
@@ -211,7 +211,7 @@ class GlobalSettings:
             element: String representing element.
             color: String representing color.
         """
-        self.__config[self._COLORS][element] = color
+        self._config[self._COLORS][element] = color
 
     @handle_exceptions(return_value=(-1000, 1000))
     def get_import_timing(self, adc):
@@ -223,7 +223,7 @@ class GlobalSettings:
         Return:
             Returns low & high values for coincidence timing.
         """
-        low, high = self.__config[self._TIMING][str(adc)].split(',')
+        low, high = self._config[self._TIMING][str(adc)].split(',')
         low, high = int(low), int(high)
         if low <= high:
             return low, high
@@ -239,7 +239,7 @@ class GlobalSettings:
         """
         if high < low:  # Quick fix just in case
             low, high = high, low
-        self.__config[self._TIMING][str(adc)] = f"{low},{high}"
+        self._config[self._TIMING][str(adc)] = f"{low},{high}"
 
     @handle_exceptions(return_value=10_000)
     def get_import_coinc_count(self) -> int:
@@ -248,7 +248,7 @@ class GlobalSettings:
         Return:
             Returns an integer representing coincidence count.
         """
-        return self.__config.getint(self._DEFAULT, "preview_coincidence_count")
+        return self._config.getint(self._DEFAULT, "preview_coincidence_count")
 
     def set_import_coinc_count(self, count: int):
         """Set coincidence timings for specific ADC.
@@ -256,7 +256,7 @@ class GlobalSettings:
         Args:
             count: An integer representing coincidence count.
         """
-        self.__config[self._DEFAULT]["preview_coincidence_count"] = str(count)
+        self._config[self._DEFAULT]["preview_coincidence_count"] = str(count)
 
     @handle_exceptions(return_value=CrossSection.ANDERSEN)
     def get_cross_sections(self) -> CrossSection:
@@ -266,7 +266,7 @@ class GlobalSettings:
             Returns an integer representing cross sections flag.
         """
         return CrossSection(
-            self.__config.getint(self._DEPTH_PROFILE, "cross_section"))
+            self._config.getint(self._DEPTH_PROFILE, "cross_section"))
 
     def set_cross_sections(self, value: CrossSection):
         """Set cross sections used in depth profile to settings.
@@ -274,7 +274,7 @@ class GlobalSettings:
         Args:
             value: a CrossSection value.
         """
-        self.__config[self._DEPTH_PROFILE]["cross_section"] = str(int(value))
+        self._config[self._DEPTH_PROFILE]["cross_section"] = str(int(value))
 
     @staticmethod
     def is_es_output_saved() -> bool:
@@ -292,7 +292,7 @@ class GlobalSettings:
         Args:
             flag: A boolean representing will Potku save output or not.
         """
-        self.__config[self._DEFAULT]["es_output"] = str(flag)
+        self._config[self._DEFAULT]["es_output"] = str(flag)
 
     @handle_exceptions(return_value=False)
     def get_tofe_transposed(self) -> bool:
@@ -301,7 +301,7 @@ class GlobalSettings:
         Return:
             Returns a boolean if the ToF-E Histogram is transposed.
         """
-        return self.__config.getboolean(self._TOFE, "transpose")
+        return self._config.getboolean(self._TOFE, "transpose")
 
     def set_tofe_transposed(self, value: bool):
         """Set if ToF-E histogram is transposed.
@@ -310,7 +310,7 @@ class GlobalSettings:
             value: A boolean representing if the ToF-E Histogram's X axis
                    is inverted.
         """
-        self.__config[self._TOFE]["transpose"] = str(value)
+        self._config[self._TOFE]["transpose"] = str(value)
 
     @handle_exceptions(return_value=False)
     def get_tofe_invert_x(self) -> bool:
@@ -320,7 +320,7 @@ class GlobalSettings:
             Returns a boolean if the ToF-E Histogram's X axis is inverted.
         """
 
-        return self.__config.getboolean(self._TOFE, "invert_x")
+        return self._config.getboolean(self._TOFE, "invert_x")
 
     def set_tofe_invert_x(self, value: bool):
         """Set if ToF-E histogram's X axis inverted.
@@ -329,7 +329,7 @@ class GlobalSettings:
             value: A boolean representing if the ToF-E Histogram's X axis
                    is inverted.
         """
-        self.__config[self._TOFE]["invert_x"] = str(value)
+        self._config[self._TOFE]["invert_x"] = str(value)
 
     @handle_exceptions(return_value=False)
     def get_tofe_invert_y(self) -> bool:
@@ -338,7 +338,7 @@ class GlobalSettings:
         Return:
             Returns a boolean if the ToF-E Histogram's Y axis is inverted.
         """
-        return self.__config.getboolean(self._TOFE, "invert_y")
+        return self._config.getboolean(self._TOFE, "invert_y")
 
     def set_tofe_invert_y(self, value: bool):
         """Set if ToF-E histogram's Y axis inverted.
@@ -347,13 +347,13 @@ class GlobalSettings:
             value: A boolean representing if the ToF-E Histogram's Y axis
                    is inverted.
         """
-        self.__config[self._TOFE]["invert_y"] = str(value)
+        self._config[self._TOFE]["invert_y"] = str(value)
 
     @handle_exceptions(return_value=4)
     def get_num_iterations(self) -> int:
         """Set the number of iterations erd_depth is to perform
         """
-        return self.__config.getint(self._DEPTH_PROFILE, "num_iter")
+        return self._config.getint(self._DEPTH_PROFILE, "num_iter")
 
     def set_num_iterations(self, value: int):
         """Get the number of iterations erd_depth is to perform
@@ -361,7 +361,7 @@ class GlobalSettings:
         Return:
             Returns the number. As an integer.
         """
-        self.__config[self._DEPTH_PROFILE]["num_iter"] = str(value)
+        self._config[self._DEPTH_PROFILE]["num_iter"] = str(value)
 
     @handle_exceptions(return_value=ToFEColorScheme.DEFAULT)
     def get_tofe_color(self) -> ToFEColorScheme:
@@ -371,15 +371,15 @@ class GlobalSettings:
             ToFEColorSchemeValue.
         """
         return ToFEColorScheme.from_string(
-            self.__config[self._TOFE]["color_scheme"])
+            self._config[self._TOFE]["color_scheme"])
 
     def set_tofe_color(self, value: ToFEColorScheme):
-        """Set  color of the ToF-E Histogram.
+        """Set color of the ToF-E Histogram.
 
         Args:
             value: a ToFEColorScheme value.
         """
-        self.__config[self._TOFE]["color_scheme"] = value.value
+        self._config[self._TOFE]["color_scheme"] = value.value
 
     @handle_exceptions(return_value=0)
     def get_tofe_bin_range_mode(self) -> int:
@@ -388,7 +388,7 @@ class GlobalSettings:
         Return:
             Returns an integer representing ToF-E histogram bin range mode.
         """
-        return self.__config.getint(self._TOFE, "bin_range_mode")
+        return self._config.getint(self._TOFE, "bin_range_mode")
 
     def set_tofe_bin_range_mode(self, value: int):
         """Set ToF-E Histogram bin range automatic or manual.
@@ -398,7 +398,7 @@ class GlobalSettings:
                    Automatic = 0
                    Manual = 1
         """
-        self.__config[self._TOFE]["bin_range_mode"] = str(value)
+        self._config[self._TOFE]["bin_range_mode"] = str(value)
 
     @handle_exceptions(return_value=(0, 8000))
     def get_tofe_bin_range_x(self) -> tuple:
@@ -408,8 +408,8 @@ class GlobalSettings:
             Returns an integer tuple representing ToF-E histogram X axis bin
             range.
         """
-        rmin = self.__config.getint(self._TOFE, "bin_range_x_min")
-        rmax = self.__config.getint(self._TOFE, "bin_range_x_max")
+        rmin = self._config.getint(self._TOFE, "bin_range_x_min")
+        rmax = self._config.getint(self._TOFE, "bin_range_x_max")
         if rmin > rmax:
             return rmax, rmin
         return rmin, rmax
@@ -423,8 +423,8 @@ class GlobalSettings:
         """
         if value_min < value_max:
             value_min, value_max = value_max, value_min
-        self.__config[self._TOFE]["bin_range_x_min"] = str(value_min)
-        self.__config[self._TOFE]["bin_range_x_max"] = str(value_max)
+        self._config[self._TOFE]["bin_range_x_min"] = str(value_min)
+        self._config[self._TOFE]["bin_range_x_max"] = str(value_max)
 
     @handle_exceptions(return_value=(0, 8000))
     def get_tofe_bin_range_y(self) -> tuple:
@@ -434,8 +434,8 @@ class GlobalSettings:
             Returns an integer tuple representing ToF-E histogram Y axis bin
             range.
         """
-        rmin = self.__config.getint(self._TOFE, "bin_range_y_min")
-        rmax = self.__config.getint(self._TOFE, "bin_range_y_max")
+        rmin = self._config.getint(self._TOFE, "bin_range_y_min")
+        rmax = self._config.getint(self._TOFE, "bin_range_y_max")
         if rmin > rmax:
             return rmax, rmin
         return rmin, rmax
@@ -449,8 +449,8 @@ class GlobalSettings:
         """
         if value_min < value_max:
             value_min, value_max = value_max, value_min
-        self.__config[self._TOFE]["bin_range_y_min"] = str(value_min)
-        self.__config[self._TOFE]["bin_range_y_max"] = str(value_max)
+        self._config[self._TOFE]["bin_range_y_min"] = str(value_min)
+        self._config[self._TOFE]["bin_range_y_max"] = str(value_max)
 
     @handle_exceptions(return_value=6)
     def get_tofe_compression_x(self) -> int:
@@ -459,7 +459,7 @@ class GlobalSettings:
         Return:
             Returns an integer representing ToF-E histogram Y axis compression.
         """
-        return self.__config.getint(self._TOFE, "compression_x")
+        return self._config.getint(self._TOFE, "compression_x")
 
     def set_tofe_compression_x(self, value: int):
         """Set ToF-E Histogram X axis compression.
@@ -467,7 +467,7 @@ class GlobalSettings:
         Args:
             value: An integer representing the axis compression.
         """
-        self.__config[self._TOFE]["compression_x"] = str(value)
+        self._config[self._TOFE]["compression_x"] = str(value)
 
     @handle_exceptions(return_value=6)
     def get_tofe_compression_y(self) -> int:
@@ -476,7 +476,7 @@ class GlobalSettings:
         Return:
             Returns an integer representing ToF-E histogram Y axis compression.
         """
-        return self.__config.getint(self._TOFE, "compression_y")
+        return self._config.getint(self._TOFE, "compression_y")
 
     def set_tofe_compression_y(self, value: int):
         """Set ToF-E Histogram Y axis compression.
@@ -484,42 +484,42 @@ class GlobalSettings:
         Args:
             value: An integer representing the axis compression.
         """
-        self.__config[self._TOFE]["compression_y"] = str(value)
+        self._config[self._TOFE]["compression_y"] = str(value)
 
     @handle_exceptions(return_value=10_000)
     def get_min_presim_ions(self) -> int:
         """Returns the minimum number of presimulation ions.
         """
-        return self.__config.getint(self._SIMULATION, "min_presim_ions")
+        return self._config.getint(self._SIMULATION, "min_presim_ions")
 
     def set_min_presim_ions(self, value: int):
         """Sets the minimum value of presimulation ions.
         """
-        self.__config[self._SIMULATION]["min_presim_ions"] = str(value)
+        self._config[self._SIMULATION]["min_presim_ions"] = str(value)
 
     @handle_exceptions(return_value=100_000)
     def get_min_simulation_ions(self) -> int:
         """Returns the minimum number of simulation ions.
         """
-        return self.__config.getint(self._SIMULATION, "min_sim_ions")
+        return self._config.getint(self._SIMULATION, "min_sim_ions")
 
     def set_min_simulation_ions(self, value: int):
         """Sets the minimum number of simulation ions.
         """
-        self.__config[self._SIMULATION]["min_sim_ions"] = str(value)
+        self._config[self._SIMULATION]["min_sim_ions"] = str(value)
 
     @handle_exceptions(return_value=IonDivision.BOTH)
     def get_ion_division(self) -> IonDivision:
         """Returns the ion division mode used in simulation.
         """
         return IonDivision(
-            self.__config.getint(self._SIMULATION, "ion_division")
+            self._config.getint(self._SIMULATION, "ion_division")
         )
 
     def set_ion_division(self, value: IonDivision):
         """Sets the value of ion division mode.
         """
-        self.__config[self._SIMULATION]["ion_division"] = str(int(value))
+        self._config[self._SIMULATION]["ion_division"] = str(int(value))
 
     @handle_exceptions(return_value=_DEFAULT_CONC_LIMIT)
     def get_minimum_concentration(self) -> float:
@@ -527,14 +527,14 @@ class GlobalSettings:
         distribution.
         """
         return max(
-            self.__config.getfloat(self._SIMULATION, "min_concentration"),
+            self._config.getfloat(self._SIMULATION, "min_concentration"),
             GlobalSettings.MIN_CONC_LIMIT)
 
     def set_minimum_concentration(self, value: float):
         """Sets the minimum concentration that can be set in recoil atom
         distribution. Must be a positive value.
         """
-        self.__config[self._SIMULATION]["min_concentration"] = str(
+        self._config[self._SIMULATION]["min_concentration"] = str(
             max(value, GlobalSettings.MIN_CONC_LIMIT))
 
     @staticmethod
