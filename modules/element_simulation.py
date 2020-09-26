@@ -258,17 +258,12 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         recoils.
         """
         for recoil in self.optimization_recoils:
-            # Ensure that the name is unique
-            new_name = recoil.name.replace("opt", "", 1)
-            full_name = new_name
-            recoil_names = {r.name for r in self.recoil_elements}
-            suffix = 1
-            while full_name in recoil_names:
-                full_name = f"{new_name}-{suffix}"
-                suffix += 1
+            # Find a unique name
+            new_name = self._get_next_available_recoil_name(
+                recoil.name.replace("opt", "", 1))
 
             values = {
-                "name": full_name,
+                "name": new_name,
                 "description": recoil.description,
                 "reference_density": recoil.reference_density,
                 "color": recoil.color
@@ -276,6 +271,19 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             self.update_recoil_element(recoil, values)
         self.recoil_elements.extend(self.optimization_recoils)
         self.optimization_recoils = []
+
+    def _get_next_available_recoil_name(self, candidate_name: str) -> str:
+        """Helper function for finding next recoil name that does not already
+        exist.
+        """
+        def recoil_name_generator():
+            yield candidate_name
+            for i in itertools.count(start=1):
+                yield f"{candidate_name}-{i}"
+
+        recoil_names = {r.name for r in self.recoil_elements}
+        return gf.find_next(
+            recoil_name_generator(), lambda s: s not in recoil_names)
 
     def update_recoil_element(self, recoil_element: RecoilElement, new_values):
         """Updates RecoilElement object with new values.

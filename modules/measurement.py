@@ -37,6 +37,7 @@ import logging
 import os
 import shutil
 import time
+import itertools
 
 from pathlib import Path
 from collections import namedtuple
@@ -45,6 +46,7 @@ from typing import List
 from typing import Tuple
 
 from . import general_functions as gf
+from . import file_paths as fpaths
 from .cut_file import CutFile
 from .detector import Detector
 from .run import Run
@@ -807,6 +809,16 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         except Exception as e:
             error_log = "Unexpected error: {0}".format(e)
             logging.getLogger('request').error(error_log)
+
+    def get_available_asc_file_name(self, new_name: str) -> Path:
+        """Returns an .asc file name that does not already exist.
+        """
+        def file_name_generator():
+            yield self.get_data_dir() / f"{new_name}.asc"
+            for i in itertools.count(start=2):
+                yield self.get_data_dir() / f"{new_name}-{i}.asc"
+
+        return fpaths.find_available_file_path(file_name_generator())
 
     def rename(self, new_name: str):
         """Renames Measurement with given name and updates folders and cut

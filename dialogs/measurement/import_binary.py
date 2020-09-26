@@ -29,16 +29,16 @@ __author__ = "Timo Konu \n Severi Jääskeläinen \n Samuel Kaiponen \n Heta " \
 __version__ = "2.0"
 
 import numpy
-import os
 import struct
 
 import dialogs.dialog_functions as df
-import widgets.input_validation as iv
 import widgets.gui_utils as gutils
+import dialogs.file_dialogs as fdialogs
 
 from widgets.gui_utils import StatusBarHandler
+from widgets.icon_manager import IconManager
 
-from dialogs.file_dialogs import open_files_dialog
+from modules.request import Request
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -48,7 +48,8 @@ from PyQt5 import uic
 class ImportDialogBinary(QtWidgets.QDialog):
     """Binary measurement importing class.
     """
-    def __init__(self, request, icon_manager, statusbar, parent):
+    def __init__(self, request: Request, icon_manager: IconManager,
+                 statusbar: QtWidgets.QStatusBar, parent: "Potku"):
         """Init binary measurement import dialog.
         """
         super().__init__()
@@ -77,10 +78,10 @@ class ImportDialogBinary(QtWidgets.QDialog):
     def __add_file(self):
         """Add a file to list of files to be imported.
         """
-        files = open_files_dialog(self,
-                                  self.request.directory,
-                                  "Select binary files to be imported",
-                                  "Binary format (*.lst)")
+        files = fdialogs.open_files_dialog(
+            self, self.request.directory,
+            "Select binary files to be imported",
+            "Binary format (*.lst)")
         df.add_imported_files_to_tree(self, files)
         self.__check_if_import_allowed()
 
@@ -90,7 +91,8 @@ class ImportDialogBinary(QtWidgets.QDialog):
         root = self.treeWidget.invisibleRootItem()
         self.button_import.setEnabled(root.childCount() > 0)
 
-    def __convert_file(self, input_file, output_file):
+    @staticmethod
+    def __convert_file(input_file, output_file):
         """Convert binary file into ascii file.
         
         Args:
@@ -114,7 +116,6 @@ class ImportDialogBinary(QtWidgets.QDialog):
     def __import_files(self):
         """Import binary files.
         """
-        imported_files = {}
         sbh = StatusBarHandler(self.__statusbar)
         sbh.reporter.report(10)
         
@@ -125,29 +126,9 @@ class ImportDialogBinary(QtWidgets.QDialog):
             item = root.child(i)
             input_file = item.file
 
-            sample = self.request.samples.add_sample()
-            self.parent.add_root_item_to_tree(sample)
-            item_name = item.name.replace("_", "-")
-
-            regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-            item_name = iv.validate_text_input(item_name, regex)
-
-            measurement = self.parent.add_new_tab("measurement", "",
-                                                  sample,
-                                                  object_name=item_name,
-                                                  import_evnt_or_binary=True)
-            output_file = "{0}.{1}".format(measurement.get_data_dir() +
-                                           os.sep + item_name, "asc")
-            n = 2
-            while True:  # Allow import of same named files.
-                if not os.path.isfile(output_file):
-                    break
-                output_file = "{0}-{2}.{1}".format(
-                    measurement.get_data_dir() + os.sep + item_name, "asc", n)
-                n += 1
-            imported_files[sample] = output_file
+            output_file = df.import_new_measurement(
+                self.request, self.parent, item)
             self.__convert_file(input_file, output_file)
-            measurement.measurement_file = output_file
 
             sbh.reporter.report(10 + (i + 1 / root_child_count) * 90)
 

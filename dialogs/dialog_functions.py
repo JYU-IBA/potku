@@ -28,9 +28,9 @@ __version__ = "2.0"
 
 import os
 import itertools
-import modules.general_functions as gf
 
-from collections import namedtuple, defaultdict
+from collections import namedtuple
+from collections import defaultdict
 from typing import Union
 from typing import Iterable
 from typing import Callable
@@ -38,7 +38,10 @@ from pathlib import Path
 
 import widgets.gui_utils as gutils
 import widgets.binding as bnd
+import widgets.input_validation as iv
 
+import modules.general_functions as gf
+from modules.request import Request
 from modules.base import ElementSimulationContainer
 from modules.detector import Detector
 from modules.measurement import Measurement
@@ -477,3 +480,20 @@ def set_btn_color(button: QtWidgets.QPushButton, color: QtGui.QColor, colormap,
             button.setText("")
     except KeyError:
         button.setText("")
+
+
+def import_new_measurement(request: Request, parent: "Potku",
+                           item: QtWidgets.QListWidgetItem) -> Path:
+    sample = request.samples.add_sample()
+    parent.add_root_item_to_tree(sample)
+    item_name = item.name.replace("_", "-")
+
+    regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
+    item_name = iv.validate_text_input(item_name, regex)
+
+    measurement = parent.add_new_tab(
+        "measurement", "", sample, object_name=item_name,
+        import_evnt_or_binary=True)
+    output_file = measurement.get_available_asc_file_name(item_name)
+    measurement.measurement_file = output_file
+    return output_file

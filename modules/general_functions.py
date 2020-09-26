@@ -54,6 +54,9 @@ from typing import Optional
 from typing import Union
 from typing import Iterable
 from typing import Tuple
+from typing import TypeVar
+
+T = TypeVar("T")
 
 
 # TODO this could still be organized into smaller modules
@@ -449,13 +452,13 @@ def to_superscript(string):
 
 
 def lower_case_first(s: str) -> str:
-    """Returns a string where the first character is lower cased."""
+    """Returns a string where the first character is lower cased.
+    """
     return s[0].lower() + s[1:] if s else ""
 
 
 def find_nearest(x, lst):
-    """
-    Find given list's nearest point's x coordinate from x.
+    """Find given list's nearest point's x coordinate from x.
 
     Args:
         x: X coordinate.
@@ -516,8 +519,7 @@ def uniform_espe_lists(espe1, espe2, channel_width=0.025):
 
 
 def format_to_binary(var, length):
-    """
-    Format given integer into binary of a certain length.
+    """Format given integer into binary of a certain length.
 
     Args:
         var: Integer value to transform to binary.
@@ -653,3 +655,12 @@ def get_root_dir() -> Path:
     """Returns the absolute path to Potku's root directory.
     """
     return _ROOT_DIR
+
+
+def find_next(iterable: Iterable[T], cond: Callable[[T], bool]) -> T:
+    """Returns the next item in the iterable that matches given condition.
+    """
+    try:
+        return next(i for i in iterable if cond(i))
+    except StopIteration:
+        raise ValueError("Value not found in iterable.")

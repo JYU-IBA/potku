@@ -20,10 +20,6 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-
-file_paths.py module is intended for providing functions that
-return or validate various file paths used by Potku. File I/O
-should be performed in other modules.
 """
 __author__ = "Juhani Sundell"
 __version__ = "2.0"
@@ -37,6 +33,7 @@ from typing import Callable
 from typing import Iterator
 
 from .enums import OptimizationType
+from . import general_functions as gf
 
 
 def get_erd_file_name(recoil_element: "RecoilElement", seed: Union[int, str],
@@ -169,3 +166,20 @@ def is_optlast(prefix: str, file: Path) -> bool:
     """Checks whether a file name is a optlast file for the given prefix.
     """
     return f"{prefix}-optlast.rec" == file.name
+
+
+def find_available_file_path(file_paths: Iterable[Path]) -> Path:
+    """Iterates over the given file paths and returns the first one
+    that does not exist. Raises ValueError if all of the file paths
+    already exist.
+
+    Args:
+        file_paths: iterable of Path objects.
+
+    Return:
+        first file path that does not already exist.
+    """
+    try:
+        return gf.find_next(file_paths, lambda fp: not fp.exists())
+    except ValueError:
+        raise ValueError("No available file name found")

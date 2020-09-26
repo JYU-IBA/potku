@@ -28,6 +28,7 @@ import os
 
 import widgets.binding as bnd
 import widgets.gui_utils as gutils
+import modules.file_paths as fp
 
 from pathlib import Path
 from typing import Optional
@@ -152,10 +153,10 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
             max_count: maximum number of files to load
             selected: path to a file that will be selected after loading
         """
-        def text_func(fp: Optional[Path]):
-            if fp is None:
+        def text_func(preset_path: Optional[Path]):
+            if preset_path is None:
                 return PresetWidget.NONE_TEXT
-            return fp.stem
+            return preset_path.stem
 
         preset_files = PresetWidget.get_preset_files(
             self._folder, max_count, keep=selected)
@@ -242,13 +243,15 @@ class PresetWidget(QWidget, bnd.PropertyBindingWidget,
         """Returns the next available file name or None, if no available
         file name was found within maximum number of iterations.
         """
-        # TODO this could be generalized and moved to general_functions module
-        for i in range(starting_index, max_iterations):
-            fname = f"{self._prefix}-{i + 1:03}{PresetWidget.PRESET_SUFFIX}"
-            fpath = self._folder / fname
-            if not fpath.exists():
-                return fpath
-        return None
+        def file_name_generator():
+            for i in range(starting_index, max_iterations):
+                fname = f"{self._prefix}-{i + 1:03}{PresetWidget.PRESET_SUFFIX}"
+                yield self._folder / fname
+
+        try:
+            return fp.find_available_file_path(file_name_generator())
+        except ValueError:
+            return None
 
     @staticmethod
     def get_preset_files(folder: Path, max_count: int = MAX_COUNT,

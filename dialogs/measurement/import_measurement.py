@@ -31,9 +31,11 @@ __version__ = "2.0"
 import logging
 import os
 import re
+import itertools
 
 import dialogs.dialog_functions as df
 import modules.general_functions as gf
+import modules.file_paths as fp
 import widgets.input_validation as iv
 import widgets.gui_utils as gutils
 
@@ -146,7 +148,6 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
     def __import_files(self):
         """Import listed files with settings defined in the dialog.
         """
-        imported_files = {}
         sbh = StatusBarHandler(self.statusbar)
         string_columns = []
 
@@ -180,28 +181,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             item = root.child(i)
             filename_list.append(item.filename)
 
-            sample = self.request.samples.add_sample()
-            self.parent.add_root_item_to_tree(sample)
-            item_name = item.name.replace("_", "-")
-
-            regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-            item_name = iv.validate_text_input(item_name, regex)
-
-            measurement = self.parent.add_new_tab(
-                "measurement", "", sample, object_name=item_name,
-                import_evnt_or_binary=True)
-            # TODO change output_file to Path-object
-            # TODO create a function for finding unused file name
-            output_file = os.path.join(measurement.get_data_dir(), item_name
-                                       + ".asc")
-            n = 2
-            while True:  # Allow import of same named files.
-                if not os.path.isfile(output_file):
-                    break
-                output_file = "{0}-{2}.{1}".format(
-                    measurement.get_data_dir() / item_name, "asc", n)
-                n += 1
-            imported_files[sample] = output_file
+            output_file = df.import_new_measurement(
+                self.request, self.parent, item)
             gf.coinc(item.file,
                      output_file,
                      skip_lines=self.spin_skiplines.value(),
@@ -211,7 +192,6 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                      timing=timing,
                      columns=string_column,
                      nevents=self.spin_eventcount.value())
-            measurement.measurement_file = output_file
 
             sbh.reporter.report(10 + (i + 1) / root_child_count * 90)
 
@@ -290,11 +270,11 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         skip_length = 10
         self.adc_occurance = {}
         for file in self.files_added:
-            with open(file) as fp:
+            with open(file) as in_file:
                 self.__files_preview[file] = []
                 reading_data = False
                 i = 1
-                for line in fp:
+                for line in in_file:
                     if i >= 1000:
                         break
                     if not line:
@@ -384,7 +364,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         combobox.column = self.__import_row_count
         return combobox
 
-    def __create_spinbox(self, default):
+    @staticmethod
+    def __create_spinbox(default):
         spinbox = QtWidgets.QSpinBox()
         spinbox.stepBy(1)
         spinbox.setMinimum(-1000)
