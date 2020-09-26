@@ -31,6 +31,7 @@ import math
 from modules.enums import IonDivision
 from modules.enums import SimulationMode
 from modules.enums import SimulationType
+from modules.enums import ToFEColorScheme
 
 
 class TestIonDivision(unittest.TestCase):
@@ -114,3 +115,32 @@ class TestSimulationEnums(unittest.TestCase):
 
         self.assertEqual("SCT", str(SimulationType("RBS")))
         self.assertEqual("REC", str(SimulationType("ERD")))
+
+
+class TestTofeColors(unittest.TestCase):
+    def test_from_string_with_mpl_strings(self):
+        self.assertEqual(
+            ToFEColorScheme.DEFAULT, ToFEColorScheme.from_string("jet")
+        )
+        self.assertEqual(
+            ToFEColorScheme.GREYSCALE, ToFEColorScheme.from_string("Greys")
+        )
+        self.assertEqual(
+            ToFEColorScheme.INV_GREYSCALE, ToFEColorScheme.from_string("gray")
+        )
+
+    def test_from_string_with_human_readable_strings(self):
+        self.assertEqual(
+            ToFEColorScheme.DEFAULT, ToFEColorScheme.from_string("Default color")
+        )
+        self.assertEqual(
+            ToFEColorScheme.GREYSCALE, ToFEColorScheme.from_string("Greyscale")
+        )
+        self.assertEqual(
+            ToFEColorScheme.INV_GREYSCALE, ToFEColorScheme.from_string(
+                "Greyscale (inverted)")
+        )
+
+    def test_from_string_with_invalid_values(self):
+        self.assertRaises(
+            ValueError, lambda: ToFEColorScheme.from_string("default color"))

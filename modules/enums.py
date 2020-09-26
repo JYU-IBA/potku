@@ -169,18 +169,46 @@ class CrossSection(IntEnum):
         return "Andersen"
 
 
+_TOFE_MAPPING = {
+    "Default color": "jet",
+    "Greyscale": "Greys",
+    "Greyscale (inverted)": "gray",
+}
+
+
 @enum.unique
 class ToFEColorScheme(str, Enum):
+    """Color scheme used in ToF-E histogram. Values are strings that can be
+    passed down to matplotlib.
+    """
     DEFAULT = "jet"
     GREYSCALE = "Greys"
     INV_GREYSCALE = "gray"
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Returns a string representation of this ToFEColorScheme.
+
+        The return value is a human-readable string that can be displayed in GUI
+        applications.
+        """
         if self is ToFEColorScheme.DEFAULT:
             return "Default color"
         if self is ToFEColorScheme.GREYSCALE:
             return "Greyscale"
         return "Greyscale (inverted)"
+
+    @classmethod
+    def from_string(cls, string: str) -> "ToFEColorScheme":
+        """Returns a new ToFEColorScheme object.
+
+        Args:
+            string: either a valid value or a string representation of a
+                ToFEColorScheme object.
+
+        Return:
+            ToFEColorScheme object
+        """
+        return cls(_TOFE_MAPPING.get(string, string))
 
 
 @enum.unique
