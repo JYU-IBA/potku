@@ -36,6 +36,7 @@ import hashlib
 import os
 import platform
 import shutil
+import shlex
 import subprocess
 import tempfile
 import time
@@ -52,6 +53,7 @@ from typing import Callable
 from typing import Optional
 from typing import Union
 from typing import Iterable
+from typing import Tuple
 
 
 # TODO this could still be organized into smaller modules
@@ -321,8 +323,10 @@ def carbon_stopping(element, isotope, energy, carbon_thickness, carbon_density):
         return None
 
 
-def coinc(input_file, output_file, skip_lines, tablesize, trigger, adc_count,
-          timing, columns="$3,$5", nevents=0, timediff=True, temporary=False):
+def coinc(input_file: Path, output_file: Path, skip_lines: int, tablesize: int,
+          trigger: int, adc_count: int, timing: Dict[str, Tuple[int, int]],
+          columns: str = "$3,$5", nevents: int = 0, timediff: bool = True,
+          temporary: bool = False) -> List:
     """Calculate coincidences of file.
 
     Args:
@@ -334,7 +338,7 @@ def coinc(input_file, output_file, skip_lines, tablesize, trigger, adc_count,
                    coincidences.
         trigger: An integer representing trigger ADC.
         adc_count: An integer representing the count of ADCs.
-        timing: A tupple consisting of (min, max) representing different ADC
+        timing: A dict consisting of (min, max) representing different ADC
                 timings.
         columns: Columns.
         nevents: An integer representing limit of how many events will the
@@ -345,66 +349,75 @@ def coinc(input_file, output_file, skip_lines, tablesize, trigger, adc_count,
                    approximately get correct timing limits.
 
     Return:
-        Returns 0 if it was success, 1 if it resulted in error
+        The output of coinc as a list
     """
-    timing_str = ""
-    for key in timing.keys():
-        tmp_str = "--low={0},{1} --high={0},{2}".format(key,
-                                                        timing[key][0],
-                                                        timing[key][1])
-        timing_str = "{0} {1}".format(timing_str, tmp_str)
-    column_count = len(columns.split(','))
-    # column_template = "%i " * column_count
-    if not column_count or not timing_str:  # No columns or timings...
-        return
-    bin_dir = get_bin_dir()
+    # TODO remove 'temporary' parameter, only save results if 'output_file'
+    #   is provided
+    # TODO replace awk with CSVParser
+    input_file = Path(input_file)
+    output_file = Path(output_file)
 
-    # TODO refactor the way the subprocess call arguments are made
-    timediff_str = ""
+    timing_str = " ".join(
+        f"--low={key},{low} --high={key},{high}"
+        for key, (low, high) in timing.items()
+    )
+
+    col_split = columns.split(',')
+    if not (all(col_split) and timing_str):
+        return []
+
     if timediff or temporary:
         timediff_str = "--timediff"
+    else:
+        timediff_str = ""
 
-    executable = "coinc.exe"
     if platform.system() != "Windows":
         executable = "./coinc"
-    command = "{0} {1} && {2}".format(
-        "cd",
-        bin_dir,
-        "{7} --silent {0} {1} {2} {3} {4} {5} {8} {6}".format(
-            "--skip={0}".format(skip_lines),
-            "--tablesize={0}".format(tablesize),
-            "--trigger={0}".format(trigger),
-            "--nadc={0}".format(adc_count),
-            timediff_str,
-            timing_str.strip(),
-            input_file,
-            executable,
-            "--nevents={0}".format(nevents)
-        )
-    )
-    if temporary:
-        command = "{0} {1}".format(
-            command,
-            "> {0}".format(output_file)
-        )
+        posix = True
+        awk_cmd = "awk", f"'{{print {columns}}}'"
     else:
-        if platform.system() != "Windows":
-            command = "{0} {1}".format(
-                command, "| awk {0} > {1}".format(
-                    "'{print " + columns + "}'", output_file))
-            # mac and linux need '' around awk print
-        else:
-            command = "{0} {1}".format(
-                command,
-                "| awk {0} > {1}".format("\"{print " + columns + "}\"",
-                                         output_file)
-            )
-    # print(command)
+        executable = get_bin_dir() / "coinc.exe"
+        posix = False
+        awk_cmd = str(get_bin_dir() / "awk.exe"), f"{{print {columns}}}"
+
+    command = shlex.split(
+        f"{executable} --silent "
+        f"--skip={skip_lines} "
+        f"--tablesize={tablesize} "
+        f"--trigger={trigger} "
+        f"--nadc={adc_count} "
+        f"{timediff_str} "
+        f"{timing_str} "
+        f"--nevents={nevents} "
+        f"{input_file}",
+        posix=posix
+    )
+
     try:
-        subprocess.call(command, shell=True)
-        return True
-    except:
-        return False
+        with subprocess.Popen(
+                command, cwd=get_bin_dir(), universal_newlines=True,
+                stdout=subprocess.PIPE) as p1:
+            if temporary:
+                return _parse_coinc_output(p1, output_file)
+            if not temporary:
+                with subprocess.Popen(
+                        awk_cmd, cwd=get_bin_dir(), stdin=p1.stdout,
+                        stdout=subprocess.PIPE, universal_newlines=True) as p2:
+                    return _parse_coinc_output(p2, output_file)
+    except Exception as e:
+        # TODO remove print
+        print(e)
+        return []
+
+
+def _parse_coinc_output(process: subprocess.Popen, output_file: Path):
+    lines = iter(process.stdout.readline, "")
+    output = []
+    with output_file.open("w") as file:
+        for line in lines:
+            file.write(line)
+            output.append(line)
+    return output
 
 
 def md5_for_file(f, block_size=2 ** 20):

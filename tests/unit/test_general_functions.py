@@ -417,3 +417,57 @@ def sorted_values(dictionary):
     return {
         k: sorted(v) for k, v in dictionary.items()
     }
+
+
+class TestCoinc(unittest.TestCase):
+    def setUp(self):
+        input_file = utils.get_resource_dir() / "events.evnt"
+        self.params = {
+            "adc_count": 3,
+            "columns": "$3,$5",
+            "input_file": input_file,
+            "nevents": 0,
+            "skip_lines": 1,
+            "tablesize": 10,
+            "temporary": True,
+            "timediff": True,
+            "timing": {
+                "1": (-1000, 1000)
+            },
+            "trigger": 2,
+            "temporary": False,
+        }
+
+    def test_shell_injection_fails(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            test_file = Path(tmp_dir, "foo")
+            injection = f"&& touch {test_file}"
+            output_file = Path(tmp_dir, f"import_file.tmp{injection}")
+
+            self.assertEqual(
+                [], gf.coinc(output_file=output_file, **self.params))
+            self.assertFalse(test_file.exists())
+
+    def test_coinc_returns_empty_list_if_no_columns(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            output_file = Path(tmp_dir, "import_file.tmp")
+
+            params = dict(self.params)
+            params["columns"] = ""
+            self.assertEqual([], gf.coinc(output_file=output_file, **params))
+
+    def test_coinc_returns_empty_list_if_no_timings(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            output_file = Path(tmp_dir, "import_file.tmp")
+
+            params = dict(self.params)
+            params["timing"] = {}
+            self.assertEqual([], gf.coinc(output_file=output_file, **params))
+
+    def test_coinc_returns_non_empty_list_if_parameters_are_ok(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            output_file = Path(tmp_dir, "import_file.tmp")
+
+            params = dict(self.params)
+            self.assertNotEqual([], gf.coinc(output_file=output_file, **params))
+
