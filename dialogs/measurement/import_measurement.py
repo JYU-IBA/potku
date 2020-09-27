@@ -31,15 +31,13 @@ __version__ = "2.0"
 import logging
 import os
 import re
-import itertools
 
 import dialogs.dialog_functions as df
 import modules.general_functions as gf
-import modules.file_paths as fp
-import widgets.input_validation as iv
 import widgets.gui_utils as gutils
 
 from collections import OrderedDict
+from pathlib import Path
 
 from widgets.gui_utils import StatusBarHandler
 from dialogs.measurement.import_timing_graph import ImportTimingGraphDialog
@@ -163,8 +161,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                 column_index = adc * 2 + cur_index % 2 + 1  
                 string_columns.append("${0}".format(column_index))
         string_column = ",".join(string_columns)
-        
-        self.__remove_temp_file()
+
         root = self.treeWidget.invisibleRootItem()
         root_child_count = root.childCount()
         timing = dict()
@@ -183,8 +180,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
 
             output_file = df.import_new_measurement(
                 self.request, self.parent, item)
-            gf.coinc(item.file,
-                     output_file,
+            gf.coinc(Path(item.file),
+                     output_file=output_file,
                      skip_lines=self.spin_skiplines.value(),
                      tablesize=10,
                      trigger=self.spin_adctrigger.value(),
@@ -316,16 +313,13 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
     def __close(self):
         """Close dialog.
         """
-        self.__remove_temp_file()
         self.close()
 
     def __coinc_calc(self):
         """Calculate coincidence for selected
         """
         item = self.treeWidget.currentItem()
-        input_file = item.file
-        request_dir = str(os.path.join(self.request.directory, "import_file"))
-        output_file = "{0}.{1}".format(request_dir, "tmp")
+        input_file = Path(item.file)
 
         timing = dict()
         timing_first = "1"
@@ -338,15 +332,14 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         # timing_first = timing.keys().next()
         timing_low = self.__added_timings[timing_first].low
         timing_high = self.__added_timings[timing_first].high
-        ImportTimingGraphDialog(self, input_file, output_file,
-                                (timing_low, timing_high),
-                                icon_manager=self.__icon_manager,
-                                skip_lines=self.spin_skiplines.value(),
-                                trigger=self.spin_adctrigger.value(),
-                                adc_count=self.spin_adccount.value(),
-                                timing=timing,
-                                coinc_count=self.global_settings
-                                .get_import_coinc_count())
+        ImportTimingGraphDialog(
+            self, input_file, None, (timing_low, timing_high),
+            icon_manager=self.__icon_manager,
+            skip_lines=self.spin_skiplines.value(),
+            trigger=self.spin_adctrigger.value(),
+            adc_count=self.spin_adccount.value(),
+            timing=timing,
+            coinc_count=self.global_settings.get_import_coinc_count())
 
     def __create_combobox(self, adc):
         """Create combobox for ADC.
@@ -428,17 +421,6 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             self.files_added.pop(item.file)
         self.__check_if_import_allowed()
         self.__load_file_preview()
-
-    def __remove_temp_file(self):
-        """Remove tempfile, if it exist, used for timing limit correction.
-        """
-        request_dir = str(os.path.join(self.request.directory, "import_file"))
-        tmp_file = "{0}.{1}".format(request_dir, "tmp")
-        try:
-            if os.path.isfile(tmp_file):
-                os.unlink(tmp_file)
-        except:
-            pass
 
     def __select_file(self):
         """Item is selected in treewidget.

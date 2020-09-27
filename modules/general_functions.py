@@ -36,6 +36,7 @@ import hashlib
 import os
 import platform
 import shutil
+import shlex
 import subprocess
 import tempfile
 import time
@@ -52,7 +53,10 @@ from typing import Callable
 from typing import Optional
 from typing import Union
 from typing import Iterable
-from typing import Any
+from typing import Tuple
+from typing import TypeVar
+
+T = TypeVar("T")
 
 
 # TODO this could still be organized into smaller modules
@@ -322,90 +326,98 @@ def carbon_stopping(element, isotope, energy, carbon_thickness, carbon_density):
         return None
 
 
-def coinc(input_file, output_file, skip_lines, tablesize, trigger, adc_count,
-          timing, columns="$3,$5", nevents=0, timediff=True, temporary=False):
+def coinc(input_file: Path, skip_lines: int, tablesize: int,
+          trigger: int, adc_count: int, timing: Dict[str, Tuple[int, int]],
+          output_file: Optional[Path] = None, columns: str = "$3,$5",
+          nevents: int = 0, timediff: bool = True) -> List[str]:
     """Calculate coincidences of file.
 
     Args:
-        input_file: A string representing input file.
-        output_file: A string representing destination file.
+        input_file: Path to input file.
         skip_lines: An integer representing how many lines from the beginning
                     of the file is skipped.
         tablesize: An integer representing how large table is used to calculate
                    coincidences.
         trigger: An integer representing trigger ADC.
         adc_count: An integer representing the count of ADCs.
-        timing: A tupple consisting of (min, max) representing different ADC
+        timing: A dict consisting of (min, max) representing different ADC
                 timings.
-        columns: Columns.
+        output_file: Path to destination file. If None, the results will not
+            be written to file.
+        columns: Columns to parse from output.
         nevents: An integer representing limit of how many events will the
                  program look for. 0 means no limit.
         timediff: A boolean representing whether timediff is output or not.
-        temporary: A boolean representing whether temporary file is used. This
-                   is used when doing first-time-import for file set to
-                   approximately get correct timing limits.
 
     Return:
-        Returns 0 if it was success, 1 if it resulted in error
+        The output of coinc as a list
     """
-    timing_str = ""
-    for key in timing.keys():
-        tmp_str = "--low={0},{1} --high={0},{2}".format(key,
-                                                        timing[key][0],
-                                                        timing[key][1])
-        timing_str = "{0} {1}".format(timing_str, tmp_str)
-    column_count = len(columns.split(','))
-    # column_template = "%i " * column_count
-    if not column_count or not timing_str:  # No columns or timings...
-        return
-    bin_dir = get_bin_dir()
+    # TODO consider replacing awk with something else so there is no need to
+    #   rely on an external dependency. Writing individual lines with CSVParser
+    #   is too slow.
+    timings = (
+        (f"--low={key},{low}", f"--high={key},{high}")
+        for key, (low, high) in timing.items()
+    )
+    timings = [s for tpl in timings for s in tpl]
 
-    # TODO refactor the way the subprocess call arguments are made
-    timediff_str = ""
-    if timediff or temporary:
+    col_split = columns.split(',')
+    if not (all(col_split) and timings):
+        return []
+
+    if timediff:
         timediff_str = "--timediff"
+    else:
+        timediff_str = ""
 
-    executable = "coinc.exe"
     if platform.system() != "Windows":
         executable = "./coinc"
-    command = "{0} {1} && {2}".format(
-        "cd",
-        bin_dir,
-        "{7} --silent {0} {1} {2} {3} {4} {5} {8} {6}".format(
-            "--skip={0}".format(skip_lines),
-            "--tablesize={0}".format(tablesize),
-            "--trigger={0}".format(trigger),
-            "--nadc={0}".format(adc_count),
-            timediff_str,
-            timing_str.strip(),
-            input_file,
-            executable,
-            "--nevents={0}".format(nevents)
-        )
-    )
-    if temporary:
-        command = "{0} {1}".format(
-            command,
-            "> {0}".format(output_file)
-        )
+        awk_cmd = "awk", f"{{print {columns}}}"
     else:
-        if platform.system() != "Windows":
-            command = "{0} {1}".format(
-                command, "| awk {0} > {1}".format(
-                    "'{print " + columns + "}'", output_file))
-            # mac and linux need '' around awk print
-        else:
-            command = "{0} {1}".format(
-                command,
-                "| awk {0} > {1}".format("\"{print " + columns + "}\"",
-                                         output_file)
-            )
-    # print(command)
+        executable = get_bin_dir() / "coinc.exe"
+        awk_cmd = str(get_bin_dir() / "awk.exe"), f"{{print {columns}}}"
+
+    coinc_cmd = (
+        str(executable),
+        "--silent",
+        f"--skip={skip_lines}",
+        f"--tablesize={tablesize}",
+        f"--trigger={trigger}",
+        f"--nadc={adc_count}",
+        timediff_str,
+        *timings,
+        f"--nevents={nevents}",
+        str(input_file),
+    )
+
     try:
-        subprocess.call(command, shell=True)
-        return True
-    except:
-        return False
+        with subprocess.Popen(
+                coinc_cmd, cwd=get_bin_dir(), universal_newlines=True,
+                stdout=subprocess.PIPE) as coinc_proc:
+            with subprocess.Popen(
+                    awk_cmd, cwd=get_bin_dir(), stdin=coinc_proc.stdout,
+                    stdout=subprocess.PIPE, universal_newlines=True) \
+                    as awk_proc:
+                return _parse_process_output(awk_proc, output_file)
+    except OSError:
+        return []
+
+
+def _parse_process_output(
+        process: subprocess.Popen, output_file: Optional[Path]) -> List[str]:
+    """Helper function for parsing output from the given process and writing
+    the results to a file if given. Returns the lines as a list.
+    """
+    # TODO generalize this and use it for tof_list, get_espe etc.
+    lines = iter(process.stdout.readline, "")
+    if output_file is not None:
+        output = []
+        with output_file.open("w") as file:
+            for line in lines:
+                file.write(line)
+                output.append(line)
+        return output
+    return list(lines)
 
 
 def md5_for_file(f, block_size=2 ** 20):
@@ -437,13 +449,13 @@ def to_superscript(string):
 
 
 def lower_case_first(s: str) -> str:
-    """Returns a string where the first character is lower cased."""
+    """Returns a string where the first character is lower cased.
+    """
     return s[0].lower() + s[1:] if s else ""
 
 
 def find_nearest(x, lst):
-    """
-    Find given list's nearest point's x coordinate from x.
+    """Find given list's nearest point's x coordinate from x.
 
     Args:
         x: X coordinate.
@@ -504,8 +516,7 @@ def uniform_espe_lists(espe1, espe2, channel_width=0.025):
 
 
 def format_to_binary(var, length):
-    """
-    Format given integer into binary of a certain length.
+    """Format given integer into binary of a certain length.
 
     Args:
         var: Integer value to transform to binary.
@@ -643,7 +654,9 @@ def get_root_dir() -> Path:
     return _ROOT_DIR
 
 
-def find_next(iterable: Iterable[Any], cond: Callable[[Any], bool]) -> Any:
+def find_next(iterable: Iterable[T], cond: Callable[[T], bool]) -> T:
+    """Returns the next item in the iterable that matches given condition.
+    """
     try:
         return next(i for i in iterable if cond(i))
     except StopIteration:

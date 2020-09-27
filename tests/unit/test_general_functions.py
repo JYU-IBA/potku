@@ -29,6 +29,7 @@ import platform
 import tempfile
 import modules.comparison as comp
 import random
+import time
 import tests.utils as utils
 
 from pathlib import Path
@@ -417,3 +418,89 @@ def sorted_values(dictionary):
     return {
         k: sorted(v) for k, v in dictionary.items()
     }
+
+
+class TestCoinc(unittest.TestCase):
+    def setUp(self):
+        input_file = utils.get_resource_dir() / "events.evnt"
+        self.params = {
+            "adc_count": 3,
+            "columns": "$3,$5,$4",
+            "input_file": input_file,
+            "nevents": 0,
+            "skip_lines": 1,
+            "tablesize": 10,
+            "timediff": True,
+            "timing": {
+                "1": (-1000, 1000)
+            },
+            "trigger": 2,
+        }
+        self.expected = [
+            "10 100 -100\n",
+            "20 200 100\n",
+        ]
+
+    def test_shell_injection_fails_for_output_file(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            test_file = Path(tmp_dir, "foo")
+            injection = f"&& touch {test_file}"
+            output_file = Path(tmp_dir, f"import_file.tmp {injection}")
+
+            gf.coinc(output_file=output_file, **self.params)
+
+            # injected file should not exist (sleep for a bit to ensure that
+            # subprocess.Popen has finished)
+            time.sleep(0.1)
+            self.assertFalse(test_file.exists())
+
+    def test_shell_injection_fails_for_input_file(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            test_file = Path(tmp_dir, "foo")
+            injection = f"&& touch {test_file}"
+            params = dict(self.params)
+            params["input_file"] = Path(f"{params['input_file']} {injection}")
+
+            gf.coinc(**params)
+
+            # injected file should not exist
+            time.sleep(0.1)
+            self.assertFalse(test_file.exists())
+
+    def test_coinc_returns_empty_list_if_no_columns(self):
+        with tempfile.TemporaryDirectory():
+            params = dict(self.params)
+            params["columns"] = ""
+            self.assertEqual([], gf.coinc(**params))
+
+    def test_coinc_returns_empty_list_if_no_timings(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            params = dict(self.params)
+            params["timing"] = {}
+            self.assertEqual([], gf.coinc(**params))
+
+    def test_coinc_returns_expected_output_if_parameters_are_ok(self):
+        with tempfile.TemporaryDirectory():
+            self.assertEqual(self.expected, gf.coinc(**self.params))
+
+    def test_output_is_written_to_file_if_output_file_is_given(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            output_file = Path(tmp_dir, "import_file.tmp")
+
+            gf.coinc(output_file=output_file, **self.params)
+            with output_file.open("r") as file:
+                self.assertEqual(self.expected, file.readlines())
+
+    def test_output_is_not_written_to_file_if_parameters_are_not_ok(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            output_file = Path(tmp_dir, "import_file.tmp")
+
+            params = dict(self.params)
+            params["columns"] = ""
+            gf.coinc(output_file=output_file, **params)
+            self.assertFalse(output_file.exists())
+
+            params = dict(self.params)
+            params["timing"] = {}
+            gf.coinc(output_file=output_file, **params)
+            self.assertFalse(output_file.exists())

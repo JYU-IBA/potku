@@ -32,17 +32,19 @@ from PyQt5 import QtWidgets
 from widgets.matplotlib.base import MatplotlibWidget
 from widgets.matplotlib import mpl_utils
 
+from modules.parsing import CSVParser
+
 
 class MatplotlibImportTimingWidget(MatplotlibWidget):
     """
     A MatplotlibImportTimingWidget class.
     """
-    def __init__(self, parent, output_file, icon_manager, timing):
+    def __init__(self, parent, data, icon_manager, timing):
         """Inits import timings widget
 
         Args:
             parent: An ImportTimingGraphDialog class object.
-            output_file: A string representing file to be graphed.
+            data: Time difference data as a List.
             icon_manager: An IconManager class object.
             timing: A tuple representing low & high timing limits.
         """
@@ -61,17 +63,12 @@ class MatplotlibImportTimingWidget(MatplotlibWidget):
             self.__limit_high,
             timing_key))
         self.__limit_prev = 0
-        self.data = []
-        with open(output_file) as fp:
-            for line in fp:
-                if not line:  # Can result in empty lines at the end, skip.
-                    continue
-                split = line.strip().split("\t")
-                time_diff = int(split[3])
-                # if time_diff < 0:
-                #    time_diff *= -1
-                self.data.append(time_diff)
-        self.data = sorted(self.data)
+        parser = CSVParser((0, int))
+        self.data = [
+            timediff for timediff, in
+            parser.parse_strs(
+                data, separator="\t", method=parser.ROW, ignore=parser.EMPTY)
+        ]
         self.on_draw()
 
     def on_draw(self):

@@ -28,8 +28,6 @@ __author__ = "Timo Konu \n Severi Jääskeläinne \n Samuel Kaiponen \n Heta " \
              "Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
-
 import modules.general_functions as gf
 import widgets.gui_utils as gutils
 
@@ -50,8 +48,8 @@ class ImportTimingGraphDialog(QtWidgets.QDialog):
         
         Args:
             parent: An ImportMeasurementsDialog class object.
-            input_file: A string representing input file.
-            output_file: A string representing destination file.
+            input_file: Path to input file.
+            output_file: Path to destination file.
             adc_timing_spin: A tuple of timing QSpinboxes.
             icon_manager: An IconManager class object.
             skip_lines: An integer representing line count to be skipped.
@@ -66,23 +64,20 @@ class ImportTimingGraphDialog(QtWidgets.QDialog):
 
         self.parent = parent
         self.img_dir = self.parent.request.directory
-        self.__input_file = input_file
-        self.__output_file = output_file
         self.timing_low = adc_timing_spin[0]
         self.timing_high = adc_timing_spin[1]
 
         self.button_close.clicked.connect(self.close)
-        gf.coinc(self.__input_file, self.__output_file, skip_lines=skip_lines,
-                 tablesize=10, trigger=trigger, adc_count=adc_count,
-                 timing=timing, nevents=coinc_count, temporary=True)
-        if not os.stat(self.__output_file).st_size:
-            _ = QtWidgets.QMessageBox.question(
-                self, "Empty File", "No coincidence events were found.",
+        data = gf.coinc(
+            input_file, skip_lines=skip_lines, tablesize=10, trigger=trigger,
+            adc_count=adc_count, timing=timing, nevents=coinc_count,
+            columns="$4", timediff=True, output_file=output_file)
+        if not data:
+            QtWidgets.QMessageBox.question(
+                self, "No data", "No coincidence events were found.",
                 QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-            self.close()  # Just in case.
+            self.close()
         else:
-            self.matplotlib = MatplotlibImportTimingWidget(self,
-                                                           self.__output_file,
-                                                           icon_manager,
-                                                           timing)
+            self.matplotlib = MatplotlibImportTimingWidget(
+                self, data, icon_manager, timing)
             self.exec_()
