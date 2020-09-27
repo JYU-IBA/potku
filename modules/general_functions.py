@@ -355,13 +355,14 @@ def coinc(input_file: Path, skip_lines: int, tablesize: int,
     # TODO consider replacing awk with something else so there is no need to
     #   rely on an external dependency. Writing individual lines with CSVParser
     #   is too slow.
-    timing_str = " ".join(
-        f"--low={key},{low} --high={key},{high}"
+    timings = (
+        (f"--low={key},{low}", f"--high={key},{high}")
         for key, (low, high) in timing.items()
     )
+    timings = [s for tpl in timings for s in tpl]
 
     col_split = columns.split(',')
-    if not (all(col_split) and timing_str):
+    if not (all(col_split) and timings):
         return []
 
     if timediff:
@@ -371,7 +372,7 @@ def coinc(input_file: Path, skip_lines: int, tablesize: int,
 
     if platform.system() != "Windows":
         executable = "./coinc"
-        awk_cmd = "awk", f"'{{print {columns}}}'"
+        awk_cmd = "awk", f"{{print {columns}}}"
     else:
         executable = get_bin_dir() / "coinc.exe"
         awk_cmd = str(get_bin_dir() / "awk.exe"), f"{{print {columns}}}"
@@ -384,7 +385,7 @@ def coinc(input_file: Path, skip_lines: int, tablesize: int,
         f"--trigger={trigger}",
         f"--nadc={adc_count}",
         timediff_str,
-        timing_str,
+        *timings,
         f"--nevents={nevents}",
         str(input_file),
     )

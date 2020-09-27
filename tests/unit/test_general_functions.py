@@ -425,7 +425,7 @@ class TestCoinc(unittest.TestCase):
         input_file = utils.get_resource_dir() / "events.evnt"
         self.params = {
             "adc_count": 3,
-            "columns": "$3,$5",
+            "columns": "$3,$5,$4",
             "input_file": input_file,
             "nevents": 0,
             "skip_lines": 1,
@@ -437,8 +437,8 @@ class TestCoinc(unittest.TestCase):
             "trigger": 2,
         }
         self.expected = [
-            "10 100\n",
-            "20 200\n",
+            "10 100 -100\n",
+            "20 200 100\n",
         ]
 
     def test_shell_injection_fails_for_output_file(self):
