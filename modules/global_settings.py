@@ -379,7 +379,7 @@ class GlobalSettings:
         Args:
             value: a ToFEColorScheme value.
         """
-        self._config[self._TOFE]["color_scheme"] = value.value
+        self._config[self._TOFE]["color_scheme"] = str(value)
 
     @handle_exceptions(return_value=0)
     def get_tofe_bin_range_mode(self) -> int:
