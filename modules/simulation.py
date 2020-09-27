@@ -30,6 +30,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
+import copy
 import json
 import logging
 import os
@@ -272,20 +273,19 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         self.use_request_settings = use_request_settings
 
         if target is None:
-            self.target = Target()
+            self.target = copy.deepcopy(self.request.default_target)
         else:
             self.target = target
 
         if run is None:
-            self.run = Run()
+            self.run = copy.deepcopy(self.request.default_run)
         else:
             self.run = run
 
         if detector is None:
-            self.detector = Detector(
-                self.directory / "Detector" / "Default.detector",
-                self.get_measurement_file(),
-                save_on_creation=save_on_creation)
+            # TODO: same question as in measurement
+            self.detector = copy.deepcopy(self.request.default_detector)
+            self.detector.path = self.directory / "Detector" / "Default.detector"
         else:
             self.detector = detector
 
