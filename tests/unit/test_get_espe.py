@@ -83,18 +83,6 @@ class TestReadEspeFile(unittest.TestCase):
         self.assertEqual([], spectrum)
 
 
-class TestReadErdData(unittest.TestCase):
-    def test_read_erd_data_returns_expected_data(self):
-        erd_data = list(GetEspe.read_erd_data(_ERD_FILE))
-        self.assertEqual(20, len(erd_data))
-        for line in erd_data:
-            self.assertIsInstance(line, str)
-
-    def test_read_erd_data_returns_nothing_if_no_erd_files(self):
-        erd_data = list(GetEspe.read_erd_data(Path.cwd() / "foo.bar.baz"))
-        self.assertEqual([], erd_data)
-
-
 class TestGetEspeRun(unittest.TestCase):
     def setUp(self):
         self.beam = mo.get_beam()
@@ -162,6 +150,20 @@ class TestGetEspeRun(unittest.TestCase):
             ),
             get_espe.run(verbose=False)
         )
+
+    def test_read_erd_data_returns_expected_data(self):
+        get_espe = GetEspe(**self.default_kwargs)
+        self.assertEqual(get_espe.erd_file, _ERD_FILE)
+        erd_data = list(get_espe.read_erd_files())
+        self.assertEqual(20, len(erd_data))
+        for line in erd_data:
+            self.assertIsInstance(line, str)
+
+    def test_read_erd_data_returns_nothing_if_no_erd_files(self):
+        get_espe = GetEspe(**self.default_kwargs)
+        get_espe.erd_file = Path.cwd() / "foo.bar.baz"
+        erd_data = list(get_espe.read_erd_files())
+        self.assertEqual([], erd_data)
 
 
 if __name__ == '__main__':

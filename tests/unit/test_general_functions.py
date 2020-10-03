@@ -435,6 +435,7 @@ class TestCoinc(unittest.TestCase):
                 "1": (-1000, 1000)
             },
             "trigger": 2,
+            "verbose": False,
         }
         self.expected = [
             "10 100 -100\n",

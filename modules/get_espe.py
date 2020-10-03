@@ -38,6 +38,7 @@ from typing import Tuple
 from typing import List
 
 from . import general_functions as gf
+from . import subprocess_utils as sutils
 
 from .beam import Beam
 from .detector import Detector
@@ -55,7 +56,7 @@ class GetEspe:
     """
     __slots__ = "recoil_file", "beam_ion", "energy", "theta", \
                 "channel_width", "fluence", "timeres", "density", \
-                "solid", "erd_file", "tangle", "toflen"
+                "solid", "erd_file", "tangle", "toflen", "_output_parser"
 
     def __init__(self, beam_ion: str, energy: float, theta: float,
                  tangle: float, toflen: float, solid: float,
@@ -92,6 +93,7 @@ class GetEspe:
         self.solid = solid
         self.recoil_file = recoil_file
         self.erd_file = erd_file
+        self._output_parser = CSVParser((0, float), (1, float))
 
     @staticmethod
     def calculate_simulated_spectrum(
@@ -158,47 +160,33 @@ class GetEspe:
         espe_cmd = self.get_command()
         bin_dir = gf.get_bin_dir()
 
-        if not verbose:
-            kwargs = {
-                "stderr": subprocess.DEVNULL
-            }
-        else:
-            kwargs = {}
+        stderr = None if verbose else subprocess.DEVNULL
 
         with subprocess.Popen(
                 espe_cmd, cwd=bin_dir, stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE, universal_newlines=True,
-                **kwargs) as espe_process:
+                stderr=stderr) as espe_process:
 
             with espe_process.stdin as stdin:
-                for line in GetEspe.read_erd_data(self.erd_file):
+                for line in self.read_erd_files():
                     stdin.write(line)
 
-            stdout = iter(espe_process.stdout.readline, "")
-            parser = CSVParser((0, float), (1, float))
+            espe = sutils.process_output(
+                espe_process,
+                parse_func=self._output_parser.parse_str,
+                file=output_file,
+                text_func=lambda x: f"{x[0]} {x[1]}\n")
 
-            if output_file is not None:
-                output = []
-                with output_file.open("w") as file:
-                    for x, y in parser.parse_strs(stdout, method=CSVParser.ROW):
-                        file.write(f"{x} {y}\n")
-                        output.append((x, y))
-                return output
-            return list(parser.parse_strs(stdout, method=CSVParser.ROW))
+        return espe
 
-    @staticmethod
-    def read_erd_data(file: Path) -> Iterable[str]:
+    def read_erd_files(self) -> Iterable[str]:
         """Yields lines from ERD files.
-
-        Args:
-            file: path to a file. Glob patterns are allowed (so '*.erd'
-                would yield lines from all .erd files in working directory)
 
         Yield:
             each line as a string
         """
         # TODO this could be a function in some utility module
-        for f in glob.glob(str(file)):
+        for f in glob.glob(str(self.erd_file)):
             with open(f, "r") as file:
                 for line in file:
                     yield line
