@@ -316,7 +316,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # Calculate espes for simulations
         for elem_sim, lst in used_simulations.items():
             for d in lst:
-                _, espe_file = elem_sim.calculate_espe(**d, ch=self.bin_width)
+                _, espe_file = elem_sim.calculate_espe(
+                    **d, write_to_file=True, ch=self.bin_width)
                 self.result_files.append(espe_file)
 
         sbh.reporter.report(66)

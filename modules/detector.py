@@ -34,6 +34,7 @@ from typing import Optional
 from typing import Iterable
 from typing import Set
 from typing import List
+from typing import Tuple
 from pathlib import Path
 
 from . import general_functions as gf
@@ -388,6 +389,17 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
                        for foil in self.foils)
         except (ZeroDivisionError, ValueError):
             return 0
+
+    def calculate_tof_length(self) -> float:
+        """Returns tof length in meters.
+        """
+        tof1, tof2 = self.get_tof_foils()
+        return (tof2.distance - tof1.distance) / 1000
+
+    def get_tof_foils(self) -> Tuple[Foil, Foil]:
+        """Returns timing foils.
+        """
+        return self.foils[self.tof_foils[0]], self.foils[self.tof_foils[1]]
 
     @staticmethod
     def get_used_efficiency_file_name(file_name) -> Path:

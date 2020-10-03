@@ -29,8 +29,13 @@ __version__ = "2.0"
 
 import platform
 import subprocess
-import shlex
 import glob
+
+from pathlib import Path
+from typing import Optional
+from typing import Iterable
+from typing import Tuple
+from typing import List
 
 from . import general_functions as gf
 
@@ -38,109 +43,170 @@ from .beam import Beam
 from .detector import Detector
 from .target import Target
 from .parsing import CSVParser
-from pathlib import Path
+
+# Helper type hint for energy spectrum data
+# TODO create an actual class for spectrum data
+Espe = List[Tuple[float, float]]
 
 
 class GetEspe:
-    """
-    Class for handling calling the external program get_espe to generate
+    """Class for handling calling the external program get_espe to generate
     energy spectra coordinates.
     """
-    __slots__ = "__recoil_file", "__settings", "__beam", "__detector", \
-                "__target", "__channel_width", "__reference_density", \
-                "__fluence", "output_file", "__timeres", "__density", \
-                "__solid", "__erd_file", "__output_file"
+    __slots__ = "recoil_file", "beam_ion", "energy", "theta", \
+                "channel_width", "fluence", "timeres", "density", \
+                "solid", "erd_file", "tangle", "toflen"
 
-    def __init__(self, beam: Beam, detector: Detector, target: Target,
-                 solid, recoil_file: Path, erd_file: Path, spectrum_file: Path,
+    def __init__(self, beam_ion: str, energy: float, theta: float,
+                 tangle: float, toflen: float, solid: float,
+                 recoil_file: Path, erd_file: Path,
                  reference_density: float = 4.98e22,
                  ch: float = 0.025, fluence: float = 1.00e+12,
                  timeres: float = 250.0):
         """Initializes the GetEspe class.
+
+        Args:
+            beam_ion: mass number and the chemical symbol of the primary ion
+            energy: beam energy (MeV)
+            theta: scattering angle (deg)
+            tangle: angle between target surface and beam (deg)
+            toflen: time-of-flight length (m)
+            solid: solid angle of the detector (msr)
+            recoil_file: file name for depth distribution
+            erd_file: file name for simulated data. Glob patterns allowed.
+            reference_density: average atomic density of the first 10 nm layer
+                (at./cm^3)
+            ch: channel width in the output (MeV)
+            fluence: dose of the beam in particles (6.24e12 == 1 p-uC)
+            timeres: time resolution of the TOF-detector (ps, FWHM)
         """
-        self.__beam = beam
-        self.__detector = detector
-        self.__target = target
-        self.__channel_width = ch
-        self.__fluence = fluence  # from Run object
-        self.__timeres = timeres
-        self.__density = reference_density
-        self.__solid = solid
-        self.__recoil_file = recoil_file
-        self.__erd_file = erd_file
-        self.__output_file = spectrum_file
+        self.beam_ion = beam_ion
+        self.energy = energy
+        self.theta = theta
+        self.tangle = tangle
+        self.toflen = toflen
+        self.channel_width = ch
+        self.fluence = fluence
+        self.timeres = timeres
+        self.density = reference_density
+        self.solid = solid
+        self.recoil_file = recoil_file
+        self.erd_file = erd_file
 
     @staticmethod
-    def calculate_simulated_spectrum(write_to_file=True, **kwargs):
+    def calculate_simulated_spectrum(
+            beam: Beam, detector: Detector, target: Target,
+            output_file: Optional[Path] = None, verbose: bool = True,
+            **kwargs) -> Espe:
         """Calculates simulated spectrum. Calling this is the same as creating
         a new GetEspe object and calling its run method.
 
         Args:
-            write_to_file: whether spectrum is written to a file
+            beam: provides ion and energy data
+            detector: provides tof-length, solid angle, scattering angle
+                and time resolution data
+            target: provides target theta data
+            output_file: path to file where output will be written. If None,
+                output is not written to a file.
+            verbose: whether get_espe's stderr is printed to console
             kwargs: keyword arguments passed down to GetEspe
 
         Return:
-            spectrum as a list of tuples
+            spectrum data as a list of parsed tuples
         """
-        get_espe = GetEspe(**kwargs)
-        return get_espe.run(write_to_file=write_to_file)
+        get_espe = GetEspe(
+            beam_ion=beam.ion.get_prefix(),
+            energy=beam.energy,
+            theta=detector.detector_theta,
+            timeres=detector.timeres,
+            toflen=detector.calculate_tof_length(),
+            solid=detector.calculate_solid(),
+            tangle=target.target_theta,
+            **kwargs)
+        return get_espe.run(output_file=output_file, verbose=verbose)
 
     @staticmethod
-    def read_espe_file(espe_file: Path):
+    def read_espe_file(espe_file: Path) -> Espe:
         """Reads a file generated by get_espe.
 
         Args:
             espe_file: A string representing path of energy spectrum data file
                 (.simu) to be read.
 
-        Returns:
+        Return:
             Returns energy spectrum data as a list.
         """
         parser = CSVParser((0, float), (1, float))
         try:
-            # TODO could also set the method to 'cols'
-            return list(parser.parse_file(espe_file, method="row"))
-            # TODO handle NaNs and Infs
+            return list(parser.parse_file(espe_file, method=CSVParser.ROW))
         except (OSError, UnicodeDecodeError, IndexError):
             # File was not found, or it could not be decoded (for example, it
             # could have been .png)
-            pass
-        return []
+            return []
 
-    def run(self, write_to_file=True):
+    def run(self, output_file: Optional[Path] = None, verbose: bool = True) \
+            -> Espe:
         """Run get_espe binary with given parameters.
 
         Args:
-            write_to_file: whether get_espe output is written to file
+            output_file: if given, get_espe output will be written to this file
+            verbose: whether get_espe's stderr is printed to console
+
+        Return:
+            parsed get_espe output
         """
         espe_cmd = self.get_command()
         bin_dir = gf.get_bin_dir()
 
-        espe_process = subprocess.Popen(
-            espe_cmd, cwd=bin_dir, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, universal_newlines=True)
+        if not verbose:
+            kwargs = {
+                "stderr": subprocess.DEVNULL
+            }
+        else:
+            kwargs = {}
 
-        for f in glob.glob(str(self.__erd_file)):
+        with subprocess.Popen(
+                espe_cmd, cwd=bin_dir, stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE, universal_newlines=True,
+                **kwargs) as espe_process:
+
+            with espe_process.stdin as stdin:
+                for line in GetEspe.read_erd_data(self.erd_file):
+                    stdin.write(line)
+
+            stdout = iter(espe_process.stdout.readline, "")
+            parser = CSVParser((0, float), (1, float))
+
+            if output_file is not None:
+                output = []
+                with output_file.open("w") as file:
+                    for x, y in parser.parse_strs(stdout, method=CSVParser.ROW):
+                        file.write(f"{x} {y}\n")
+                        output.append((x, y))
+                return output
+            return list(parser.parse_strs(stdout, method=CSVParser.ROW))
+
+    @staticmethod
+    def read_erd_data(file: Path) -> Iterable[str]:
+        """Yields lines from ERD files.
+
+        Args:
+            file: path to a file. Glob patterns are allowed (so '*.erd'
+                would yield lines from all .erd files in working directory)
+
+        Yield:
+            each line as a string
+        """
+        # TODO this could be a function in some utility module
+        for f in glob.glob(str(file)):
             with open(f, "r") as file:
                 for line in file:
-                    espe_process.stdin.write(line)
+                    yield line
 
-        espe_process.stdin.close()
-
-        stdout = iter(espe_process.stdout.readline, "")
-        parser = CSVParser((0, float), (1, float))
-
-        if write_to_file:
-            output = []
-            with self.__output_file.open("w") as file:
-                for x, y in parser.parse_strs(stdout, method="row"):
-                    file.write(f"{x} {y}\n")
-                    output.append((x, y))
-            return output
-        return list(parser.parse_strs(stdout, method="row"))
-
-    def get_command(self):
+    def get_command(self) -> Tuple[str, ...]:
         """Returns the command to run get_espe executable.
+
+        Return: command as a tuple of strings
         """
         # Options for get_espe
         #
@@ -163,36 +229,31 @@ class GetEspe:
         #         -toflen  time-of-flight length (m)
         #         -beam    mass number and the chemical symbol of the primary
         #                  ion
-        #         -dose    dose of the beam = fluence, in particles (6.24e12 == 1 p-uC)
+        #         -dose    dose of the beam = fluence, in particles (6.24e12 ==
+        #                  1 p-uC)
         #         -energy  beam energy (MeV)
         #         -theta   scattering angle (deg)
         #         -tangle  angle between target surface and beam (deg)
         #         -solid   solid angle of the detector (msr)
         #         -density average atomic density of the first 10 nm layer
         #                  (at./cm^3)
-        toflen = self.__detector.foils[self.__detector.tof_foils[1]].distance
-        toflen -= self.__detector.foils[self.__detector.tof_foils[0]].distance
-        toflen_in_meters = toflen / 1000
-
-        params = f"-beam {self.__beam.ion.get_prefix()} " \
-                 f"-energy {self.__beam.energy} " \
-                 f"-theta {self.__detector.detector_theta} " \
-                 f"-tangle {self.__target.target_theta} " \
-                 f"-timeres {self.__timeres} " \
-                 f"-toflen {toflen_in_meters} " \
-                 f"-solid {self.__solid} " \
-                 f"-dose {self.__fluence} " \
-                 f"-avemass " \
-                 f"-density {self.__density} " \
-                 f"-ch {self.__channel_width}"
-
         if platform.system() == "Windows":
             executable = str(gf.get_bin_dir() / "get_espe.exe")
         else:
             executable = "./get_espe"
 
-        # shlex.split does not handle file paths well on Windows so recoil
-        # file is provided separately
         return (
-            executable, *shlex.split(params), "-dist", str(self.__recoil_file)
+            executable,
+            "-beam", self.beam_ion,
+            "-energy", str(self.energy),
+            "-theta", str(self.theta),
+            "-tangle", str(self.tangle),
+            "-timeres", str(self.timeres),
+            "-toflen", str(self.toflen),
+            "-solid", str(self.solid),
+            "-dose", str(self.fluence),
+            "-avemass",
+            "-density", str(self.density),
+            "-ch", str(self.channel_width),
+            "-dist", str(self.recoil_file),
         )
