@@ -91,8 +91,8 @@ def write_to_file(
     Yield:
         unchanged items from the original iterable
     """
-    if text_func is None:
-        raise ValueError("text_func must be provided")
+    if not callable(text_func):
+        raise TypeError("text_func must be callable")
     with file.open("w") as output_file:
         for item in iterable:
             output_file.write(text_func(item))

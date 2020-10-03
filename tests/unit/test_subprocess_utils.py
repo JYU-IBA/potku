@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 TODO
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -21,8 +21,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = ""  # TODO
-__version__ = ""  # TODO
+__author__ = "Juhani Sundell"
+__version__ = "2.0"
 
 import unittest
 import tempfile
@@ -117,7 +117,7 @@ class TestWriteToFile(unittest.TestCase):
             with file.open("r") as f:
                 self.assertEqual(["kissa"], f.readlines())
 
-    def test_write_to_file_does_not_add_newlines(self):
+    def test_write_to_file_does_not_add_newline_characters(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             file = Path(tmp_dir, "foo.bar")
             list(sutils.write_to_file(["kissa", "istuu"], file))
@@ -186,7 +186,16 @@ class TestWriteToFile(unittest.TestCase):
             file = Path(tmp_dir, "foo.bar")
 
             lines = sutils.write_to_file([], file, text_func=None)
-            self.assertRaises(ValueError, lambda: list(lines))
+            self.assertRaises(TypeError, lambda: list(lines))
+            self.assertFalse(file.exists())
+
+    def test_non_callable_text_func_raises_an_error(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file = Path(tmp_dir, "foo.bar")
+
+            lines = sutils.write_to_file([], file, text_func=1)
+            self.assertRaises(TypeError, lambda: list(lines))
+            self.assertFalse(file.exists())
 
 
 class TestProcessOutput(unittest.TestCase):
