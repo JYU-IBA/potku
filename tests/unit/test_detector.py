@@ -64,35 +64,45 @@ class TestBeam(unittest.TestCase):
         self.assertEqual([1, 2], self.det.tof_foils)
 
     def test_calculate_smallest_solid_angle(self):
-        self.assertAlmostEqual(0.1805,
-                               self.det.calculate_smallest_solid_angle(),
-                               places=3)
+        self.assertAlmostEqual(
+            0.1805, self.det.calculate_smallest_solid_angle(), places=3)
 
         self.det.foils.clear()
         self.assertEqual(0, self.det.calculate_smallest_solid_angle())
 
         self.det.foils.append(self.unit_foil)
-        self.assertAlmostEqual(785.398,
-                               self.det.calculate_smallest_solid_angle(),
-                               places=3)
+        self.assertAlmostEqual(
+            785.398, self.det.calculate_smallest_solid_angle(), places=3)
 
     def test_calculate_solid(self):
-        self.assertAlmostEqual(0.1805,
-                               self.det.calculate_solid(),
-                               places=3)
+        self.assertAlmostEqual(
+            0.1805, self.det.calculate_solid(), places=3)
 
         self.det.foils.clear()
         self.assertEqual(0, self.det.calculate_solid())
 
         self.det.foils.append(self.unit_foil)
-        self.assertAlmostEqual(785.398,
-                               self.det.calculate_solid(),
-                               places=3)
+        self.assertAlmostEqual(
+            785.398, self.det.calculate_solid(), places=3)
 
         self.det.foils.append(self.rect_foil)
-        self.assertAlmostEqual(1570.796,
-                               self.det.calculate_solid(),
-                               places=3)
+        self.assertAlmostEqual(
+            1570.796, self.det.calculate_solid(), places=3)
+
+    def test_calculate_tof_length(self):
+        self.assertEqual(0.623, self.det.calculate_tof_length())
+        _, tof2 = self.det.get_tof_foils()
+        tof2.distance += 1000
+        self.assertEqual(1.623, self.det.calculate_tof_length())
+
+    def test_get_tof_foils(self):
+        tof1, tof2 = self.det.get_tof_foils()
+        self.assertIs(
+            tof1, self.det.foils[1]
+        )
+        self.assertIs(
+            tof2, self.det.foils[2]
+        )
 
     def test_serialization(self):
         """Tests that a deserialized detector has the same attribute values
@@ -101,23 +111,21 @@ class TestBeam(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             det_file = Path(tmp_dir, "d.detector")
             mesu_file = Path(tmp_dir, "mesu")
-            det1 = Detector(det_file, mesu_file,
-                            name="foo", description="bar",
-                            detector_type=DetectorType.TOF,
-                            virtual_size=(1, 2), tof_slope=4.4e-10,
-                            tof_offset=2, angle_slope=3, angle_offset=4,
-                            timeres=251, detector_theta=42, tof_foils=[0, 0],
-                            save_on_creation=False, foils=[self.unit_foil,
-                                                           self.rect_foil])
+            det1 = Detector(
+                det_file, mesu_file, name="foo", description="bar",
+                detector_type=DetectorType.TOF, virtual_size=(1, 2),
+                tof_slope=4.4e-10, tof_offset=2, angle_slope=3,
+                angle_offset=4, timeres=251, detector_theta=42,
+                tof_foils=[0, 0], save_on_creation=False,
+                foils=[self.unit_foil, self.rect_foil])
             det1.to_file(det_file, mesu_file)
 
-            det2 = Detector.from_file(det_file, mesu_file, mo.get_request(),
-                                      save_on_creation=False)
+            det2 = Detector.from_file(
+                det_file, mesu_file, mo.get_request(), save_on_creation=False)
             self.assertIsNot(det1, det2)
             self.assertEqual(det1.name, det2.name)
             self.assertEqual(det1.description, det2.description)
             self.assertEqual(det1.type, det2.type)
-            self.assertIsInstance(det2.type, DetectorType)
             self.assertEqual(det1.virtual_size, det2.virtual_size)
             self.assertEqual(det1.tof_slope, det2.tof_slope)
             self.assertEqual(det1.tof_offset, det2.tof_offset)

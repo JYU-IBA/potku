@@ -462,7 +462,6 @@ class TestElementSimulation(unittest.TestCase):
         args = mock_get_espe.call_args[1]
         self.assertEqual(rec_file, args["recoil_file"])
         self.assertEqual(erd_file, args["erd_file"])
-        self.assertEqual(espe_file, args["spectrum_file"])
         self.assertEqual(espe_file, file)
 
         self.assertTrue(rec_file.exists())

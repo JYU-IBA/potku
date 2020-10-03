@@ -822,11 +822,14 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         return self._running_event
 
-    def calculate_espe(self, recoil_element: RecoilElement, ch=None,
-                       fluence=None, optimization_type=None,
-                       write_to_file=True):
-        """
-        Calculate the energy spectrum from the MCERD result file.
+    def calculate_espe(
+            self,
+            recoil_element: RecoilElement,
+            ch: Optional[float] = None,
+            fluence: Optional[float] = None,
+            optimization_type: Optional[OptimizationType] = None,
+            write_to_file: bool = True) -> Tuple[List, Optional[Path]]:
+        """Calculate the energy spectrum from the MCERD result file.
 
         Args:
             recoil_element: Recoil element.
@@ -836,7 +839,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             write_to_file: whether spectrum is written to file
 
         Return:
-            tuple consisting of spectrum and espe file
+            tuple consisting of spectrum data and espe file
         """
         suffix = self.simulation_type.get_recoil_suffix()
 
@@ -846,25 +849,26 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             recoil = self.get_main_recoil()
 
         if optimization_type is OptimizationType.FLUENCE:
-            espe_file = f"{recoil_element.prefix}-optfl.simu"
+            output_file = f"{recoil_element.prefix}-optfl.simu"
             recoil_file = f"{recoil_element.prefix}-optfl.{suffix}"
         else:
-            espe_file = f"{recoil_element.get_full_name()}.simu"
+            output_file = f"{recoil_element.get_full_name()}.simu"
             recoil_file = f"{recoil_element.get_full_name()}.{suffix}"
 
         erd_file = Path(
             self.directory,
             fp.get_erd_file_name(recoil, "*", optim_mode=optimization_type))
-        espe_file = Path(self.directory, espe_file)
+
+        if write_to_file:
+            output_file = Path(self.directory, output_file)
+        else:
+            output_file = None
         recoil_file = Path(self.directory, recoil_file)
 
         with recoil_file.open("w") as rec_file:
             rec_file.write("\n".join(recoil_element.get_mcerd_params()))
 
-        if ch:
-            channel_width = ch
-        else:
-            channel_width = self.channel_width
+        ch = ch or self.channel_width
 
         _, run, detector = self.get_mcerd_params()
 
@@ -873,23 +877,20 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         else:
             used_fluence = run.fluence
 
-        espe_settings = {
-            "beam": run.beam,
-            "detector": detector,
-            "target": self.simulation.target,
-            "ch": channel_width,
-            "reference_density": recoil_element.reference_density,
-            "fluence": used_fluence,
-            "timeres": detector.timeres,
-            "solid": detector.calculate_solid(),
-            "erd_file": erd_file,
-            "spectrum_file": espe_file,
-            "recoil_file": recoil_file
-        }
+        spectrum = GetEspe.calculate_simulated_spectrum(
+            beam=run.beam,
+            detector=detector,
+            target=self.simulation.target,
+            ch=ch,
+            reference_density=recoil_element.reference_density,
+            fluence=used_fluence,
+            erd_file=erd_file,
+            output_file=output_file,
+            recoil_file=recoil_file
+        )
         # TODO returning espe_file is a bit pointless if write_to_file is
         #   False
-        return GetEspe.calculate_simulated_spectrum(
-            write_to_file=write_to_file, **espe_settings), espe_file
+        return spectrum, output_file
 
     def get_mcerd_params(self) -> Tuple[Dict, Run, Detector]:
         """Returns the parameters for MCERD simulations.
