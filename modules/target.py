@@ -32,14 +32,15 @@ import json
 import time
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 from typing import List
 
+from .base import Serializable, AdjustableSettings
 from .element import Element
 from .layer import Layer
 
 
-class Target:
+class Target(Serializable, AdjustableSettings):
     """Target object describes the target.
     """
 
@@ -183,3 +184,29 @@ class Target:
 
             with measurement_file.open("w") as file:
                 json.dump(obj, file, indent=4)
+
+    @staticmethod
+    def _get_attrs() -> set:
+        """Returns a set of attribute names. These Target attribute values
+        can be set by calling set_settings.
+        """
+        # TODO: Should target_theta be excluded?
+        return {
+            "name", "modification_time", "description", "target_type",
+            "image_size", "image_file", "scattering_element", "layers",
+            "target_theta"
+        }
+
+    def get_settings(self) -> Dict:
+        """Returns a dictionary of settings that can be adjusted."""
+        return {
+            attr: getattr(self, attr) for attr in self._get_attrs()
+        }
+
+    def set_settings(self, **kwargs):
+        """Sets the values of this Targets's settings.
+        """
+        attrs = self._get_attrs()
+        for key, value in kwargs.items():
+            if key in attrs:
+                setattr(self, key, value)

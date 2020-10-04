@@ -333,21 +333,30 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         self.measurement_file = None
 
         if run is None:
-            self.run = copy.deepcopy(self.request.default_run)
+            run_defaults = copy.deepcopy(
+                self.request.default_run.get_settings())
+            run_defaults["run_time"] = run_defaults.pop("time")
+            run_defaults["beam"] = copy.deepcopy(self.request.default_run.beam)
+            self.run = Run(**run_defaults)
         else:
             self.run = run
 
         if detector is None:
-            # TODO: this previously created a Detector and specified
-            #       path and measurement_file for it. Does this new
-            #       form work as well?
-            self.detector = copy.deepcopy(self.request.default_detector)
-            self.detector.path = self.directory / "Detector" / "Default.detector"
+            detector_path = self.directory / "Detector" / "Default.detector"
+            detector_defaults = copy.deepcopy(
+                self.request.default_detector.get_settings())
+            self.detector = Detector(
+                detector_path,
+                self.get_measurement_file(),
+                save_on_creation=False,
+                **detector_defaults)
         else:
             self.detector = detector
 
         if target is None:
-            self.target = copy.deepcopy(self.request.default_target)
+            target_defaults = copy.deepcopy(
+                self.request.default_target.get_settings())
+            self.target = Target(**target_defaults)
         else:
             self.target = target
 

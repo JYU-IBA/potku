@@ -21,6 +21,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+from modules.element import Element
+
 __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
@@ -58,6 +60,26 @@ class TestTarget(unittest.TestCase):
             self.assertEqual(t.target_theta, t2.target_theta)
             self.assertEqual(t.target_type, t2.target_type)
             self.assertEqual(t.scattering_element, t2.scattering_element)
+
+    def test_adjustable_settings(self):
+        target = mo.get_target()
+        kwargs = {
+            "name": "test",
+            "description": "Some description.",
+            "modification_time": 1601838503.492942,
+            "target_type": "AFM",
+            "scattering_element": Element("H", 2),
+            "image_size": [
+                1024,
+                1024
+            ],
+            "image_file": "",
+            "layers": [],
+            "target_theta": 30
+        }
+        self.assertNotEqual(kwargs, target.get_settings())
+        target.set_settings(**kwargs)
+        self.assertEqual(kwargs, target.get_settings())
 
 
 if __name__ == '__main__':
