@@ -36,7 +36,6 @@ import hashlib
 import os
 import platform
 import shutil
-import shlex
 import subprocess
 import tempfile
 import time
@@ -55,6 +54,8 @@ from typing import Union
 from typing import Iterable
 from typing import Tuple
 from typing import TypeVar
+
+from . import subprocess_utils as sutils
 
 T = TypeVar("T")
 
@@ -329,7 +330,8 @@ def carbon_stopping(element, isotope, energy, carbon_thickness, carbon_density):
 def coinc(input_file: Path, skip_lines: int, tablesize: int,
           trigger: int, adc_count: int, timing: Dict[str, Tuple[int, int]],
           output_file: Optional[Path] = None, columns: str = "$3,$5",
-          nevents: int = 0, timediff: bool = True) -> List[str]:
+          nevents: int = 0, timediff: bool = True, verbose: bool = True) -> \
+        List[str]:
     """Calculate coincidences of file.
 
     Args:
@@ -348,12 +350,13 @@ def coinc(input_file: Path, skip_lines: int, tablesize: int,
         nevents: An integer representing limit of how many events will the
                  program look for. 0 means no limit.
         timediff: A boolean representing whether timediff is output or not.
+        verbose: Whether errors are printed to console or not.
 
     Return:
         The output of coinc as a list
     """
     # TODO consider replacing awk with something else so there is no need to
-    #   rely on an external dependency. Writing individual lines with CSVParser
+    #   rely on an external dependency. Parsing individual lines with CSVParser
     #   is too slow.
     timings = (
         (f"--low={key},{low}", f"--high={key},{high}")
@@ -370,11 +373,13 @@ def coinc(input_file: Path, skip_lines: int, tablesize: int,
     else:
         timediff_str = ""
 
+    bin_dir = get_bin_dir()
+
     if platform.system() != "Windows":
         executable = "./coinc"
         awk_cmd = "awk", f"{{print {columns}}}"
     else:
-        executable = get_bin_dir() / "coinc.exe"
+        executable = bin_dir / "coinc.exe"
         awk_cmd = str(get_bin_dir() / "awk.exe"), f"{{print {columns}}}"
 
     coinc_cmd = (
@@ -390,34 +395,21 @@ def coinc(input_file: Path, skip_lines: int, tablesize: int,
         str(input_file),
     )
 
+    kwargs = {
+        "cwd": bin_dir,
+        "stdout": subprocess.PIPE,
+        "stderr": None if verbose else subprocess.DEVNULL,
+        "universal_newlines": True,
+    }
+
     try:
-        with subprocess.Popen(
-                coinc_cmd, cwd=get_bin_dir(), universal_newlines=True,
-                stdout=subprocess.PIPE) as coinc_proc:
+        with subprocess.Popen(coinc_cmd, **kwargs) as coinc_proc:
             with subprocess.Popen(
-                    awk_cmd, cwd=get_bin_dir(), stdin=coinc_proc.stdout,
-                    stdout=subprocess.PIPE, universal_newlines=True) \
-                    as awk_proc:
-                return _parse_process_output(awk_proc, output_file)
+                    awk_cmd, stdin=coinc_proc.stdout, **kwargs) as awk_proc:
+                data = sutils.process_output(awk_proc, file=output_file)
+                return data
     except OSError:
         return []
-
-
-def _parse_process_output(
-        process: subprocess.Popen, output_file: Optional[Path]) -> List[str]:
-    """Helper function for parsing output from the given process and writing
-    the results to a file if given. Returns the lines as a list.
-    """
-    # TODO generalize this and use it for tof_list, get_espe etc.
-    lines = iter(process.stdout.readline, "")
-    if output_file is not None:
-        output = []
-        with output_file.open("w") as file:
-            for line in lines:
-                file.write(line)
-                output.append(line)
-        return output
-    return list(lines)
 
 
 def md5_for_file(f, block_size=2 ** 20):
