@@ -124,19 +124,23 @@ class TestWriteToFile(unittest.TestCase):
             with file.open("r") as f:
                 self.assertEqual(["kissaistuu"], f.readlines())
 
-    def test_partial_exhaustion_leaves_file_handle_open(self):
+    def test_readlines_returns_empty_list_after_partial_exhaustion(self):
+        # Note: OS differences make it difficult to test what happens
+        # when a file handle is being kept open in a generator. If this
+        # test fails on some platform, feel free to add a skip decorator
+        # (or write a better test!)
         with tempfile.TemporaryDirectory() as tmp_dir:
             file = Path(tmp_dir, "foo.bar")
             xs = sutils.write_to_file(["kissa", "istuu"], file)
 
-            next(xs)
-            # unlinking raises error as the file handle is still open
-            self.assertRaises(OSError, file.unlink)
+            # advance the iterator by one
+            self.assertEqual("kissa", next(xs))
+            with file.open("r") as f:
+                self.assertEqual([], f.readlines())
 
-            # after exhausting the iterable, file can be removed
+            # exhaust the iterator to avoid PermissionErrors on Windows when
+            # the tmp_dir context manager closes
             list(xs)
-            file.unlink()
-            self.assertFalse(file.exists())
 
     def test_text_func(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
