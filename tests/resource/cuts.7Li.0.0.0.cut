@@ -1,0 +1,20 @@
+Count: 10
+Type: ERD
+Weight Factor: 1.081
+Energy: 0
+Detector Angle: 0
+Scatter Element: 
+Element losses: True
+Split count: 1
+
+ToF, Energy, Event number
+1446 2469 606
+1424 2349 817
+1415 2396 1041
+1423 2409 1140
+1453 2329 2008
+1478 2404 2552
+1457 2486 2994
+1475 2421 4765
+1459 2458 6153
+1415 2426 8845
