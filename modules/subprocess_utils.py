@@ -26,6 +26,7 @@ __version__ = "2.0"
 
 
 import subprocess
+import platform
 from pathlib import Path
 from typing import Callable
 from typing import Iterable
@@ -125,3 +126,16 @@ def process_output(
         if file is not None:
             stream = write_to_file(stream, file, text_func=text_func)
         return output_func(stream)
+
+
+def kill_process(process: subprocess.Popen):
+    """Kills the given process.
+    """
+    if platform.system() == "Windows":
+        # TASKKILL seems to be more effective on Windows than process.kill
+        # TODO needs more testing
+        cmd = "TASKKILL", "/F", "/PID", str(process.pid), "/T"
+        subprocess.run(
+            cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        process.kill()
