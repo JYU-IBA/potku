@@ -201,6 +201,25 @@ class TestWriteToFile(unittest.TestCase):
             self.assertRaises(TypeError, lambda: list(lines))
             self.assertFalse(file.exists())
 
+    def test_file_exists_in_case_text_func_fails(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file = Path(tmp_dir, "foo.bar")
+
+            lines = sutils.write_to_file(
+                ["kissa"], file, text_func=lambda x, y: str(x + y))
+            self.assertRaises(TypeError, lambda: list(lines))
+            self.assertTrue(file.exists())
+
+    def test_file_exist_after_an_empty_list_is_processed(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file = Path(tmp_dir, "foo.bar")
+
+            lines = sutils.write_to_file([], file)
+            self.assertEqual([], list(lines))
+            self.assertTrue(file.exists())
+            with file.open("r") as f:
+                self.assertEqual([], f.readlines())
+
 
 class TestProcessOutput(unittest.TestCase):
     def setUp(self) -> None:
@@ -288,6 +307,25 @@ class TestProcessOutput(unittest.TestCase):
                     f0_contents = f0.readlines()
                     f1_contents = f1.readlines()
                     utils.assert_all_equal(xs, f0_contents, f1_contents)
+
+    def test_stdout_is_closed_in_case_parse_func_fails(self):
+        with subprocess.Popen(
+                ["echo", "kissa"], **self.default_kwargs) as proc:
+            self.assertRaises(
+                ValueError, lambda: sutils.process_output(proc, parse_func=int))
+            self.assertTrue(proc.stdout.closed)
+
+    def test_stdout_is_closed_in_case_text_func_fails(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file = Path(tmp_dir, "foo.bar")
+            with subprocess.Popen(
+                    ["echo", "kissa"], **self.default_kwargs) as proc:
+                self.assertRaises(
+                    TypeError,
+                    lambda: sutils.process_output(
+                        proc, file=file,
+                        text_func=lambda x, y: str(x + y)))
+                self.assertTrue(proc.stdout.closed)
 
 
 if __name__ == '__main__':
