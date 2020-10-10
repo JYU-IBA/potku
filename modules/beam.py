@@ -82,5 +82,5 @@ class Beam(AdjustableSettings, MCERDParameterContainer):
     def _get_attrs(self) -> Set[str]:
         return {
             "ion", "energy", "charge", "energy_distribution", "spot_size",
-            "divergence"
+            "divergence", "profile"
         }
