@@ -24,7 +24,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
-             "Sinikka Siironen \n Juhani Sundell"
+             "Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import json
@@ -195,31 +195,12 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             except shutil.SameFileError:
                 pass
 
-    def get_settings(self) -> dict:
-        """Returns a dictionary of settings that can be adjusted.
-        """
+    def _get_attrs(self) -> Set[str]:
         return {
-            "name": self.name,
-            "modification_time": self.modification_time,
-            "description": self.description,
-            "detector_type": self.type,
-            "angle_slope": self.angle_slope,
-            "angle_offset": self.angle_offset,
-            "tof_slope": self.tof_slope,
-            "tof_offset": self.tof_offset,
-            "timeres": self.timeres,
-            "virtual_size": self.virtual_size
-        }
-
-    def set_settings(self, detector_type=None, **kwargs):
-        """Adjusts this Detector's settings with given keyword arguments.
-        """
-        allowed = self.get_settings()
-        if detector_type is not None:
-            self.type = detector_type
-        for key, value in kwargs.items():
-            if key in allowed:
-                setattr(self, key, value)
+                "name", "modification_time", "description", "type",
+                "angle_slope", "angle_offset", "tof_slope", "tof_offset",
+                "timeres", "virtual_size"
+            }
 
     def remove_efficiency_file(self, file_name: Path):
         """Removes efficiency file from detector's efficiency file folder as
@@ -261,6 +242,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
 
         detector["modification_time"] = detector.pop("modification_time_unix")
         detector["virtual_size"] = tuple(detector["virtual_size"])
+        detector["detector_type"] = detector.pop("type")
 
         foils = []
 

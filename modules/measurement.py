@@ -333,30 +333,30 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         self.measurement_file = None
 
         if run is None:
-            run_defaults = copy.deepcopy(
-                self.request.default_run.get_settings())
-            run_defaults["run_time"] = run_defaults.pop("time")
-            run_defaults["beam"] = copy.deepcopy(self.request.default_run.beam)
-            self.run = Run(**run_defaults)
+            self.run = Run()
+            run_defaults = self.request.default_run.get_settings()
+            # TODO: Is there a better way to create a copy of ion?
+            run_defaults["beam"]["ion"] = \
+                run_defaults["beam"]["ion"].create_copy()
+            self.run.set_settings(**run_defaults)
         else:
             self.run = run
 
         if detector is None:
             detector_path = self.directory / "Detector" / "Default.detector"
-            detector_defaults = copy.deepcopy(
-                self.request.default_detector.get_settings())
             self.detector = Detector(
                 detector_path,
                 self.get_measurement_file(),
-                save_on_creation=False,
-                **detector_defaults)
+                save_on_creation=False)
+            detector_defaults = self.request.default_detector.get_settings()
+            self.detector.set_settings(**detector_defaults)
         else:
             self.detector = detector
 
         if target is None:
-            target_defaults = copy.deepcopy(
-                self.request.default_target.get_settings())
-            self.target = Target(**target_defaults)
+            self.target = Target()
+            target_defaults = self.request.default_target.get_settings()
+            self.target.set_settings(**target_defaults)
         else:
             self.target = target
 

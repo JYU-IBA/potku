@@ -27,13 +27,11 @@ Simulation.py runs the MCERD simulation with a command file.
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen \n Juhani Sundell"
+             "\n Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
-import copy
 import json
 import logging
-import os
 import time
 
 from collections import namedtuple
@@ -272,22 +270,33 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
 
         self.use_request_settings = use_request_settings
 
-        if target is None:
-            self.target = copy.deepcopy(self.request.default_target)
-        else:
-            self.target = target
-
         if run is None:
-            self.run = copy.deepcopy(self.request.default_run)
+            self.run = Run()
+            run_defaults = self.request.default_run.get_settings()
+            run_defaults["beam"]["ion"] = \
+                run_defaults["beam"]["ion"].create_copy()
+            self.run.set_settings(**run_defaults)
         else:
             self.run = run
 
         if detector is None:
-            # TODO: same question as in measurement
-            self.detector = copy.deepcopy(self.request.default_detector)
-            self.detector.path = self.directory / "Detector" / "Default.detector"
+            detector_path = self.directory / "Detector" / "Default.detector"
+            self.detector = Detector(
+                detector_path,
+                self.get_measurement_file(),
+                save_on_creation=False
+            )
+            detector_defaults = self.request.default_detector.get_settings()
+            self.detector.set_settings(**detector_defaults)
         else:
             self.detector = detector
+
+        if target is None:
+            self.target = Target()
+            target_defaults = self.request.default_target.get_settings()
+            self.target.set_settings(**target_defaults)
+        else:
+            self.target = target
 
         self.serial_number = 0
 

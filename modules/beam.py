@@ -25,8 +25,10 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Tuomas Pitkänen"
 __version__ = "2.0"
+
+from typing import Set
 
 from .base import AdjustableSettings
 from .base import MCERDParameterContainer
@@ -77,17 +79,8 @@ class Beam(AdjustableSettings, MCERDParameterContainer):
             f"Beam energy: {self.energy} MeV"
         ]
 
-    def get_settings(self):
-        """Returns a dictionary of settings that can be adjusted.
-        """
-        d = dict(vars(self))
-        return d
-
-    def set_settings(self, **kwargs):
-        """Sets the values of this Beam objects adjustable settings.
-        """
-        allowed_params = self.get_settings()
-        for k, v in kwargs.items():
-            if k in allowed_params:
-                setattr(self, k, v)
-
+    def _get_attrs(self) -> Set[str]:
+        return {
+            "ion", "energy", "charge", "energy_distribution", "spot_size",
+            "divergence"
+        }

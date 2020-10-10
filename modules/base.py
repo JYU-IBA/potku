@@ -21,7 +21,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Juhani Sundell"
+__author__ = "Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 from typing import List
@@ -30,6 +30,7 @@ from typing import Dict
 from typing import Any
 from typing import Union
 from typing import Tuple
+from typing import Set
 
 # This is a collection of base classes for various backend components that share
 # similar functions. Logically these base classes would be ABCs, but in
@@ -113,17 +114,34 @@ class AdjustableSettings:
     """Base class for objects that contain a collection of settings that can
     be edited (in a GUI for example).
     """
-    __slots__ = ()
+    def _get_attrs(self) -> Set[str]:
+        # if settings were properties, this could be done using reflection
+        raise NotImplementedError
+
+    def _get_setting_value(self, attr) -> Any:
+        value = getattr(self, attr)
+        if isinstance(value, AdjustableSettings):
+            return value.get_settings()
+        return value
+
+    def _set_setting_value(self, attr, value):
+        attr_val = getattr(self, attr)
+        if isinstance(attr_val, AdjustableSettings):
+            attr_val.set_settings(**value)
+        else:
+            setattr(self, attr, value)
 
     def get_settings(self) -> Dict[str, Any]:
-        """Returns a dictionary that contains the names of the settings and
-        their current values.
-        """
-        raise NotImplementedError
+        return {
+            attr: self._get_setting_value(attr)
+            for attr in self._get_attrs()
+        }
 
     def set_settings(self, **kwargs):
-        """Sets the values of the settings."""
-        raise NotImplementedError
+        allowed_attrs = self._get_attrs()
+        for k, v in kwargs.items():
+            if k in allowed_attrs:
+                self._set_setting_value(k, v)
 
 
 class MCERDParameterContainer:
