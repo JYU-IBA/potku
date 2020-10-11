@@ -189,7 +189,7 @@ class TestTimeoutCheck(unittest.TestCase):
             res.subscribe(obs)
             time.sleep(DEFAULT_SLEEP_TIME)
 
-            self.assertEqual(1, proc.poll(), msg=FAILURE_MSG)
+            self.assertNotEqual(0, proc.poll(), msg=FAILURE_MSG)
             self.assertEqual([{
                 "is_running": False,
                 "msg": "Simulation timed out"
@@ -250,7 +250,7 @@ class TestCancellationCheck(unittest.TestCase):
             ct.request_cancellation()
 
             time.sleep(DEFAULT_SLEEP_TIME)
-            self.assertEqual(1, proc.poll(), msg=FAILURE_MSG)
+            self.assertNotEqual(0, proc.poll(), msg=FAILURE_MSG)
             self.assertEqual([{
                 "is_running": False,
                 "msg": "Simulation was stopped"
