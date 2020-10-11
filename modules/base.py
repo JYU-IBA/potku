@@ -114,7 +114,10 @@ class AdjustableSettings:
     """Base class for objects that contain a collection of settings that can
     be edited (in a GUI for example).
     """
+    __slots__ = ()
+
     def _get_attrs(self) -> Set[str]:
+        """Returns names of attributes that can be adjusted."""
         # if settings were properties, this could be done using reflection
         raise NotImplementedError
 
@@ -124,7 +127,7 @@ class AdjustableSettings:
             return value.get_settings()
         return value
 
-    def _set_setting_value(self, attr, value):
+    def _set_setting_value(self, attr, value) -> None:
         attr_val = getattr(self, attr)
         if isinstance(attr_val, AdjustableSettings):
             attr_val.set_settings(**value)
@@ -132,12 +135,18 @@ class AdjustableSettings:
             setattr(self, attr, value)
 
     def get_settings(self) -> Dict[str, Any]:
+        """Returns names and values of settings that can be adjusted.
+        Recursively returns names and values for objects that inherit
+        AdjustableSettings.
+        """
         return {
             attr: self._get_setting_value(attr)
             for attr in self._get_attrs()
         }
 
-    def set_settings(self, **kwargs):
+    def set_settings(self, **kwargs) -> None:
+        """Sets the values of the settings. Recursively sets values for objects
+        that inherit AdjustableSettings."""
         allowed_attrs = self._get_attrs()
         for k, v in kwargs.items():
             if k in allowed_attrs:
