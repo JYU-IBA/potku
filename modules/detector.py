@@ -54,7 +54,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
     Detector class that handles all the information about a detector.
     It also can convert itself to and from JSON file.
     """
-    __slots__ = "name", "description", "date", "type", "foils",\
+    __slots__ = "name", "description", "date", "detector_type", "foils",\
                 "tof_foils", "virtual_size", "tof_slope", "tof_offset",\
                 "angle_slope", "angle_offset", "path", "modification_time",\
                 "timeres", "detector_theta"
@@ -99,7 +99,9 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         else:
             self.modification_time = modification_time
 
-        self.type = DetectorType(detector_type.upper())
+        # TODO: This should be called type, but renaming it solved issues with
+        #       initialization and backwards incompatibility (deserialization)
+        self.detector_type = DetectorType(detector_type.upper())
         self.foils = foils
 
         if not self.foils:
@@ -197,7 +199,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
 
     def _get_attrs(self) -> Set[str]:
         return {
-                "name", "modification_time", "description", "type",
+                "name", "modification_time", "description", "detector_type",
                 "angle_slope", "angle_offset", "tof_slope", "tof_offset",
                 "timeres", "virtual_size"
             }
@@ -242,7 +244,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
 
         detector["modification_time"] = detector.pop("modification_time_unix")
         detector["virtual_size"] = tuple(detector["virtual_size"])
-        detector["detector_type"] = detector.pop("type")
+        # detector["detector_type"] = detector.pop("type")
 
         foils = []
 
@@ -335,7 +337,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         """Returns a list of strings that are passed as parameters for MCERD.
         """
         return [
-            f"Detector type: {self.type}",
+            f"Detector type: {self.detector_type}",
             f"Detector angle: {self.detector_theta}",
             f"Virtual detector size: {'%0.1f %0.1f' % self.virtual_size}",
             f"Timing detector numbers: {self.tof_foils[0]} {self.tof_foils[1]}"
