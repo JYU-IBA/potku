@@ -45,6 +45,7 @@ from typing import Tuple
 from typing import Dict
 from typing import Set
 from typing import Union
+from typing import Any
 from rx import operators as ops
 from pathlib import Path
 from collections import deque
@@ -693,27 +694,26 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self._simulation_running = b and optim_mode is None
         self._optimization_running = b and optim_mode is not None
 
-    def get_settings(self) -> Dict:
-        """Returns simulation settings as a dict. Overrides base class function.
-        """
+    def _get_setting_value(self, attr) -> Any:
+        """Overrides base class function."""
+        value = getattr(self, _SETTINGS_MAP[attr])
+        if isinstance(value, AdjustableSettings):
+            return value.get_settings()
+        return value
+
+    def _set_setting_value(self, attr, value) -> None:
+        """Overrides base class function."""
+        attr_val = getattr(self, _SETTINGS_MAP[attr])
+        if isinstance(attr_val, AdjustableSettings):
+            attr_val.set_settings(**value)
+        else:
+            setattr(self, _SETTINGS_MAP[attr], value)
+
+    def _get_attrs(self) -> Set[str]:
+        """Returns MCERD names of attributes that can be adjusted."""
         return {
-            key: getattr(self, value)
-            for key, value in _SETTINGS_MAP.items()
+            attr for attr in _SETTINGS_MAP.keys()
         }
-
-    def set_settings(self, **kwargs):
-        """Sets simulation settings based on the keyword arguments. Overrides
-        base class function.
-
-        Note that the keywords must be the ones used by MCERD, rather than
-        the attribute names of the ElementSimulation object.
-        """
-        for key, value in kwargs.items():
-            try:
-                setattr(self, _SETTINGS_MAP[key], value)
-            except KeyError:
-                # keyword does not have a known mapping, nothing to do
-                pass
 
     def get_atom_count(self) -> int:
         """Returns the total number of observed atoms.
