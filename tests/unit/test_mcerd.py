@@ -189,7 +189,7 @@ class TestTimeoutCheck(unittest.TestCase):
             res.subscribe(obs)
             time.sleep(DEFAULT_SLEEP_TIME)
 
-            self.assertEqual(1, proc.poll(), msg=FAILURE_MSG)
+            self.assertNotEqual(0, int(proc.poll()), msg=FAILURE_MSG)
             self.assertEqual([{
                 "is_running": False,
                 "msg": "Simulation timed out"
@@ -214,17 +214,17 @@ class TestTimeoutCheck(unittest.TestCase):
                 ["echo", "hello"], stdout=subprocess.DEVNULL) as proc:
             res = mcerd.MCERD.timeout_check(proc, 0.01, ct)
 
-            obs = TestObserver()
-            res.subscribe(obs)
-            time.sleep(DEFAULT_SLEEP_TIME)
+        obs = TestObserver()
+        res.subscribe(obs)
+        time.sleep(DEFAULT_SLEEP_TIME)
 
-            self.assertEqual(0, proc.poll(), msg=FAILURE_MSG)
-            self.assertEqual([{
-                "is_running": False,
-                "msg": "Simulation timed out"
-            }],
-                obs.nexts, msg=FAILURE_MSG)
-            self.assertTrue(ct.is_cancellation_requested(), msg=FAILURE_MSG)
+        self.assertEqual(0, proc.poll(), msg=FAILURE_MSG)
+        self.assertEqual([{
+            "is_running": False,
+            "msg": "Simulation timed out"
+        }],
+            obs.nexts, msg=FAILURE_MSG)
+        self.assertTrue(ct.is_cancellation_requested(), msg=FAILURE_MSG)
 
     def test_process_is_not_killed_before_timeout(self):
         ct = CancellationToken()
@@ -250,7 +250,7 @@ class TestCancellationCheck(unittest.TestCase):
             ct.request_cancellation()
 
             time.sleep(DEFAULT_SLEEP_TIME)
-            self.assertEqual(1, proc.poll(), msg=FAILURE_MSG)
+            self.assertNotEqual(0, int(proc.poll()), msg=FAILURE_MSG)
             self.assertEqual([{
                 "is_running": False,
                 "msg": "Simulation was stopped"
@@ -290,17 +290,17 @@ class TestCancellationCheck(unittest.TestCase):
                 proc:
             res = mcerd.MCERD.cancellation_check(proc, 0.01, ct)
 
-            obs = TestObserver()
-            res.subscribe(obs)
-            ct.request_cancellation()
+        obs = TestObserver()
+        res.subscribe(obs)
+        ct.request_cancellation()
 
-            time.sleep(DEFAULT_SLEEP_TIME)
-            self.assertEqual(0, proc.poll(), msg=FAILURE_MSG)
-            self.assertEqual([{
-                "is_running": False,
-                "msg": "Simulation was stopped"
-            }],
-                obs.nexts, msg=FAILURE_MSG)
+        time.sleep(DEFAULT_SLEEP_TIME)
+        self.assertEqual(0, proc.poll(), msg=FAILURE_MSG)
+        self.assertEqual([{
+            "is_running": False,
+            "msg": "Simulation was stopped"
+        }],
+            obs.nexts, msg=FAILURE_MSG)
 
     def test_process_is_not_killed_immediately_after_cancellation(self):
         ct = CancellationToken()
@@ -338,8 +338,8 @@ class TestIsRunning(unittest.TestCase):
     def test_is_running_returns_false_if_process_is_not_running(self):
         with subprocess.Popen(
                 ["echo", "hello"], stdout=subprocess.DEVNULL) as proc:
-            time.sleep(0.05)
-            self.assertFalse(mcerd.MCERD.is_running(proc), msg=FAILURE_MSG)
+            pass
+        self.assertFalse(mcerd.MCERD.is_running(proc), msg=FAILURE_MSG)
 
     def test_is_running_returns_true_if_process_is_running(self):
         with subprocess.Popen(["sleep", "0.1"]) as proc:
@@ -350,10 +350,10 @@ class TestIsRunning(unittest.TestCase):
             p = Path(tmp_dir, "foo")
             with subprocess.Popen(
                     ["ls", str(p)], stderr=subprocess.DEVNULL) as proc:
-                time.sleep(0.05)
-                self.assertRaises(
-                    subprocess.SubprocessError,
-                    lambda: mcerd.MCERD.is_running(proc))
+                pass
+            self.assertRaises(
+                subprocess.SubprocessError,
+                lambda: mcerd.MCERD.is_running(proc))
 
 
 if __name__ == '__main__':
