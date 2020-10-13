@@ -26,7 +26,13 @@ __version__ = "2.0"
 
 import unittest
 import rx
+import subprocess
+import time
+import tempfile
+import platform
+from pathlib import Path
 
+from modules.concurrency import CancellationToken
 import modules.mcerd as mcerd
 
 from tests.mock_objects import TestObserver
@@ -158,6 +164,196 @@ class TestParseOutput(unittest.TestCase):
             "total": 100,
             "is_running": False
         }, obs.nexts[-1])
+
+
+FAILURE_MSG = "This test is based on timing and may fail because the " \
+              "code being tested ran faster or slower than expected. " \
+              "Run this test again to see if the problem persists and " \
+              "adjust the timing parameters if necessary."
+
+if platform.system() == "Windows":
+    # Add little extra to the sleep time on Windows as the TASKKILL call
+    # seems to block until the process is fully killed.
+    DEFAULT_SLEEP_TIME = 0.2
+else:
+    DEFAULT_SLEEP_TIME = 0.1
+
+
+class TestTimeoutCheck(unittest.TestCase):
+    def test_process_is_killed_after_timeout(self):
+        ct = CancellationToken()
+        with subprocess.Popen(["sleep", "1"]) as proc:
+            res = mcerd.MCERD.timeout_check(proc, 0.01, ct)
+
+            obs = TestObserver()
+            res.subscribe(obs)
+            time.sleep(DEFAULT_SLEEP_TIME)
+
+            self.assertNotEqual(0, int(proc.poll()), msg=FAILURE_MSG)
+            self.assertEqual([{
+                "is_running": False,
+                "msg": "Simulation timed out"
+                }],
+                obs.nexts, msg=FAILURE_MSG)
+            self.assertTrue(ct.is_cancellation_requested(), msg=FAILURE_MSG)
+
+    def test_timeout_check_returns_only_one_item_at_maximum(self):
+        ct = CancellationToken()
+        with subprocess.Popen(["sleep", "1"]) as proc:
+            res = mcerd.MCERD.timeout_check(proc, 0.01, ct)
+
+            obs = TestObserver()
+            res.subscribe(obs)
+            time.sleep(DEFAULT_SLEEP_TIME)
+
+            self.assertEqual(1, len(obs.nexts), msg=FAILURE_MSG)
+
+    def test_process_ending_before_timeout_does_not_change_outcome(self):
+        ct = CancellationToken()
+        with subprocess.Popen(
+                ["echo", "hello"], stdout=subprocess.DEVNULL) as proc:
+            res = mcerd.MCERD.timeout_check(proc, 0.01, ct)
+
+        obs = TestObserver()
+        res.subscribe(obs)
+        time.sleep(DEFAULT_SLEEP_TIME)
+
+        self.assertEqual(0, proc.poll(), msg=FAILURE_MSG)
+        self.assertEqual([{
+            "is_running": False,
+            "msg": "Simulation timed out"
+        }],
+            obs.nexts, msg=FAILURE_MSG)
+        self.assertTrue(ct.is_cancellation_requested(), msg=FAILURE_MSG)
+
+    def test_process_is_not_killed_before_timeout(self):
+        ct = CancellationToken()
+        with subprocess.Popen(["sleep", "1"]) as proc:
+            res = mcerd.MCERD.timeout_check(proc, 0.1, ct)
+
+            obs = TestObserver()
+            res.subscribe(obs)
+
+            self.assertIsNone(proc.poll(), msg=FAILURE_MSG)
+            self.assertEqual([], obs.nexts, msg=FAILURE_MSG)
+            self.assertFalse(ct.is_cancellation_requested(), msg=FAILURE_MSG)
+
+
+class TestCancellationCheck(unittest.TestCase):
+    def test_requesting_cancellation_kills_the_process(self):
+        ct = CancellationToken()
+        with subprocess.Popen(["sleep", "1"]) as proc:
+            res = mcerd.MCERD.cancellation_check(proc, 0.01, ct)
+
+            obs = TestObserver()
+            res.subscribe(obs)
+            ct.request_cancellation()
+
+            time.sleep(DEFAULT_SLEEP_TIME)
+            self.assertNotEqual(0, int(proc.poll()), msg=FAILURE_MSG)
+            self.assertEqual([{
+                "is_running": False,
+                "msg": "Simulation was stopped"
+                }],
+                obs.nexts, msg=FAILURE_MSG)
+
+    def test_not_requesting_cancellation_lets_the_process_finish(self):
+        ct = CancellationToken()
+        with subprocess.Popen(["sleep", "0.1"]) as proc:
+            res = mcerd.MCERD.cancellation_check(proc, 0.01, ct)
+
+            obs = TestObserver()
+            res.subscribe(obs)
+
+            time.sleep(0.2)
+            self.assertEqual(0, proc.poll(), msg=FAILURE_MSG)
+            self.assertEqual([], obs.nexts, msg=FAILURE_MSG)
+
+    def test_cancellation_check_returns_one_item_at_maximum(self):
+        ct = CancellationToken()
+        with subprocess.Popen(["sleep", "1"]) as proc:
+            res = mcerd.MCERD.cancellation_check(proc, 0.01, ct)
+
+            obs = TestObserver()
+            res.subscribe(obs)
+
+            time.sleep(0.25)
+            ct.request_cancellation()
+            time.sleep(0.25)
+
+            self.assertEqual(1, len(obs.nexts), msg=FAILURE_MSG)
+
+    def test_cancelling_after_process_ends_does_not_change_observed_values(
+            self):
+        ct = CancellationToken()
+        with subprocess.Popen(["echo", "hello"], stdout=subprocess.DEVNULL) as \
+                proc:
+            res = mcerd.MCERD.cancellation_check(proc, 0.01, ct)
+
+        obs = TestObserver()
+        res.subscribe(obs)
+        ct.request_cancellation()
+
+        time.sleep(DEFAULT_SLEEP_TIME)
+        self.assertEqual(0, proc.poll(), msg=FAILURE_MSG)
+        self.assertEqual([{
+            "is_running": False,
+            "msg": "Simulation was stopped"
+        }],
+            obs.nexts, msg=FAILURE_MSG)
+
+    def test_process_is_not_killed_immediately_after_cancellation(self):
+        ct = CancellationToken()
+        with subprocess.Popen(["sleep", "1"]) as proc:
+            res = mcerd.MCERD.cancellation_check(proc, 0.05, ct)
+
+            obs = TestObserver()
+            res.subscribe(obs)
+            ct.request_cancellation()
+
+            self.assertIsNone(proc.poll(), msg=FAILURE_MSG)
+            self.assertEqual([], obs.nexts, msg=FAILURE_MSG)
+
+
+class TestRunningCheck(unittest.TestCase):
+    def test_running_check_produces_dicts_with_running_status(self):
+        with subprocess.Popen(["sleep", "0.1"]) as proc:
+            res = mcerd.MCERD.running_check(proc, 0.01, 0.01)
+            obs = TestObserver()
+            res.subscribe(obs)
+
+        time.sleep(0.05)
+        self.assertLess(1, len(obs.nexts), msg=FAILURE_MSG)
+        for item in obs.nexts[:-1]:
+            self.assertEqual({
+                "is_running": True
+            }, item)
+
+        self.assertEqual({
+                "is_running": False
+        }, obs.nexts[-1], msg=FAILURE_MSG)
+
+
+class TestIsRunning(unittest.TestCase):
+    def test_is_running_returns_false_if_process_is_not_running(self):
+        with subprocess.Popen(
+                ["echo", "hello"], stdout=subprocess.DEVNULL) as proc:
+            pass
+        self.assertFalse(mcerd.MCERD.is_running(proc), msg=FAILURE_MSG)
+
+    def test_is_running_returns_true_if_process_is_running(self):
+        with subprocess.Popen(["sleep", "0.1"]) as proc:
+            self.assertTrue(mcerd.MCERD.is_running(proc), msg=FAILURE_MSG)
+
+    def test_is_running_raises_error_if_process_finishes_with_error(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            p = Path(tmp_dir, "foo")
+            with subprocess.Popen(
+                    ["ls", str(p)], stderr=subprocess.DEVNULL) as proc:
+                pass
+            self.assertRaises(
+                subprocess.SubprocessError,
+                lambda: mcerd.MCERD.is_running(proc))
 
 
 if __name__ == '__main__':

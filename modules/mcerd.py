@@ -35,10 +35,14 @@ import multiprocessing
 import rx
 
 from . import general_functions as gf
+from . import subprocess_utils as sutils
 from . import observing
 
 from typing import Optional
 from typing import Dict
+from typing import Callable
+from typing import Mapping
+from typing import Any
 from pathlib import Path
 from rx import operators as ops
 from rx.scheduler import ThreadPoolScheduler
@@ -53,10 +57,10 @@ class MCERD:
     An MCERD class that handles calling the mcerd binary and creating the
     files it needs.
     """
-    __slots__ = "__settings", "__rec_filename", "__filename", \
-                "recoil_file", "sim_dir", "result_file", "__target_file", \
-                "__command_file", "__detector_file", "__foils_file", \
-                "__presimulation_file", "__seed"
+    __slots__ = "_settings", "_rec_filename", "_filename", \
+                "recoil_file", "sim_dir", "result_file", "target_file", \
+                "command_file", "detector_file", "foils_file", \
+                "presimulation_file", "_seed"
 
     # These are the keys that exist in the parsed output from MCERD
     SEED = "seed"
@@ -81,8 +85,8 @@ class MCERD:
     _FINAL_STARTS = "Opening target file "
     _FINAL_ENDS = "angave "
 
-    def __init__(self, seed: int, settings: Dict, file_prefix: str,
-                 optimize_fluence=False):
+    def __init__(self, seed: int, settings: Mapping, file_prefix: str,
+                 optimize_fluence: bool = False):
         """Create an MCERD object.
 
         Args:
@@ -91,34 +95,34 @@ class MCERD:
             file_prefix: prefix used for various simulation files
             optimize_fluence: whether fluence is optimized or not
         """
-        self.__seed = seed
-        self.__settings = settings
+        self._seed = seed
+        self._settings = settings
 
-        rec_elem = self.__settings["recoil_element"]
+        rec_elem = self._settings["recoil_element"]
 
         if optimize_fluence:
-            self.__rec_filename = f"{rec_elem.prefix}-optfl"
+            self._rec_filename = f"{rec_elem.prefix}-optfl"
         else:
-            self.__rec_filename = rec_elem.get_full_name()
+            self._rec_filename = rec_elem.get_full_name()
 
-        self.__filename = file_prefix
+        self._filename = file_prefix
 
-        self.sim_dir = Path(self.__settings["sim_dir"])
+        self.sim_dir = Path(self._settings["sim_dir"])
 
-        suffix = self.__settings["simulation_type"].get_recoil_suffix()
+        suffix = self._settings["simulation_type"].get_recoil_suffix()
 
-        res_file = f"{self.__rec_filename}.{self.__seed}.erd"
+        res_file = f"{self._rec_filename}.{self._seed}.erd"
 
         # The recoil file and erd file are later passed to get_espe.
-        self.recoil_file = self.sim_dir / f"{self.__rec_filename}.{suffix}"
+        self.recoil_file = self.sim_dir / f"{self._rec_filename}.{suffix}"
         self.result_file = self.sim_dir / res_file
 
         # These files will be deleted after the simulation
-        self.__command_file = self.sim_dir / self.__rec_filename
-        self.__target_file = self.sim_dir / f"{self.__filename}.erd_target"
-        self.__detector_file = self.sim_dir / f"{self.__filename}.erd_detector"
-        self.__foils_file = self.sim_dir / f"{self.__filename}.foils"
-        self.__presimulation_file = self.sim_dir / f"{self.__filename}.pre"
+        self.command_file = self.sim_dir / self._rec_filename
+        self.target_file = self.sim_dir / f"{self._filename}.erd_target"
+        self.detector_file = self.sim_dir / f"{self._filename}.erd_detector"
+        self.foils_file = self.sim_dir / f"{self._filename}.foils"
+        self.presimulation_file = self.sim_dir / f"{self._filename}.pre"
 
     def get_command(self) -> StrTuple:
         """Returns the command that is used to start the MCERD process.
@@ -128,10 +132,11 @@ class MCERD:
         else:
             cmd = "./mcerd"
 
-        return cmd, str(self.__command_file)
+        return cmd, str(self.command_file)
 
     def run(self, print_output=True, ct: Optional[CancellationToken] = None,
-            poll_interval=10, first_check=0.2, max_time=None, ct_check=0.2):
+            poll_interval=10, first_check=0.2, max_time=None,
+            ct_check=0.2) -> rx.Observable:
         """Starts the MCERD process.
 
         Args:
@@ -149,11 +154,9 @@ class MCERD:
             contain the same keys.
         """
         # Create files necessary to run MCERD
-        self.__create_mcerd_files()
-
+        self.create_mcerd_files()
         cmd = self.get_command()
-        if ct is None:
-            ct = CancellationToken()
+        ct = ct or CancellationToken()
 
         process = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -162,46 +165,11 @@ class MCERD:
         errs = rx.from_iterable(iter(process.stderr.readline, ""))
         outs = rx.from_iterable(iter(process.stdout.readline, ""))
 
-        is_running = rx.timer(first_check, poll_interval).pipe(
-            # TODO change this to run at an increasing interval, i.e:
-            #       - first check after 0.0 seconds,
-            #       - second check after 0.2 seconds,
-            #       - third after 1.0, ... etc.
-            #   MCERD is likely to crash early (?) so it makes sense to
-            #   run the check more frequently at the beginning.
-            ops.map(lambda _: {
-                MCERD.IS_RUNNING: MCERD.is_running(process)
-            })
-        )
-
-        ct_check = rx.timer(0, ct_check).pipe(
-            # Filter out all the positive values. We do not want to push
-            # updates every time cancellation is checked as there is nothing
-            # to update.
-            ops.map(
-                lambda _: MCERD._stop_if_cancelled(process, ct)),
-            ops.filter(lambda x: not x),
-            ops.map(lambda _: {
-                MCERD.IS_RUNNING: False,
-                MCERD.MSG: MCERD.SIM_STOPPED
-            })
-        )
+        is_running = MCERD.running_check(process, first_check, poll_interval)
+        ct_check = MCERD.cancellation_check(process, ct_check, ct)
 
         if max_time is not None:
-            timeout = rx.timer(max_time).pipe(
-                ops.do_action(
-                    # Request cancellation so all simulation processes that
-                    # share the same cancellation_token are also stopped.
-                    # TODO not working as intended if simulation is short enough
-                    #   to stop before max_time has elapsed. Maybe let caller
-                    #   implement its own timeout check when multiple processes
-                    #   are being run.
-                    on_next=lambda _: ct.request_cancellation()),
-                ops.map(lambda _: {
-                    MCERD.IS_RUNNING: bool(MCERD.stop_process(process)),
-                    MCERD.MSG: MCERD.SIM_TIMEOUT
-                })
-            )
+            timeout = MCERD.timeout_check(process, max_time, ct)
         else:
             timeout = rx.empty()
 
@@ -211,7 +179,7 @@ class MCERD:
         merged = rx.merge(errs, outs).pipe(
             ops.subscribe_on(pool_scheduler),
             MCERD.get_pipeline(
-                self.__seed, self.__rec_filename, print_output=print_output),
+                self._seed, self._rec_filename, print_output=print_output),
             ops.combine_latest(rx.merge(
                 is_running, ct_check, timeout
             )),
@@ -237,13 +205,15 @@ class MCERD:
         )
 
     @staticmethod
-    def _stop_if_cancelled(process: subprocess.Popen, ct: CancellationToken):
+    def _stop_if_cancelled(
+            process: subprocess.Popen,
+            ct: CancellationToken) -> bool:
         """Stops the process if cancellation has been requested. Returns
         True if cancellation has not been requested and simulation is still
         running, False otherwise.
         """
         if ct.is_cancellation_requested():
-            MCERD.stop_process(process)
+            sutils.kill_process(process)
             return False
         return True
 
@@ -311,7 +281,8 @@ class MCERD:
         )
 
     @staticmethod
-    def _conditional_printer(cond: bool, msg: str):
+    def _conditional_printer(
+            cond: bool, msg: str) -> Callable[[rx.Observable], rx.Observable]:
         if cond:
             return observing.get_printer(msg)
 
@@ -320,32 +291,110 @@ class MCERD:
         return ops.do_action(passer)
 
     @staticmethod
-    def stop_process(process: subprocess.Popen):
-        """Stop the MCERD process and delete the MCERD object.
-        """
-        if platform.system() == "Windows":
-            cmd = f"TASKKILL /F /PID {process.pid} /T"
-            subprocess.call(cmd)
-        else:
-            process.kill()
+    def running_check(
+            process: subprocess.Popen,
+            first_check: float,
+            interval: float) -> rx.Observable:
+        """Periodically checks if the given process is running.
 
-    def __create_mcerd_files(self):
+        Args:
+            process: process to be monitored
+            first_check: seconds until the first check
+            interval: interval between each check
+
+        Return:
+            rx.Observable that fires dictionaries after each check
+        """
+        return rx.timer(first_check, interval).pipe(
+            # TODO change this to run at an increasing interval, i.e:
+            #       - first check after 0.0 seconds,
+            #       - second check after 0.2 seconds,
+            #       - third after 1.0, ... etc.
+            #   MCERD is likely to crash early (?) so it makes sense to
+            #   run the check more frequently at the beginning.
+            ops.map(lambda _: {
+                MCERD.IS_RUNNING: MCERD.is_running(process)
+            }),
+            ops.take_while(lambda x: x[MCERD.IS_RUNNING], inclusive=True)
+        )
+
+    @staticmethod
+    def cancellation_check(
+            process: subprocess.Popen,
+            interval: float,
+            ct: CancellationToken) -> rx.Observable:
+        """Kills the given process if cancellation is requested from the
+        CancellationToken.
+
+        Args:
+            process: process that will killed if cancellation is requested
+            interval: cancellation check interval in seconds
+            ct: CancellationToken that is being checked
+
+        Return:
+            rx.Observable that fires a single dictionary after cancellation is
+            requested
+        """
+        return rx.timer(0, interval).pipe(
+            ops.map(
+                lambda _: MCERD._stop_if_cancelled(process, ct)),
+            ops.first(lambda x: not x),
+            ops.map(lambda _: {
+                MCERD.IS_RUNNING: False,
+                MCERD.MSG: MCERD.SIM_STOPPED
+            }),
+        )
+
+    @staticmethod
+    def timeout_check(
+            process: subprocess.Popen,
+            timeout: float,
+            ct: CancellationToken) -> rx.Observable:
+        """Kills the given process after timeout has passed.
+
+        Args:
+            process: process to be killed
+            timeout: termination time in seconds
+            ct: CancellationToken
+
+        Return:
+            rx.Observable that fires only a single dictionary after the timeout
+            has passed.
+        """
+        return rx.timer(timeout).pipe(
+            ops.do_action(
+                # Request cancellation so all simulation processes that
+                # share the same cancellation_token are also stopped.
+                # TODO not working as intended if simulation is short enough
+                #   to stop before max_time has elapsed. Maybe let caller
+                #   implement its own timeout check when multiple processes
+                #   are being run.
+                on_next=lambda _: ct.request_cancellation()),
+            ops.map(lambda _: {
+                # sutils.kill_process returns None, which can be casted to bool
+                MCERD.IS_RUNNING: bool(sutils.kill_process(process)),
+                MCERD.MSG: MCERD.SIM_TIMEOUT
+            }),
+            ops.first()
+        )
+
+    def create_mcerd_files(self):
         """Creates the temporary files needed for running MCERD.
         """
         # Create the main MCERD command file
-        with open(self.__command_file, "w") as file:
+        with open(self.command_file, "w") as file:
             file.write(self.get_command_file_contents())
 
         # Create the MCERD detector file
-        with open(self.__detector_file, "w") as file:
+        with open(self.detector_file, "w") as file:
             file.write(self.get_detector_file_contents())
 
         # Create the MCERD target file
-        with open(self.__target_file, "w") as file:
+        with open(self.target_file, "w") as file:
             file.write(self.get_target_file_contents())
 
         # Create the MCERD foils file
-        with open(self.__foils_file, "w") as file:
+        with open(self.foils_file, "w") as file:
             file.write(self.get_foils_file_contents())
 
         # Create the recoil file
@@ -355,28 +404,28 @@ class MCERD:
     def get_recoil_file_contents(self) -> str:
         """Returns the contents of the recoil file.
         """
-        recoil_element = self.__settings["recoil_element"]
+        recoil_element = self._settings["recoil_element"]
         return "\n".join(recoil_element.get_mcerd_params())
 
     def get_command_file_contents(self) -> str:
         """Returns the contents of MCERD's command file as a string.
         """
-        beam = self.__settings["beam"]
-        target = self.__settings["target"]
-        recoil_element = self.__settings["recoil_element"]
-        min_scat_angle = self.__settings['minimum_scattering_angle']
-        min_main_scat_angle = self.__settings['minimum_main_scattering_angle']
-        min_ene_ions = self.__settings['minimum_energy_of_ions']
-        rec_count = self.__settings['number_of_recoils']
-        sim_mode = self.__settings['simulation_mode']
-        scale_ion_count = self.__settings['number_of_scaling_ions']
-        ions_in_presim = self.__settings['number_of_ions_in_presimu']
+        beam = self._settings["beam"]
+        target = self._settings["target"]
+        recoil_element = self._settings["recoil_element"]
+        min_scat_angle = self._settings['minimum_scattering_angle']
+        min_main_scat_angle = self._settings['minimum_main_scattering_angle']
+        min_ene_ions = self._settings['minimum_energy_of_ions']
+        rec_count = self._settings['number_of_recoils']
+        sim_mode = self._settings['simulation_mode']
+        scale_ion_count = self._settings['number_of_scaling_ions']
+        ions_in_presim = self._settings['number_of_ions_in_presimu']
 
         return "\n".join([
-            f"Type of simulation: {self.__settings['simulation_type']}",
+            f"Type of simulation: {self._settings['simulation_type']}",
             *beam.get_mcerd_params(),
-            f"Target description file: {self.__target_file}",
-            f"Detector description file: {self.__detector_file}",
+            f"Target description file: {self.target_file}",
+            f"Detector description file: {self.detector_file}",
             f"Recoiling atom: {recoil_element.element.get_prefix()}",
             f"Recoiling material distribution: {self.recoil_file}",
             f"Target angle: {target.target_theta} deg",
@@ -386,23 +435,23 @@ class MCERD:
             f"Minimum energy of ions: {min_ene_ions} MeV",
             f"Average number of recoils per primary ion: {rec_count}",
             f"Recoil angle width (wide or narrow): {sim_mode}",
-            f"Presimulation * result file: {self.__presimulation_file}",
+            f"Presimulation * result file: {self.presimulation_file}",
             f"Number of real ions per each scaling ion: {scale_ion_count}",
-            f"Number of ions: {self.__settings['number_of_ions']}",
+            f"Number of ions: {self._settings['number_of_ions']}",
             f"Number of ions in the presimulation: {ions_in_presim}",
-            f"Seed number of the random number generator: {self.__seed}",
+            f"Seed number of the random number generator: {self._seed}",
         ])
 
     def get_detector_file_contents(self) -> str:
         """Returns the contents of the detector file as a string.
         """
-        detector = self.__settings["detector"]
+        detector = self._settings["detector"]
         foils = "\n----------\n".join("\n".join(foil.get_mcerd_params())
                                       for foil in detector.foils)
 
         return "\n".join([
             *detector.get_mcerd_params(),
-            f"Description file for the detector foils: {self.__foils_file}",
+            f"Description file for the detector foils: {self.foils_file}",
             "==========",
             foils
         ])
@@ -410,7 +459,7 @@ class MCERD:
     def get_target_file_contents(self) -> str:
         """Returns the contents of the target file as a string.
         """
-        target = self.__settings["target"]
+        target = self._settings["target"]
         cont = []
         for layer in target.layers:
             for element in layer.elements:
@@ -434,11 +483,11 @@ class MCERD:
     def get_foils_file_contents(self) -> str:
         """Returns the contents of the foils file.
         """
-        detector = self.__settings["detector"]
+        detector = self._settings["detector"]
         cont = []
         for foil in detector.foils:
             for layer in foil.layers:
-                # Write only one layer since mcerd soesn't know how to
+                # Write only one layer since mcerd doesn't know how to
                 # handle multiple layers in a foil
                 for element in layer.elements:
                     cont.append(element.get_mcerd_params())
@@ -462,23 +511,28 @@ class MCERD:
     def delete_unneeded_files(self):
         """Delete mcerd files that are not needed anymore.
         """
+        # FIXME should only be called after the last process ends,
+        #   otherwise may remove files generated for other processes.
+        #   In that case GUI will show message
+        #       "MCERD stopped with an error code 10"
+        #   and console print may say something like:
+        #       "Fatal error: Could not open the target description file"
         gf.remove_files(
-            self.__command_file, self.__detector_file, self.__target_file,
-            self.__foils_file)
-
-        def filter_func(f):
-            return f.startswith(self.__rec_filename)
+            self.command_file, self.detector_file, self.target_file,
+            self.foils_file)
 
         gf.remove_matching_files(
             self.sim_dir, exts={".out", ".dat", ".range", ".pre"},
-            filter_func=filter_func)
+            filter_func=lambda f: f.startswith(self._rec_filename))
 
 
 _pattern = re.compile(r"Calculated (?P<calculated>\d+) of (?P<total>\d+) ions "
                       r"\((?P<percentage>\d+)%\)")
 
 
-def parse_raw_output(raw_line, end_at=None):
+def parse_raw_output(
+        raw_line: str,
+        end_at: Callable[[str], bool] = lambda _: False) -> Dict[str, Any]:
     """Parses raw output produced by MCERD into something meaningful.
     """
     m = _pattern.match(raw_line)
@@ -495,7 +549,7 @@ def parse_raw_output(raw_line, end_at=None):
                 MCERD.PERCENTAGE: 0,
                 MCERD.MSG: raw_line
             }
-        elif end_at is not None and end_at(raw_line):
+        elif end_at(raw_line):
             return {
                 MCERD.MSG: raw_line,
                 MCERD.PERCENTAGE: 100,
@@ -506,21 +560,20 @@ def parse_raw_output(raw_line, end_at=None):
         }
 
 
-def str_reducer(acc, x):
+def str_reducer(acc: str, x: str) -> str:
     """Helper function for reducing strings from multiple lines.
     Appends a newline and x to the previously accumulated string.
     """
     return f"{acc}\n{x}"
 
 
-def dict_accumulator(old: Dict, new: Dict, default: Optional[Dict] = None) \
-        -> Dict:
+def dict_accumulator(
+        old: Mapping, new: Mapping, default: Optional[Mapping] = None) -> Dict:
     """Combines values from three dictionaries into one. In case same keys
     exist in multiple dictionaries, the key-value pairs from 'new' take
     precedence, then key-value pairs from 'default' dictionary.
     """
-    if default is None:
-        default = {}
+    default = default or {}
 
     return {
         **old, **default, **new

@@ -27,6 +27,8 @@ __version__ = "2.0"
 import unittest
 import tempfile
 import subprocess
+import time
+import platform
 from pathlib import Path
 import tests.utils as utils
 
@@ -326,6 +328,29 @@ class TestProcessOutput(unittest.TestCase):
                         proc, file=file,
                         text_func=lambda x, y: str(x + y)))
                 self.assertTrue(proc.stdout.closed)
+
+
+class TestKillProcess(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        if platform.system() == "Windows":
+            cls.expected_err_code = 1
+        else:
+            cls.expected_err_code = -9
+
+    def test_kill_process_kills_process(self):
+        with subprocess.Popen(["sleep", "1"]) as proc:
+            sutils.kill_process(proc)
+            time.sleep(0.05)
+            self.assertEqual(self.expected_err_code, proc.poll())
+
+    def test_killing_process_after_it_has_ended_is_a_noop(self):
+        with subprocess.Popen(
+                ["echo", "hello"], stdout=subprocess.DEVNULL) as proc:
+            time.sleep(0.05)
+            sutils.kill_process(proc)
+            time.sleep(0.05)
+            self.assertEqual(0, proc.poll())
 
 
 if __name__ == '__main__':

@@ -109,21 +109,21 @@ class TestMCERD(unittest.TestCase):
             self.mcerd.result_file)
         self.assertEqual(
             self.directory / "He-Default",
-            self.mcerd._MCERD__command_file)
+            self.mcerd.command_file)
 
         # These use the parent prefix, therefore they do not start with 'He'
         self.assertEqual(
             self.directory / "Default.erd_target",
-            self.mcerd._MCERD__target_file)
+            self.mcerd.target_file)
         self.assertEqual(
             self.directory / "Default.erd_detector",
-            self.mcerd._MCERD__detector_file)
+            self.mcerd.detector_file)
         self.assertEqual(
             self.directory / "Default.foils",
-            self.mcerd._MCERD__foils_file)
+            self.mcerd.foils_file)
         self.assertEqual(
             self.directory / "Default.pre",
-            self.mcerd._MCERD__presimulation_file)
+            self.mcerd.presimulation_file)
 
     def test_get_command_file_contents(self):
         detector_file = utils.get_resource_dir() / "mcerd_command.txt"
