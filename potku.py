@@ -214,7 +214,8 @@ class Potku(QtWidgets.QMainWindow):
             menu.addAction("Rename", self.__rename_tree_item)
             menu.addAction("Remove", self.__remove_tree_item)
 
-        if isinstance(self.treeWidget.currentItem().obj, Measurement):
+        current_item = self.treeWidget.currentItem()
+        if current_item and isinstance(current_item.obj, Measurement):
             menu.addAction("Make master", self.__make_master_measurement)
             menu.addAction("Remove master", self.__remove_master_measurement)
             menu.addAction(
