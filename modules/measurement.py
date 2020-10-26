@@ -347,7 +347,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             self.detector = Detector(
                 detector_path,
                 self.get_measurement_file(),
-                save_on_creation=False)
+                save_on_creation=save_on_creation)
             detector_defaults = self.request.default_detector.get_settings()
             self.detector.set_settings(**detector_defaults)
         else:
