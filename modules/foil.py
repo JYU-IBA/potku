@@ -104,12 +104,10 @@ class Foil(MCERDParameterContainer):
         """
         # TODO: Create a unit test for this?
         if "layers" in kwargs:
-            layers = []
-            for layer in kwargs["layers"]:
-                if not isinstance(layer, Layer):
-                    layer = Layer(**layer)
-                layers.append(layer)
-            kwargs["layers"] = layers
+            kwargs["layers"] = [
+                Layer(**layer) if not isinstance(layer, Layer) else layer
+                for layer in kwargs["layers"]
+            ]
 
         if type == RectangularFoil.TYPE:
             if "size" in kwargs:
