@@ -28,6 +28,7 @@ __author__ = "Tuomas Pitkänen"
 __version__ = "2.0"
 
 import json
+import logging
 import time
 
 from pathlib import Path
@@ -76,10 +77,40 @@ class Profile(AdjustableSettings, Serializable):
         self.normalization = normalization
 
     @classmethod
-    def from_file(cls, profile_file: Path) -> "Profile":
+    def from_file(cls, measurement: "Measurement", request: "Request",
+                  profile_file: Path) -> "Profile":
         # TODO: Copy from measurement.from_file (lines 502 to 556)
         # TODO: How to deal with use_default_profile_settings?
-        pass
+        try:
+            with profile_file.open("r") as prof_file:
+                obj_prof = json.load(prof_file)
+
+            prof_gen = {
+                "name": obj_prof["general"]["name"],
+                "description": obj_prof["general"]["description"],
+                "modification_time": obj_prof["general"][
+                    "modification_time_unix"]
+            }
+            depth = obj_prof["depth_profiles"]
+            channel_width = obj_prof["energy_spectra"]["channel_width"]
+            comp = obj_prof["composition_changes"]
+
+            # TODO:
+            if obj_prof["general"]["use_default_settings"] == "True":
+                use_default_profile_settings = True
+            else:
+                use_default_profile_settings = False
+
+        except (OSError, KeyError, AttributeError, json.JSONDecodeError) as e:
+            logging.getLogger("request").error(
+                f"Failed to read settings from file {profile_file}: {e}"
+            )
+            # TODO: Initialize a request.default_profile elsewhere and
+            #       use its values here
+            use_default_profile_settings = True
+            raise NotImplementedError
+
+        return cls(measurement, channel_width=channel_width, **prof_gen, **depth, **comp)
 
     def to_file(self, profile_file: Optional[Path] = None):
         """Write a .profile file.
