@@ -286,6 +286,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
                 self.get_measurement_file(),
                 foils=self.request.default_detector.copy_foils(),
                 tof_foils=self.request.default_detector.copy_tof_foils(),
+                detector_theta=request.default_detector.detector_theta,
                 save_on_creation=save_on_creation
             )
             detector_defaults = self.request.default_detector.get_settings()

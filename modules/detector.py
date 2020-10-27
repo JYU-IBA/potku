@@ -201,7 +201,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         return {
                 "name", "modification_time", "description", "detector_type",
                 "angle_slope", "angle_offset", "tof_slope", "tof_offset",
-                "timeres", "virtual_size", "detector_theta"
+                "timeres", "virtual_size"
             }
 
     def remove_efficiency_file(self, file_name: Path):
