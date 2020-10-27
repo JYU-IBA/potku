@@ -108,20 +108,20 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             # Create default foils
             self.foils = [CircularFoil("Foil1", 7.0, 256.0,
                                        [Layer("Layer_12C",
-                                              [Element("C", 12.011, 1)],
+                                              [Element("C", 12, 1)],
                                               0.1, 2.25, 0.0)]),
                           CircularFoil("Foil2", 10.0, 356.0,
                                        [Layer("Layer_12C",
-                                              [Element("C", 12.011, 1)],
+                                              [Element("C", 12, 1)],
                                               13.0, 2.25, 0.0)]),
                           CircularFoil("Foil3", 18.0, 979.0,
                                        [Layer("Layer_12C",
-                                              [Element("C", 12.011, 1)],
+                                              [Element("C", 12, 1)],
                                               44.4, 2.25, 0.0)]),
                           RectangularFoil("Foil4", 14.0, 14.0, 1042.0,
                                           [Layer("Layer_28Si",
-                                                 [Element("N", 14.00, 0.57),
-                                                  Element("Si", 28.09, 0.43)],
+                                                 [Element("N", 14, 0.57),
+                                                  Element("Si", 28, 0.43)],
                                                  100.0, 3.44, 0.0)])]
         self.tof_foils = tof_foils
         if not self.tof_foils:
