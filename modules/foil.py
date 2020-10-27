@@ -24,12 +24,13 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
-             "Sinikka Siironen \n Juhani Sundell"
+             "Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import math
 
 from .base import MCERDParameterContainer
+from .layer import Layer
 
 
 # Unit conversion values for solid angle
@@ -100,6 +101,15 @@ class Foil(MCERDParameterContainer):
         Return:
             either a CircularFoil or RectangularFoil
         """
+        # TODO: Create a unit test for this?
+        if "layers" in kwargs:
+            layers = []
+            for layer in kwargs["layers"]:
+                if not isinstance(layer, Layer):
+                    layer = Layer(**layer)
+                layers.append(layer)
+            kwargs["layers"] = layers
+
         if type == RectangularFoil.TYPE:
             if "size" in kwargs:
                 x, y = kwargs.pop("size")

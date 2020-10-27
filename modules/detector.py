@@ -244,25 +244,8 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
 
         detector["modification_time"] = detector.pop("modification_time_unix")
         detector["virtual_size"] = tuple(detector["virtual_size"])
-        # detector["detector_type"] = detector.pop("type")
 
-        foils = []
-
-        # Read foils
-        for foil in detector.pop("foils"):
-            layers = []
-
-            # Read layers of the foil
-            for layer in foil.pop("layers"):
-                elements = []
-                elements_str = layer.pop("elements")
-                # Read elements of the layer
-                for element_str in elements_str:
-                    elements.append(Element.from_string(element_str))
-
-                layers.append(Layer(**layer, elements=elements))
-
-            foils.append(Foil.generate_foil(**foil, layers=layers))
+        foils = [Foil.generate_foil(**foil) for foil in detector.pop("foils")]
 
         try:
             # Read .measurement file and update detector angle
