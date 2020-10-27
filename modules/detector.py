@@ -430,3 +430,11 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
                 matched_efficiencies.add(eff_elems[cut_element_str])
 
         return matched_efficiencies
+
+    def copy_foils(self) -> List[Foil]:
+        """Returns a copy of foils in detector."""
+        return [Foil.generate_foil(**foil.to_dict()) for foil in self.foils]
+
+    def copy_tof_foils(self) -> List[int]:
+        """Returns a copy of ToF foils in detector."""
+        return [tof_foil for tof_foil in self.tof_foils]

@@ -25,10 +25,10 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
-from typing import List
+from typing import List, Union
 
 from .element import Element
 from .base import MCERDParameterContainer
@@ -40,22 +40,31 @@ class Layer(MCERDParameterContainer):
 
     __slots__ = "name", "elements", "thickness", "density", "start_depth"
 
-    def __init__(self, name: str, elements: List[Element], thickness: float,
-                 density: float, start_depth=-1):
+    def __init__(self, name: str, elements: List[Union[Element, str, dict]],
+                 thickness: float, density: float, start_depth=-1):
         """Initializes a target or foil layer.
 
         Args:
             name:            Name of the layer.
-            elements:        A list of Element objects.
+            elements:        A list of Element objects, or list of
+                string/dicts that represent Elements.
             thickness:       Thickness of the layer in nanometers.
             density:         Layer density.
             start_depth:     Depth where the layer starts.
         """
         self.name = name
-        self.elements = elements
+        self.elements = []
         self.thickness = thickness
         self.density = density
         self.start_depth = start_depth
+
+        for elem in elements:
+            if isinstance(elem, str):
+                self.elements.append(Element.from_string(elem))
+            elif isinstance(elem, dict):
+                self.elements.append(Element(**elem))
+            else:
+                self.elements.append(elem)
 
     def click_is_inside(self, coordinate):
         """

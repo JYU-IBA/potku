@@ -30,6 +30,7 @@ __version__ = "2.0"
 import math
 
 from .base import MCERDParameterContainer
+from .element import Element
 from .layer import Layer
 
 

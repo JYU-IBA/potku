@@ -22,7 +22,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 
-__author__ = "Juhani Sundell"
+__author__ = "Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import unittest
@@ -48,6 +48,18 @@ class TestBeam(unittest.TestCase):
         self.unit_foil = CircularFoil(diameter=1, distance=1, transmission=1)
         self.rect_foil = RectangularFoil(size_x=2, size_y=2, distance=2,
                                          transmission=2)
+
+    def compare_foils(self, foils1, foils2):
+        """Helper for comparing foils"""
+        for f1, f2 in zip(foils1, foils2):
+            self.assertIsNot(f1, f2)
+            self.assertEqual(f1.get_mcerd_params(), f2.get_mcerd_params())
+            for l1, l2 in zip(f1.layers, f2.layers):
+                self.assertIsNot(l1, l2)
+                self.assertEqual(l1.get_mcerd_params(), l2.get_mcerd_params())
+                for e1, e2 in zip(l1.elements, l2.elements):
+                    self.assertIsNot(e1, e2)
+                    self.assertEqual(e1, e2)
 
     def test_get_mcerd_params(self):
         self.assertEqual(
@@ -126,8 +138,18 @@ class TestBeam(unittest.TestCase):
             self.assertEqual(det1.detector_theta, det2.detector_theta)
             self.assertEqual(det1.tof_foils, det2.tof_foils)
 
-            for f1, f2 in zip(det1.foils, det2.foils):
-                self.assertEqual(f1.get_mcerd_params(), f2.get_mcerd_params())
+            self.compare_foils(det1.foils, det2.foils)
+
+    def test_copy_foils(self):
+        """Tests that copied foils have the same attributes as the
+        original ones."""
+        copied_foils = self.det.copy_foils()
+        self.compare_foils(self.det.foils, copied_foils)
+
+    def test_copy_tof_foils(self):
+        """Tests that copied ToF foils are the same as the original ones."""
+        copied_foils = self.det.copy_tof_foils()
+        self.assertEqual(self.det.tof_foils, copied_foils)
 
 
 class TestEfficiencyFiles(unittest.TestCase):
