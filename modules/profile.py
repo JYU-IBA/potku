@@ -27,6 +27,9 @@ along with this program (file named 'LICENCE').
 __author__ = "Tuomas Pitkänen"
 __version__ = "2.0"
 
+import json
+import time
+
 from pathlib import Path
 from typing import Set, Optional
 
@@ -38,28 +41,36 @@ from modules.base import AdjustableSettings, Serializable
 class Profile(AdjustableSettings, Serializable):
     """Profile class for measurement profile data."""
 
-    __slots__ = "name", "description", "modification_time",\
-                "reference_density","number_of_depth_steps",\
+    __slots__ = "measurement", "name", "description", "modification_time",\
+                "reference_density", "number_of_depth_steps",\
                 "depth_step_for_stopping", "depth_step_for_output",\
                 "depth_for_concentration_from", "depth_for_concentration_to",\
+                "reference_cut",\
                 "channel_width", "number_of_splits", "normalization"
 
-    def __init__(self, name="Default", description="",
+    def __init__(self, measurement, name="Default", description="",
                  modification_time=None, reference_density=3.0,
                  number_of_depth_steps=150, depth_step_for_stopping=10,
                  depth_step_for_output=10, depth_for_concentration_from=200,
                  depth_for_concentration_to=400, channel_width=0.025,
+                 reference_cut="",
                  number_of_splits=10, normalization="First"):
         """Initializes a profile."""
+        self.measurement = measurement
         self.name = name
         self.description = description
-        self.modification_time = modification_time
+        if modification_time is None:
+            self.modification_time = time.time()
+        else:
+            self.modification_time = modification_time
+
         self.reference_density = reference_density
         self.number_of_depth_steps = number_of_depth_steps
         self.depth_step_for_stopping = depth_step_for_stopping
         self.depth_step_for_output = depth_step_for_output
         self.depth_for_concentration_from = depth_for_concentration_from
         self.depth_for_concentration_to = depth_for_concentration_to
+        self.reference_cut = reference_cut
         self.channel_width = channel_width
         self.number_of_splits = number_of_splits
         self.normalization = normalization
@@ -70,9 +81,53 @@ class Profile(AdjustableSettings, Serializable):
         # TODO: How to deal with use_default_profile_settings?
         pass
 
-    def to_file(self, measurement, profile_file: Optional[Path] = None):
-        # TODO: Copy from measurement._profile_to_file
-        pass
+    def to_file(self, profile_file: Optional[Path] = None):
+        """Write a .profile file.
+
+        Args:
+            profile_file: Path to .profile file.
+        """
+        if profile_file is None:
+            profile_file = self.measurement._get_profile_file()
+
+        obj_profile = {
+            "general": {},
+            "depth_profiles": {},
+            "energy_spectra": {},
+            "composition_changes": {}
+        }
+
+        obj_profile["general"]["name"] = self.name
+        obj_profile["general"]["description"] = \
+            self.description
+        obj_profile["general"]["modification_time"] = \
+            time.strftime("%c %z %Z", time.localtime(time.time()))
+        obj_profile["general"]["modification_time_unix"] = \
+            self.modification_time
+        # TODO: Save this attribute in measurement or here?
+        obj_profile["general"]["use_default_settings"] = \
+            str(self.measurement.use_default_profile_settings)
+
+        obj_profile["depth_profiles"]["reference_density"] = \
+            self.reference_density
+        obj_profile["depth_profiles"]["number_of_depth_steps"] = \
+            self.number_of_depth_steps
+        obj_profile["depth_profiles"]["depth_step_for_stopping"] = \
+            self.depth_step_for_stopping
+        obj_profile["depth_profiles"]["depth_step_for_output"] = \
+            self.depth_step_for_output
+        obj_profile["depth_profiles"]["depth_for_concentration_from"] = \
+            self.depth_for_concentration_from
+        obj_profile["depth_profiles"]["depth_for_concentration_to"] = \
+            self.depth_for_concentration_to
+        obj_profile["energy_spectra"]["channel_width"] = self.channel_width
+        obj_profile["composition_changes"]["reference_cut"] = self.reference_cut
+        obj_profile["composition_changes"]["number_of_splits"] = \
+            self.number_of_splits
+        obj_profile["composition_changes"]["normalization"] = self.normalization
+
+        with profile_file.open("w") as file:
+            json.dump(obj_profile, file, indent=4)
 
     def _get_attrs(self) -> Set[str]:
-        return set(self.__slots__)
+        return set(self.__slots__) - set("measurement")
