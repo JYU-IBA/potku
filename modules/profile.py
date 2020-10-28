@@ -80,17 +80,17 @@ class Profile(AdjustableSettings, Serializable):
         # TODO: Copy from measurement.from_file (lines 502 to 556)
         try:
             with profile_file.open("r") as prof_file:
-                obj_prof = json.load(prof_file)
+                profile = json.load(prof_file)
 
-            prof_gen = {
-                "name": obj_prof["general"]["name"],
-                "description": obj_prof["general"]["description"],
-                "modification_time": obj_prof["general"][
+            general = {
+                "name": profile["general"]["name"],
+                "description": profile["general"]["description"],
+                "modification_time": profile["general"][
                     "modification_time_unix"]
             }
-            depth = obj_prof["depth_profiles"]
-            channel_width = obj_prof["energy_spectra"]["channel_width"]
-            comp = obj_prof["composition_changes"]
+            depth = profile["depth_profiles"]
+            channel_width = profile["energy_spectra"]["channel_width"]
+            comp = profile["composition_changes"]
 
         except (OSError, KeyError, AttributeError, json.JSONDecodeError) as e:
             logging.getLogger("request").error(
@@ -100,7 +100,7 @@ class Profile(AdjustableSettings, Serializable):
             #       use its values here, or just let it crash?
             raise NotImplementedError
 
-        return cls(channel_width=channel_width, **prof_gen, **depth, **comp)
+        return cls(channel_width=channel_width, **general, **depth, **comp)
 
     def to_file(self, profile_file: Path):
         """Write a .profile file.
@@ -108,41 +108,41 @@ class Profile(AdjustableSettings, Serializable):
         Args:
             profile_file: Path to .profile file.
         """
-        obj_profile = {
+        obj = {
             "general": {},
             "depth_profiles": {},
             "energy_spectra": {},
             "composition_changes": {}
         }
 
-        obj_profile["general"]["name"] = self.name
-        obj_profile["general"]["description"] = \
+        obj["general"]["name"] = self.name
+        obj["general"]["description"] = \
             self.description
-        obj_profile["general"]["modification_time"] = \
+        obj["general"]["modification_time"] = \
             time.strftime("%c %z %Z", time.localtime(time.time()))
-        obj_profile["general"]["modification_time_unix"] = \
+        obj["general"]["modification_time_unix"] = \
             self.modification_time
 
-        obj_profile["depth_profiles"]["reference_density"] = \
+        obj["depth_profiles"]["reference_density"] = \
             self.reference_density
-        obj_profile["depth_profiles"]["number_of_depth_steps"] = \
+        obj["depth_profiles"]["number_of_depth_steps"] = \
             self.number_of_depth_steps
-        obj_profile["depth_profiles"]["depth_step_for_stopping"] = \
+        obj["depth_profiles"]["depth_step_for_stopping"] = \
             self.depth_step_for_stopping
-        obj_profile["depth_profiles"]["depth_step_for_output"] = \
+        obj["depth_profiles"]["depth_step_for_output"] = \
             self.depth_step_for_output
-        obj_profile["depth_profiles"]["depth_for_concentration_from"] = \
+        obj["depth_profiles"]["depth_for_concentration_from"] = \
             self.depth_for_concentration_from
-        obj_profile["depth_profiles"]["depth_for_concentration_to"] = \
+        obj["depth_profiles"]["depth_for_concentration_to"] = \
             self.depth_for_concentration_to
-        obj_profile["energy_spectra"]["channel_width"] = self.channel_width
-        obj_profile["composition_changes"]["reference_cut"] = self.reference_cut
-        obj_profile["composition_changes"]["number_of_splits"] = \
+        obj["energy_spectra"]["channel_width"] = self.channel_width
+        obj["composition_changes"]["reference_cut"] = self.reference_cut
+        obj["composition_changes"]["number_of_splits"] = \
             self.number_of_splits
-        obj_profile["composition_changes"]["normalization"] = self.normalization
+        obj["composition_changes"]["normalization"] = self.normalization
 
         with profile_file.open("w") as file:
-            json.dump(obj_profile, file, indent=4)
+            json.dump(obj, file, indent=4)
 
     def _get_attrs(self) -> Set[str]:
         return set(self.__slots__)
