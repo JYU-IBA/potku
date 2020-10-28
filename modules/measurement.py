@@ -31,7 +31,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
-import copy
 import hashlib
 import json
 import logging
@@ -269,7 +268,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
                  measurement_setting_file_name="Default",
                  measurement_setting_file_description="",
                  measurement_setting_modification_time=None,
-                 use_default_profile_settings=True, sample=None,
+                 use_request_settings=True, sample=None,
                  save_on_creation=True, enable_logging=True):
         """Initializes a measurement.
 
@@ -366,7 +365,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         # TODO: Should this be copied from default?
         self.selector = None
 
-        self.use_default_profile_settings = use_default_profile_settings
+        self.use_request_settings = use_request_settings
 
         if save_on_creation:
             self.to_file()
@@ -481,6 +480,12 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             obj_info = json.load(mesu_info)
         obj_info["modification_time"] = obj_info.pop("modification_time_unix")
 
+        # Infer value from the existence of measurement-specific files
+        # (for backwards compatibility)
+        if "use_request_settings" not in obj_info:
+            obj_info["use_request_settings"] = not all(
+                    (measurement_file, profile_file))
+
         try:
             with measurement_file.open("r") as mesu_file:
                 obj_gen = json.load(mesu_file)["general"]
@@ -516,11 +521,6 @@ class Measurement(Logger, AdjustableSettings, Serializable):
 
             comp = obj_prof["composition_changes"]
 
-            if obj_prof["general"]["use_default_settings"] == "True":
-                use_default_profile_settings = True
-            else:
-                use_default_profile_settings = False
-
         except (OSError, KeyError, AttributeError, json.JSONDecodeError) as e:
             logging.getLogger("request").error(
                 f"Failed to read settings from file {profile_file}: {e}"
@@ -528,7 +528,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             measurement = request.default_measurement
             if measurement is None:
                 return cls(request=request, path=info_file,
-                           **mesu_general, use_default_profile_settings=True)
+                           **mesu_general, use_request_settings=True)
             prof_gen = {
                 "profile_name": measurement.profile_name,
                 "profile_description": measurement.profile_description,
@@ -553,13 +553,13 @@ class Measurement(Logger, AdjustableSettings, Serializable):
                 "reference_density": measurement.reference_density,
             }
 
-            use_default_profile_settings = True
+            # TODO: Is this needed anymore?
+            obj_info["use_request_settings"] = True
 
         return cls(
             request=request, path=info_file, run=run,
             detector=detector, target=target, channel_width=channel_width,
             **obj_info, **prof_gen, **depth, **comp, **mesu_general,
-            use_default_profile_settings=use_default_profile_settings,
             sample=sample)
 
     def get_data_dir(self) -> Path:
@@ -683,7 +683,8 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             "description": self.description,
             "modification_time": time.strftime("%c %z %Z",
                                                time.localtime(time_stamp)),
-            "modification_time_unix": time_stamp
+            "modification_time_unix": time_stamp,
+            "use_request_settings": self.use_request_settings
         }
 
         with info_file.open("w") as file:
@@ -712,8 +713,6 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             time.strftime("%c %z %Z", time.localtime(time.time()))
         obj_profile["general"]["modification_time_unix"] = \
             self.profile_modification_time
-        obj_profile["general"]["use_default_settings"] = \
-            str(self.use_default_profile_settings)
 
         obj_profile["depth_profiles"]["reference_density"] = \
             self.reference_density
@@ -1097,7 +1096,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         self.selector.load(filename, progress=progress)
 
     def _get_used_settings(self):
-        if self.use_default_profile_settings:
+        if self.use_request_settings:
             detector = self.request.default_detector
             run = self.request.default_run
             target = self.request.default_target

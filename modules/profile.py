@@ -32,7 +32,7 @@ import logging
 import time
 
 from pathlib import Path
-from typing import Set, Optional
+from typing import Set
 
 from modules.base import AdjustableSettings, Serializable
 
@@ -42,14 +42,14 @@ from modules.base import AdjustableSettings, Serializable
 class Profile(AdjustableSettings, Serializable):
     """Profile class for measurement profile data."""
 
-    __slots__ = "measurement", "name", "description", "modification_time",\
+    __slots__ = "name", "description", "modification_time",\
                 "reference_density", "number_of_depth_steps",\
                 "depth_step_for_stopping", "depth_step_for_output",\
                 "depth_for_concentration_from", "depth_for_concentration_to",\
                 "reference_cut",\
                 "channel_width", "number_of_splits", "normalization"
 
-    def __init__(self, measurement, name="Default", description="",
+    def __init__(self, name="Default", description="",
                  modification_time=None, reference_density=3.0,
                  number_of_depth_steps=150, depth_step_for_stopping=10,
                  depth_step_for_output=10, depth_for_concentration_from=200,
@@ -57,7 +57,6 @@ class Profile(AdjustableSettings, Serializable):
                  reference_cut="",
                  number_of_splits=10, normalization="First"):
         """Initializes a profile."""
-        self.measurement = measurement
         self.name = name
         self.description = description
         if modification_time is None:
@@ -77,10 +76,8 @@ class Profile(AdjustableSettings, Serializable):
         self.normalization = normalization
 
     @classmethod
-    def from_file(cls, measurement: "Measurement", request: "Request",
-                  profile_file: Path) -> "Profile":
+    def from_file(cls, profile_file: Path) -> "Profile":
         # TODO: Copy from measurement.from_file (lines 502 to 556)
-        # TODO: How to deal with use_default_profile_settings?
         try:
             with profile_file.open("r") as prof_file:
                 obj_prof = json.load(prof_file)
@@ -95,32 +92,22 @@ class Profile(AdjustableSettings, Serializable):
             channel_width = obj_prof["energy_spectra"]["channel_width"]
             comp = obj_prof["composition_changes"]
 
-            # TODO:
-            if obj_prof["general"]["use_default_settings"] == "True":
-                use_default_profile_settings = True
-            else:
-                use_default_profile_settings = False
-
         except (OSError, KeyError, AttributeError, json.JSONDecodeError) as e:
             logging.getLogger("request").error(
                 f"Failed to read settings from file {profile_file}: {e}"
             )
             # TODO: Initialize a request.default_profile elsewhere and
-            #       use its values here
-            use_default_profile_settings = True
+            #       use its values here, or just let it crash?
             raise NotImplementedError
 
-        return cls(measurement, channel_width=channel_width, **prof_gen, **depth, **comp)
+        return cls(channel_width=channel_width, **prof_gen, **depth, **comp)
 
-    def to_file(self, profile_file: Optional[Path] = None):
+    def to_file(self, profile_file: Path):
         """Write a .profile file.
 
         Args:
             profile_file: Path to .profile file.
         """
-        if profile_file is None:
-            profile_file = self.measurement._get_profile_file()
-
         obj_profile = {
             "general": {},
             "depth_profiles": {},
@@ -135,9 +122,6 @@ class Profile(AdjustableSettings, Serializable):
             time.strftime("%c %z %Z", time.localtime(time.time()))
         obj_profile["general"]["modification_time_unix"] = \
             self.modification_time
-        # TODO: Save this attribute in measurement or here?
-        obj_profile["general"]["use_default_settings"] = \
-            str(self.measurement.use_default_profile_settings)
 
         obj_profile["depth_profiles"]["reference_density"] = \
             self.reference_density
@@ -161,4 +145,4 @@ class Profile(AdjustableSettings, Serializable):
             json.dump(obj_profile, file, indent=4)
 
     def _get_attrs(self) -> Set[str]:
-        return set(self.__slots__) - set("measurement")
+        return set(self.__slots__)

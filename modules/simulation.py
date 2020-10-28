@@ -525,7 +525,6 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             "modification_time":
                 time.strftime("%c %z %Z", time.localtime(time_stamp)),
             "modification_time_unix": time_stamp,
-            "use_request_settings": self.use_request_settings
         }
 
         if measurement_file.exists():

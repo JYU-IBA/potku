@@ -221,7 +221,7 @@ class Request(ElementSimulationContainer):
                 measurement_setting_file_description="These are default "
                                                      "measurement "
                                                      "parameters.",
-                use_default_profile_settings=False,
+                use_request_settings=False,
                 save_on_creation=save_on_creation)
 
         return measurement

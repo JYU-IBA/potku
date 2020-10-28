@@ -542,7 +542,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
 
             self.selection.element_scatter = Element(rbs_element,
                                                      rbs_isotope)
-            if not self.measurement.use_default_profile_settings:
+            if not self.measurement.use_request_settings:
                 self.selection.element = self.measurement.run.beam.ion
             else:
                 self.selection.element = \

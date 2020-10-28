@@ -97,7 +97,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         self.tabs.addTab(self.detector_settings_widget, "Detector")
 
         self.defaultSettingsCheckBox.setChecked(
-            self.measurement.use_default_profile_settings)
+            self.measurement.use_request_settings)
         # TODO these should be set in the widget, not here
         self.measurement_settings_widget.nameLineEdit.setText(
             self.measurement.measurement_setting_file_name)
@@ -149,7 +149,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                 return False
             # Use Measurement specific settings
             try:
-                self.measurement.use_default_profile_settings = \
+                self.measurement.use_request_settings = \
                     self.defaultSettingsCheckBox.isChecked()
 
                 det_folder_path = Path(self.measurement.directory,

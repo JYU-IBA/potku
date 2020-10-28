@@ -262,7 +262,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         """
         detector = self.measurement.get_detector_or_default()
 
-        if self.measurement.use_default_profile_settings:
+        if self.measurement.use_request_settings:
             depth_step_for_stopping = \
                 self.measurement.request.default_measurement\
                     .depth_step_for_stopping
