@@ -985,13 +985,15 @@ class Measurement(Logger, Serializable):
             detector = self.request.default_detector
             run = self.request.default_run
             target = self.request.default_target
+            profile = self.request.default_profile
             mesu = self.request.default_measurement
         else:
             detector = self.detector
             run = self.run
             target = self.target
+            profile = self.profile
             mesu = self
-        return detector, run, target, mesu
+        return detector, run, target, profile, mesu
 
     def generate_tof_in(self, no_foil: bool = False, directory: Path = None) \
             -> Path:
@@ -1017,15 +1019,15 @@ class Measurement(Logger, Serializable):
         tof_in_file.parent.mkdir(exist_ok=True)
 
         # Get settings
-        detector, run, target, measurement = self._get_used_settings()
+        detector, run, target, profile, measurement = self._get_used_settings()
         global_settings = self.request.global_settings
 
-        reference_density = measurement.reference_density
-        number_of_depth_steps = measurement.number_of_depth_steps
-        depth_step_for_stopping = measurement.depth_step_for_stopping
-        depth_step_for_output = measurement.depth_step_for_output
-        depth_for_concentration_from = measurement.depth_for_concentration_from
-        depth_for_concentration_to = measurement.depth_for_concentration_to
+        reference_density = profile.reference_density
+        number_of_depth_steps = profile.number_of_depth_steps
+        depth_step_for_stopping = profile.depth_step_for_stopping
+        depth_step_for_output = profile.depth_step_for_output
+        depth_for_concentration_from = profile.depth_for_concentration_from
+        depth_for_concentration_to = profile.depth_for_concentration_to
 
         # Measurement settings
         str_beam = f"Beam: {run.beam.ion}\n"
