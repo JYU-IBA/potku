@@ -134,8 +134,9 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         if not self.measurement.measurement_setting_file_name:
             self.measurement.measurement_setting_file_name = \
                 self.measurement.name
-        if not self.measurement.profile_name:
-            self.measurement.profile_name = self.measurement.name
+        # TODO: Is this necessary anymore?
+        # if not self.measurement.profile_name:
+        #     self.measurement.profile_name = self.measurement.name
 
         # Check the target and detector angles
         ok_pressed = self.measurement_settings_widget.check_angles()

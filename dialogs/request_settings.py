@@ -203,11 +203,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             measurement_file = Path(
                 self.request.default_measurement.directory,
                 "Default.measurement")
-            profile_file = Path(
-                self.request.default_measurement.directory, "Default.profile")
 
             self.request.default_measurement.to_file(
-                measurement_file, profile_file=profile_file)
+                measurement_file)
 
             # Detector settings
             self.detector_settings_widget.update_settings()

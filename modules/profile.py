@@ -146,3 +146,7 @@ class Profile(AdjustableSettings, Serializable):
 
     def _get_attrs(self) -> Set[str]:
         return set(self.__slots__)
+
+    def set_settings(self, **kwargs) -> None:
+        super().set_settings(**kwargs)
+        self.modification_time = time.time()

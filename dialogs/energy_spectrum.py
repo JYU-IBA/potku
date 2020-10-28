@@ -143,7 +143,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
         if self.spectrum_type == EnergySpectrumWidget.MEASUREMENT:
             EnergySpectrumParamsDialog.bin_width = \
-                self.measurement.channel_width
+                self.measurement.profile.channel_width
             self.pushButton_OK.clicked.connect(
                 lambda: self.__accept_params(spectra_changed=spectra_changed))
 

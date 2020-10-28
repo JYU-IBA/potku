@@ -45,6 +45,7 @@ from .detector import Detector
 from .element import Element
 from .element_simulation import ElementSimulation
 from .measurement import Measurement
+from .profile import Profile
 from .run import Run
 from .sample import Samples
 from .simulation import Simulation
@@ -101,11 +102,14 @@ class Request(ElementSimulationContainer):
         self.default_detector = self._create_default_detector(
             self.default_detector_folder, save_on_creation=save_on_creation
         )
+        self.default_profile = self._create_default_profile(
+            save_on_creation=save_on_creation)
         self.default_measurement = self._create_default_measurement(
             save_on_creation=save_on_creation,
             detector=self.default_detector,
             target=self.default_target,
-            run=self.default_run
+            run=self.default_run,
+            profile=self.default_profile
         )
         self.default_simulation, self.default_element_simulation = \
             self._create_default_simulation(
@@ -217,7 +221,6 @@ class Request(ElementSimulationContainer):
             measurement = Measurement(
                 self, path=info_path, **kwargs,
                 description="This is a default measurement.",
-                profile_description="These are default profile parameters.",
                 measurement_setting_file_description="These are default "
                                                      "measurement "
                                                      "parameters.",
@@ -254,6 +257,22 @@ class Request(ElementSimulationContainer):
             return Run.from_file(self.default_measurement_file_path)
         except (KeyError, OSError):
             return Run()
+
+    def _create_default_profile(self, save_on_creation) -> Profile:
+        """Returns default profile.
+        """
+        profile_path = Path(self.default_folder, "Default.profile")
+        if profile_path.exists():
+            profile = Profile.from_file(profile_path)
+        else:
+            profile = Profile(
+                description="These are default profile parameters.")
+
+        if save_on_creation:
+            profile.to_file(
+                Path(self.default_folder, profile.name + ".profile"))
+
+        return profile
 
     def _create_default_simulation(
             self, save_on_creation, target=None, detector=None, run=None,

@@ -265,27 +265,30 @@ class DepthProfileDialog(QtWidgets.QDialog):
         if self.measurement.use_request_settings:
             depth_step_for_stopping = \
                 self.measurement.request.default_measurement\
-                    .depth_step_for_stopping
+                    .profile.depth_step_for_stopping
             number_of_depth_steps = \
                 self.measurement.request.default_measurement\
-                    .number_of_depth_steps
+                    .profile.number_of_depth_steps
             depth_step_for_output = \
                 self.measurement.request.default_measurement\
-                    .depth_step_for_output
+                    .profile.depth_step_for_output
             depth_for_concentration_from = \
                 self.measurement.request.default_measurement\
-                    .depth_for_concentration_from
+                    .profile.depth_for_concentration_from
             depth_for_concentration_to = \
                 self.measurement.request.default_measurement\
-                    .depth_for_concentration_to
+                    .profile.depth_for_concentration_to
         else:
-            depth_step_for_stopping = self.measurement.depth_step_for_stopping
-            number_of_depth_steps = self.measurement.number_of_depth_steps
-            depth_step_for_output = self.measurement.depth_step_for_output
+            depth_step_for_stopping = self.measurement.\
+                profile.depth_step_for_stopping
+            number_of_depth_steps = self.measurement.\
+                profile.number_of_depth_steps
+            depth_step_for_output = self.measurement.\
+                profile.depth_step_for_output
             depth_for_concentration_from = self.measurement\
-                .depth_for_concentration_from
+                .profile.depth_for_concentration_from
             depth_for_concentration_to = self.measurement\
-                .depth_for_concentration_to
+                .profile.depth_for_concentration_to
 
         self.label_calibslope.setText(str(detector.tof_slope))
         self.label_caliboffset.setText(str(detector.tof_offset))
@@ -369,8 +372,9 @@ class DepthProfileWidget(QtWidgets.QWidget):
                         elements[i] = rbs_list[rbs]
 
             if self.__line_scale:
-                depth_scale = self.measurement.depth_for_concentration_from, \
-                    self.measurement.depth_for_concentration_to
+                depth_scale = \
+                    self.measurement.profile.depth_for_concentration_from, \
+                    self.measurement.profile.depth_for_concentration_to
             else:
                 depth_scale = None
 

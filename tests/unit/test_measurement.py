@@ -41,7 +41,6 @@ class TestFolderStructure(unittest.TestCase):
     def setUp(self):
         self.mesu_name = "foo"
         self.settings_file = "baz"
-        self.profile_name = "bar"
         self.mesu_folder = "mesu"
         self.folder_structure = {
             "mesu": {
@@ -62,7 +61,7 @@ class TestFolderStructure(unittest.TestCase):
                 "Default.detector": None
             },
             f"{self.mesu_name}.info": None,
-            f"{self.profile_name}.profile": None,
+            f"Default.profile": None,
             f"{self.settings_file}.measurement": None,
             "Default.target": None
         })
@@ -74,7 +73,7 @@ class TestFolderStructure(unittest.TestCase):
                 mo.get_request(), path / f"{self.mesu_name}.info",
                 name=self.mesu_name,
                 measurement_setting_file_name=self.settings_file,
-                profile_name=self.profile_name, save_on_creation=False,
+                save_on_creation=False,
                 enable_logging=False)
 
             # No files or folders should be created...
@@ -96,7 +95,7 @@ class TestFolderStructure(unittest.TestCase):
             mesu = Measurement(
                 mo.get_request(), path / "mesu.info",
                 measurement_setting_file_name=self.mesu_name,
-                profile_name=self.profile_name, save_on_creation=False,
+                save_on_creation=False,
                 enable_logging=False)
             mesu.create_folder_structure(path)
             mesu.to_file()
@@ -105,7 +104,7 @@ class TestFolderStructure(unittest.TestCase):
                 Measurement.find_measurement_files(path)
 
             self.assertEqual(
-                path / f"{self.profile_name}.profile", profile_file)
+                path / f"Default.profile", profile_file)
             self.assertEqual(
                 path / f"{self.mesu_name}.measurement", mesu_file)
 
@@ -121,7 +120,7 @@ class TestFolderStructure(unittest.TestCase):
                 mo.get_request(), path / f"foo.info",
                 name="foo",
                 measurement_setting_file_name=self.settings_file,
-                profile_name=self.profile_name, save_on_creation=False,
+                save_on_creation=False,
                 enable_logging=False)
             mesu.create_folder_structure(path)
             mesu.to_file()

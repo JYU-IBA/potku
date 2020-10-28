@@ -49,6 +49,7 @@ from . import general_functions as gf
 from . import file_paths as fpaths
 from .cut_file import CutFile
 from .detector import Detector
+from .profile import Profile
 from .run import Run
 from .target import Target
 from .ui_log_handlers import Logger
@@ -157,12 +158,17 @@ class Measurements:
             else:
                 run = None
 
+            if profile_file is not None:
+                profile = Profile.from_file(profile_file)
+            else:
+                profile = None
+
             # Create Measurement from file
             if file_path.exists() and file_path.suffix == ".info":
                 measurement = Measurement.from_file(
                     file_path, mesu_file, profile_file,
                     self.request, sample=sample, target=target,
-                    detector=detector, run=run)
+                    detector=detector, run=run, profile=profile)
 
                 measurement_folder_name = file_directory.name
                 serial_number = int(measurement_folder_name[
@@ -242,29 +248,18 @@ class Measurements:
         self.measurements = remove_key(self.measurements, tab_id)
 
 
-class Measurement(Logger, AdjustableSettings, Serializable):
+class Measurement(Logger, Serializable):
     """Measurement class to handle one measurement data.
     """
 
     # __slots__ = "request", "tab_id", "name", "description",\
     #             "modification_time", "run", "detector", "target", \
-    #             "profile_name", "profile_description", \
-    #             "profile_modification_time", "reference_density", \
-    #             "number_of_depth_steps", "depth_step_for_stopping",\
-    #             "depth_step_for_output", "depth_for_concentration_from", \
-    #             "depth_for_concentration_to", "channel_width", \
-    #             "reference_cut", "number_of_splits", "normalization"
+    #             "profile"
     DIRECTORY_PREFIX = "Measurement_"
 
     def __init__(self, request, path, tab_id=-1, name="Default",
                  description="", modification_time=None, run=None,
-                 detector=None, target=None, profile_name="Default",
-                 profile_description="", profile_modification_time=None,
-                 reference_density=3.0, number_of_depth_steps=150,
-                 depth_step_for_stopping=10, depth_step_for_output=10,
-                 depth_for_concentration_from=200,
-                 depth_for_concentration_to=400, channel_width=0.025,
-                 reference_cut="", number_of_splits=10, normalization="First",
+                 detector=None, target=None, profile=None,
                  measurement_setting_file_name="Default",
                  measurement_setting_file_description="",
                  measurement_setting_modification_time=None,
@@ -297,32 +292,17 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         self.measurement_setting_file_name = measurement_setting_file_name
         if not self.measurement_setting_file_name:
             self.measurement_setting_file_name = name
+        # FIXME: measurement file description is not saved to file
+        #        (create a getter & setter property for
+        #        measurement_setting_file_description
+        #        and observe where they should be set, but aren't.
+        #        Compare this to previous revision.)
         self.measurement_setting_file_description = \
             measurement_setting_file_description
         if not measurement_setting_modification_time:
             measurement_setting_modification_time = time.time()
         self.measurement_setting_modification_time = \
             measurement_setting_modification_time
-
-        # TODO: Create a Profile class for these from here...
-        self.profile_name = profile_name
-        self.profile_description = profile_description
-        if profile_modification_time is None:
-            self.profile_modification_time = time.time()
-        else:
-            self.profile_modification_time = profile_modification_time
-
-        self.reference_density = reference_density
-        self.number_of_depth_steps = number_of_depth_steps
-        self.depth_step_for_stopping = depth_step_for_stopping
-        self.depth_step_for_output = depth_step_for_output
-        self.depth_for_concentration_from = depth_for_concentration_from
-        self.depth_for_concentration_to = depth_for_concentration_to
-        self.channel_width = channel_width
-        self.reference_cut = reference_cut
-        self.number_of_splits = number_of_splits
-        self.normalization = normalization
-        # TODO: ...to here
 
         self.data = []
 
@@ -361,6 +341,13 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             self.target.set_settings(**target_defaults)
         else:
             self.target = target
+
+        if profile is None:
+            self.profile = Profile()
+            profile_defaults = self.request.default_profile.get_settings()
+            self.profile.set_settings(**profile_defaults)
+        else:
+            self.profile = profile
 
         # TODO: Should this be copied from default?
         self.selector = None
@@ -460,7 +447,8 @@ class Measurement(Logger, AdjustableSettings, Serializable):
     @classmethod
     def from_file(cls, info_file: Path, measurement_file: Path,
                   profile_file: Path, request: "Request", detector=None,
-                  run=None, target=None, sample=None) -> "Measurement":
+                  run=None, target=None, profile=None,
+                  sample=None) -> "Measurement":
         """Read Measurement information from file.
 
         Args:
@@ -471,6 +459,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             detector: Measurement's Detector object.
             run: Measurement's Run object.
             target: Measurement's Target object.
+            profile: Measurement's Profile object.
             sample: Sample under which this Measurement belongs to.
 
         Return:
@@ -504,63 +493,10 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             )
             mesu_general = {}
 
-        try:
-            with profile_file.open("r") as prof_file:
-                obj_prof = json.load(prof_file)
-
-            prof_gen = {
-                "profile_name": obj_prof["general"]["name"],
-                "profile_description": obj_prof["general"]["description"],
-                "profile_modification_time": obj_prof["general"][
-                    "modification_time_unix"]
-            }
-
-            depth = obj_prof["depth_profiles"]
-
-            channel_width = obj_prof["energy_spectra"]["channel_width"]
-
-            comp = obj_prof["composition_changes"]
-
-        except (OSError, KeyError, AttributeError, json.JSONDecodeError) as e:
-            logging.getLogger("request").error(
-                f"Failed to read settings from file {profile_file}: {e}"
-            )
-            measurement = request.default_measurement
-            if measurement is None:
-                return cls(request=request, path=info_file,
-                           **mesu_general, use_request_settings=True)
-            prof_gen = {
-                "profile_name": measurement.profile_name,
-                "profile_description": measurement.profile_description,
-                "profile_modification_time":
-                    measurement.profile_modification_time,
-            }
-
-            depth = {
-                "number_of_depth_steps": measurement.number_of_depth_steps,
-                "depth_step_for_stopping": measurement.depth_step_for_stopping,
-                "depth_step_for_output": measurement.depth_step_for_output,
-                "depth_for_concentration_from":
-                    measurement.depth_for_concentration_from,
-                "depth_for_concentration_to":
-                    measurement.depth_for_concentration_to
-            }
-            channel_width = measurement.channel_width
-            comp = {
-                "reference_cut": measurement.reference_cut,
-                "number_of_splits": measurement.number_of_splits,
-                "normalization": measurement.normalization,
-                "reference_density": measurement.reference_density,
-            }
-
-            # TODO: Is this needed anymore?
-            obj_info["use_request_settings"] = True
-
         return cls(
             request=request, path=info_file, run=run,
-            detector=detector, target=target, channel_width=channel_width,
-            **obj_info, **prof_gen, **depth, **comp, **mesu_general,
-            sample=sample)
+            detector=detector, target=target, profile=profile,
+            **obj_info, **mesu_general, sample=sample)
 
     def get_data_dir(self) -> Path:
         """Returns path to Data directory.
@@ -598,11 +534,6 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         return Path(
             self.directory, f"{self.measurement_setting_file_name}.measurement")
 
-    def _get_profile_file(self) -> Path:
-        """Returns the path to .profile file
-        """
-        return self.directory / f"{self.profile_name}.profile"
-
     def _get_tof_in_dir(self) -> Path:
         """Returns the directory where tof.in is located.
         """
@@ -614,14 +545,12 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         return self.directory / f"{self.name}.info"
 
     def to_file(self, measurement_file: Optional[Path] = None,
-                profile_file: Optional[Path] = None,
                 info_file: Optional[Path] = None):
         """Writes measurement to file. If optional path arguments are 'None',
         default values will be used as file names.
 
         Args:
             measurement_file: path to .measurement file
-            profile_file: path to .profile file
             info_file: path to .info file
         """
         # Save general measurement settings parameters.
@@ -629,7 +558,6 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             measurement_file = self._get_measurement_file()
 
         self._measurement_to_file(measurement_file)
-        self._profile_to_file(profile_file)
         self._info_to_file(info_file)
 
         # Save run, detector and target parameters
@@ -638,6 +566,8 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         self.detector.to_file(self.detector.path, measurement_file)
         target_file = Path(self.directory, f"{self.target.name}.target")
         self.target.to_file(target_file, measurement_file)
+        profile_file = Path(self.directory / f"{self.profile.name}.profile")
+        self.profile.to_file(profile_file)
 
     def _measurement_to_file(self, measurement_file: Optional[Path] = None):
         """Write a .measurement file.
@@ -689,51 +619,6 @@ class Measurement(Logger, AdjustableSettings, Serializable):
 
         with info_file.open("w") as file:
             json.dump(obj_info, file, indent=4)
-
-    def _profile_to_file(self, profile_file: Optional[Path] = None):
-        """Write a .profile file.
-
-        Args:
-            profile_file: Path to .profile file.
-        """
-        if profile_file is None:
-            profile_file = self._get_profile_file()
-
-        obj_profile = {
-            "general": {},
-            "depth_profiles": {},
-            "energy_spectra": {},
-            "composition_changes": {}
-        }
-
-        obj_profile["general"]["name"] = self.profile_name
-        obj_profile["general"]["description"] = \
-            self.profile_description
-        obj_profile["general"]["modification_time"] = \
-            time.strftime("%c %z %Z", time.localtime(time.time()))
-        obj_profile["general"]["modification_time_unix"] = \
-            self.profile_modification_time
-
-        obj_profile["depth_profiles"]["reference_density"] = \
-            self.reference_density
-        obj_profile["depth_profiles"]["number_of_depth_steps"] = \
-            self.number_of_depth_steps
-        obj_profile["depth_profiles"]["depth_step_for_stopping"] = \
-            self.depth_step_for_stopping
-        obj_profile["depth_profiles"]["depth_step_for_output"] = \
-            self.depth_step_for_output
-        obj_profile["depth_profiles"]["depth_for_concentration_from"] = \
-            self.depth_for_concentration_from
-        obj_profile["depth_profiles"]["depth_for_concentration_to"] = \
-            self.depth_for_concentration_to
-        obj_profile["energy_spectra"]["channel_width"] = self.channel_width
-        obj_profile["composition_changes"]["reference_cut"] = self.reference_cut
-        obj_profile["composition_changes"]["number_of_splits"] = \
-            self.number_of_splits
-        obj_profile["composition_changes"]["normalization"] = self.normalization
-
-        with profile_file.open("w") as file:
-            json.dump(obj_profile, file, indent=4)
 
     def create_folder_structure(self, measurement_folder: Path,
                                 measurement_file: Path = None,
@@ -1248,32 +1133,3 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             logging.getLogger(self.name).info(str_logmsg)
 
         return tof_in_file
-
-    @staticmethod
-    def _get_attrs() -> set:
-        """Returns a set of attribute names. These Measument attribute values
-        can be set by calling set_settings.
-        """
-        return {
-            "profile_name", "profile_description",
-            "profile_modification_time", "reference_density",
-            "number_of_depth_steps", "depth_step_for_stopping",
-            "depth_step_for_output", "depth_for_concentration_from",
-            "depth_for_concentration_to", "channel_width", "number_of_splits",
-            "normalization"
-        }
-
-    def get_settings(self) -> dict:
-        """Returns the values of this Measurement's settings
-        """
-        return {
-            attr: getattr(self, attr) for attr in self._get_attrs()
-        }
-
-    def set_settings(self, **kwargs):
-        """Sets the values of this Measurement's settings.
-        """
-        attrs = self._get_attrs()
-        for key, value in kwargs.items():
-            if key in attrs:
-                setattr(self, key, value)
