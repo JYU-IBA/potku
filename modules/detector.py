@@ -297,7 +297,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         with detector_file.open("w") as file:
             json.dump(obj, file, indent=4)
 
-        if measurement_file is None:
+        if measurement_file is None or not measurement_file.exists():
             return
         # Read .measurement to obj to update only detector angles
         try:

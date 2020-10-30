@@ -553,21 +553,19 @@ class Measurement(Logger, Serializable):
             measurement_file: path to .measurement file
             info_file: path to .info file
         """
-        # Save general measurement settings parameters.
-        if measurement_file is None:
-            measurement_file = self._get_measurement_file()
-
-        self._measurement_to_file(measurement_file)
         self._info_to_file(info_file)
 
-        # Save run, detector and target parameters
+        if not self.use_request_settings:
+            if measurement_file is None:
+                measurement_file = self._get_measurement_file()
+            target_file = Path(self.directory, f"{self.target.name}.target")
+            profile_file = Path(self.directory / f"{self.profile.name}.profile")
 
-        self.run.to_file(measurement_file)
-        self.detector.to_file(self.detector.path, measurement_file)
-        target_file = Path(self.directory, f"{self.target.name}.target")
-        self.target.to_file(target_file, measurement_file)
-        profile_file = Path(self.directory / f"{self.profile.name}.profile")
-        self.profile.to_file(profile_file)
+            self._measurement_to_file(measurement_file)
+            self.run.to_file(measurement_file)
+            self.detector.to_file(self.detector.path, measurement_file)
+            self.target.to_file(target_file, measurement_file)
+            self.profile.to_file(profile_file)
 
     def _measurement_to_file(self, measurement_file: Optional[Path] = None):
         """Write a .measurement file.

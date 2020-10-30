@@ -66,6 +66,8 @@ class TestFolderStructure(unittest.TestCase):
             "Default.target": None
         })
 
+    # TODO: Create a test that tests use_request_settings=True (should
+    #       not have .measurement, .target or .detector)
     def test_folder_structure(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             path = Path(tmp_dir, self.mesu_folder)
@@ -74,7 +76,8 @@ class TestFolderStructure(unittest.TestCase):
                 name=self.mesu_name,
                 measurement_setting_file_name=self.settings_file,
                 save_on_creation=False,
-                enable_logging=False)
+                enable_logging=False,
+                use_request_settings=False)
 
             # No files or folders should be created...
             utils.assert_folder_structure_equal({}, Path(tmp_dir))
@@ -96,7 +99,8 @@ class TestFolderStructure(unittest.TestCase):
                 mo.get_request(), path / "mesu.info",
                 measurement_setting_file_name=self.mesu_name,
                 save_on_creation=False,
-                enable_logging=False)
+                enable_logging=False,
+                use_request_settings=False)
             mesu.create_folder_structure(path)
             mesu.to_file()
 
@@ -155,7 +159,8 @@ class TestFolderStructure(unittest.TestCase):
             mesu_name = "foo"
             measurement = Measurement(
                 mo.get_request(), path=mesu_path / f"{mesu_name}.info",
-                name=mesu_name, save_on_creation=False, enable_logging=False)
+                name=mesu_name, save_on_creation=False, enable_logging=False,
+                use_request_settings=False)
             measurement.create_folder_structure(mesu_path)
             measurement.to_file()
 
