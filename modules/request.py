@@ -182,8 +182,7 @@ class Request(ElementSimulationContainer):
         if detector_path.exists():
             # Read detector from file
             detector = Detector.from_file(
-                detector_path, self.default_measurement_file_path, self,
-                save_on_creation=save_on_creation)
+                detector_path, self, save_on_creation=save_on_creation)
         else:
             # Create Detector folder under Default folder
             if save_on_creation:
@@ -191,7 +190,7 @@ class Request(ElementSimulationContainer):
             # Create default detector for request
             detector = Detector(
                 Path(self.default_detector_folder, "Default.detector"),
-                self.default_measurement_file_path, name="Default-detector",
+                name="Default-detector",
                 description="These are default detector settings.",
                 save_on_creation=save_on_creation)
 
@@ -199,8 +198,7 @@ class Request(ElementSimulationContainer):
             detector.update_directories(self.default_detector_folder)
 
             detector.to_file(
-                Path(self.default_detector_folder, "Default.detector"),
-                self.default_measurement_file_path)
+                Path(self.default_detector_folder, "Default.detector"))
 
         return detector
 

@@ -118,7 +118,7 @@ class Simulations:
 
             if detector_file is not None:
                 detector = Detector.from_file(
-                    detector_file, mesu_file, sample.request)
+                    detector_file, sample.request)
             else:
                 detector = None
 
@@ -283,7 +283,6 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             detector_path = self.directory / "Detector" / "Default.detector"
             self.detector = Detector(
                 detector_path,
-                self.get_measurement_file(),
                 foils=self.request.default_detector.copy_foils(),
                 tof_foils=self.request.default_detector.copy_tof_foils(),
                 detector_theta=request.default_detector.detector_theta,
@@ -543,7 +542,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         # Save Run object to file
         self.run.to_file(measurement_file)
         # Save Detector object to file
-        self.detector.to_file(self.detector.path, measurement_file)
+        self.detector.to_file(self.detector.path)
 
         # Save Target object to file
         target_file = Path(self.directory, f"{self.target.name}.target")

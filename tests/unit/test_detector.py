@@ -44,7 +44,7 @@ class TestBeam(unittest.TestCase):
     def setUp(self):
         self.path = Path(tempfile.gettempdir(), "Detector", ".detector")
         self.mesu = Path(tempfile.gettempdir(), "mesu")
-        self.det = Detector(self.path, self.mesu, save_on_creation=False)
+        self.det = Detector(self.path, save_on_creation=False)
         self.unit_foil = CircularFoil(diameter=1, distance=1, transmission=1)
         self.rect_foil = RectangularFoil(size_x=2, size_y=2, distance=2,
                                          transmission=2)
@@ -112,8 +112,7 @@ class TestBeam(unittest.TestCase):
         """
         with tempfile.TemporaryDirectory() as tmp_dir:
             det_file = Path(tmp_dir, "d.detector")
-            mesu_file = Path(tmp_dir, "mesu")
-            det1 = Detector(det_file, mesu_file,
+            det1 = Detector(det_file,
                             name="foo", description="bar",
                             detector_type=DetectorType.TOF,
                             virtual_size=(1, 2), tof_slope=4.4e-10,
@@ -121,9 +120,9 @@ class TestBeam(unittest.TestCase):
                             timeres=251, detector_theta=42, tof_foils=[0, 0],
                             save_on_creation=False, foils=[self.unit_foil,
                                                            self.rect_foil])
-            det1.to_file(det_file, mesu_file)
+            det1.to_file(det_file)
 
-            det2 = Detector.from_file(det_file, mesu_file, mo.get_request(),
+            det2 = Detector.from_file(det_file, mo.get_request(),
                                       save_on_creation=False)
             self.assertIsNot(det1, det2)
             self.assertEqual(det1.name, det2.name)
@@ -156,9 +155,8 @@ class TestEfficiencyFiles(unittest.TestCase):
     """Tests for handling .eff files.
     """
     def setUp(self) -> None:
-        mesu = Path(tempfile.gettempdir(), "mesu")
         self.det = Detector(
-            Path(tempfile.gettempdir(), "Detector", ".detector"), mesu,
+            Path(tempfile.gettempdir(), "Detector", ".detector"),
             save_on_creation=False)
         # Efficiency files and expected efficiency files after copying
         self.eff_files = {

@@ -148,7 +148,8 @@ class Measurements:
                 target = None
 
             if det_file is not None:
-                detector = Detector.from_file(det_file, mesu_file, self.request)
+                detector = Detector.from_file(
+                    det_file, self.request, save_on_creation=False)
                 detector.update_directories(det_file.parent)
             else:
                 detector = None
@@ -325,7 +326,6 @@ class Measurement(Logger, Serializable):
             detector_path = self.directory / "Detector" / "Default.detector"
             self.detector = Detector(
                 detector_path,
-                self.get_measurement_file(),
                 foils=self.request.default_detector.copy_foils(),
                 tof_foils=self.request.default_detector.copy_tof_foils(),
                 detector_theta=request.default_detector.detector_theta,
@@ -563,7 +563,7 @@ class Measurement(Logger, Serializable):
 
             self._measurement_to_file(measurement_file)
             self.run.to_file(measurement_file)
-            self.detector.to_file(self.detector.path, measurement_file)
+            self.detector.to_file(self.detector.path)
             self.target.to_file(target_file, measurement_file)
             self.profile.to_file(profile_file)
 

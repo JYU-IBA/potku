@@ -30,7 +30,6 @@ __version__ = "2.0"
 import json
 import shutil
 import time
-from typing import Optional
 from typing import Iterable
 from typing import Set
 from typing import List
@@ -62,7 +61,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
     EFFICIENCY_DIR = "Efficiency_files"
     USED_EFFICIENCIES_DIR = "Used_efficiencies"
 
-    def __init__(self, path: Path, measurement_file, name="Default",
+    def __init__(self, path: Path, name="Default",
                  description="", modification_time=None,
                  detector_type=DetectorType.TOF,
                  foils=None, tof_foils=None, virtual_size=(2.0, 5.0),
@@ -74,8 +73,6 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         Args:
             path: Path to .detector file.
             name: Detector name.
-            measurement_file: Path to a .measurement file which has detector
-                angles.
             description: Detector parameters description.
             modification_time: Modification time of detector file in Unix time.
             detector_type: Type of detector.
@@ -137,7 +134,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         self.detector_theta = detector_theta
 
         if save_on_creation:
-            self.to_file(self.path, measurement_file)
+            self.to_file(self.path)
 
     def update_directories(self, directory: Path):
         """Creates directories if they do not exist and updates paths.
@@ -201,7 +198,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         return {
                 "name", "modification_time", "description", "detector_type",
                 "angle_slope", "angle_offset", "tof_slope", "tof_offset",
-                "timeres", "virtual_size"
+                "timeres", "virtual_size", "detector_theta"
             }
 
     def remove_efficiency_file(self, file_name: Path):
@@ -224,15 +221,12 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         )
 
     @classmethod
-    def from_file(cls, detector_file: Path, measurement_file: Path,
-                  request, save_on_creation=True):
+    def from_file(cls, detector_file: Path, request, save_on_creation=True):
         """Initialize Detector from a JSON file.
 
         Args:
             detector_file: A file path to JSON file containing the
                                 detector parameters.
-            measurement_file: A file path to measurement settings file
-                                   which has detector angles.
             request: Request object which has default detector angles.
             save_on_creation: Whether to save created detector or not.
 
@@ -247,33 +241,14 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
 
         foils = [Foil.generate_foil(**foil) for foil in detector.pop("foils")]
 
-        try:
-            # Read .measurement file and update detector angle
-            with measurement_file.open("r") as mesu_file:
-                measurement_obj = json.load(mesu_file)
-            detector_theta = measurement_obj["geometry"]["detector_theta"]
-        except (KeyError, json.JSONDecodeError, OSError, AttributeError):
-            # Get default detector angle from default detector
-            try:
-                detector_theta = request.default_detector.detector_theta
-            except AttributeError:
-                return cls(path=detector_file,
-                           measurement_file=measurement_file,
-                           foils=foils, save_on_creation=save_on_creation,
-                           **detector)
-
-        return cls(path=detector_file, measurement_file=measurement_file,
-                   foils=foils, detector_theta=detector_theta,
+        return cls(path=detector_file, foils=foils,
                    save_on_creation=save_on_creation, **detector)
 
-    def to_file(self, detector_file: Path,
-                measurement_file: Optional[Path] = None):
+    def to_file(self, detector_file: Path):
         """Save detector settings to a file.
 
         Args:
             detector_file: File in which the detector settings will be
-                saved.
-            measurement_file: File in which the detector_theta angle is
                 saved.
         """
         # Delete possible extra .detector files
@@ -291,29 +266,11 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             "tof_foils": self.tof_foils,
             "modification_time": time.strftime(
                 "%c %z %Z", time.localtime(timestamp)),
-            "modification_time_unix": timestamp
+            "modification_time_unix": timestamp,
+            "detector_theta": self.detector_theta
         }
 
         with detector_file.open("w") as file:
-            json.dump(obj, file, indent=4)
-
-        if measurement_file is None or not measurement_file.exists():
-            return
-        # Read .measurement to obj to update only detector angles
-        try:
-            with measurement_file.open("r") as mesu:
-                obj = json.load(mesu)
-            try:
-                # Change existing detector theta
-                obj["geometry"]["detector_theta"] = self.detector_theta
-            except KeyError:
-                # Add detector theta
-                obj["geometry"] = {"detector_theta": self.detector_theta}
-        except (OSError, json.JSONDecodeError):
-            # Write new .measurement file
-            obj = {"geometry": {"detector_theta": self.detector_theta}}
-
-        with measurement_file.open("w") as file:
             json.dump(obj, file, indent=4)
 
     def get_mcerd_params(self):
