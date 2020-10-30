@@ -505,7 +505,7 @@ class TargetCompositionWidget(_CompositionWidget):
         """
         target_path = Path(self.simulation.directory,
                            f"{self.target.name}.target")
-        self.target.to_file(target_path, None)
+        self.target.to_file(target_path)
 
 
 class FoilCompositionWidget(_CompositionWidget):

@@ -233,17 +233,14 @@ class Request(ElementSimulationContainer):
         target_path = Path(self.default_folder, "Default.target")
         if target_path.exists():
             # Read target from file
-            target = Target.from_file(
-                target_path, self.default_measurement_file_path, self)
+            target = Target.from_file(target_path, self)
         else:
             # Create default target for request
             target = Target(
                 description="These are default target parameters.")
 
         if save_on_creation:
-            target.to_file(
-                Path(self.default_folder, target.name + ".target"),
-                self.default_measurement_file_path)
+            target.to_file(Path(self.default_folder, target.name + ".target"))
 
         return target
 

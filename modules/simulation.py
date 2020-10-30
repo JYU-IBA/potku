@@ -112,7 +112,7 @@ class Simulations:
 
             if target_file is not None:
                 target = Target.from_file(
-                    target_file, mesu_file, sample.request)
+                    target_file, sample.request)
             else:
                 target = None
 
@@ -546,7 +546,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
 
         # Save Target object to file
         target_file = Path(self.directory, f"{self.target.name}.target")
-        self.target.to_file(target_file, measurement_file)
+        self.target.to_file(target_file)
 
     def update_directory_references(self, new_dir: Path):
         """Update simulation's directory references.

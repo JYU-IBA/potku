@@ -87,15 +87,12 @@ class Target(Serializable, AdjustableSettings):
             self.layers = layers
 
     @classmethod
-    def from_file(cls, target_file_path: Path, measurement_file_path: Path,
-                  request: "Request"):
+    def from_file(cls, target_file_path: Path, request: "Request"):
         """Initialize target from a JSON file.
 
         Args:
             target_file_path: A file path to JSON file containing the target
                 parameters.
-            measurement_file_path: A file path to JSON file containing target
-                angles.
             request: Request object which has default target angles.
 
         Return:
@@ -118,31 +115,17 @@ class Target(Serializable, AdjustableSettings):
             ]
             layers.append(Layer(**layer, elements=elements))
 
-        try:
-            with measurement_file_path.open("r") as mesu:
-                measurement = json.load(mesu)
-            target_theta = measurement["geometry"]["target_theta"]
-        # If keys do not exist or measurement_file_path is empty or file
-        # doesn't exist:
-        except (OSError, KeyError, AttributeError):
-            try:
-                target_theta = request.default_target.target_theta
-            except AttributeError:
-                return cls(**target, layers=layers)
-
         # Note: this way of using kwargs does make it harder to maintain
         # forward compatibility as there may be a need to add more fields
         # to the json file. This could be remedied by adding **kwargs to
         # the __init__ method.
-        return cls(**target, target_theta=target_theta, layers=layers)
+        return cls(**target, layers=layers)
 
-    def to_file(self, target_file: Path,
-                measurement_file: Optional[Path] = None):
+    def to_file(self, target_file: Path):
         """Save target parameters into files.
 
         Args:
             target_file: File in which the target params will be saved.
-            measurement_file: File in which target angles will be saved.
         """
         timestamp = time.time()
         obj = {
@@ -155,7 +138,8 @@ class Target(Serializable, AdjustableSettings):
             "scattering_element": str(self.scattering_element),
             "image_size": self.image_size,
             "image_file": self.image_file,
-            "layers": []
+            "layers": [],
+            "target_theta": self.target_theta
         }
 
         for layer in self.layers:
@@ -171,25 +155,10 @@ class Target(Serializable, AdjustableSettings):
         with target_file.open("w") as file:
             json.dump(obj, file, indent=4)
 
-        if measurement_file is not None:
-            # Read .measurement to obj to update only target angles
-            try:
-                with measurement_file.open("r") as mesu:
-                    obj = json.load(mesu)
-                obj["geometry"]["target_theta"] = self.target_theta
-            except (OSError, KeyError):
-                obj["geometry"] = {
-                        "target_theta": self.target_theta
-                    }
-
-            with measurement_file.open("w") as file:
-                json.dump(obj, file, indent=4)
-
     def _get_attrs(self) -> Set[str]:
         """Returns a set of attribute names. These Target attribute values
         can be set by calling set_settings.
         """
-        # TODO: Should target_theta be excluded?
         return {
             "name", "modification_time", "description", "target_type",
             "image_size", "image_file", "scattering_element", "layers",

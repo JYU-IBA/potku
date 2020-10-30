@@ -223,7 +223,7 @@ class TargetWidget(QtWidgets.QWidget):
             target_name = "temp"
 
         target_path = Path(self.simulation.directory, f"{target_name}.target")
-        self.target.to_file(target_path, None)
+        self.target.to_file(target_path)
 
         if not thread and reporter is not None:
             reporter.report(50)

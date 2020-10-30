@@ -48,10 +48,9 @@ class TestTarget(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             tgt_file = Path(tmp_dir, ".target")
-            mesu_file = Path(tmp_dir, "mesu")
-            t.to_file(tgt_file, mesu_file)
+            t.to_file(tgt_file)
 
-            t2 = Target.from_file(tgt_file, mesu_file, mo.get_request())
+            t2 = Target.from_file(tgt_file, mo.get_request())
             self.assertIsNot(t, t2)
             self.assertEqual(t.name, t2.name)
             self.assertEqual(t.description, t2.description)

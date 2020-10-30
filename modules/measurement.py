@@ -143,7 +143,7 @@ class Measurements:
                 Measurement.find_measurement_files(file_directory)
 
             if tgt_file is not None:
-                target = Target.from_file(tgt_file, mesu_file, self.request)
+                target = Target.from_file(tgt_file, self.request)
             else:
                 target = None
 
@@ -564,7 +564,7 @@ class Measurement(Logger, Serializable):
             self._measurement_to_file(measurement_file)
             self.run.to_file(measurement_file)
             self.detector.to_file(self.detector.path)
-            self.target.to_file(target_file, measurement_file)
+            self.target.to_file(target_file)
             self.profile.to_file(profile_file)
 
     def _measurement_to_file(self, measurement_file: Optional[Path] = None):
