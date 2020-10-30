@@ -118,7 +118,8 @@ class Simulations:
 
             if detector_file is not None:
                 detector = Detector.from_file(
-                    detector_file, sample.request)
+                    detector_file, sample.request, save_on_creation=False)
+                detector.update_directories(detector_file.parent)
             else:
                 detector = None
 
@@ -510,43 +511,44 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             "use_request_settings": self.use_request_settings
         }
 
-        with simulation_file.open("w") as file:
-            json.dump(obj, file, indent=4)
+        if not self.use_request_settings:
+            with simulation_file.open("w") as file:
+                json.dump(obj, file, indent=4)
 
-        # Save measurement settings parameters.
-        if measurement_file is None:
-            measurement_file = self.get_measurement_file()
+            # Save measurement settings parameters.
+            if measurement_file is None:
+                measurement_file = self.get_measurement_file()
 
-        general_obj = {
-            "name": self.measurement_setting_file_name,
-            "description":
-                self.measurement_setting_file_description,
-            "modification_time":
-                time.strftime("%c %z %Z", time.localtime(time_stamp)),
-            "modification_time_unix": time_stamp,
-        }
-
-        if measurement_file.exists():
-            with measurement_file.open("r") as mesu:
-                obj = json.load(mesu)
-            obj["general"] = general_obj
-        else:
-            obj = {
-                "general": general_obj
+            general_obj = {
+                "name": self.measurement_setting_file_name,
+                "description":
+                    self.measurement_setting_file_description,
+                "modification_time":
+                    time.strftime("%c %z %Z", time.localtime(time_stamp)),
+                "modification_time_unix": time_stamp,
             }
 
-        # Write measurement settings to file
-        with measurement_file.open("w") as file:
-            json.dump(obj, file, indent=4)
+            if measurement_file.exists():
+                with measurement_file.open("r") as mesu:
+                    obj = json.load(mesu)
+                obj["general"] = general_obj
+            else:
+                obj = {
+                    "general": general_obj
+                }
 
-        # Save Run object to file
-        self.run.to_file(measurement_file)
-        # Save Detector object to file
-        self.detector.to_file(self.detector.path)
+            # Write measurement settings to file
+            with measurement_file.open("w") as file:
+                json.dump(obj, file, indent=4)
 
-        # Save Target object to file
-        target_file = Path(self.directory, f"{self.target.name}.target")
-        self.target.to_file(target_file)
+            # Save Run object to file
+            self.run.to_file(measurement_file)
+            # Save Detector object to file
+            self.detector.to_file(self.detector.path)
+
+            # Save Target object to file
+            target_file = Path(self.directory, f"{self.target.name}.target")
+            self.target.to_file(target_file)
 
     def update_directory_references(self, new_dir: Path):
         """Update simulation's directory references.

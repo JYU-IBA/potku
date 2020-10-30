@@ -289,7 +289,8 @@ class Request(ElementSimulationContainer):
                 description="This is a default simulation.",
                 measurement_setting_file_description="These are default "
                                                      "simulation "
-                                                     "parameters.")
+                                                     "parameters.",
+                use_request_settings=False)
 
         mcsimu_path = Path(self.default_folder, "Default.mcsimu")
         if mcsimu_path.exists():
