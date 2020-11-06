@@ -312,23 +312,25 @@ class Measurement(Logger, Serializable):
         self.measurement_file = None
 
         if run is None:
-            self.run = self._copy_request_run()
+            self.run = self.request.copy_default_run()
         else:
             self.run = run
 
         if detector is None:
-            self.detector = self._copy_request_detector(
-                save_on_creation=save_on_creation)
+            self.detector = self.request.copy_default_detector(
+                self.directory, save_on_creation=save_on_creation)
         else:
             self.detector = detector
 
         if target is None:
-            self.target = self._copy_request_target()
+            # TODO: Is target used for anything other than displaying
+            #       target_theta in settings?
+            self.target = self.request.copy_default_target()
         else:
             self.target = target
 
         if profile is None:
-            self.profile = self._copy_request_profile()
+            self.profile = self.request.copy_default_profile()
         else:
             self.profile = profile
 
@@ -1118,43 +1120,9 @@ class Measurement(Logger, Serializable):
         return tof_in_file
 
     def clone_request_settings(self, save_on_creation=False) -> None:
-        """Clone settings from request"""
-        self.run = self._copy_request_run()
-        self.detector = self._copy_request_detector(
-            save_on_creation=save_on_creation)
-        self.target = self._copy_request_target()
-        self.profile = self._copy_request_profile()
-
-    # TODO: Move these copying methods under Request
-    def _copy_request_detector(self, save_on_creation=False) -> "Detector":
-        detector_path = self.directory / "Detector" / "Default.detector"
-        detector = Detector(
-            detector_path,
-            foils=self.request.default_detector.copy_foils(),
-            tof_foils=self.request.default_detector.copy_tof_foils(),
-            detector_theta=self.request.default_detector.detector_theta,
-            save_on_creation=save_on_creation)
-        detector_defaults = self.request.default_detector.get_settings()
-        detector.set_settings(**detector_defaults)
-        return detector
-
-    def _copy_request_profile(self) -> "Profile":
-        profile = Profile()
-        profile_defaults = self.request.default_profile.get_settings()
-        profile.set_settings(**profile_defaults)
-        return profile
-
-    def _copy_request_run(self) -> "Run":
-        run = Run()
-        run_defaults = self.request.default_run.get_settings()
-        # TODO: Is there a better way to create a copy of ion?
-        run_defaults["beam"]["ion"] = \
-            run_defaults["beam"]["ion"].create_copy()
-        run.set_settings(**run_defaults)
-        return run
-
-    def _copy_request_target(self) -> "Target":
-        target = Target()
-        target_defaults = self.request.default_target.get_settings()
-        target.set_settings(**target_defaults)
-        return target
+        """Clone settings from request."""
+        self.run = self.request.copy_default_run()
+        self.detector = self.request.copy_default_detector(
+            self.directory, save_on_creation=save_on_creation)
+        self.target = self.request.copy_default_target()
+        self.profile = self.request.copy_default_profile()

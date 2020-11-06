@@ -272,17 +272,18 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         self.use_request_settings = use_request_settings
 
         if run is None:
-            self.run = self._copy_request_run()
+            self.run = self.request.copy_default_run()
         else:
             self.run = run
 
         if detector is None:
-            self.detector = self._copy_request_detector()
+            self.detector = self.request.copy_default_detector(
+                self.directory, save_on_creation=save_on_creation)
         else:
             self.detector = detector
 
         if target is None:
-            self.target = self._copy_request_target()
+            self.target = self.request.copy_default_target()
         else:
             self.target = target
 
@@ -596,35 +597,12 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         ]
 
     def clone_request_settings(self, save_on_creation=False):
-        self.run = self._copy_request_run()
-        self.detector = self._copy_request_detector(
-            save_on_creation=save_on_creation)
-        self.target = self._copy_request_target()
-
-    # TODO: Move these copying methods under Request
-    def _copy_request_detector(self, save_on_creation=False) -> "Detector":
-        detector_path = self.directory / "Detector" / "Default.detector"
-        detector = Detector(
-            detector_path,
-            foils=self.request.default_detector.copy_foils(),
-            tof_foils=self.request.default_detector.copy_tof_foils(),
-            detector_theta=self.request.default_detector.detector_theta,
-            save_on_creation=save_on_creation)
-        detector_defaults = self.request.default_detector.get_settings()
-        detector.set_settings(**detector_defaults)
-        return detector
-
-    def _copy_request_run(self) -> "Run":
-        run = Run()
-        run_defaults = self.request.default_run.get_settings()
-        # TODO: Is there a better way to create a copy of ion?
-        run_defaults["beam"]["ion"] = \
-            run_defaults["beam"]["ion"].create_copy()
-        run.set_settings(**run_defaults)
-        return run
-
-    def _copy_request_target(self) -> "Target":
-        target = Target()
-        target_defaults = self.request.default_target.get_settings()
-        target.set_settings(**target_defaults)
-        return target
+        self.run = self.request.copy_default_run()
+        self.detector = self.request.copy_default_detector(
+            self.directory, save_on_creation=save_on_creation)
+        # TODO: The simulation's layers (=main content) are saved in target.
+        #       Overwriting them with request's values is never acceptable,
+        #       especially because the default values cannot be edited
+        #       (save for target_theta). -> Only copy default target on
+        #       simulation creation, and then never again.
+        self.target = self.request.copy_default_target()

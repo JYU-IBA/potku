@@ -312,6 +312,45 @@ class Request(ElementSimulationContainer):
         sim.element_simulations.append(elem_sim)
         return sim, elem_sim
 
+    # TODO: Add a docstring for copying methods
+    def copy_default_detector(self, root_path: Path,
+                              save_on_creation=False) -> "Detector":
+        """Returns a copy of default detector."""
+        detector_path = root_path / "Detector" / "Default.detector"
+        detector = Detector(
+            detector_path,
+            foils=self.default_detector.copy_foils(),
+            tof_foils=self.default_detector.copy_tof_foils(),
+            detector_theta=self.default_detector.detector_theta,
+            save_on_creation=save_on_creation)
+        detector_defaults = self.default_detector.get_settings()
+        detector.set_settings(**detector_defaults)
+        return detector
+
+    def copy_default_profile(self) -> "Profile":
+        """Returns a copy of default profile."""
+        profile = Profile()
+        profile_defaults = self.default_profile.get_settings()
+        profile.set_settings(**profile_defaults)
+        return profile
+
+    def copy_default_run(self) -> "Run":
+        """Returns a copy of default run."""
+        run = Run()
+        run_defaults = self.default_run.get_settings()
+        # TODO: Is there a better way to create a copy of ion?
+        run_defaults["beam"]["ion"] = \
+            run_defaults["beam"]["ion"].create_copy()
+        run.set_settings(**run_defaults)
+        return run
+
+    def copy_default_target(self) -> "Target":
+        """Returns a copy of default target."""
+        target = Target()
+        target_defaults = self.default_target.get_settings()
+        target.set_settings(**target_defaults)
+        return target
+
     def exclude_slave(self, measurement):
         """ Exclude measurement from slave category under master.
         
