@@ -54,7 +54,6 @@ from .run import Run
 from .target import Target
 from .ui_log_handlers import Logger
 from .base import Serializable
-from .base import AdjustableSettings
 
 
 class Measurements:
@@ -313,39 +312,23 @@ class Measurement(Logger, Serializable):
         self.measurement_file = None
 
         if run is None:
-            self.run = Run()
-            run_defaults = self.request.default_run.get_settings()
-            # TODO: Is there a better way to create a copy of ion?
-            run_defaults["beam"]["ion"] = \
-                run_defaults["beam"]["ion"].create_copy()
-            self.run.set_settings(**run_defaults)
+            self.run = self._copy_request_run()
         else:
             self.run = run
 
         if detector is None:
-            detector_path = self.directory / "Detector" / "Default.detector"
-            self.detector = Detector(
-                detector_path,
-                foils=self.request.default_detector.copy_foils(),
-                tof_foils=self.request.default_detector.copy_tof_foils(),
-                detector_theta=request.default_detector.detector_theta,
+            self.detector = self._copy_request_detector(
                 save_on_creation=save_on_creation)
-            detector_defaults = self.request.default_detector.get_settings()
-            self.detector.set_settings(**detector_defaults)
         else:
             self.detector = detector
 
         if target is None:
-            self.target = Target()
-            target_defaults = self.request.default_target.get_settings()
-            self.target.set_settings(**target_defaults)
+            self.target = self._copy_request_target()
         else:
             self.target = target
 
         if profile is None:
-            self.profile = Profile()
-            profile_defaults = self.request.default_profile.get_settings()
-            self.profile.set_settings(**profile_defaults)
+            self.profile = self._copy_request_profile()
         else:
             self.profile = profile
 
@@ -1133,3 +1116,45 @@ class Measurement(Logger, Serializable):
             logging.getLogger(self.name).info(str_logmsg)
 
         return tof_in_file
+
+    def clone_request_settings(self, save_on_creation=False) -> None:
+        """Clone settings from request"""
+        self.run = self._copy_request_run()
+        self.detector = self._copy_request_detector(
+            save_on_creation=save_on_creation)
+        self.target = self._copy_request_target()
+        self.profile = self._copy_request_profile()
+
+    # TODO: Move these copying methods under Request
+    def _copy_request_detector(self, save_on_creation=False) -> "Detector":
+        detector_path = self.directory / "Detector" / "Default.detector"
+        detector = Detector(
+            detector_path,
+            foils=self.request.default_detector.copy_foils(),
+            tof_foils=self.request.default_detector.copy_tof_foils(),
+            detector_theta=self.request.default_detector.detector_theta,
+            save_on_creation=save_on_creation)
+        detector_defaults = self.request.default_detector.get_settings()
+        detector.set_settings(**detector_defaults)
+        return detector
+
+    def _copy_request_profile(self) -> "Profile":
+        profile = Profile()
+        profile_defaults = self.request.default_profile.get_settings()
+        profile.set_settings(**profile_defaults)
+        return profile
+
+    def _copy_request_run(self) -> "Run":
+        run = Run()
+        run_defaults = self.request.default_run.get_settings()
+        # TODO: Is there a better way to create a copy of ion?
+        run_defaults["beam"]["ion"] = \
+            run_defaults["beam"]["ion"].create_copy()
+        run.set_settings(**run_defaults)
+        return run
+
+    def _copy_request_target(self) -> "Target":
+        target = Target()
+        target_defaults = self.request.default_target.get_settings()
+        target.set_settings(**target_defaults)
+        return target
