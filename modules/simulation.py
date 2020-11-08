@@ -596,12 +596,12 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         ]
 
     def clone_request_settings(self, save_on_creation=False):
+        """Clone settings from request. For target, only target_theta
+        is copied.
+        """
         self.run = self.request.copy_default_run()
         self.detector = self.request.copy_default_detector(
             self.directory, save_on_creation=save_on_creation)
-        # TODO: The simulation's layers (=main content) are saved in target.
-        #       Overwriting them with request's values is never acceptable,
-        #       especially because the default values cannot be edited
-        #       (save for target_theta). -> Only copy default target on
-        #       simulation creation, and then never again.
-        self.target = self.request.copy_default_target()
+        # The simulation's layers (main content) are saved in target.
+        # Overwriting them with request's values is not acceptable.
+        self.target.target_theta = self.request.default_target.target_theta
