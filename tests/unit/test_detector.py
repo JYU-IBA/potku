@@ -51,6 +51,7 @@ class TestBeam(unittest.TestCase):
 
     def compare_foils(self, foils1, foils2):
         """Helper for comparing foils"""
+        self.assertEqual(len(foils1), len(foils2))
         for f1, f2 in zip(foils1, foils2):
             self.assertIsNot(f1, f2)
             self.assertEqual(f1.get_mcerd_params(), f2.get_mcerd_params())

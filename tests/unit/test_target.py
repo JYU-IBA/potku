@@ -80,6 +80,22 @@ class TestTarget(unittest.TestCase):
         target.set_settings(**kwargs)
         self.assertEqual(kwargs, target.get_settings())
 
+    def test_copy_layers(self):
+        """Tests that copied layers have the same attributes as the
+        original ones.
+        """
+        target = mo.get_target()
+        target.layers = [mo.get_layer(1)]
+        copied_layers = target.copy_layers()
+
+        self.assertEqual(len(target.layers), len(copied_layers))
+        for l1, l2 in zip(target.layers, copied_layers):
+            self.assertIsNot(l1, l2)
+            self.assertEqual(l1.get_mcerd_params(), l2.get_mcerd_params())
+            for e1, e2 in zip(l1.elements, l2.elements):
+                self.assertIsNot(e1, e2)
+                self.assertEqual(e1, e2)
+
 
 if __name__ == '__main__':
     unittest.main()

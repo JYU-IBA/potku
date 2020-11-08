@@ -164,3 +164,7 @@ class Target(Serializable, AdjustableSettings):
             "image_size", "image_file", "scattering_element", "layers",
             "target_theta"
         }
+
+    def copy_layers(self) -> List[Layer]:
+        """Returns a copy of layers in target."""
+        return [Layer(**layer.to_dict()) for layer in self.layers]

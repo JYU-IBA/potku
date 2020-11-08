@@ -347,6 +347,7 @@ class Request(ElementSimulationContainer):
         """Returns a copy of default target."""
         target = Target()
         target_defaults = self.default_target.get_settings()
+        target_defaults["layers"] = self.default_target.copy_layers()
         target.set_settings(**target_defaults)
         return target
 
