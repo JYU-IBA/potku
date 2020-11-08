@@ -496,11 +496,10 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             "modification_time_unix": time_stamp,
             "use_request_settings": self.use_request_settings
         }
+        with simulation_file.open("w") as file:
+            json.dump(obj, file, indent=4)
 
         if not self.use_request_settings:
-            with simulation_file.open("w") as file:
-                json.dump(obj, file, indent=4)
-
             # Save measurement settings parameters.
             if measurement_file is None:
                 measurement_file = self.get_measurement_file()
