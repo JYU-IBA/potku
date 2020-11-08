@@ -312,7 +312,6 @@ class Request(ElementSimulationContainer):
         sim.element_simulations.append(elem_sim)
         return sim, elem_sim
 
-    # TODO: Add a docstring for copying methods
     def copy_default_detector(self, root_path: Path,
                               save_on_creation=False) -> "Detector":
         """Returns a copy of default detector."""

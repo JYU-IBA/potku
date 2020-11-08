@@ -81,10 +81,6 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.applyButton.clicked.connect(self.__update_parameters)
         self.cancelButton.clicked.connect(self.close)
 
-        # TODO: Move this updating under request settings dialog
-        if self.simulation.use_request_settings:
-            self.simulation.clone_request_settings()
-
         preset_folder = gutils.get_preset_dir(
             self.simulation.request.global_settings)
         # Add measurement settings view to the settings view
