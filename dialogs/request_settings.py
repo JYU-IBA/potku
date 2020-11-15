@@ -213,12 +213,13 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             # Simulation settings
             self.simulation_settings_widget.update_settings()
 
+            # TODO: Move the rest of this method to request
+
             self.request.default_simulation.to_file(
                 Path(self.request.default_folder, "Default.simulation"))
             self.request.default_element_simulation.to_file(
                 Path(self.request.default_folder, "Default.mcsimu"))
 
-            # TODO: Do element simulations need this too?
             # Update measurements and simulations
             for sample in self.request.samples.samples:
                 for measurement in sample.measurements.measurements.values():
@@ -227,6 +228,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 for simulation in sample.simulations.simulations.values():
                     if simulation.use_request_settings:
                         simulation.clone_request_settings()
+                    for elem_sim in simulation.element_simulations:
+                        if elem_sim.use_default_settings:
+                            elem_sim.clone_request_settings()
 
             # Update all element simulations that use request settings to
             #  have the correct simulation type

@@ -894,6 +894,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def get_mcerd_params(self) -> Tuple[Dict, Run, Detector]:
         """Returns the parameters for MCERD simulations.
         """
+        # TODO: The settings part could probably be simplified to just
+        #       `settings = self.get_settings()`
+        #       now that clone_request_settings has been added.
         if self.use_default_settings:
             settings = self.request.default_element_simulation.get_settings()
         else:
@@ -903,6 +906,11 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         detector = self.simulation.get_used_detector()
 
         return settings, run, detector
+
+    def clone_request_settings(self) -> None:
+        """Clone settings from request."""
+        settings = self.request.default_element_simulation.get_settings()
+        self.set_settings(**settings)
 
     def optimization_results_to_file(self, cut_file: Optional[Path] = None):
         """Saves optimizations results to file if they exist.

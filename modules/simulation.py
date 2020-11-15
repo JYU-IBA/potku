@@ -595,7 +595,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             for recoil in elem_sim.recoil_elements
         ]
 
-    def clone_request_settings(self, save_on_creation=False):
+    def clone_request_settings(self, save_on_creation=False) -> None:
         """Clone settings from request. For target, only target_theta
         is copied.
         """
