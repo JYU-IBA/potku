@@ -381,8 +381,8 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         default detector.
         """
         destination = self.get_efficiency_dir()
-        destination.mkdir(exist_ok=True)
-        gf.remove_matching_files(destination, {".eff"})
+        destination.mkdir(exist_ok=True, parents=True)
+        self.remove_efficiency_files()
 
         for eff in source_detector.get_efficiency_files(return_full_paths=True):
             shutil.copy(eff, destination)
