@@ -1067,7 +1067,7 @@ class Measurement(Logger, Serializable):
                              f"{global_settings.get_num_iterations()}\n"
 
         # Efficiency file handling
-        detector.copy_efficiency_files()
+        detector.copy_efficiency_files_for_tof_list()
 
         str_eff_dir = "Efficiency directory: {0}".format(
             detector.get_used_efficiencies_dir())

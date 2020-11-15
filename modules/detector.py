@@ -220,6 +220,13 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             self.get_efficiency_dir() / file_name, *used_path
         )
 
+    def remove_efficiency_files(self) -> None:
+        """Removes all efficiency files from detector's efficiency file folder
+        as well as the used efficiencies folder.
+        """
+        gf.remove_matching_files(self.get_efficiency_dir(), {".eff"})
+        gf.remove_matching_files(self.get_used_efficiencies_dir(), {".eff"})
+
     @classmethod
     def from_file(cls, detector_file: Path, request, save_on_creation=True):
         """Initialize Detector from a JSON file.
@@ -349,7 +356,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         """
         return self.get_efficiency_dir() / Detector.USED_EFFICIENCIES_DIR
 
-    def copy_efficiency_files(self):
+    def copy_efficiency_files_for_tof_list(self) -> None:
         """Copies efficiency files to the directory where tof_list will be
         looking for them. Additional comments are stripped from the files.
         (i.e. 1H-example.eff becomes 1H.eff).
@@ -366,6 +373,19 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
                 continue
             old_file = Path(self.get_efficiency_dir(), eff)
             shutil.copy(old_file, destination / used_file)
+
+    def copy_efficiency_files_from_detector(self, source_detector: "Detector") \
+            -> None:
+        """Copies efficiency files from source detector. Removes previous
+         efficiency files in destination. Intended for copying files from
+        default detector.
+        """
+        destination = self.get_efficiency_dir()
+        destination.mkdir(exist_ok=True)
+        gf.remove_matching_files(destination, {".eff"})
+
+        for eff in source_detector.get_efficiency_files(return_full_paths=True):
+            shutil.copy(eff, destination)
 
     def get_matching_efficiency_files(self, cut_files: Iterable[Path]) \
             -> Set[Path]:

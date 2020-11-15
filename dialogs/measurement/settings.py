@@ -96,6 +96,10 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
 
         self.tabs.addTab(self.detector_settings_widget, "Detector")
 
+        self.original_use_request_settings = \
+            self.measurement.use_request_settings
+        self.efficiencies_copied_yet = False
+
         self.defaultSettingsCheckBox.setChecked(
             self.measurement.use_request_settings)
         # TODO these should be set in the widget, not here
@@ -121,6 +125,13 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.tabs.setEnabled(False)
         else:
             self.tabs.setEnabled(True)
+
+        if self.original_use_request_settings and not self.efficiencies_copied_yet:
+            self.measurement.detector.copy_efficiency_files_from_detector(
+                self.measurement.request.default_detector)
+            self.detector_settings_widget.efficiency_files = \
+                self.measurement.detector.get_efficiency_files()
+            self.efficiencies_copied_yet = True
 
     def __update_parameters(self):
         if self.measurement_settings_widget.isotopeComboBox.currentIndex()\
@@ -152,6 +163,10 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             try:
                 self.measurement.use_request_settings = \
                     self.defaultSettingsCheckBox.isChecked()
+
+                if self.measurement.use_request_settings:
+                    self.measurement.clone_request_settings()
+                    self.measurement.detector.remove_efficiency_files()
 
                 det_folder_path = Path(self.measurement.directory,
                                        "Detector")

@@ -286,7 +286,7 @@ class TestEfficiencyFiles(unittest.TestCase):
                 [f for f in self.eff_files.values() if f is not None])
             self.create_eff_files(self.det.get_efficiency_dir(), self.eff_files)
 
-            self.det.copy_efficiency_files()
+            self.det.copy_efficiency_files_for_tof_list()
             self.assertTrue(used_folder.exists())
             used_effs = sorted(os.listdir(used_folder))
             self.assertEqual(expected, used_effs)
@@ -296,7 +296,7 @@ class TestEfficiencyFiles(unittest.TestCase):
             self.create_eff_files(
                 self.det.get_used_efficiencies_dir(), ["O.eff"])
             self.assertTrue(path.exists())
-            self.det.copy_efficiency_files()
+            self.det.copy_efficiency_files_for_tof_list()
             self.assertFalse(path.exists())
 
     def test_remove_efficiencies(self):
@@ -307,7 +307,7 @@ class TestEfficiencyFiles(unittest.TestCase):
             self.det.update_directories(Path(tmp_dir))
             self.create_eff_files(self.det.get_efficiency_dir(), self.eff_files)
 
-            self.det.copy_efficiency_files()
+            self.det.copy_efficiency_files_for_tof_list()
             self.assertNotEqual([], os.listdir(self.det.get_efficiency_dir()))
             self.assertNotEqual(
                 [], os.listdir(self.det.get_used_efficiencies_dir()))
