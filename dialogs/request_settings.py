@@ -225,9 +225,13 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 for measurement in sample.measurements.measurements.values():
                     if measurement.use_request_settings:
                         measurement.clone_request_settings()
+                        measurement.detector.copy_efficiency_files_from_detector(
+                            self.request.default_detector)
                 for simulation in sample.simulations.simulations.values():
                     if simulation.use_request_settings:
                         simulation.clone_request_settings()
+                        simulation.detector.copy_efficiency_files_from_detector(
+                            self.request.default_detector)
                     for elem_sim in simulation.element_simulations:
                         if elem_sim.use_default_settings:
                             elem_sim.clone_request_settings()
