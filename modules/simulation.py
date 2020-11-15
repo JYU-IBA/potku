@@ -278,7 +278,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
 
         if detector is None:
             self.detector = self.request.copy_default_detector(
-                self.directory, save_on_creation=save_on_creation)
+                self.directory, save_on_creation=False)
         else:
             self.detector = detector
 
