@@ -27,12 +27,11 @@ Simulation.py runs the MCERD simulation with a command file.
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen \n Juhani Sundell"
+             "\n Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import json
 import logging
-import os
 import time
 
 from collections import namedtuple
@@ -113,13 +112,14 @@ class Simulations:
 
             if target_file is not None:
                 target = Target.from_file(
-                    target_file, mesu_file, sample.request)
+                    target_file, sample.request)
             else:
                 target = None
 
             if detector_file is not None:
                 detector = Detector.from_file(
-                    detector_file, mesu_file, sample.request)
+                    detector_file, sample.request, save_on_creation=False)
+                detector.update_directories(detector_file.parent)
             else:
                 detector = None
 
@@ -271,23 +271,23 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
 
         self.use_request_settings = use_request_settings
 
-        if target is None:
-            self.target = Target()
-        else:
-            self.target = target
-
         if run is None:
-            self.run = Run()
+            self.run = self.request.copy_default_run()
         else:
             self.run = run
 
         if detector is None:
-            self.detector = Detector(
-                self.directory / "Detector" / "Default.detector",
-                self.get_measurement_file(),
-                save_on_creation=save_on_creation)
+            self.detector = self.request.copy_default_detector(
+                self.directory, save_on_creation=False)
+            self.detector.copy_efficiency_files_from_detector(
+                self.request.default_detector)
         else:
             self.detector = detector
+
+        if target is None:
+            self.target = self.request.copy_default_target()
+        else:
+            self.target = target
 
         self.serial_number = 0
 
@@ -498,45 +498,44 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             "modification_time_unix": time_stamp,
             "use_request_settings": self.use_request_settings
         }
-
         with simulation_file.open("w") as file:
             json.dump(obj, file, indent=4)
 
-        # Save measurement settings parameters.
-        if measurement_file is None:
-            measurement_file = self.get_measurement_file()
+        if not self.use_request_settings:
+            # Save measurement settings parameters.
+            if measurement_file is None:
+                measurement_file = self.get_measurement_file()
 
-        general_obj = {
-            "name": self.measurement_setting_file_name,
-            "description":
-                self.measurement_setting_file_description,
-            "modification_time":
-                time.strftime("%c %z %Z", time.localtime(time_stamp)),
-            "modification_time_unix": time_stamp,
-            "use_request_settings": self.use_request_settings
-        }
-
-        if measurement_file.exists():
-            with measurement_file.open("r") as mesu:
-                obj = json.load(mesu)
-            obj["general"] = general_obj
-        else:
-            obj = {
-                "general": general_obj
+            general_obj = {
+                "name": self.measurement_setting_file_name,
+                "description":
+                    self.measurement_setting_file_description,
+                "modification_time":
+                    time.strftime("%c %z %Z", time.localtime(time_stamp)),
+                "modification_time_unix": time_stamp,
             }
 
-        # Write measurement settings to file
-        with measurement_file.open("w") as file:
-            json.dump(obj, file, indent=4)
+            if measurement_file.exists():
+                with measurement_file.open("r") as mesu:
+                    obj = json.load(mesu)
+                obj["general"] = general_obj
+            else:
+                obj = {
+                    "general": general_obj
+                }
 
-        # Save Run object to file
-        self.run.to_file(measurement_file)
-        # Save Detector object to file
-        self.detector.to_file(self.detector.path, measurement_file)
+            # Write measurement settings to file
+            with measurement_file.open("w") as file:
+                json.dump(obj, file, indent=4)
 
-        # Save Target object to file
-        target_file = Path(self.directory, f"{self.target.name}.target")
-        self.target.to_file(target_file, measurement_file)
+            # Save Run object to file
+            self.run.to_file(measurement_file)
+            # Save Detector object to file
+            self.detector.to_file(self.detector.path)
+
+            # Save Target object to file
+            target_file = Path(self.directory, f"{self.target.name}.target")
+            self.target.to_file(target_file)
 
     def update_directory_references(self, new_dir: Path):
         """Update simulation's directory references.
@@ -597,3 +596,14 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             recoil for elem_sim in self.element_simulations
             for recoil in elem_sim.recoil_elements
         ]
+
+    def clone_request_settings(self, save_on_creation=False) -> None:
+        """Clone settings from request. For target, only target_theta
+        is copied.
+        """
+        self.run = self.request.copy_default_run()
+        self.detector = self.request.copy_default_detector(
+            self.directory, save_on_creation=save_on_creation)
+        # The simulation's layers (main content) are saved in target.
+        # Overwriting them with request's values is not acceptable.
+        self.target.target_theta = self.request.default_target.target_theta

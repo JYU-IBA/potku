@@ -24,13 +24,14 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import json
 import time
 
 from pathlib import Path
+from typing import Set
 
 from .base import Serializable
 from .base import AdjustableSettings
@@ -136,20 +137,7 @@ class Run(Serializable, AdjustableSettings):
 
         return cls(beam=beam_object, **run)
 
-    def get_settings(self):
-        """Returns a dictionary of settings that can be adjusted.
-        """
-        d = dict(vars(self))
-        d.pop("previous_fluence")
-        d.pop("beam")
-        return d
-
-    def set_settings(self, **kwargs):
-        """Sets the values of Run settings to given keyword argument values.
-        """
-        allowed_params = self.get_settings()
-        for k, v in kwargs.items():
-            if k in allowed_params:
-                setattr(self, k, v)
-
-
+    def _get_attrs(self) -> Set[str]:
+        return {
+            "beam", "fluence", "current", "charge", "time"
+        }

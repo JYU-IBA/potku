@@ -180,7 +180,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         if not file:
             return
 
-        temp_detector = Detector.from_file(file, file, self.request, False)
+        temp_detector = Detector.from_file(file, self.request, False)
         self.obj.set_settings(**temp_detector.get_settings())
 
         self.tmp_foil_info = []
@@ -213,7 +213,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         if file.suffix != ".detector":
             file = Path(file.parent, f"{file.name}.detector")
         if not self.some_values_changed():
-            self.obj.to_file(file, None)
+            self.obj.to_file(file)
         else:
             # Make temp detector, modify it according to widget values,
             # and write it to file.
@@ -221,7 +221,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             original_obj = self.obj
             self.obj = temp_detector
             self.update_settings()
-            self.obj.to_file(file, None)
+            self.obj.to_file(file)
             self.obj = original_obj
 
     def show_settings(self):

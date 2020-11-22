@@ -187,9 +187,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.simulation.detector.path = Path(
                 det_folder_path, f"{self.simulation.detector.name}.detector")
 
-            # Delete possible extra .measurement files
+            # Delete possible extra files
             gf.remove_matching_files(self.simulation.directory,
-                                     exts={".measurement"})
+                                     exts={".measurement", ".target"})
             gf.remove_matching_files(
                 det_folder_path, exts={".detector"}
             )

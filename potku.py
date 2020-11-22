@@ -359,7 +359,7 @@ class Potku(QtWidgets.QMainWindow):
                             recoil_element.to_file(elem_sim.directory)
                     simulation.target.to_file(
                         Path(simulation.directory, simulation.target.name +
-                             ".target"), None)
+                             ".target"))
 
         if not self.are_simulations_stopped():
             # TODO also needs to be done when new request is being opened

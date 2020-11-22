@@ -45,6 +45,7 @@ from .detector import Detector
 from .element import Element
 from .element_simulation import ElementSimulation
 from .measurement import Measurement
+from .profile import Profile
 from .run import Run
 from .sample import Samples
 from .simulation import Simulation
@@ -101,11 +102,14 @@ class Request(ElementSimulationContainer):
         self.default_detector = self._create_default_detector(
             self.default_detector_folder, save_on_creation=save_on_creation
         )
+        self.default_profile = self._create_default_profile(
+            save_on_creation=save_on_creation)
         self.default_measurement = self._create_default_measurement(
             save_on_creation=save_on_creation,
             detector=self.default_detector,
             target=self.default_target,
-            run=self.default_run
+            run=self.default_run,
+            profile=self.default_profile
         )
         self.default_simulation, self.default_element_simulation = \
             self._create_default_simulation(
@@ -178,8 +182,7 @@ class Request(ElementSimulationContainer):
         if detector_path.exists():
             # Read detector from file
             detector = Detector.from_file(
-                detector_path, self.default_measurement_file_path, self,
-                save_on_creation=save_on_creation)
+                detector_path, self, save_on_creation=save_on_creation)
         else:
             # Create Detector folder under Default folder
             if save_on_creation:
@@ -187,7 +190,7 @@ class Request(ElementSimulationContainer):
             # Create default detector for request
             detector = Detector(
                 Path(self.default_detector_folder, "Default.detector"),
-                self.default_measurement_file_path, name="Default-detector",
+                name="Default-detector",
                 description="These are default detector settings.",
                 save_on_creation=save_on_creation)
 
@@ -195,8 +198,7 @@ class Request(ElementSimulationContainer):
             detector.update_directories(self.default_detector_folder)
 
             detector.to_file(
-                Path(self.default_detector_folder, "Default.detector"),
-                self.default_measurement_file_path)
+                Path(self.default_detector_folder, "Default.detector"))
 
         return detector
 
@@ -217,11 +219,10 @@ class Request(ElementSimulationContainer):
             measurement = Measurement(
                 self, path=info_path, **kwargs,
                 description="This is a default measurement.",
-                profile_description="These are default profile parameters.",
                 measurement_setting_file_description="These are default "
                                                      "measurement "
                                                      "parameters.",
-                use_default_profile_settings=False,
+                use_request_settings=False,
                 save_on_creation=save_on_creation)
 
         return measurement
@@ -232,17 +233,14 @@ class Request(ElementSimulationContainer):
         target_path = Path(self.default_folder, "Default.target")
         if target_path.exists():
             # Read target from file
-            target = Target.from_file(
-                target_path, self.default_measurement_file_path, self)
+            target = Target.from_file(target_path, self)
         else:
             # Create default target for request
             target = Target(
                 description="These are default target parameters.")
 
         if save_on_creation:
-            target.to_file(
-                Path(self.default_folder, target.name + ".target"),
-                self.default_measurement_file_path)
+            target.to_file(Path(self.default_folder, target.name + ".target"))
 
         return target
 
@@ -254,6 +252,22 @@ class Request(ElementSimulationContainer):
             return Run.from_file(self.default_measurement_file_path)
         except (KeyError, OSError):
             return Run()
+
+    def _create_default_profile(self, save_on_creation) -> Profile:
+        """Returns default profile.
+        """
+        profile_path = Path(self.default_folder, "Default.profile")
+        if profile_path.exists():
+            profile = Profile.from_file(profile_path)
+        else:
+            profile = Profile(
+                description="These are default profile parameters.")
+
+        if save_on_creation:
+            profile.to_file(
+                Path(self.default_folder, profile.name + ".profile"))
+
+        return profile
 
     def _create_default_simulation(
             self, save_on_creation, target=None, detector=None, run=None,
@@ -275,7 +289,8 @@ class Request(ElementSimulationContainer):
                 description="This is a default simulation.",
                 measurement_setting_file_description="These are default "
                                                      "simulation "
-                                                     "parameters.")
+                                                     "parameters.",
+                use_request_settings=False)
 
         mcsimu_path = Path(self.default_folder, "Default.mcsimu")
         if mcsimu_path.exists():
@@ -296,6 +311,45 @@ class Request(ElementSimulationContainer):
         # TODO need to check that elem sim can be added
         sim.element_simulations.append(elem_sim)
         return sim, elem_sim
+
+    def copy_default_detector(self, root_path: Path,
+                              save_on_creation=False) -> "Detector":
+        """Returns a copy of default detector."""
+        detector_path = root_path / "Detector" / "Default.detector"
+        detector = Detector(
+            detector_path,
+            foils=self.default_detector.copy_foils(),
+            tof_foils=self.default_detector.copy_tof_foils(),
+            detector_theta=self.default_detector.detector_theta,
+            save_on_creation=save_on_creation)
+        detector_defaults = self.default_detector.get_settings()
+        detector.set_settings(**detector_defaults)
+        return detector
+
+    def copy_default_profile(self) -> "Profile":
+        """Returns a copy of default profile."""
+        profile = Profile()
+        profile_defaults = self.default_profile.get_settings()
+        profile.set_settings(**profile_defaults)
+        return profile
+
+    def copy_default_run(self) -> "Run":
+        """Returns a copy of default run."""
+        run = Run()
+        run_defaults = self.default_run.get_settings()
+        # TODO: Is there a better way to create a copy of ion?
+        run_defaults["beam"]["ion"] = \
+            run_defaults["beam"]["ion"].create_copy()
+        run.set_settings(**run_defaults)
+        return run
+
+    def copy_default_target(self) -> "Target":
+        """Returns a copy of default target."""
+        target = Target()
+        target_defaults = self.default_target.get_settings()
+        target_defaults["layers"] = self.default_target.copy_layers()
+        target.set_settings(**target_defaults)
+        return target
 
     def exclude_slave(self, measurement):
         """ Exclude measurement from slave category under master.

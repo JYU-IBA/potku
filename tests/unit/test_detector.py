@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 Juhani Sundell
+Copyright (C) 2020 Juhani Sundell, Tuomas Pitkänen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,7 +22,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 
-__author__ = "Juhani Sundell"
+__author__ = "Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import unittest
@@ -44,10 +44,23 @@ class TestBeam(unittest.TestCase):
     def setUp(self):
         self.path = Path(tempfile.gettempdir(), "Detector", ".detector")
         self.mesu = Path(tempfile.gettempdir(), "mesu")
-        self.det = Detector(self.path, self.mesu, save_on_creation=False)
+        self.det = Detector(self.path, save_on_creation=False)
         self.unit_foil = CircularFoil(diameter=1, distance=1, transmission=1)
         self.rect_foil = RectangularFoil(size_x=2, size_y=2, distance=2,
                                          transmission=2)
+
+    def compare_foils(self, foils1, foils2):
+        """Helper for comparing foils"""
+        self.assertEqual(len(foils1), len(foils2))
+        for f1, f2 in zip(foils1, foils2):
+            self.assertIsNot(f1, f2)
+            self.assertEqual(f1.get_mcerd_params(), f2.get_mcerd_params())
+            for l1, l2 in zip(f1.layers, f2.layers):
+                self.assertIsNot(l1, l2)
+                self.assertEqual(l1.get_mcerd_params(), l2.get_mcerd_params())
+                for e1, e2 in zip(l1.elements, l2.elements):
+                    self.assertIsNot(e1, e2)
+                    self.assertEqual(e1, e2)
 
     def test_get_mcerd_params(self):
         self.assertEqual(
@@ -110,22 +123,23 @@ class TestBeam(unittest.TestCase):
         """
         with tempfile.TemporaryDirectory() as tmp_dir:
             det_file = Path(tmp_dir, "d.detector")
-            mesu_file = Path(tmp_dir, "mesu")
-            det1 = Detector(
-                det_file, mesu_file, name="foo", description="bar",
-                detector_type=DetectorType.TOF, virtual_size=(1, 2),
-                tof_slope=4.4e-10, tof_offset=2, angle_slope=3,
-                angle_offset=4, timeres=251, detector_theta=42,
-                tof_foils=[0, 0], save_on_creation=False,
-                foils=[self.unit_foil, self.rect_foil])
-            det1.to_file(det_file, mesu_file)
+            det1 = Detector(det_file,
+                            name="foo", description="bar",
+                            detector_type=DetectorType.TOF,
+                            virtual_size=(1, 2), tof_slope=4.4e-10,
+                            tof_offset=2, angle_slope=3, angle_offset=4,
+                            timeres=251, detector_theta=42, tof_foils=[0, 0],
+                            save_on_creation=False, foils=[self.unit_foil,
+                                                           self.rect_foil])
+            det1.to_file(det_file)
 
-            det2 = Detector.from_file(
-                det_file, mesu_file, mo.get_request(), save_on_creation=False)
+            det2 = Detector.from_file(det_file, mo.get_request(),
+                                      save_on_creation=False)
             self.assertIsNot(det1, det2)
             self.assertEqual(det1.name, det2.name)
             self.assertEqual(det1.description, det2.description)
-            self.assertEqual(det1.type, det2.type)
+            self.assertEqual(det1.detector_type, det2.detector_type)
+            self.assertIsInstance(det2.detector_type, DetectorType)
             self.assertEqual(det1.virtual_size, det2.virtual_size)
             self.assertEqual(det1.tof_slope, det2.tof_slope)
             self.assertEqual(det1.tof_offset, det2.tof_offset)
@@ -134,17 +148,26 @@ class TestBeam(unittest.TestCase):
             self.assertEqual(det1.detector_theta, det2.detector_theta)
             self.assertEqual(det1.tof_foils, det2.tof_foils)
 
-            for f1, f2 in zip(det1.foils, det2.foils):
-                self.assertEqual(f1.get_mcerd_params(), f2.get_mcerd_params())
+            self.compare_foils(det1.foils, det2.foils)
+
+    def test_copy_foils(self):
+        """Tests that copied foils have the same attributes as the
+        original ones."""
+        copied_foils = self.det.copy_foils()
+        self.compare_foils(self.det.foils, copied_foils)
+
+    def test_copy_tof_foils(self):
+        """Tests that copied ToF foils are the same as the original ones."""
+        copied_foils = self.det.copy_tof_foils()
+        self.assertEqual(self.det.tof_foils, copied_foils)
 
 
 class TestEfficiencyFiles(unittest.TestCase):
     """Tests for handling .eff files.
     """
     def setUp(self) -> None:
-        mesu = Path(tempfile.gettempdir(), "mesu")
         self.det = Detector(
-            Path(tempfile.gettempdir(), "Detector", ".detector"), mesu,
+            Path(tempfile.gettempdir(), "Detector", ".detector"),
             save_on_creation=False)
         # Efficiency files and expected efficiency files after copying
         self.eff_files = {
@@ -273,7 +296,7 @@ class TestEfficiencyFiles(unittest.TestCase):
                 [f for f in self.eff_files.values() if f is not None])
             self.create_eff_files(self.det.get_efficiency_dir(), self.eff_files)
 
-            self.det.copy_efficiency_files()
+            self.det.copy_efficiency_files_for_tof_list()
             self.assertTrue(used_folder.exists())
             used_effs = sorted(os.listdir(used_folder))
             self.assertEqual(expected, used_effs)
@@ -283,7 +306,7 @@ class TestEfficiencyFiles(unittest.TestCase):
             self.create_eff_files(
                 self.det.get_used_efficiencies_dir(), ["O.eff"])
             self.assertTrue(path.exists())
-            self.det.copy_efficiency_files()
+            self.det.copy_efficiency_files_for_tof_list()
             self.assertFalse(path.exists())
 
     def test_remove_efficiencies(self):
@@ -294,7 +317,7 @@ class TestEfficiencyFiles(unittest.TestCase):
             self.det.update_directories(Path(tmp_dir))
             self.create_eff_files(self.det.get_efficiency_dir(), self.eff_files)
 
-            self.det.copy_efficiency_files()
+            self.det.copy_efficiency_files_for_tof_list()
             self.assertNotEqual([], os.listdir(self.det.get_efficiency_dir()))
             self.assertNotEqual(
                 [], os.listdir(self.det.get_used_efficiencies_dir()))

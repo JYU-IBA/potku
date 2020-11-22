@@ -66,7 +66,7 @@ def get_detector() -> Detector:
     path = Path(_TEMP_DIR, ".detector")
     mesu = Path(_TEMP_DIR, "mesu")
 
-    d = Detector(path, mesu, save_on_creation=False)
+    d = Detector(path, save_on_creation=False)
     return d
 
 

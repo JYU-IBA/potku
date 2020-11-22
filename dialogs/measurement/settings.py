@@ -97,7 +97,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         self.tabs.addTab(self.detector_settings_widget, "Detector")
 
         self.defaultSettingsCheckBox.setChecked(
-            self.measurement.use_default_profile_settings)
+            self.measurement.use_request_settings)
         # TODO these should be set in the widget, not here
         self.measurement_settings_widget.nameLineEdit.setText(
             self.measurement.measurement_setting_file_name)
@@ -134,8 +134,9 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         if not self.measurement.measurement_setting_file_name:
             self.measurement.measurement_setting_file_name = \
                 self.measurement.name
-        if not self.measurement.profile_name:
-            self.measurement.profile_name = self.measurement.name
+        # TODO: Is this necessary anymore?
+        # if not self.measurement.profile_name:
+        #     self.measurement.profile_name = self.measurement.name
 
         # Check the target and detector angles
         ok_pressed = self.measurement_settings_widget.check_angles()
@@ -149,8 +150,11 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                 return False
             # Use Measurement specific settings
             try:
-                self.measurement.use_default_profile_settings = \
+                self.measurement.use_request_settings = \
                     self.defaultSettingsCheckBox.isChecked()
+
+                if self.measurement.use_request_settings:
+                    self.measurement.clone_request_settings()
 
                 det_folder_path = Path(self.measurement.directory,
                                        "Detector")
@@ -168,10 +172,10 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                     det_folder_path,
                     f"{self.measurement.detector.name}.detector")
 
-                # Delete possible extra .measurement and .profile files
+                # Delete possible extra files
                 gf.remove_matching_files(
                     self.measurement.directory,
-                    exts={".measurement", ".profile"})
+                    exts={".measurement", ".profile", ".target"})
                 gf.remove_matching_files(
                     det_folder_path, exts={".detector"}
                 )

@@ -27,7 +27,7 @@ along with this program (file named 'LICENCE').
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n " \
-             "Juhani Sundell"
+             "Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import re
@@ -211,6 +211,10 @@ class Element(MCERDParameterContainer):
             return f"%0.3f" % amount
 
         return "%0.2f %s" % (self.get_mass(), self.symbol)
+
+    def create_copy(self):
+        """Returns a copy of self"""
+        return self.__class__(self.symbol, self.isotope, self.amount)
 
     @classmethod
     def get_isotopes(cls, symbol, include_st_mass=True):
