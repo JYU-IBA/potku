@@ -91,6 +91,7 @@ class ProfileSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             lambda: iv.check_text(self.nameLineEdit, qwidget=self))
         self.nameLineEdit.textEdited.connect(
             lambda: iv.sanitize_file_name(self.nameLineEdit))
+        self.nameLineEdit.setEnabled(False)
 
         locale = QLocale.c()
         self.referenceDensityDoubleSpinBox.setLocale(locale)

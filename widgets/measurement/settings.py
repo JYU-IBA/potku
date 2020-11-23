@@ -176,6 +176,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         self.nameLineEdit.textChanged.connect(
             lambda: iv.check_text(self.nameLineEdit, qwidget=self))
         self.nameLineEdit.textEdited.connect(self.__validate)
+        self.nameLineEdit.setEnabled(False)
 
         self.run_form_layout: QtWidgets.QFormLayout
         self.run_form_layout.insertRow(3, "Fluence", self.fluenceDoubleSpinBox)
