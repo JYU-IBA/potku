@@ -504,7 +504,7 @@ class TOFCalibrationPoint:
             Returns calculated kinematic factor based on selection type.
         """
         # TODO: Print -> Raise and/or logger.error
-        error_msg = "Impossible parameters for calculating kinematic factor."
+        # error_msg = "Impossible parameters for calculating kinematic factor."
         cosin = cos(self.target_angle)
         cosin2 = cosin * cosin
         sine = sin(self.target_angle)
@@ -525,8 +525,10 @@ class TOFCalibrationPoint:
             mass_sum = M_I + M_R
             square = M_R2 - M_I2 * sine2
             if square <= 0:
-                print("{0}".format(error_msg))
-                return None
+                raise ValueError(
+                    f"Impossible parameters for calculating kinematic factor." +
+                    f"\nm_recoil^2 - m_ion^2 * sine^2(target_angle) <= 0" +
+                    f"\n({M_R2} - {M_I2} * {sine2} = {square} <= 0)")
             k = (sqrt(square) + M_I * cosin) / mass_sum
             kinematic_factor = k * k
             return kinematic_factor
