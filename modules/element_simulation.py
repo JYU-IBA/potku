@@ -382,12 +382,21 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             name = full_name
             name_prefix = ""
 
-        if profile_file is not None:
-            profile = Profile.from_file(profile_file)
+        # Read channel width from .profile file.
+        # TODO: element simulations use a simplified .profile format.
+        #       Because of this, they cannot be loaded with
+        #       Profile.from_file. Unify them?
+        try:
+            with profile_file.open("r") as prof_file:
+                prof = json.load(prof_file)
             kwargs = {
-                "channel_width": profile.channel_width
+                "channel_width": prof["energy_spectra"]["channel_width"]
             }
-        else:
+        except (json.JSONDecodeError, OSError, KeyError, AttributeError) as e:
+            logging.getLogger("request").error(
+                f"Failed to read data from element simulation .profile file "
+                f"{profile_file}: {e}."
+            )
             kwargs = {}
 
         rec_type = mcsimu["simulation_type"].get_recoil_type()
