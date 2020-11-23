@@ -153,9 +153,6 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                 self.measurement.use_request_settings = \
                     self.defaultSettingsCheckBox.isChecked()
 
-                if self.measurement.use_request_settings:
-                    self.measurement.clone_request_settings()
-
                 det_folder_path = Path(self.measurement.directory,
                                        "Detector")
 
