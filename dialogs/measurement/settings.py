@@ -153,6 +153,12 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                 self.measurement.use_request_settings = \
                     self.defaultSettingsCheckBox.isChecked()
 
+                # Remove measurement-specific efficiency files
+                if self.measurement.use_request_settings and \
+                        self.measurement.detector is not \
+                        self.measurement.request.default_detector:
+                    self.measurement.detector.remove_efficiency_files()
+
                 det_folder_path = Path(self.measurement.directory,
                                        "Detector")
 

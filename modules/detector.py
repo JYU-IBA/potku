@@ -223,7 +223,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
 
     def remove_efficiency_files(self) -> None:
         """Removes all efficiency files from detector's efficiency file folder
-        as well as the used efficiencies folder.
+        and from the used efficiencies folder.
         """
         gf.remove_matching_files(self.get_efficiency_dir(), {".eff"})
         gf.remove_matching_files(self.get_used_efficiencies_dir(), {".eff"})

@@ -176,6 +176,12 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.simulation.use_request_settings = \
                 self.use_request_settings
 
+            # Remove measurement-specific efficiency files
+            if self.simulation.use_request_settings and \
+                    self.simulation.detector is not \
+                    self.simulation.request.default_detector:
+                self.simulation.detector.remove_efficiency_files()
+
             det_folder_path = Path(self.simulation.directory, "Detector")
 
             # Set Detector object to settings widget
