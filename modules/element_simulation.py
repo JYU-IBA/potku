@@ -8,7 +8,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, Tuomas Pitkänen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen \n Juhani Sundell"
+             "Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import json
@@ -67,6 +67,7 @@ from .enums import SimulationMode
 from .run import Run
 from .detector import Detector
 from .element import Element
+from .profile import Profile
 
 
 # Mappings between the names of the MCERD parameters (keys) and
@@ -381,17 +382,12 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             name = full_name
             name_prefix = ""
 
-        # Read channel width from .profile file.
-        try:
-            with profile_file.open("r") as prof_file:
-                prof = json.load(prof_file)
+        if profile_file is not None:
+            profile = Profile.from_file(profile_file)
             kwargs = {
-                "channel_width": prof["energy_spectra"]["channel_width"]
+                "channel_width": profile.channel_width
             }
-        except (json.JSONDecodeError, OSError, KeyError, AttributeError) as e:
-            logging.getLogger("request").error(
-                f"Failed to read data from file {profile_file}: {e}."
-            )
+        else:
             kwargs = {}
 
         rec_type = mcsimu["simulation_type"].get_recoil_type()
