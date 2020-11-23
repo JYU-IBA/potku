@@ -94,11 +94,11 @@ class Profile(AdjustableSettings, Serializable):
 
         except (OSError, KeyError, AttributeError, json.JSONDecodeError) as e:
             logging.getLogger("request").error(
-                f"Failed to read settings from file {profile_file}: {e}"
+                f"Failed to read settings from .profile file {profile_file}: {e}"
             )
             # TODO: Initialize a request.default_profile elsewhere and
             #       use its values here, or just let it crash?
-            raise NotImplementedError
+            raise NotImplementedError("Error handling not implemented for .profile")
 
         return cls(channel_width=channel_width, **general, **depth, **comp)
 

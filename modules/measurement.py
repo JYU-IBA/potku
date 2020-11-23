@@ -454,28 +454,25 @@ class Measurement(Logger, Serializable):
             obj_info = json.load(mesu_info)
         obj_info["modification_time"] = obj_info.pop("modification_time_unix")
 
-        # Infer value from the existence of measurement-specific files
-        # (for backwards compatibility)
-        if "use_request_settings" not in obj_info:
-            obj_info["use_request_settings"] = not all(
-                    (measurement_file, profile_file))
+        if measurement_file is not None:
+            try:
+                with measurement_file.open("r") as mesu_file:
+                    obj_gen = json.load(mesu_file)["general"]
 
-        try:
-            with measurement_file.open("r") as mesu_file:
-                obj_gen = json.load(mesu_file)["general"]
-
-            mesu_general = {
-                "measurement_setting_file_name": obj_gen["name"],
-                "measurement_setting_file_description": obj_gen["description"],
-                "measurement_setting_modification_time": obj_gen[
-                    "modification_time_unix"
-                ]
-            }
-        except (OSError, KeyError, AttributeError) as e:
-            logging.getLogger("request").error(
-                f"Failed to read settings from file {measurement_file}: "
-                f"{e}"
-            )
+                mesu_general = {
+                    "measurement_setting_file_name": obj_gen["name"],
+                    "measurement_setting_file_description":
+                        obj_gen["description"],
+                    "measurement_setting_modification_time":
+                        obj_gen["modification_time_unix"]
+                }
+            except (OSError, KeyError, AttributeError) as e:
+                logging.getLogger("request").error(
+                    f"Failed to read settings from .measurement file "
+                    f"{measurement_file}: {e}"
+                )
+                mesu_general = {}
+        else:
             mesu_general = {}
 
         return cls(
