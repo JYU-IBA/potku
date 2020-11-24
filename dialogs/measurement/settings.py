@@ -161,36 +161,38 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
 
         # Check the target and detector angles
         if self.measurement_settings_widget.check_angles():
-            if not self.tabs.currentWidget().fields_are_valid:
-                QtWidgets.QMessageBox.critical(
-                    self, "Warning",
-                    "Some of the setting values have not been set.\n"
-                    "Please input values in fields indicated in red.",
-                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-                return False
+            return False
 
-            # Use Measurement specific settings
-            try:
-                self.measurement.use_request_settings = False
+        if not self.tabs.currentWidget().fields_are_valid:
+            QtWidgets.QMessageBox.critical(
+                self, "Warning",
+                "Some of the setting values have not been set.\n"
+                "Please input values in fields indicated in red.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            return False
 
-                # Set Detector object to settings widget
-                self.detector_settings_widget.obj = self.measurement.detector
+        # Use Measurement specific settings
+        try:
+            self.measurement.use_request_settings = False
 
-                # Update settings
-                self.measurement_settings_widget.update_settings()
-                self.detector_settings_widget.update_settings()
-                self.profile_settings_widget.update_settings()
+            # Set Detector object to settings widget
+            self.detector_settings_widget.obj = self.measurement.detector
 
-                self._remove_extra_files()
-                self.measurement.to_file()
-                return True
+            # Update settings
+            self.measurement_settings_widget.update_settings()
+            self.detector_settings_widget.update_settings()
+            self.profile_settings_widget.update_settings()
 
-            except TypeError:
-                QtWidgets.QMessageBox.question(
-                    self, "Warning",
-                    "Some of the setting values have not been set.\n"
-                    "Please input setting values to save them.",
-                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            self._remove_extra_files()
+            self.measurement.to_file()
+            return True
+
+        except TypeError:
+            QtWidgets.QMessageBox.question(
+                self, "Warning",
+                "Some of the setting values have not been set.\n"
+                "Please input setting values to save them.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
         return False
 
