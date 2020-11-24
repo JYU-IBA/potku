@@ -374,7 +374,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         (i.e. 1H-example.eff becomes 1H.eff).
         """
         destination = self.get_used_efficiencies_dir()
-        destination.mkdir(exist_ok=True)
+        destination.mkdir(exist_ok=True, parents=True)
         # Remove previous files
         gf.remove_matching_files(destination, {".eff"})
 
