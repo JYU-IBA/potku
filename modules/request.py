@@ -190,7 +190,7 @@ class Request(ElementSimulationContainer):
             # Create default detector for request
             detector = Detector(
                 Path(self.default_detector_folder, "Default.detector"),
-                name="Default-detector",
+                name="Default",
                 description="These are default detector settings.",
                 save_on_creation=save_on_creation)
 
