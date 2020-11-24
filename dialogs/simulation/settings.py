@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, Tuomas Pitkänen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,17 +25,13 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen \n Juhani Sundell"
+             "\n Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
-
-import time
 
 import dialogs.dialog_functions as df
 import widgets.binding as bnd
 import modules.general_functions as gf
 import widgets.gui_utils as gutils
-
-from pathlib import Path
 
 from modules.simulation import Simulation
 
@@ -76,9 +72,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.resize(int(self.geometry().width() * 1.2),
                     int(screen_geometry.size().height() * 0.8))
         self.defaultSettingsCheckBox.stateChanged.connect(
-            self.__change_used_settings)
-        self.OKButton.clicked.connect(self.__save_settings_and_close)
-        self.applyButton.clicked.connect(self.__update_parameters)
+            self._change_used_settings)
+        self.OKButton.clicked.connect(self._save_settings_and_close)
+        self.applyButton.clicked.connect(self._update_parameters)
         self.cancelButton.clicked.connect(self.close)
 
         preset_folder = gutils.get_preset_dir(
@@ -122,7 +118,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
         self.exec()
 
-    def __change_used_settings(self):
+    def _change_used_settings(self):
         """Set specific settings enabled or disabled based on the "Use
         request settings" checkbox.
         """
@@ -132,7 +128,28 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         else:
             self.tabs.setEnabled(True)
 
-    def __update_parameters(self):
+    def _remove_extra_files(self):
+        gf.remove_matching_files(
+            self.simulation.directory,
+            exts={".measurement", ".target"})
+        gf.remove_matching_files(
+            self.simulation.directory / "Detector",
+            exts={".detector"}
+        )
+
+    def use_request_settings_toggled(self) -> bool:
+        """Check if "use request settings" has been toggled."""
+        return self.use_request_settings != self.simulation.use_request_settings
+
+    def values_changed(self) -> bool:
+        """Check if measurement or detector settings have changed."""
+        if self.measurement_settings_widget.are_values_changed():
+            return True
+        if self.detector_settings_widget.values_changed():
+            return True
+        return False
+
+    def _update_parameters(self):
         """
          Update Simulation's Run, Detector and Target objects. If simulation
          specific parameters are in use, save them into a file.
@@ -158,7 +175,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                 QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             return False
 
-        if (self.use_request_settings != self.simulation.use_request_settings) \
+        if self.use_request_settings_toggled() \
                 or (not self.use_request_settings and self.values_changed()):
             # User has switched from simulation settings to request settings,
             # or vice versa. Confirm if the user wants to delete old simulations
@@ -171,18 +188,25 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     msg="simulation settings"):
                 return False
 
-        try:
-            # Update simulation settings
-            self.simulation.use_request_settings = \
-                self.use_request_settings
+        # Copy request settings without checking their validity. They
+        # have been checked once in request settings anyway.
+        if self.use_request_settings:
+            self.simulation.use_request_settings = True
 
-            # Remove measurement-specific efficiency files
-            if self.simulation.use_request_settings and \
-                    self.simulation.detector is not \
+            # Remove simulation-specific efficiency files
+            if self.simulation.detector is not \
                     self.simulation.request.default_detector:
                 self.simulation.detector.remove_efficiency_files()
 
-            det_folder_path = Path(self.simulation.directory, "Detector")
+            self.simulation.clone_request_settings()
+
+            self._remove_extra_files()
+            self.simulation.to_file()
+            return True
+
+        try:
+            # Update simulation settings
+            self.simulation.use_request_settings = False
 
             # Set Detector object to settings widget
             self.detector_settings_widget.obj = self.simulation.detector
@@ -190,15 +214,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             # Update settings
             self.measurement_settings_widget.update_settings()
             self.detector_settings_widget.update_settings()
-            self.simulation.detector.path = Path(
-                det_folder_path, f"{self.simulation.detector.name}.detector")
 
-            # Delete possible extra files
-            gf.remove_matching_files(self.simulation.directory,
-                                     exts={".measurement", ".target"})
-            gf.remove_matching_files(
-                det_folder_path, exts={".detector"}
-            )
+            self._remove_extra_files()
             self.simulation.to_file()
             return True
 
@@ -211,24 +228,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
         return False
 
-    def __save_settings_and_close(self):
+    def _save_settings_and_close(self):
         """Saves settings and closes the dialog if __update_parameters returns
         True.
         """
-        if self.__update_parameters():
+        if self._update_parameters():
             self.close()
-
-    def values_changed(self):
-        """
-        Check if measurement or detector settings have
-        changed.
-
-        Return:
-
-            True or False.
-        """
-        if self.measurement_settings_widget.are_values_changed():
-            return True
-        if self.detector_settings_widget.values_changed():
-            return True
-        return False
