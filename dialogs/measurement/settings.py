@@ -32,6 +32,7 @@ __version__ = "2.0"
 import time
 
 import dialogs.dialog_functions as df
+import widgets.binding as bnd
 import modules.general_functions as gf
 import widgets.gui_utils as gutils
 
@@ -50,6 +51,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
     """
     Dialog class for handling the measurement parameter input.
     """
+    use_request_settings = bnd.bind("defaultSettingsCheckBox")
 
     def __init__(self, measurement: Measurement, icon_manager):
         """
@@ -94,8 +96,8 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
 
         self.tabs.addTab(self.detector_settings_widget, "Detector")
 
-        self.defaultSettingsCheckBox.setChecked(
-            self.measurement.use_request_settings)
+        self.use_request_settings = self.measurement.use_request_settings
+
         # TODO these should be set in the widget, not here
         self.measurement_settings_widget.nameLineEdit.setText(
             self.measurement.measurement_setting_file_name)
@@ -143,7 +145,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
 
         # Copy request settings without checking their validity. They
         # have been checked once in request settings anyway.
-        if self.defaultSettingsCheckBox.isChecked():
+        if self.use_request_settings:
             self.measurement.use_request_settings = True
 
             # Remove measurement-specific efficiency files
@@ -182,12 +184,14 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                 self._remove_extra_files()
                 self.measurement.to_file()
                 return True
+
             except TypeError:
                 QtWidgets.QMessageBox.question(
                     self, "Warning",
                     "Some of the setting values have not been set.\n"
                     "Please input setting values to save them.",
                     QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+
         return False
 
     def _save_settings_and_close(self):
