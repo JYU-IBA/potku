@@ -160,7 +160,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             return True
 
         # Check the target and detector angles
-        if self.measurement_settings_widget.check_angles():
+        if not self.measurement_settings_widget.check_angles():
             return False
 
         if not self.tabs.currentWidget().fields_are_valid:
