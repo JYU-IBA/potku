@@ -137,6 +137,18 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             exts={".detector"}
         )
 
+    def use_request_settings_toggled(self) -> bool:
+        """Check if "use request settings" has been toggled."""
+        return self.use_request_settings != self.simulation.use_request_settings
+
+    def values_changed(self) -> bool:
+        """Check if measurement or detector settings have changed."""
+        if self.measurement_settings_widget.are_values_changed():
+            return True
+        if self.detector_settings_widget.values_changed():
+            return True
+        return False
+
     def _update_parameters(self):
         """
          Update Simulation's Run, Detector and Target objects. If simulation
@@ -163,7 +175,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                 QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             return False
 
-        if (self.use_request_settings != self.simulation.use_request_settings) \
+        if self.use_request_settings_toggled() \
                 or (not self.use_request_settings and self.values_changed()):
             # User has switched from simulation settings to request settings,
             # or vice versa. Confirm if the user wants to delete old simulations
@@ -222,18 +234,3 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         """
         if self._update_parameters():
             self.close()
-
-    def values_changed(self):
-        """
-        Check if measurement or detector settings have
-        changed.
-
-        Return:
-
-            True or False.
-        """
-        if self.measurement_settings_widget.are_values_changed():
-            return True
-        if self.detector_settings_widget.values_changed():
-            return True
-        return False
