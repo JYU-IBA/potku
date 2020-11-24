@@ -121,6 +121,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self._enable_remove_btn()
 
         # Calibration settings
+        # TODO: Require saving affected cuts if beam setting has been changed
         self.executeCalibrationButton.clicked.connect(
             self.__open_calibration_dialog)
         self.executeCalibrationButton.setEnabled(
