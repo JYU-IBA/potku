@@ -74,6 +74,8 @@ class TestSimulation(unittest.TestCase):
         self.assertEqual(
             ([], [elem_sim], [], [elem_sim]), sim.get_active_simulations())
 
+    # TODO: Create a test that tests use_request_settings=True (should
+    #       not have .measurement, .target or .detector)
     def test_serialization(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             fp = Path(tmp_dir, "test.simu")
@@ -81,7 +83,7 @@ class TestSimulation(unittest.TestCase):
                 Path(tmp_dir, "foo.simulation"), mo.get_request(), name="foo",
                 description="bar", save_on_creation=False, run=mo.get_run(),
                 detector=mo.get_detector(), target=mo.get_target(),
-                enable_logging=False)
+                enable_logging=False, use_request_settings=False)
 
             sim.to_file(fp)
 

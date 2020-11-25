@@ -116,6 +116,13 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
             self.settings_updated.emit()
             self.close()
 
+    def use_request_settings_toggled(self) -> bool:
+        """Check if "use request settings" has been toggled."""
+        return self.use_default_settings != \
+            self.element_simulation.use_default_settings
+
+    # TODO: Make this function more similar to measurement and
+    #       simulation settings dialogs
     def update_settings(self):
         """Updates ElementSimulation settings and saves them into a file.
 
@@ -134,7 +141,10 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
 
         # TODO could compare default element simulation and this element
         #  simulation to see if reset is actually needed
-        if self.sim_widget.are_values_changed() or self.are_values_changed():
+        settings_changed = \
+            not self.use_default_settings \
+            and (self.sim_widget.are_values_changed() or self.are_values_changed())
+        if self.use_request_settings_toggled() or settings_changed:
             simulation = self.element_simulation.simulation
 
             if self.use_default_settings:
@@ -153,12 +163,16 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
             ):
                 return False
 
+        self.element_simulation.use_default_settings = self.use_default_settings
+        if self.use_default_settings:
+            self.element_simulation.clone_request_settings()
+        else:
+            self.sim_widget.update_settings()
+
         if self.element_simulation.name != self.sim_widget.name:
             # Remove current simu file if name has been changed
             self.element_simulation.remove_files()
 
-        self.element_simulation.use_default_settings = self.use_default_settings
-        self.sim_widget.update_settings()
         # TODO remove files with old name, if name has changed
 
         self.element_simulation.to_file()

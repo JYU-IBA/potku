@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
+ <!-- TODO: This doesn't seem to be used for anything. Delete? -->
  <class>Dialog</class>
  <widget class="QDialog" name="Dialog">
   <property name="geometry">

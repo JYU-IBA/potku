@@ -27,6 +27,8 @@ __version__ = "2.0"
 import unittest
 import tempfile
 import subprocess
+import time
+import platform
 from pathlib import Path
 import tests.utils as utils
 
@@ -124,19 +126,23 @@ class TestWriteToFile(unittest.TestCase):
             with file.open("r") as f:
                 self.assertEqual(["kissaistuu"], f.readlines())
 
-    def test_partial_exhaustion_leaves_file_handle_open(self):
+    def test_readlines_returns_empty_list_after_partial_exhaustion(self):
+        # Note: OS differences make it difficult to test what happens
+        # when a file handle is being kept open in a generator. If this
+        # test fails on some platform, feel free to add a skip decorator
+        # (or write a better test!)
         with tempfile.TemporaryDirectory() as tmp_dir:
             file = Path(tmp_dir, "foo.bar")
             xs = sutils.write_to_file(["kissa", "istuu"], file)
 
-            next(xs)
-            # unlinking raises error as the file handle is still open
-            self.assertRaises(OSError, file.unlink)
+            # advance the iterator by one
+            self.assertEqual("kissa", next(xs))
+            with file.open("r") as f:
+                self.assertEqual([], f.readlines())
 
-            # after exhausting the iterable, file can be removed
+            # exhaust the iterator to avoid PermissionErrors on Windows when
+            # the tmp_dir context manager closes
             list(xs)
-            file.unlink()
-            self.assertFalse(file.exists())
 
     def test_text_func(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -196,6 +202,25 @@ class TestWriteToFile(unittest.TestCase):
             lines = sutils.write_to_file([], file, text_func=1)
             self.assertRaises(TypeError, lambda: list(lines))
             self.assertFalse(file.exists())
+
+    def test_file_exists_in_case_text_func_fails(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file = Path(tmp_dir, "foo.bar")
+
+            lines = sutils.write_to_file(
+                ["kissa"], file, text_func=lambda x, y: str(x + y))
+            self.assertRaises(TypeError, lambda: list(lines))
+            self.assertTrue(file.exists())
+
+    def test_file_exist_after_an_empty_list_is_processed(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file = Path(tmp_dir, "foo.bar")
+
+            lines = sutils.write_to_file([], file)
+            self.assertEqual([], list(lines))
+            self.assertTrue(file.exists())
+            with file.open("r") as f:
+                self.assertEqual([], f.readlines())
 
 
 class TestProcessOutput(unittest.TestCase):
@@ -284,6 +309,48 @@ class TestProcessOutput(unittest.TestCase):
                     f0_contents = f0.readlines()
                     f1_contents = f1.readlines()
                     utils.assert_all_equal(xs, f0_contents, f1_contents)
+
+    def test_stdout_is_closed_in_case_parse_func_fails(self):
+        with subprocess.Popen(
+                ["echo", "kissa"], **self.default_kwargs) as proc:
+            self.assertRaises(
+                ValueError, lambda: sutils.process_output(proc, parse_func=int))
+            self.assertTrue(proc.stdout.closed)
+
+    def test_stdout_is_closed_in_case_text_func_fails(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file = Path(tmp_dir, "foo.bar")
+            with subprocess.Popen(
+                    ["echo", "kissa"], **self.default_kwargs) as proc:
+                self.assertRaises(
+                    TypeError,
+                    lambda: sutils.process_output(
+                        proc, file=file,
+                        text_func=lambda x, y: str(x + y)))
+                self.assertTrue(proc.stdout.closed)
+
+
+class TestKillProcess(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        if platform.system() == "Windows":
+            cls.expected_err_code = 1
+        else:
+            cls.expected_err_code = -9
+
+    def test_kill_process_kills_process(self):
+        with subprocess.Popen(["sleep", "1"]) as proc:
+            sutils.kill_process(proc)
+            time.sleep(0.05)
+            self.assertEqual(self.expected_err_code, proc.poll())
+
+    def test_killing_process_after_it_has_ended_is_a_noop(self):
+        with subprocess.Popen(
+                ["echo", "hello"], stdout=subprocess.DEVNULL) as proc:
+            time.sleep(0.05)
+            sutils.kill_process(proc)
+            time.sleep(0.05)
+            self.assertEqual(0, proc.poll())
 
 
 if __name__ == '__main__':

@@ -121,6 +121,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self._enable_remove_btn()
 
         # Calibration settings
+        # TODO: Require saving affected cuts if beam setting has been changed
         self.executeCalibrationButton.clicked.connect(
             self.__open_calibration_dialog)
         self.executeCalibrationButton.setEnabled(
@@ -134,6 +135,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             lambda: iv.check_text(self.nameLineEdit, qwidget=self))
         self.nameLineEdit.textEdited.connect(
             lambda: iv.sanitize_file_name(self.nameLineEdit))
+        self.nameLineEdit.setEnabled(False)
 
         locale = QLocale.c()
         self.timeResSpinBox.setLocale(locale)
@@ -180,7 +182,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         if not file:
             return
 
-        temp_detector = Detector.from_file(file, file, self.request, False)
+        temp_detector = Detector.from_file(file, self.request, False)
         self.obj.set_settings(**temp_detector.get_settings())
 
         self.tmp_foil_info = []
@@ -213,7 +215,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         if file.suffix != ".detector":
             file = Path(file.parent, f"{file.name}.detector")
         if not self.some_values_changed():
-            self.obj.to_file(file, None)
+            self.obj.to_file(file)
         else:
             # Make temp detector, modify it according to widget values,
             # and write it to file.
@@ -221,7 +223,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             original_obj = self.obj
             self.obj = temp_detector
             self.update_settings()
-            self.obj.to_file(file, None)
+            self.obj.to_file(file)
             self.obj = original_obj
 
     def show_settings(self):

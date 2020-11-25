@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, Tuomas Pitkänen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -26,16 +26,15 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen \n Juhani Sundell"
+             "\n Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import time
 
 import dialogs.dialog_functions as df
+import widgets.binding as bnd
 import modules.general_functions as gf
 import widgets.gui_utils as gutils
-
-from pathlib import Path
 
 from modules.measurement import Measurement
 
@@ -52,6 +51,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
     """
     Dialog class for handling the measurement parameter input.
     """
+    use_request_settings = bnd.bind("defaultSettingsCheckBox")
 
     def __init__(self, measurement: Measurement, icon_manager):
         """
@@ -73,9 +73,9 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         self.resize(int(self.geometry().width() * 1.2),
                     int(screen_geometry.size().height() * 0.8))
         self.defaultSettingsCheckBox.stateChanged.connect(
-            self.__change_used_settings)
-        self.OKButton.clicked.connect(self.__save_settings_and_close)
-        self.applyButton.clicked.connect(self.__update_parameters)
+            self._change_used_settings)
+        self.OKButton.clicked.connect(self._save_settings_and_close)
+        self.applyButton.clicked.connect(self._update_parameters)
         self.cancelButton.clicked.connect(self.close)
 
         preset_folder = gutils.get_preset_dir(
@@ -96,8 +96,8 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
 
         self.tabs.addTab(self.detector_settings_widget, "Detector")
 
-        self.defaultSettingsCheckBox.setChecked(
-            self.measurement.use_default_profile_settings)
+        self.use_request_settings = self.measurement.use_request_settings
+
         # TODO these should be set in the widget, not here
         self.measurement_settings_widget.nameLineEdit.setText(
             self.measurement.measurement_setting_file_name)
@@ -115,14 +115,22 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
 
         self.exec()
 
-    def __change_used_settings(self):
+    def _change_used_settings(self):
         check_box = self.sender()
         if check_box.isChecked():
             self.tabs.setEnabled(False)
         else:
             self.tabs.setEnabled(True)
 
-    def __update_parameters(self):
+    def _remove_extra_files(self):
+        gf.remove_matching_files(
+            self.measurement.directory,
+            exts={".measurement", ".profile", ".target"})
+        gf.remove_matching_files(
+            self.measurement.directory / "Detector",
+            exts={".detector"})
+
+    def _update_parameters(self):
         if self.measurement_settings_widget.isotopeComboBox.currentIndex()\
                 == -1:
             QtWidgets.QMessageBox.critical(
@@ -134,61 +142,62 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         if not self.measurement.measurement_setting_file_name:
             self.measurement.measurement_setting_file_name = \
                 self.measurement.name
-        if not self.measurement.profile_name:
-            self.measurement.profile_name = self.measurement.name
+
+        # Copy request settings without checking their validity. They
+        # have been checked once in request settings anyway.
+        if self.use_request_settings:
+            self.measurement.use_request_settings = True
+
+            # Remove measurement-specific efficiency files
+            if self.measurement.detector is not \
+                    self.measurement.request.default_detector:
+                self.measurement.detector.remove_efficiency_files()
+
+            self.measurement.clone_request_settings()
+
+            self._remove_extra_files()
+            self.measurement.to_file()
+            return True
 
         # Check the target and detector angles
-        ok_pressed = self.measurement_settings_widget.check_angles()
-        if ok_pressed:
-            if not self.tabs.currentWidget().fields_are_valid:
-                QtWidgets.QMessageBox.critical(
-                    self, "Warning",
-                    "Some of the setting values have not been set.\n"
-                    "Please input values in fields indicated in red.",
-                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-                return False
-            # Use Measurement specific settings
-            try:
-                self.measurement.use_default_profile_settings = \
-                    self.defaultSettingsCheckBox.isChecked()
+        if not self.measurement_settings_widget.check_angles():
+            return False
 
-                det_folder_path = Path(self.measurement.directory,
-                                       "Detector")
+        if not self.tabs.currentWidget().fields_are_valid:
+            QtWidgets.QMessageBox.critical(
+                self, "Warning",
+                "Some of the setting values have not been set.\n"
+                "Please input values in fields indicated in red.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            return False
 
-                # Set Detector object to settings widget
-                self.detector_settings_widget.obj = \
-                    self.measurement.detector
+        # Use Measurement specific settings
+        try:
+            self.measurement.use_request_settings = False
 
-                # Update settings
-                self.measurement_settings_widget.update_settings()
-                self.detector_settings_widget.update_settings()
+            # Set Detector object to settings widget
+            self.detector_settings_widget.obj = self.measurement.detector
 
-                self.profile_settings_widget.update_settings()
-                self.measurement.detector.path = Path(
-                    det_folder_path,
-                    f"{self.measurement.detector.name}.detector")
+            # Update settings
+            self.measurement_settings_widget.update_settings()
+            self.detector_settings_widget.update_settings()
+            self.profile_settings_widget.update_settings()
 
-                # Delete possible extra .measurement and .profile files
-                gf.remove_matching_files(
-                    self.measurement.directory,
-                    exts={".measurement", ".profile"})
-                gf.remove_matching_files(
-                    det_folder_path, exts={".detector"}
-                )
+            self._remove_extra_files()
+            self.measurement.to_file()
+            return True
 
-                # Save general measurement settings parameters.
-                self.measurement.to_file()
-                return True
-            except TypeError:
-                QtWidgets.QMessageBox.question(
-                    self, "Warning",
-                    "Some of the setting values have not been set.\n"
-                    "Please input setting values to save them.",
-                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+        except TypeError:
+            QtWidgets.QMessageBox.question(
+                self, "Warning",
+                "Some of the setting values have not been set.\n"
+                "Please input setting values to save them.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+
         return False
 
-    def __save_settings_and_close(self):
+    def _save_settings_and_close(self):
         """ Save settings and close dialog if __update_parameters returns True.
         """
-        if self.__update_parameters():
+        if self._update_parameters():
             self.close()

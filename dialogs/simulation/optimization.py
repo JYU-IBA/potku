@@ -132,6 +132,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             self._enable_ok_button)
         self.simulationTreeWidget.itemSelectionChanged.connect(
             self._adjust_x)
+        self.auto_adjust_x_box.clicked.connect(self._adjust_x)
 
         self._fill_measurement_widget()
 

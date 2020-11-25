@@ -90,6 +90,7 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         self.nameLineEdit.textChanged.connect(
             lambda: iv.check_text(self.nameLineEdit, qwidget=self))
         self.nameLineEdit.textEdited.connect(self.__validate)
+        self.nameLineEdit.setEnabled(False)
 
         self.name = recoil_element.name
         self.description = recoil_element.description

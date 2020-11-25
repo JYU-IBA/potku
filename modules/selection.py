@@ -552,7 +552,7 @@ class Selector:
         """Update all RBS selections' beam ions."""
         for selection in self.selections:
             if selection.type == "RBS":
-                if selection.measurement.use_default_profile_settings:
+                if selection.measurement.use_request_settings:
                     ion = self.measurement.request.default_measurement.run.beam\
                         .ion
                 else:

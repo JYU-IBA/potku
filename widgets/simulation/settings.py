@@ -106,6 +106,7 @@ class SimulationSettingsWidget(QtWidgets.QWidget, PropertyTrackingWidget,
             lambda: iv.check_text(self.nameLineEdit, qwidget=self))
         self.nameLineEdit.textEdited.connect(
             lambda: iv.sanitize_file_name(self.nameLineEdit))
+        self.nameLineEdit.setEnabled(False)
 
         locale = QLocale.c()
         self.minimumScatterAngleDoubleSpinBox.setLocale(locale)

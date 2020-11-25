@@ -37,6 +37,15 @@ class TestRun(unittest.TestCase):
     def test_settings_parameters(self):
         run = Run()
         kwargs = {
+            "beam": {
+                "charge": 4,
+                "divergence": 0,
+                "energy": 10,
+                "energy_distribution": 0,
+                "ion": "35Cl",
+                "profile": "uniform",
+                "spot_size": (3.0, 5.0)
+            },
             "fluence": 1,
             "current": 2,
             "charge": 3,

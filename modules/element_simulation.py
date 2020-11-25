@@ -8,7 +8,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, Tuomas Pitkänen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen \n Juhani Sundell"
+             "Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import json
@@ -45,6 +45,7 @@ from typing import Tuple
 from typing import Dict
 from typing import Set
 from typing import Union
+from typing import Any
 from rx import operators as ops
 from pathlib import Path
 from collections import deque
@@ -66,6 +67,7 @@ from .enums import SimulationMode
 from .run import Run
 from .detector import Detector
 from .element import Element
+from .profile import Profile
 
 
 # Mappings between the names of the MCERD parameters (keys) and
@@ -122,7 +124,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                  seed_number=101, minimum_energy=1.0, channel_width=0.025,
                  use_default_settings=True, optimization_recoils=None,
                  optimized_fluence=None, save_on_creation=True):
-        """Initializes ElementSimulation.
+        """Initializes ElementSimulation. Most arguments are ignored if
+        use_default_settings is True.
+
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
             request: Request object reference.
@@ -170,20 +174,38 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         self.recoil_elements = recoil_elements
 
-        self.simulation_type = SimulationType(simulation_type.upper())
-        self.simulation_mode = SimulationMode(simulation_mode.lower())
-
-        self.number_of_ions = number_of_ions
-        self.number_of_preions = number_of_preions
-        self.number_of_scaling_ions = number_of_scaling_ions
-        self.number_of_recoils = number_of_recoils
-        self.minimum_scattering_angle = minimum_scattering_angle
-        self.minimum_main_scattering_angle = minimum_main_scattering_angle
-        self.minimum_energy = minimum_energy
-        self.seed_number = seed_number
-        self.channel_width = channel_width
-
+        # TODO: Rename to use_request_settings
         self.use_default_settings = use_default_settings
+        if self.use_default_settings:
+            # Initialize fields to prevent KeyErrors during
+            # self.clone_request_settings()
+            self.simulation_type = None
+            self.simulation_mode = None
+
+            self.number_of_ions = None
+            self.number_of_preions = None
+            self.number_of_scaling_ions = None
+            self.number_of_recoils = None
+            self.minimum_scattering_angle = None
+            self.minimum_main_scattering_angle = None
+            self.minimum_energy = None
+            self.seed_number = None
+            self.channel_width = None
+
+            self.clone_request_settings()
+        else:
+            self.simulation_type = SimulationType(simulation_type.upper())
+            self.simulation_mode = SimulationMode(simulation_mode.lower())
+
+            self.number_of_ions = number_of_ions
+            self.number_of_preions = number_of_preions
+            self.number_of_scaling_ions = number_of_scaling_ions
+            self.number_of_recoils = number_of_recoils
+            self.minimum_scattering_angle = minimum_scattering_angle
+            self.minimum_main_scattering_angle = minimum_main_scattering_angle
+            self.minimum_energy = minimum_energy
+            self.seed_number = seed_number
+            self.channel_width = channel_width
 
         if self.name_prefix != "":
             name = self.name_prefix + "-" + self.name
@@ -381,6 +403,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             name_prefix = ""
 
         # Read channel width from .profile file.
+        # TODO: element simulations use a simplified .profile format.
+        #       Because of this, they cannot be loaded with
+        #       Profile.from_file. Unify them?
         try:
             with profile_file.open("r") as prof_file:
                 prof = json.load(prof_file)
@@ -389,7 +414,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             }
         except (json.JSONDecodeError, OSError, KeyError, AttributeError) as e:
             logging.getLogger("request").error(
-                f"Failed to read data from file {profile_file}: {e}."
+                f"Failed to read data from element simulation .profile file "
+                f"{profile_file}: {e}."
             )
             kwargs = {}
 
@@ -693,27 +719,26 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self._simulation_running = b and optim_mode is None
         self._optimization_running = b and optim_mode is not None
 
-    def get_settings(self) -> Dict:
-        """Returns simulation settings as a dict. Overrides base class function.
-        """
+    def _get_setting_value(self, attr) -> Any:
+        """Overrides base class function."""
+        value = getattr(self, _SETTINGS_MAP[attr])
+        if isinstance(value, AdjustableSettings):
+            return value.get_settings()
+        return value
+
+    def _set_setting_value(self, attr, value) -> None:
+        """Overrides base class function."""
+        attr_val = getattr(self, _SETTINGS_MAP[attr])
+        if isinstance(attr_val, AdjustableSettings):
+            attr_val.set_settings(**value)
+        else:
+            setattr(self, _SETTINGS_MAP[attr], value)
+
+    def _get_attrs(self) -> Set[str]:
+        """Returns MCERD names of attributes that can be adjusted."""
         return {
-            key: getattr(self, value)
-            for key, value in _SETTINGS_MAP.items()
+            attr for attr in _SETTINGS_MAP.keys()
         }
-
-    def set_settings(self, **kwargs):
-        """Sets simulation settings based on the keyword arguments. Overrides
-        base class function.
-
-        Note that the keywords must be the ones used by MCERD, rather than
-        the attribute names of the ElementSimulation object.
-        """
-        for key, value in kwargs.items():
-            try:
-                setattr(self, _SETTINGS_MAP[key], value)
-            except KeyError:
-                # keyword does not have a known mapping, nothing to do
-                pass
 
     def get_atom_count(self) -> int:
         """Returns the total number of observed atoms.
@@ -895,15 +920,19 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def get_mcerd_params(self) -> Tuple[Dict, Run, Detector]:
         """Returns the parameters for MCERD simulations.
         """
-        if self.use_default_settings:
-            settings = self.request.default_element_simulation.get_settings()
-        else:
-            settings = self.get_settings()
-
-        run = self.simulation.get_used_run()
-        detector = self.simulation.get_used_detector()
+        settings = self.get_settings()
+        run = self.simulation.run
+        detector = self.simulation.detector
 
         return settings, run, detector
+
+    def clone_request_settings(self) -> None:
+        """Clone settings from request."""
+        settings = self.request.default_element_simulation.get_settings()
+        self.set_settings(**settings)
+
+        self.channel_width = \
+            self.request.default_element_simulation.channel_width
 
     def optimization_results_to_file(self, cut_file: Optional[Path] = None):
         """Saves optimizations results to file if they exist.

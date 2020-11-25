@@ -68,9 +68,9 @@ class TestDetectorSettings(unittest.TestCase):
         self.assertEqual(
             props.pop("efficiency_files"), self.detector.get_efficiency_files()
         )
-        self.assertEqual(
-            props, self.detector.get_settings()
-        )
+        settings = self.detector.get_settings()
+        settings.pop("detector_theta")  # Used in measurement tab, not here
+        self.assertEqual(props, settings)
 
     def test_spinbox_ranges(self):
         det_widget = DetectorSettingsWidget(

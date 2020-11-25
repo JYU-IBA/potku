@@ -198,8 +198,12 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.__change_accept_point_label("")
         if self.selected_cut_file is not None:
             self.curveFittingWidget.matplotlib.change_bin_width(self.bin_width)
-            self.curveFittingWidget.matplotlib.change_cut(
-                self.selected_cut_file)
+            try:
+                self.curveFittingWidget.matplotlib.change_cut(
+                    self.selected_cut_file)
+            except ValueError as e:
+                QtWidgets.QMessageBox.critical(self, "Warning", str(e))
+                # TODO: Clear plot
 
     def __set_state_for_point(self, tree_item):
         """Sets if the tof calibration point is drawn to the linear fit graph

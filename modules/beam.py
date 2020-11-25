@@ -8,7 +8,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, Tuomas Pitkänen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,8 +25,10 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen \n Juhani Sundell"
+             "Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
+
+from typing import Set
 
 from typing import Optional
 
@@ -79,17 +81,8 @@ class Beam(AdjustableSettings, MCERDParameterContainer):
             f"Beam energy: {self.energy} MeV"
         ]
 
-    def get_settings(self):
-        """Returns a dictionary of settings that can be adjusted.
-        """
-        d = dict(vars(self))
-        return d
-
-    def set_settings(self, **kwargs):
-        """Sets the values of this Beam objects adjustable settings.
-        """
-        allowed_params = self.get_settings()
-        for k, v in kwargs.items():
-            if k in allowed_params:
-                setattr(self, k, v)
-
+    def _get_attrs(self) -> Set[str]:
+        return {
+            "ion", "energy", "charge", "energy_distribution", "spot_size",
+            "divergence", "profile"
+        }

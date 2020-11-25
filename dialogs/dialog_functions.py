@@ -194,8 +194,7 @@ def update_detector_settings(entity: Union[Measurement, Simulation],
     detector_file_path = Path(detector_folder, "Default.detector")
     detector_folder.mkdir(exist_ok=True)
 
-    entity.detector = Detector(
-        detector_file_path, measurement_file)
+    entity.detector = Detector(detector_file_path)
     entity.detector.update_directories(detector_folder)
 
     # Transfer the default detector efficiencies to new

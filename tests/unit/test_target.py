@@ -21,6 +21,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+from modules.element import Element
+
 __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
@@ -46,10 +48,9 @@ class TestTarget(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             tgt_file = Path(tmp_dir, ".target")
-            mesu_file = Path(tmp_dir, "mesu")
-            t.to_file(tgt_file, mesu_file)
+            t.to_file(tgt_file)
 
-            t2 = Target.from_file(tgt_file, mesu_file, mo.get_request())
+            t2 = Target.from_file(tgt_file, mo.get_request())
             self.assertIsNot(t, t2)
             self.assertEqual(t.name, t2.name)
             self.assertEqual(t.description, t2.description)
@@ -58,6 +59,42 @@ class TestTarget(unittest.TestCase):
             self.assertEqual(t.target_theta, t2.target_theta)
             self.assertEqual(t.target_type, t2.target_type)
             self.assertEqual(t.scattering_element, t2.scattering_element)
+
+    def test_adjustable_settings(self):
+        target = mo.get_target()
+        kwargs = {
+            "name": "test",
+            "description": "Some description.",
+            "modification_time": 1601838503.492942,
+            "target_type": "AFM",
+            "scattering_element": Element("H", 2),
+            "image_size": [
+                1024,
+                1024
+            ],
+            "image_file": "",
+            "layers": [],
+            "target_theta": 30
+        }
+        self.assertNotEqual(kwargs, target.get_settings())
+        target.set_settings(**kwargs)
+        self.assertEqual(kwargs, target.get_settings())
+
+    def test_copy_layers(self):
+        """Tests that copied layers have the same attributes as the
+        original ones.
+        """
+        target = mo.get_target()
+        target.layers = [mo.get_layer(1)]
+        copied_layers = target.copy_layers()
+
+        self.assertEqual(len(target.layers), len(copied_layers))
+        for l1, l2 in zip(target.layers, copied_layers):
+            self.assertIsNot(l1, l2)
+            self.assertEqual(l1.get_mcerd_params(), l2.get_mcerd_params())
+            for e1, e2 in zip(l1.elements, l2.elements):
+                self.assertIsNot(e1, e2)
+                self.assertEqual(e1, e2)
 
 
 if __name__ == '__main__':

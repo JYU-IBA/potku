@@ -608,10 +608,18 @@ T</string>
                   </widget>
                  </item>
                  <item row="5" column="1">
-                  <widget class="QDoubleSpinBox" name="angleOffsetLineEdit"/>
+                  <widget class="QDoubleSpinBox" name="angleOffsetLineEdit">
+                   <property name="decimals">
+                    <number>5</number>
+                   </property>
+                  </widget>
                  </item>
                  <item row="4" column="1">
-                  <widget class="QDoubleSpinBox" name="angleSlopeLineEdit"/>
+                  <widget class="QDoubleSpinBox" name="angleSlopeLineEdit">
+                   <property name="decimals">
+                    <number>5</number>
+                   </property>
+                  </widget>
                  </item>
                 </layout>
                </item>
@@ -624,7 +632,7 @@ T</string>
                   </sizepolicy>
                  </property>
                  <property name="text">
-                  <string>Execute...</string>
+                  <string>Execute... (please re-save cuts first if you have made changes to beam settings)</string>
                  </property>
                 </widget>
                </item>

@@ -24,13 +24,12 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
-             "Sinikka Siironen \n Juhani Sundell"
+             "Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import json
 import shutil
 import time
-from typing import Optional
 from typing import Iterable
 from typing import Set
 from typing import List
@@ -55,7 +54,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
     Detector class that handles all the information about a detector.
     It also can convert itself to and from JSON file.
     """
-    __slots__ = "name", "description", "date", "type", "foils",\
+    __slots__ = "name", "description", "date", "detector_type", "foils",\
                 "tof_foils", "virtual_size", "tof_slope", "tof_offset",\
                 "angle_slope", "angle_offset", "path", "modification_time",\
                 "timeres", "detector_theta"
@@ -63,7 +62,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
     EFFICIENCY_DIR = "Efficiency_files"
     USED_EFFICIENCIES_DIR = "Used_efficiencies"
 
-    def __init__(self, path: Path, measurement_file, name="Default",
+    def __init__(self, path: Path, name="Default",
                  description="", modification_time=None,
                  detector_type=DetectorType.TOF,
                  foils=None, tof_foils=None, virtual_size=(2.0, 5.0),
@@ -75,8 +74,6 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         Args:
             path: Path to .detector file.
             name: Detector name.
-            measurement_file: Path to a .measurement file which has detector
-                angles.
             description: Detector parameters description.
             modification_time: Modification time of detector file in Unix time.
             detector_type: Type of detector.
@@ -100,27 +97,29 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         else:
             self.modification_time = modification_time
 
-        self.type = DetectorType(detector_type.upper())
+        # TODO: This should be called type, but renaming it solved issues with
+        #       initialization and backwards incompatibility (deserialization)
+        self.detector_type = DetectorType(detector_type.upper())
         self.foils = foils
 
         if not self.foils:
             # Create default foils
             self.foils = [CircularFoil("Foil1", 7.0, 256.0,
                                        [Layer("Layer_12C",
-                                              [Element("C", 12.011, 1)],
+                                              [Element("C", 12, 1)],
                                               0.1, 2.25, 0.0)]),
                           CircularFoil("Foil2", 10.0, 356.0,
                                        [Layer("Layer_12C",
-                                              [Element("C", 12.011, 1)],
+                                              [Element("C", 12, 1)],
                                               13.0, 2.25, 0.0)]),
                           CircularFoil("Foil3", 18.0, 979.0,
                                        [Layer("Layer_12C",
-                                              [Element("C", 12.011, 1)],
+                                              [Element("C", 12, 1)],
                                               44.4, 2.25, 0.0)]),
                           RectangularFoil("Foil4", 14.0, 14.0, 1042.0,
                                           [Layer("Layer_28Si",
-                                                 [Element("N", 14.00, 0.57),
-                                                  Element("Si", 28.09, 0.43)],
+                                                 [Element("N", 14, 0.57),
+                                                  Element("Si", 28, 0.43)],
                                                  100.0, 3.44, 0.0)])]
         self.tof_foils = tof_foils
         if not self.tof_foils:
@@ -136,7 +135,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         self.detector_theta = detector_theta
 
         if save_on_creation:
-            self.to_file(self.path, measurement_file)
+            self.to_file(self.path)
 
     def update_directories(self, directory: Path):
         """Creates directories if they do not exist and updates paths.
@@ -196,31 +195,12 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             except shutil.SameFileError:
                 pass
 
-    def get_settings(self) -> dict:
-        """Returns a dictionary of settings that can be adjusted.
-        """
+    def _get_attrs(self) -> Set[str]:
         return {
-            "name": self.name,
-            "modification_time": self.modification_time,
-            "description": self.description,
-            "detector_type": self.type,
-            "angle_slope": self.angle_slope,
-            "angle_offset": self.angle_offset,
-            "tof_slope": self.tof_slope,
-            "tof_offset": self.tof_offset,
-            "timeres": self.timeres,
-            "virtual_size": self.virtual_size
-        }
-
-    def set_settings(self, detector_type=None, **kwargs):
-        """Adjusts this Detector's settings with given keyword arguments.
-        """
-        allowed = self.get_settings()
-        if detector_type is not None:
-            self.type = detector_type
-        for key, value in kwargs.items():
-            if key in allowed:
-                setattr(self, key, value)
+                "name", "modification_time", "description", "detector_type",
+                "angle_slope", "angle_offset", "tof_slope", "tof_offset",
+                "timeres", "virtual_size", "detector_theta"
+            }
 
     def remove_efficiency_file(self, file_name: Path):
         """Removes efficiency file from detector's efficiency file folder as
@@ -241,16 +221,20 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             self.get_efficiency_dir() / file_name, *used_path
         )
 
+    def remove_efficiency_files(self) -> None:
+        """Removes all efficiency files from detector's efficiency file folder
+        and from the used efficiencies folder.
+        """
+        gf.remove_matching_files(self.get_efficiency_dir(), {".eff"})
+        gf.remove_matching_files(self.get_used_efficiencies_dir(), {".eff"})
+
     @classmethod
-    def from_file(cls, detector_file: Path, measurement_file: Path,
-                  request, save_on_creation=True):
+    def from_file(cls, detector_file: Path, request, save_on_creation=True):
         """Initialize Detector from a JSON file.
 
         Args:
             detector_file: A file path to JSON file containing the
                                 detector parameters.
-            measurement_file: A file path to measurement settings file
-                                   which has detector angles.
             request: Request object which has default detector angles.
             save_on_creation: Whether to save created detector or not.
 
@@ -263,51 +247,16 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         detector["modification_time"] = detector.pop("modification_time_unix")
         detector["virtual_size"] = tuple(detector["virtual_size"])
 
-        foils = []
+        foils = [Foil.generate_foil(**foil) for foil in detector.pop("foils")]
 
-        # Read foils
-        for foil in detector.pop("foils"):
-            layers = []
-
-            # Read layers of the foil
-            for layer in foil.pop("layers"):
-                elements = []
-                elements_str = layer.pop("elements")
-                # Read elements of the layer
-                for element_str in elements_str:
-                    elements.append(Element.from_string(element_str))
-
-                layers.append(Layer(**layer, elements=elements))
-
-            foils.append(Foil.generate_foil(**foil, layers=layers))
-
-        try:
-            # Read .measurement file and update detector angle
-            with measurement_file.open("r") as mesu_file:
-                measurement_obj = json.load(mesu_file)
-            detector_theta = measurement_obj["geometry"]["detector_theta"]
-        except (KeyError, json.JSONDecodeError, OSError, AttributeError):
-            # Get default detector angle from default detector
-            try:
-                detector_theta = request.default_detector.detector_theta
-            except AttributeError:
-                return cls(path=detector_file,
-                           measurement_file=measurement_file,
-                           foils=foils, save_on_creation=save_on_creation,
-                           **detector)
-
-        return cls(path=detector_file, measurement_file=measurement_file,
-                   foils=foils, detector_theta=detector_theta,
+        return cls(path=detector_file, foils=foils,
                    save_on_creation=save_on_creation, **detector)
 
-    def to_file(self, detector_file: Path,
-                measurement_file: Optional[Path] = None):
+    def to_file(self, detector_file: Path):
         """Save detector settings to a file.
 
         Args:
             detector_file: File in which the detector settings will be
-                saved.
-            measurement_file: File in which the detector_theta angle is
                 saved.
         """
         # Delete possible extra .detector files
@@ -325,36 +274,18 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             "tof_foils": self.tof_foils,
             "modification_time": time.strftime(
                 "%c %z %Z", time.localtime(timestamp)),
-            "modification_time_unix": timestamp
+            "modification_time_unix": timestamp,
+            "detector_theta": self.detector_theta
         }
 
         with detector_file.open("w") as file:
-            json.dump(obj, file, indent=4)
-
-        if measurement_file is None:
-            return
-        # Read .measurement to obj to update only detector angles
-        try:
-            with measurement_file.open("r") as mesu:
-                obj = json.load(mesu)
-            try:
-                # Change existing detector theta
-                obj["geometry"]["detector_theta"] = self.detector_theta
-            except KeyError:
-                # Add detector theta
-                obj["geometry"] = {"detector_theta": self.detector_theta}
-        except (OSError, json.JSONDecodeError):
-            # Write new .measurement file
-            obj = {"geometry": {"detector_theta": self.detector_theta}}
-
-        with measurement_file.open("w") as file:
             json.dump(obj, file, indent=4)
 
     def get_mcerd_params(self):
         """Returns a list of strings that are passed as parameters for MCERD.
         """
         return [
-            f"Detector type: {self.type}",
+            f"Detector type: {self.detector_type}",
             f"Detector angle: {self.detector_theta}",
             f"Virtual detector size: {'%0.1f %0.1f' % self.virtual_size}",
             f"Timing detector numbers: {self.tof_foils[0]} {self.tof_foils[1]}"
@@ -437,13 +368,13 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         """
         return self.get_efficiency_dir() / Detector.USED_EFFICIENCIES_DIR
 
-    def copy_efficiency_files(self):
+    def copy_efficiency_files_for_tof_list(self) -> None:
         """Copies efficiency files to the directory where tof_list will be
         looking for them. Additional comments are stripped from the files.
         (i.e. 1H-example.eff becomes 1H.eff).
         """
         destination = self.get_used_efficiencies_dir()
-        destination.mkdir(exist_ok=True)
+        destination.mkdir(exist_ok=True, parents=True)
         # Remove previous files
         gf.remove_matching_files(destination, {".eff"})
 
@@ -454,6 +385,19 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
                 continue
             old_file = Path(self.get_efficiency_dir(), eff)
             shutil.copy(old_file, destination / used_file)
+
+    def copy_efficiency_files_from_detector(self, source_detector: "Detector") \
+            -> None:
+        """Copies efficiency files from source detector. Removes previous
+         efficiency files in destination. Intended for copying files from
+        default detector.
+        """
+        destination = self.get_efficiency_dir()
+        destination.mkdir(exist_ok=True, parents=True)
+        self.remove_efficiency_files()
+
+        for eff in source_detector.get_efficiency_files(return_full_paths=True):
+            shutil.copy(eff, destination)
 
     def get_matching_efficiency_files(self, cut_files: Iterable[Path]) \
             -> Set[Path]:
@@ -475,3 +419,11 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
                 matched_efficiencies.add(eff_elems[cut_element_str])
 
         return matched_efficiencies
+
+    def copy_foils(self) -> List[Foil]:
+        """Returns a copy of foils in detector."""
+        return [Foil.generate_foil(**foil.to_dict()) for foil in self.foils]
+
+    def copy_tof_foils(self) -> List[int]:
+        """Returns a copy of ToF foils in detector."""
+        return [tof_foil for tof_foil in self.tof_foils]

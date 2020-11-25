@@ -48,10 +48,10 @@ class ProfileSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
     """
     # TODO track_change may not be necessary here, as none of these values
     #   are used for simulations
-    profile_name = bnd.bind("nameLineEdit", track_change=True)
-    profile_description = bnd.bind(
+    name = bnd.bind("nameLineEdit", track_change=True)
+    description = bnd.bind(
         "descriptionPlainTextEdit", track_change=True)
-    profile_modification_time = bnd.bind(
+    modification_time = bnd.bind(
         "dateLabel", fget=bnd.unix_time_from_label,
         fset=bnd.unix_time_to_label)
 
@@ -91,6 +91,7 @@ class ProfileSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             lambda: iv.check_text(self.nameLineEdit, qwidget=self))
         self.nameLineEdit.textEdited.connect(
             lambda: iv.sanitize_file_name(self.nameLineEdit))
+        self.nameLineEdit.setEnabled(False)
 
         locale = QLocale.c()
         self.referenceDensityDoubleSpinBox.setLocale(locale)
@@ -99,7 +100,7 @@ class ProfileSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.channelWidthDoubleSpinBox.setLocale(locale)
 
         gutils.fill_combobox(self.normalizationComboBox, ["First"])
-        self.set_properties(**self.measurement.get_settings())
+        self.set_properties(**self.measurement.profile.get_settings())
 
         gutils.set_min_max_handlers(
             self.depthForConcentrationFromDoubleSpinBox,
@@ -152,4 +153,4 @@ class ProfileSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
     def update_settings(self):
         """Update profile settings.
         """
-        self.measurement.set_settings(**self.get_properties())
+        self.measurement.profile.set_settings(**self.get_properties())

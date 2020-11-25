@@ -203,11 +203,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             measurement_file = Path(
                 self.request.default_measurement.directory,
                 "Default.measurement")
-            profile_file = Path(
-                self.request.default_measurement.directory, "Default.profile")
 
             self.request.default_measurement.to_file(
-                measurement_file, profile_file=profile_file)
+                measurement_file)
 
             # Detector settings
             self.detector_settings_widget.update_settings()
@@ -215,10 +213,29 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             # Simulation settings
             self.simulation_settings_widget.update_settings()
 
+            # TODO: Move the rest of this method to request
+
+            # TODO: This overwrites measurement description and name.
+            #       It is also the cause of a .measurement file
+            #       duplication bug: changing the name in default
+            #       request measurement writes two .measurement files
+            #       (one with the old name and another with new name).
             self.request.default_simulation.to_file(
                 Path(self.request.default_folder, "Default.simulation"))
             self.request.default_element_simulation.to_file(
                 Path(self.request.default_folder, "Default.mcsimu"))
+
+            # Update measurements and simulations
+            for sample in self.request.samples.samples:
+                for measurement in sample.measurements.measurements.values():
+                    if measurement.use_request_settings:
+                        measurement.clone_request_settings()
+                for simulation in sample.simulations.simulations.values():
+                    if simulation.use_request_settings:
+                        simulation.clone_request_settings()
+                    for elem_sim in simulation.element_simulations:
+                        if elem_sim.use_default_settings:
+                            elem_sim.clone_request_settings()
 
             # Update all element simulations that use request settings to
             #  have the correct simulation type
