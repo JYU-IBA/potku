@@ -29,10 +29,14 @@ import tests.mock_objects as mo
 import tests.utils as utils
 import tempfile
 import os
+import numpy as np
 
 from pathlib import Path
 
 from modules.energy_spectrum import EnergySpectrum
+from modules.parsing import ToFListParser
+
+parser = ToFListParser()
 
 
 class TestCalculateMeasuredSpectra(unittest.TestCase):
@@ -78,10 +82,22 @@ class TestCalculateMeasuredSpectra(unittest.TestCase):
 
             tof_file = mesu.get_energy_spectra_dir() / "cuts.1H.ERD.0.tof_list"
 
-            with tof_file.open("r") as f:
-                self.assertEqual(
-                    self.expected_1h_0_tof_list_content, f.readlines()
-                )
+            expected = list(
+                parser.parse_strs(
+                    self.expected_1h_0_tof_list_content, method=parser.COLUMN)
+            )
+            actual = list(
+                parser.parse_file(tof_file, method=parser.COLUMN)
+            )
+
+            # energy spectrum must match with certain precision
+            np.testing.assert_almost_equal(actual[2], expected[2], decimal=3)
+
+            # other values must match exactly
+            self.assertEqual(
+                expected[:1] + expected[3:],
+                actual[:1] + actual[3:]
+            )
 
     @staticmethod
     def run_spectra_calculation(mesu, tmp_dir: Path, **kwargs):
