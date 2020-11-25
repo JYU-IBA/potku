@@ -480,6 +480,8 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
                 measurement_file: Optional[Path] = None):
         """Save simulation settings to a file.
 
+        Settings will not be saved if self.use_request_settings is True.
+
         Args:
             simulation_file: path to a .simulation file
             measurement_file: path to a .measurement_file

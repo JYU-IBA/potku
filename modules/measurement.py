@@ -292,11 +292,8 @@ class Measurement(Logger, Serializable):
         self.measurement_setting_file_name = measurement_setting_file_name
         if not self.measurement_setting_file_name:
             self.measurement_setting_file_name = name
-        # FIXME: measurement file description is not saved to file
-        #        (create a getter & setter property for
-        #        measurement_setting_file_description
-        #        and observe where they should be set, but aren't.
-        #        Compare this to previous revision.)
+        self.measurement_setting_file_description = \
+            measurement_setting_file_description
         self.measurement_setting_file_description = \
             measurement_setting_file_description
         if not measurement_setting_modification_time:
@@ -528,8 +525,11 @@ class Measurement(Logger, Serializable):
 
     def to_file(self, measurement_file: Optional[Path] = None,
                 info_file: Optional[Path] = None):
-        """Writes measurement to file. If optional path arguments are 'None',
-        default values will be used as file names.
+        """Writes measurement to file.
+
+        If optional path arguments are 'None', default values will be
+        used as file names. Settings will not be saved if
+        self.use_request_settings is True.
 
         Args:
             measurement_file: path to .measurement file

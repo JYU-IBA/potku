@@ -215,6 +215,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
             # TODO: Move the rest of this method to request
 
+            # TODO: This overwrites measurement description and name.
+            #       It is also the cause of a .measurement file
+            #       duplication bug: changing the name in default
+            #       request measurement writes two .measurement files
+            #       (one with the old name and another with new name).
             self.request.default_simulation.to_file(
                 Path(self.request.default_folder, "Default.simulation"))
             self.request.default_element_simulation.to_file(
