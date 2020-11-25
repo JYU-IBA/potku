@@ -43,6 +43,9 @@ ElemSimList = List["ElementSimulation"]
 Range = Tuple[Union[float, int], Union[float, int]]
 StrTuple = Tuple[str, str]
 
+# Helper type hint for energy spectrum data
+Espe = List[Tuple[float, float]]
+
 
 class ElementSimulations(NamedTuple):
     running_simulations: ElemSimList

@@ -49,10 +49,9 @@ from . import subprocess_utils as sutils
 from .parsing import ToFListParser
 from .measurement import Measurement
 from .element import Element
+from .base import Espe
 
 TofListData = List[Tuple[float, float, float, int, float, str, float, int]]
-# TODO there should be a class for energy spectrum data
-Espe = List[Tuple[float, float]]
 
 
 # TODO rename and refactor functions
@@ -234,13 +233,13 @@ class EnergySpectrum:
                 else:
                     tof_list_file = None
 
-                espe = sutils.process_output(
+                tof_list_data = sutils.process_output(
                     tof_list,
                     tof_parser.parse_str,
                     file=tof_list_file,
                     text_func=lambda x: f"{' '.join(str(col) for col in x)}\n"
                 )
-                return espe
+                return tof_list_data
         except Exception as e:
             msg = f"Error in tof_list: {e}"
             if logger_name is not None:
