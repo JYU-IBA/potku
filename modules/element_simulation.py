@@ -920,16 +920,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def get_mcerd_params(self) -> Tuple[Dict, Run, Detector]:
         """Returns the parameters for MCERD simulations.
         """
-        # TODO: The settings part could probably be simplified to just
-        #       `settings = self.get_settings()`
-        #       now that clone_request_settings has been added.
-        if self.use_default_settings:
-            settings = self.request.default_element_simulation.get_settings()
-        else:
-            settings = self.get_settings()
-
-        run = self.simulation.get_used_run()
-        detector = self.simulation.get_used_detector()
+        settings = self.get_settings()
+        run = self.simulation.run
+        detector = self.simulation.detector
 
         return settings, run, detector
 

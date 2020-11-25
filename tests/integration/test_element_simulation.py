@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 Juhani Sundell
+Copyright (C) 2020 Juhani Sundell, Tuomas Pitkänen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Juhani Sundell"
+__author__ = "Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import unittest
@@ -47,6 +47,9 @@ from modules.sample import Sample
 
 
 class TestElementSimulationSettings(unittest.TestCase):
+    # TODO: This test doesn't make much sense after changing how default
+    #       settings work with ElementSimulations. Convert this into a
+    #       general integration test for ElementSimulation.
     def test_elementsimulation_settings(self):
         """This tests that ElementSimulation is run with the correct settings
         depending on how 'use_default_settings' and 'use_request_settings'
@@ -109,22 +112,24 @@ class TestElementSimulationSettings(unittest.TestCase):
                 elem_sim.number_of_ions,
                 request.default_element_simulation.number_of_ions)
 
-            # Test with all setting combinations
-            elem_sim.use_default_settings = True
-            sim.use_request_settings = True
             self.assert_expected_settings(elem_sim, request, sim)
 
-            elem_sim.use_default_settings = True
-            sim.use_request_settings = False
-            self.assert_expected_settings(elem_sim, request, sim)
-
-            elem_sim.use_default_settings = False
-            sim.use_request_settings = True
-            self.assert_expected_settings(elem_sim, request, sim)
-
-            elem_sim.use_default_settings = False
-            sim.use_request_settings = False
-            self.assert_expected_settings(elem_sim, request, sim)
+            # # Test with all setting combinations
+            # elem_sim.use_default_settings = True
+            # sim.use_request_settings = True
+            # self.assert_expected_settings(elem_sim, request, sim)
+            #
+            # elem_sim.use_default_settings = True
+            # sim.use_request_settings = False
+            # self.assert_expected_settings(elem_sim, request, sim)
+            #
+            # elem_sim.use_default_settings = False
+            # sim.use_request_settings = True
+            # self.assert_expected_settings(elem_sim, request, sim)
+            #
+            # elem_sim.use_default_settings = False
+            # sim.use_request_settings = False
+            # self.assert_expected_settings(elem_sim, request, sim)
 
         self.assertFalse(tmp_dir.exists())
 
@@ -146,17 +151,9 @@ class TestElementSimulationSettings(unittest.TestCase):
 
 def get_expected_settings(elem_sim: ElementSimulation, request: Request,
                           simulation: Simulation):
-    if simulation.use_request_settings:
-        detector = request.default_detector
-        run = request.default_run
-    else:
-        detector = simulation.detector
-        run = simulation.run
-
-    if elem_sim.use_default_settings:
-        expected_sim = request.default_element_simulation
-    else:
-        expected_sim = elem_sim
+    detector = simulation.detector
+    run = simulation.run
+    expected_sim = elem_sim
 
     return {
         "simulation_type": elem_sim.simulation_type,
