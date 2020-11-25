@@ -309,7 +309,7 @@ class TestElementSimulation(unittest.TestCase):
         }
         self.elem_sim = ElementSimulation(
             tempfile.gettempdir(), mo.get_request(), [self.main_rec],
-            save_on_creation=False, **self.kwargs)
+            save_on_creation=False, use_default_settings=False, **self.kwargs)
 
     def test_get_full_name(self):
         self.assertEqual("Default", self.elem_sim.get_full_name())
@@ -317,6 +317,20 @@ class TestElementSimulation(unittest.TestCase):
         self.assertEqual("foo", self.elem_sim.get_full_name())
         self.elem_sim.name_prefix = "bar"
         self.assertEqual("bar-foo", self.elem_sim.get_full_name())
+
+    def test_use_default_settings(self):
+        """Tests that use_default_settings overrides kwargs"""
+        elem_sim2 = ElementSimulation(
+            tempfile.gettempdir(), self.elem_sim.request,
+            [mo.get_recoil_element()], save_on_creation=False,
+            use_default_settings=True, **self.kwargs)
+
+        self.assertEqual(
+            self.elem_sim.request.default_element_simulation.get_settings(),
+            elem_sim2.get_settings())
+        for key, value in self.kwargs.items():
+            self.assertNotEqual(value, getattr(elem_sim2, key))
+
 
     def test_json_contents(self):
         self.elem_sim.use_default_settings = False
@@ -331,7 +345,8 @@ class TestElementSimulation(unittest.TestCase):
             "seed_number": 101,
             "number_of_recoils": 10,
             "number_of_scaling_ions": 5,
-            "main_recoil": self.main_rec.name
+            "main_recoil": self.main_rec.name,
+            "use_default_settings": "False"
         }
         expected.update(self.kwargs)
         result = self.elem_sim.get_json_content()
@@ -344,7 +359,6 @@ class TestElementSimulation(unittest.TestCase):
                                    "is running particularly slow. Run the "
                                    "test again to confirm results."
                                )
-        self.assertEqual("False", result.pop("use_default_settings"))
         self.assertEqual(expected, result)
 
     def test_simulation_settings(self):

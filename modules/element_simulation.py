@@ -124,7 +124,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                  seed_number=101, minimum_energy=1.0, channel_width=0.025,
                  use_default_settings=True, optimization_recoils=None,
                  optimized_fluence=None, save_on_creation=True):
-        """Initializes ElementSimulation.
+        """Initializes ElementSimulation. Most arguments are ignored if
+        use_default_settings is True.
+
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
             request: Request object reference.
@@ -172,20 +174,38 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         self.recoil_elements = recoil_elements
 
-        self.simulation_type = SimulationType(simulation_type.upper())
-        self.simulation_mode = SimulationMode(simulation_mode.lower())
-
-        self.number_of_ions = number_of_ions
-        self.number_of_preions = number_of_preions
-        self.number_of_scaling_ions = number_of_scaling_ions
-        self.number_of_recoils = number_of_recoils
-        self.minimum_scattering_angle = minimum_scattering_angle
-        self.minimum_main_scattering_angle = minimum_main_scattering_angle
-        self.minimum_energy = minimum_energy
-        self.seed_number = seed_number
-        self.channel_width = channel_width
-
+        # TODO: Rename to use_request_settings
         self.use_default_settings = use_default_settings
+        if self.use_default_settings:
+            # Initialize fields to prevent KeyErrors during
+            # self.clone_request_settings()
+            self.simulation_type = None
+            self.simulation_mode = None
+
+            self.number_of_ions = None
+            self.number_of_preions = None
+            self.number_of_scaling_ions = None
+            self.number_of_recoils = None
+            self.minimum_scattering_angle = None
+            self.minimum_main_scattering_angle = None
+            self.minimum_energy = None
+            self.seed_number = None
+            self.channel_width = None
+
+            self.clone_request_settings()
+        else:
+            self.simulation_type = SimulationType(simulation_type.upper())
+            self.simulation_mode = SimulationMode(simulation_mode.lower())
+
+            self.number_of_ions = number_of_ions
+            self.number_of_preions = number_of_preions
+            self.number_of_scaling_ions = number_of_scaling_ions
+            self.number_of_recoils = number_of_recoils
+            self.minimum_scattering_angle = minimum_scattering_angle
+            self.minimum_main_scattering_angle = minimum_main_scattering_angle
+            self.minimum_energy = minimum_energy
+            self.seed_number = seed_number
+            self.channel_width = channel_width
 
         if self.name_prefix != "":
             name = self.name_prefix + "-" + self.name
@@ -900,16 +920,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def get_mcerd_params(self) -> Tuple[Dict, Run, Detector]:
         """Returns the parameters for MCERD simulations.
         """
-        # TODO: The settings part could probably be simplified to just
-        #       `settings = self.get_settings()`
-        #       now that clone_request_settings has been added.
-        if self.use_default_settings:
-            settings = self.request.default_element_simulation.get_settings()
-        else:
-            settings = self.get_settings()
-
-        run = self.simulation.get_used_run()
-        detector = self.simulation.get_used_detector()
+        settings = self.get_settings()
+        run = self.simulation.run
+        detector = self.simulation.detector
 
         return settings, run, detector
 
@@ -917,6 +930,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         """Clone settings from request."""
         settings = self.request.default_element_simulation.get_settings()
         self.set_settings(**settings)
+
+        self.channel_width = \
+            self.request.default_element_simulation.channel_width
 
     def optimization_results_to_file(self, cut_file: Optional[Path] = None):
         """Saves optimizations results to file if they exist.

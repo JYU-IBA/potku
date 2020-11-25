@@ -302,21 +302,6 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             logging.getLogger("request").info(log)
         self.set_loggers(self.directory, self.request.directory)
 
-    def get_used_detector(self) -> Detector:
-        """Returns the Detector object that is currently used by this
-        Simulation.
-        """
-        if self.use_request_settings:
-            return self.request.default_detector
-        return self.detector
-
-    def get_used_run(self) -> Run:
-        """Returns the Run object that is currently used by this Simulation.
-        """
-        if self.use_request_settings:
-            return self.request.default_run
-        return self.run
-
     def get_measurement_file(self) -> Path:
         """Returns the path to .measurement file that contains the settings
         of this Simulation.
