@@ -100,7 +100,7 @@ class TestGetEspeRun(unittest.TestCase):
             "erd_file": _ERD_FILE,
             "reference_density": 4.98e22,
             "ch": 0.025,
-            "fluence": 1.00e+12,
+            "fluence": 5.00e+11,
             "timeres": self.detector.timeres,
         }
 
