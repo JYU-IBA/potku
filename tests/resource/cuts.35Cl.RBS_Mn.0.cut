@@ -1,0 +1,19 @@
+Count: 12
+Type: RBS
+Weight Factor: 1.0
+Energy: 0
+Detector Angle: 0
+Scatter Element: Mn
+Element losses: False
+Split count: 1
+
+ToF, Energy, Event number
+2621 3661 17
+2698 3680 27
+2639 3617 39
+2696 3834 41
+2600 3652 43
+2500 3610 47
+2668 3624 52
+2715 3619 63
+2604 3621 69

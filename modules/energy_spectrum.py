@@ -31,18 +31,27 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import logging
-import os
 import subprocess
 import platform
 
 import numpy as np
 
 from pathlib import Path
+from typing import List
+from typing import Tuple
+from typing import Optional
+from typing import Sequence
+from typing import Dict
 
+from .observing import ProgressReporter
 from . import general_functions as gf
+from . import subprocess_utils as sutils
 from .parsing import ToFListParser
 from .measurement import Measurement
 from .element import Element
+from .base import Espe
+
+TofListData = List[Tuple[float, float, float, int, float, str, float, int]]
 
 
 # TODO rename and refactor functions
@@ -50,8 +59,14 @@ from .element import Element
 class EnergySpectrum:
     """Class for energy spectrum.
     """
-    def __init__(self, measurement: Measurement, cut_files, spectrum_width,
-                 progress=None, no_foil=False):
+    def __init__(
+            self,
+            measurement: Measurement,
+            cut_files: Sequence[Path],
+            spectrum_width: float,
+            progress: Optional[ProgressReporter] = None,
+            no_foil: bool = False,
+            verbose: bool = True):
         """Inits energy spectrum
         
         Args:
@@ -61,22 +76,25 @@ class EnergySpectrum:
             spectrum_width: Float representing energy spectrum graph width.
             progress: ProgressReporter object.
             no_foil: whether foil thickness is set to 0 when running tof_list
+            verbose: whether tof_list's stderr is printed to console
         """
-        self.__measurement = measurement
-        self.__global_settings = self.__measurement.request.global_settings
-        self.__cut_files = cut_files
-        self.__spectrum_width = spectrum_width
-        self.__directory_es = measurement.get_energy_spectra_dir()
-        # TODO ATM tof_in is generated twice when calculating espes. This
-        #      should be refactored
-        tof_in_file = self.__measurement.generate_tof_in(no_foil=no_foil)
-        self.__tof_listed_files = self.__load_cuts(
-            no_foil=no_foil, progress=progress, tof_in_file=tof_in_file)
+        self._measurement = measurement
+        self._global_settings = self._measurement.request.global_settings
+        self._cut_files = cut_files
+        self._spectrum_width = spectrum_width
+        self._directory_es = measurement.get_energy_spectra_dir()
+        self._tof_listed_files = self._load_cuts(
+            no_foil=no_foil, progress=progress, verbose=verbose)
 
     @staticmethod
-    def calculate_measured_spectra(measurement: Measurement, cut_files,
-                                   spectrum_width, progress=None,
-                                   use_efficiency=False, no_foil=False):
+    def calculate_measured_spectra(
+            measurement: Measurement,
+            cut_files: Sequence[Path],
+            spectrum_width: float,
+            progress: Optional[ProgressReporter] = None,
+            use_efficiency: bool = False,
+            no_foil: bool = False,
+            verbose: bool = True) -> Dict[str, Espe]:
         """Calculates the measured energy spectra for the given .cut files.
 
         Args:
@@ -88,16 +106,21 @@ class EnergySpectrum:
             use_efficiency: whether efficiency is taken into account when
                 spectra is calculated
             no_foil: whether foil thickness is set to 0 when running tof_list
+            verbose: whether tof_list's stderr is printed to console
 
         Returns:
             energy spectra as a dictionary
         """
-        es = EnergySpectrum(measurement, cut_files, spectrum_width,
-                            progress=progress, no_foil=no_foil)
+        es = EnergySpectrum(
+            measurement, cut_files, spectrum_width, progress=progress,
+            no_foil=no_foil, verbose=verbose)
         return es.calculate_spectrum(
             use_efficiency=use_efficiency, no_foil=no_foil)
 
-    def calculate_spectrum(self, use_efficiency=False, no_foil=False):
+    def calculate_spectrum(
+            self,
+            use_efficiency: bool = False,
+            no_foil: bool = False) -> Dict[str, Espe]:
         """Calculate energy spectrum data from cut files.
 
         Args:
@@ -105,18 +128,19 @@ class EnergySpectrum:
                 spectra is calculated
             no_foil: whether foil thickness is set to 0 or original foil
                 thickness is used
-        
+
         Returns:
             energy spectra as a dictionary
         """
-        # First generate tof.in file to match the measurement whose energy
-        # spectra are drawn.
-        self.__measurement.generate_tof_in(no_foil=no_foil)
         return EnergySpectrum._calculate_spectrum(
-            self.__tof_listed_files, self.__spectrum_width, self.__measurement,
-            self.__directory_es, use_efficiency=use_efficiency, no_foil=no_foil)
+            self._tof_listed_files, self._spectrum_width, self._measurement,
+            self._directory_es, use_efficiency=use_efficiency, no_foil=no_foil)
 
-    def __load_cuts(self, no_foil=False, progress=None, tof_in_file=None):
+    def _load_cuts(
+            self,
+            no_foil: bool = False,
+            progress: Optional[ProgressReporter] = None,
+            verbose: bool = True) -> Dict[str, TofListData]:
         """Loads cut files through tof_list into list.
 
         Args:
@@ -126,44 +150,52 @@ class EnergySpectrum:
         Return:
             Returns list of cut files' tof_list results.
         """
+        tof_in = self._measurement.generate_tof_in(no_foil=no_foil)
         cut_dict = {}
         try:
-            save_output = self.__global_settings.is_es_output_saved()
-            count = len(self.__cut_files)
+            if self._global_settings.is_es_output_saved():
+                directory = self._directory_es
+            else:
+                directory = None
+
+            count = len(self._cut_files)
             
-            self.__directory_es.mkdir(exist_ok=True)
+            self._directory_es.mkdir(exist_ok=True)
             
-            for i, cut_file in enumerate(self.__cut_files):
-                filename_split = os.path.basename(cut_file).split('.')
+            for i, cut_file in enumerate(self._cut_files):
+                # TODO move cut file handling to cut_file module
+                filename_split = cut_file.name.split('.')
                 element = Element.from_string(filename_split[1])
 
-                if len(filename_split) == 5:  # Regular cut file
-                    # TODO name the split parts
-                    key = "{0}.{1}.{2}".format(
-                        element, filename_split[2], filename_split[3])
-                else:  # Elemental Losses cut file
-                    key = "{0}.{1}.{2}.{3}".format(
-                        element, filename_split[2], filename_split[3],
-                        filename_split[4])
+                if not (5 <= len(filename_split) <= 6):
+                    raise ValueError(
+                        f"Could not parse cut file name: {cut_file}")
+
+                key = ".".join([str(element), *filename_split[2:-1]])
 
                 cut_dict[key] = EnergySpectrum.tof_list(
-                    cut_file, self.__directory_es, save_output=save_output,
-                    no_foil=no_foil, logger_name=self.__measurement.name,
-                    tof_in_file=tof_in_file)
+                    cut_file, directory, no_foil=no_foil,
+                    logger_name=self._measurement.name,
+                    tof_in=tof_in, verbose=verbose)
 
                 if progress is not None:
                     progress.report(i / count * 90)
         except Exception as e:
             msg = f"Could not calculate Energy Spectrum: {e}."
-            logging.getLogger(self.__measurement.name).error(msg)
+            logging.getLogger(self._measurement.name).error(msg)
         finally:
             if progress is not None:
                 progress.report(100)
         return cut_dict
 
     @staticmethod
-    def tof_list(cut_file: Path, directory: Path = None, save_output=False,
-                 no_foil=False, logger_name=None, tof_in_file="tof.in"):
+    def tof_list(
+            cut_file: Path,
+            directory: Optional[Path] = None,
+            no_foil: bool = False,
+            logger_name: Optional[str] = None,
+            tof_in: Path = Path("tof.in"),
+            verbose: bool = True) -> TofListData:
         """ToF_list
 
         Arstila's tof_list executables interface for Python.
@@ -172,57 +204,42 @@ class EnergySpectrum:
             cut_file: A Path representing cut file to be ran through tof_list.
             directory: A Path representing measurement's energy spectrum
                 directory.
-            save_output: A boolean representing whether tof_list output is
-                saved.
             no_foil: whether foil thickness was used when .cut files were
                 generated. This affects the file path when saving output
             logger_name: name of a logging entity
+            tof_in: path to tof_in_file
+            verbose: whether tof_list's stderr is printed to console
 
         Returns:
             Returns cut file as list transformed through Arstila's tof_list
             program.
         """
-        bin_dir = gf.get_bin_dir()
-
         if not cut_file:
             return []
 
         tof_parser = ToFListParser()
+        cmd = EnergySpectrum.get_command(tof_in, cut_file)
+        stderr = None if verbose else subprocess.DEVNULL
 
         try:
-            if platform.system() == 'Windows':
-                executable = str(bin_dir / "tof_list.exe")
-            else:
-                executable = "./tof_list"
+            with subprocess.Popen(
+                    cmd, cwd=gf.get_bin_dir(), stdout=subprocess.PIPE,
+                    universal_newlines=True, stderr=stderr) as tof_list:
 
-            cmd = executable, str(tof_in_file), str(cut_file)
-            p = subprocess.Popen(
-                cmd, cwd=bin_dir, stdout=subprocess.PIPE,
-                universal_newlines=True)
-
-            raw_output = iter(p.stdout.readline, "")
-            parsed_output = tof_parser.parse_strs(
-                raw_output, method="row", ignore="w")
-
-            if save_output:
-                if directory is None:
-                    directory = Path.cwd() / "energy_spectrum_output"
-
-                directory.mkdir(exist_ok=True)
-
-                if no_foil:
-                    foil_txt = ".no_foil"
+                if directory is not None:
+                    directory.mkdir(exist_ok=True)
+                    tof_list_file = EnergySpectrum.get_tof_list_file_name(
+                        directory, cut_file, no_foil=no_foil)
                 else:
-                    foil_txt = ""
+                    tof_list_file = None
 
-                es_file = directory / f"{cut_file.stem}{foil_txt}.tof_list"
-                ls = []
-                with es_file.open("w") as file:
-                    for row in parsed_output:
-                        file.write(f"{' '.join(str(col) for col in row)}\n")
-                        ls.append(row)
-                return ls
-            return list(parsed_output)
+                tof_list_data = sutils.process_output(
+                    tof_list,
+                    tof_parser.parse_str,
+                    file=tof_list_file,
+                    text_func=lambda x: f"{' '.join(str(col) for col in x)}\n"
+                )
+                return tof_list_data
         except Exception as e:
             msg = f"Error in tof_list: {e}"
             if logger_name is not None:
@@ -232,9 +249,49 @@ class EnergySpectrum:
             return []
 
     @staticmethod
-    def _calculate_spectrum(tof_listed_files, spectrum_width: float,
-                            measurement: Measurement, directory_es: Path,
-                            use_efficiency=False, no_foil=False):
+    def get_command(tof_in: Path, cut_file: Path) -> Tuple[str, str, str]:
+        """Returns the command for running tof_list.
+        """
+        if platform.system() == 'Windows':
+            executable = str(gf.get_bin_dir() / "tof_list.exe")
+        else:
+            executable = "./tof_list"
+        return executable, str(tof_in), str(cut_file)
+
+    @staticmethod
+    def get_tof_list_file_name(
+            directory: Path, cut_file: Path, no_foil: bool = False) -> Path:
+        foil_txt = ".no_foil" if no_foil else ""
+        return directory / f"{cut_file.stem}{foil_txt}.tof_list"
+
+    @staticmethod
+    def get_hist_file_name(
+            directory: Path, measurement_name: str, key: str,
+            no_foil: bool = False) -> Path:
+        foil_txt = ".no_foil" if no_foil else ""
+        measurement_name = Path(measurement_name)
+
+        return Path(
+            directory,
+            f"{measurement_name.name}.{key}{foil_txt}.hist")
+
+    @staticmethod
+    def pad_with_zeroes(espe: Espe, spectrum_width: float) -> Espe:
+        """Returns energy spectrum data that has been padded with zeroes at
+        both ends.
+        """
+        first_val = espe[0][0] - spectrum_width, 0
+        last_val = espe[-1][0] + spectrum_width, 0
+        return [first_val, *espe, last_val]
+
+    @staticmethod
+    def _calculate_spectrum(
+            tof_listed_files,
+            spectrum_width: float,
+            measurement: Measurement,
+            directory_es: Path,
+            use_efficiency: bool = False,
+            no_foil: bool = False) -> Dict[str, Espe]:
         """Calculate energy spectrum data from .tof_list files and writes the
         results to .hist files.
 
@@ -246,50 +303,34 @@ class EnergySpectrum:
             directory_es: directory
             use_efficiency: whether efficiency is taken into account when
                 spectra is calculated
-            no_foil: whether foil thickeness was set to 0 or not. This also
+            no_foil: whether foil thickness was set to 0 or not. This also
                 affects the file name
 
         Returns:
             contents of .hist files as a dict
         """
-        histed_files = {}
-        keys = tof_listed_files.keys()
-        invalid_keys = set()
+        espes = {}
         if use_efficiency:
             y_col = 6
         else:
             y_col = None
 
-        for key in keys:
-            histed_files[key] = gf.hist(
-                tof_listed_files[key], col=2, weight_col=y_col,
+        for key, tof_list_data in tof_listed_files.items():
+            espe = gf.hist(
+                tof_list_data, col=2, weight_col=y_col,
                 width=spectrum_width)
-            if not histed_files[key]:
-                invalid_keys.add(key)
+
+            if not espe:
+                espes[key] = espe
                 continue
-            first_val = (histed_files[key][0][0] - spectrum_width, 0)
-            last_val = (histed_files[key][-1][0] + spectrum_width, 0)
-            histed_files[key].insert(0, first_val)
-            histed_files[key].append(last_val)
 
-        for key in keys:
-            if key in invalid_keys:
-                continue
-            file = measurement.name
-            histed = histed_files[key]
+            espes[key] = EnergySpectrum.pad_with_zeroes(espe, spectrum_width)
 
-            if no_foil:
-                foil_txt = ".no_foil"
-            else:
-                foil_txt = ""
+            filename = EnergySpectrum.get_hist_file_name(
+                directory_es, measurement.name, key, no_foil=no_foil)
 
-            filename = Path(directory_es,
-                            "{0}.{1}{2}.hist".format(os.path.splitext(file)[0],
-                                                     key,
-                                                     foil_txt))
-            numpy_array = np.array(histed,
-                                   dtype=[('float', float), ('int', int)])
-
+            numpy_array = np.array(
+                espe, dtype=[("float", float), ("int", int)])
             np.savetxt(filename, numpy_array, delimiter=" ", fmt="%5.5f %6d")
 
-        return histed_files
+        return espes

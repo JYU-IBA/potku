@@ -1,0 +1,20 @@
+Count: 10
+Type: ERD
+Weight Factor: 1.0
+Energy: 0
+Detector Angle: 0
+Scatter Element: 
+Element losses: False
+Split count: 1
+
+ToF, Energy, Event number
+1078 639 764
+1065 634 3688
+1059 647 7581
+1068 621 18325
+1081 628 28211
+1057 637 41176
+1086 635 53683
+1083 637 57440
+1080 622 109997
+1071 643 113722

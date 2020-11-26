@@ -35,7 +35,6 @@ from pathlib import Path
 from typing import Optional
 from typing import Iterable
 from typing import Tuple
-from typing import List
 
 from . import general_functions as gf
 from . import subprocess_utils as sutils
@@ -44,10 +43,7 @@ from .beam import Beam
 from .detector import Detector
 from .target import Target
 from .parsing import CSVParser
-
-# Helper type hint for energy spectrum data
-# TODO create an actual class for spectrum data
-Espe = List[Tuple[float, float]]
+from .base import Espe
 
 
 class GetEspe:

@@ -167,14 +167,17 @@ def get_simulation(request=None) -> Simulation:
         enable_logging=False)
 
 
-def get_measurement(request=None) -> Measurement:
+def get_measurement(request=None, path=None,
+                    save_on_creation=False) -> Measurement:
     """Returns a Measurement object.
     """
     if request is None:
         request = get_request()
 
+    path = path or _TEMP_DIR / "mesu"
+
     return Measurement(
-        request, _TEMP_DIR / "mesu", save_on_creation=False,
+        request, path=path, save_on_creation=save_on_creation,
         enable_logging=False)
 
 
