@@ -44,7 +44,7 @@ class Run(Serializable, AdjustableSettings):
     Class that handles parameters concerning a run.
     """
 
-    def __init__(self, beam=None, fluence=1.00e+9, current=1.07,
+    def __init__(self, beam=None, fluence=5.00e+11, current=1.07,
                  charge=0.641, run_time=600):
         """
         Initializes the Run object.
