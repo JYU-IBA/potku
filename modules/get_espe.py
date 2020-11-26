@@ -58,7 +58,7 @@ class GetEspe:
                  tangle: float, toflen: float, solid: float,
                  recoil_file: Path, erd_file: Path,
                  reference_density: float = 4.98e22,
-                 ch: float = 0.025, fluence: float = 1.00e+12,
+                 ch: float = 0.025, fluence: float = 5.00e+11,
                  timeres: float = 250.0):
         """Initializes the GetEspe class.
 
