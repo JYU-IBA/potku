@@ -652,11 +652,11 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                     delete_es = True
                     # Remove unnecessary tof_list and hist files
                     # TODO check that also no_foil.hist file is removed
-                    cut_file_name = os.path.split(cut)[1].rsplit('.', 1)[0]
+                    cut_file_name = Path(cut).stem
                     gf.remove_matching_files(
                         self.measurement.get_energy_spectra_dir(),
                         exts={".hist", ".tof_list"},
-                        filter_func=lambda f: f.name == cut_file_name)
+                        filter_func=lambda f: Path(f).stem == cut_file_name)
             if delete_es:
                 save_file = os.path.join(
                     self.measurement.get_energy_spectra_dir(),
