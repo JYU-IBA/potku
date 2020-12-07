@@ -143,9 +143,10 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             directory: Path to where all the detector information goes.
         """
         self.path = directory / self.path.name
+        # No parents=True because the parent directory must exist anyway
         directory.mkdir(exist_ok=True)
 
-        self.get_efficiency_dir().mkdir(exist_ok=True)
+        self.get_efficiency_dir().mkdir(exist_ok=True, parents=True)
 
     def update_directory_references(self, obj):
         """
@@ -188,10 +189,13 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         Args:
             file_path: Path of the efficiency file.
         """
+        destination = self.get_efficiency_dir()
+        destination.mkdir(exist_ok=True, parents=True)
+
         fp = Path(file_path)
         if fp.suffix == ".eff":
             try:
-                shutil.copy(fp, self.get_efficiency_dir())
+                shutil.copy(fp, destination)
             except shutil.SameFileError:
                 pass
 
