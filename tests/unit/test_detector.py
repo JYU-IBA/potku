@@ -189,6 +189,24 @@ class TestEfficiencyFiles(unittest.TestCase):
             if f.endswith(".eff") and f != ".eff"
         ])
 
+    def tearDown(self) -> None:
+        if self.det:
+            self.det.remove_efficiency_files()
+
+            # Path.rmdir only removes empty directories so it's safe to use
+            try:
+                self.det.get_used_efficiencies_dir().rmdir()
+            except FileNotFoundError:
+                pass
+            try:
+                self.det.get_efficiency_dir().rmdir()
+            except FileNotFoundError:
+                pass
+            try:
+                self.det.path.rmdir()
+            except FileNotFoundError:
+                pass
+
     def test_get_efficiency_files(self):
         """get_efficiency_files only returns files ending in .eff even if
         the directory contains other files.
@@ -235,13 +253,9 @@ class TestEfficiencyFiles(unittest.TestCase):
         """
         with tempfile.TemporaryDirectory() as tmp_dir:
             self.create_eff_files(tmp_dir, self.eff_files)
-            # If detector dir has not yet been established with the
-            # update_directories_method, add_efficiency_file raises an error
             path = Path(tmp_dir, "1H.eff")
             tmp_path = Path(tmp_dir)
             self.assertTrue(path.exists())
-            self.assertRaises(
-                FileNotFoundError, lambda: self.det.add_efficiency_file(path))
 
             self.det.update_directories(tmp_path)
 
