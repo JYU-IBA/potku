@@ -452,7 +452,7 @@ class GlobalSettings:
         self._config[self._TOFE]["bin_range_y_min"] = str(value_min)
         self._config[self._TOFE]["bin_range_y_max"] = str(value_max)
 
-    @handle_exceptions(return_value=10)
+    @handle_exceptions(return_value=6)
     def get_tofe_compression_x(self) -> int:
         """Get ToF-E Histogram X axis compression.
 
@@ -469,7 +469,7 @@ class GlobalSettings:
         """
         self._config[self._TOFE]["compression_x"] = str(value)
 
-    @handle_exceptions(return_value=10)
+    @handle_exceptions(return_value=6)
     def get_tofe_compression_y(self) -> int:
         """Get ToF-E Histogram Y axis compression.
 
