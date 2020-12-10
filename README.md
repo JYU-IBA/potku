@@ -110,9 +110,11 @@ or generated with
 
 ### Tests
 
-Tests are located in the ``tests`` package. They are divided into unit tests 
-(tests that cover one or two functions at a time) and integration tests 
-(tests that cover multiple components).
+Tests are located in the `tests` package. They are divided into unit tests 
+(tests that cover one or two functions at a time), integration tests 
+(tests that cover multiple components) and GUI tests. GUI tests require a running 
+`QApplication` instance which is created by adding `import tests.gui` at the top 
+of each test module.
   
 Tests have been written using unittest framework. With the virtual environment 
 activated, they can be run from the root directory of the project with:
@@ -130,9 +132,6 @@ working on Windows.
 
 Place AWK under `external/bin/`. The executable must be named `awk` or 
 (`awk.exe` on Windows) for Potku detect and use it.
-
-Packaged distributions of Potku require manually adding AWK, at least on 
-Windows. Copy AWK to `potku/dist/potku/external/bin/` in the package.
 
 ## Packaging Potku into a standalone executable (work in progress)
 
