@@ -1,6 +1,6 @@
 # Installing MSYS2 for C compilation
 
-This is a guide for setting up an MSYS2 + MinGW64 environment on Windows. This enables compiling C programs that don't use CMake (see the main README.md for instructions on CMake programs).
+This is a guide for setting up an MSYS2 + MinGW64 environment on Windows. This enables compiling C programs that don't use CMake (see the main [README.md](README.md) for instructions on CMake programs).
 
 There are several ways to set up a C environment on Windows. The approach in this guide is a relatively straightforward one.
 
