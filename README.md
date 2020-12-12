@@ -82,7 +82,7 @@ to compile all programs. Note that this script has no error checking, if you enc
 
 Follow the instructions 1 - 4 described in [here](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#installation-instructions-for-microsoft-windows-10).
 
-See [c_for_windows_example.md](c_for_windows_example.md) for one way to set up the rest of the C environment.
+See [c_for_windows_example.md](c_for_windows_example.md) for an example on how to set up the rest of the C environment (make and gcc).
 
 To compile the programs, run
 
