@@ -125,6 +125,7 @@ class Potku(QtWidgets.QMainWindow):
         self.actionImport_pelletron.triggered.connect(self.import_pelletron)
         self.actionBinary_data_lst.triggered.connect(self.import_binary)
         self.action_manual.triggered.connect(self.__open_manual)
+        self.actionDataHelp.triggered.connect(self.__open_data_help)
 
         self.actionSave_cuts.triggered.connect(
             self.current_measurement_save_cuts)
@@ -1485,6 +1486,28 @@ class Potku(QtWidgets.QMainWindow):
                 self, "Not found",
                 "There is no manual to be found!",
                 QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+                
+                
+    def __open_data_help(self):
+        """Open data help file.
+        """
+        # TODO duplicate code with __open_manual
+        # TODO changed the file path to point to the manual, I guess this needs
+        #      to be updated in the .spec file too?
+        manual_filename = Path("documentation", "Potku_data_explained.pdf")
+        used_os = platform.system()
+        try:
+            if used_os == "Windows":
+                os.startfile(manual_filename)
+            elif used_os == "Linux":
+                subprocess.call(("xdg-open", manual_filename))
+            elif used_os == "Darwin":
+                subprocess.call(("open", manual_filename))
+        except OSError:
+            QtWidgets.QMessageBox.critical(
+                self, "Not found",
+                "There is no file to be found!",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)                
 
 
 def main():

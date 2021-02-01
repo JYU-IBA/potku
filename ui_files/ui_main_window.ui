@@ -589,6 +589,7 @@ simulation</string>
      <string>Help</string>
     </property>
     <addaction name="action_manual"/>
+    <addaction name="actionDataHelp"/>
     <addaction name="actionAbout"/>
    </widget>
    <addaction name="menuFile"/>
@@ -751,6 +752,11 @@ simulation</string>
   <action name="action_manual">
    <property name="text">
     <string>Open user manual</string>
+   </property>
+  </action>
+  <action name="actionDataHelp">
+   <property name="text">
+    <string>Potku data explained</string>
    </property>
   </action>
   <action name="actionImport_pelletron">
