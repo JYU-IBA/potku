@@ -149,8 +149,9 @@ class VerticalLimits(GraphWrapper):
     _DEFAULT_X = 0.0
     _DEFAULT_COLOR = "blue"
 
-    def __init__(self, canvas, axes, xs: Optional[Range] = None, colors:
-    Optional[StrTuple] = None, **kwargs):
+    def __init__(
+            self, canvas, axes, xs: Optional[Range] = None,
+            colors: Optional[StrTuple] = None, **kwargs):
         """Initializes a new VerticalLimits object
 
         Args:
@@ -183,7 +184,7 @@ class VerticalLimits(GraphWrapper):
 
     @staticmethod
     def _unpack_args(tpl: Tuple, default_value: Any) -> Tuple[Any, Any]:
-        """Helper method for unpacking tuple argumenets.
+        """Helper method for unpacking tuple arguments.
         """
         if not tpl:
             return default_value, default_value
