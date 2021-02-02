@@ -756,7 +756,7 @@ simulation</string>
   </action>
   <action name="actionDataHelp">
    <property name="text">
-    <string>Potku data explained</string>
+    <string>Depth profile data explained</string>
    </property>
   </action>
   <action name="actionImport_pelletron">

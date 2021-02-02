@@ -38,6 +38,7 @@ import subprocess
 import sys
 import functools
 
+import modules.general_functions as gf
 import dialogs.dialog_functions as df
 import widgets.input_validation as iv
 import widgets.gui_utils as gutils
@@ -1470,44 +1471,37 @@ class Potku(QtWidgets.QMainWindow):
     def __open_manual(self):
         """Open user manual.
         """
-        # TODO changed the file path to point to the manual, I guess this needs
-        #      to be updated in the .spec file too?
-        manual_filename = Path("documentation", "manual", "Potku-manual.pdf")
-        used_os = platform.system()
-        try:
-            if used_os == "Windows":
-                os.startfile(manual_filename)
-            elif used_os == "Linux":
-                subprocess.call(("xdg-open", manual_filename))
-            elif used_os == "Darwin":
-                subprocess.call(("open", manual_filename))
-        except OSError:
-            QtWidgets.QMessageBox.critical(
-                self, "Not found",
-                "There is no manual to be found!",
-                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+        manual_filename = gf.get_root_dir() / "documentation" / "manual" /"Potku-manual.pdf"
+        self.__open_file(manual_filename)        
                 
                 
     def __open_data_help(self):
         """Open data help file.
+        """        
+        data_help_filename = gf.get_root_dir() / "documentation" / "Potku_data_explained.pdf"
+        self.__open_file(data_help_filename)
+                
+    def __open_file(self, filepath):
+        """Opens file from filepath. 
+        
+        Args: 
+                filepath: Path of the file                
         """
-        # TODO duplicate code with __open_manual
         # TODO changed the file path to point to the manual, I guess this needs
         #      to be updated in the .spec file too?
-        manual_filename = Path("documentation", "Potku_data_explained.pdf")
         used_os = platform.system()
         try:
             if used_os == "Windows":
-                os.startfile(manual_filename)
+                os.startfile(filepath)
             elif used_os == "Linux":
-                subprocess.call(("xdg-open", manual_filename))
+                subprocess.call(("xdg-open", filepath))
             elif used_os == "Darwin":
-                subprocess.call(("open", manual_filename))
+                subprocess.call(("open", filepath))
         except OSError:
             QtWidgets.QMessageBox.critical(
                 self, "Not found",
                 "There is no file to be found!",
-                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)                
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)                     
 
 
 def main():
