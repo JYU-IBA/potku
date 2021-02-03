@@ -101,12 +101,10 @@ class TestFoil(unittest.TestCase):
                                foil.get_solid_angle(units="sr"),
                                places=places)
 
-    def test_slots(self):
+    def test_foils_have_slots(self):
         """Tests that __slots__ work properly for Foils"""
-        self.assertRaises(AttributeError,
-                          lambda: utils.slots_test(RectangularFoil()))
-        self.assertRaises(AttributeError,
-                          lambda: utils.slots_test(CircularFoil()))
+        utils.assert_has_slots(RectangularFoil())
+        utils.assert_has_slots(CircularFoil())
 
     def test_get_mcerd_params(self):
         unit_rec = RectangularFoil(size_x=1.0, size_y=1.0, distance=1.0)

@@ -197,3 +197,9 @@ def get_extected_folder_structure(root, name):
             "tof_in": {}
         }
     }
+
+
+class TestMeasurement(unittest.TestCase):
+    def test_measurement_has_slots(self):
+        m = mo.get_measurement()
+        utils.assert_has_slots(m)

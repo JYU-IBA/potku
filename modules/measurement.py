@@ -252,9 +252,14 @@ class Measurement(Logger, Serializable):
     """Measurement class to handle one measurement data.
     """
 
-    # __slots__ = "request", "tab_id", "name", "description",\
-    #             "modification_time", "run", "detector", "target", \
-    #             "profile"
+    __slots__ = "request", "tab_id", "name", "description",\
+                "modification_time", "run", "detector", "target", \
+                "profile", "path", "sample", "measurement_setting_file_name", \
+                "measurement_setting_file_description", "serial_number", \
+                "measurement_setting_modification_time", "data", \
+                "measurement_file", "directory", "use_request_settings", \
+                "selector"
+
     DIRECTORY_PREFIX = "Measurement_"
 
     def __init__(self, request, path, tab_id=-1, name="Default",
