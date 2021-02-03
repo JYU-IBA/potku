@@ -178,9 +178,11 @@ class DepthProfileDialog(QtWidgets.QDialog):
 
                 # If reference density changed, update value to measurement
                 if self.__reference_density_spinbox is not None:
-                    if self.measurement.reference_density != \
+                    # FIXME selected reference density has no effect if
+                    #   measurement uses request settings
+                    if self.measurement.profile.reference_density != \
                             self.__reference_density_spinbox.value():
-                        self.measurement.reference_density = \
+                        self.measurement.profile.reference_density = \
                             self.__reference_density_spinbox.value()
                         self.measurement.to_file()
                 
@@ -225,7 +227,8 @@ class DepthProfileDialog(QtWidgets.QDialog):
         ref_density_spin_box.setEnabled(True)
         ref_density_spin_box.setLocale(self.locale)
 
-        ref_density_spin_box.setValue(self.measurement.reference_density)
+        ref_density_spin_box.setValue(
+            self.measurement.profile.reference_density)
 
         layout.insertWidget(3, ref_density_label)
         layout.insertWidget(4, ref_density_spin_box)
