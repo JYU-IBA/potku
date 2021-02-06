@@ -69,6 +69,20 @@ class DepthProfileDialog(QtWidgets.QDialog):
 
     status_msg = bnd.bind("label_status")
     used_cuts = bnd.bind("treeWidget")
+    cross_sections = bnd.bind("label_cross")
+    tof_slope = bnd.bind("label_calibslope")
+    tof_offset = bnd.bind("label_caliboffset")
+    depth_stop = bnd.bind("label_depthstop")
+    depth_steps = bnd.bind("label_depthnumber")
+    depth_bin = bnd.bind("label_depthbin")
+    depth_scale = bnd.bind("label_depthscale")
+
+    systematic_error = bnd.bind("spin_systerr")
+    show_scale_line = bnd.bind("check_scaleline")
+    show_zero_line = bnd.bind("check_0line")
+    reference_density = bnd.bind("sbox_reference_density")
+
+    used_efficiency_files = bnd.bind("label_efficiency_files")
     
     def __init__(self, parent: BaseTab, measurement: Measurement,
                  global_settings: GlobalSettings, statusbar:
@@ -86,30 +100,27 @@ class DepthProfileDialog(QtWidgets.QDialog):
 
         self.parent = parent
         self.measurement = measurement
-        self.__global_settings = global_settings
         self.statusbar = statusbar
         
         # Connect buttons
-        self.OKButton.clicked.connect(self.__accept_params)
+        self.OKButton.clicked.connect(self._accept_params)
         self.cancelButton.clicked.connect(self.close)
 
-        self.__reference_density_label = None
-        self.__reference_density_spinbox = None
+        locale = QLocale.c()
+        self.spin_systerr.setLocale(locale)
+        self.sbox_reference_density.setLocale(locale)
 
-        self.locale = QLocale.c()
-
-        self.spin_systerr.setLocale(self.locale)
-
-        self.radioButtonNm.clicked.connect(self.__add_reference_density)
+        self.radioButtonNm.clicked.connect(self._show_reference_density)
         self.radioButtonAtPerCm2.clicked.connect(
-            self.__remove_reference_density)
+            self._hide_reference_density)
 
         m_name = self.measurement.name
         if m_name not in DepthProfileDialog.checked_cuts:
             DepthProfileDialog.checked_cuts[m_name] = set()
 
         gutils.fill_cuts_treewidget(
-            self.measurement, self.treeWidget.invisibleRootItem(),
+            self.measurement,
+            self.treeWidget.invisibleRootItem(),
             use_elemloss=True)
         self.used_cuts = DepthProfileDialog.checked_cuts[m_name]
         
@@ -119,21 +130,22 @@ class DepthProfileDialog(QtWidgets.QDialog):
             radio_button.setChecked(radio_button.text() == x_unit)
 
         if x_unit == "nm":
-            self.__add_reference_density()
-        
-        self.check_0line.setChecked(DepthProfileDialog.line_zero)
-        self.check_scaleline.setChecked(DepthProfileDialog.line_scale)
-        
-        self.label_cross.setText(str(
-            self.__global_settings.get_cross_sections()
-        ))
-        self.spin_systerr.setValue(DepthProfileDialog.systerr)
+            self._show_reference_density()
+        else:
+            self._hide_reference_density()
 
-        self.__show_important_settings()
+        self.systematic_error = DepthProfileDialog.systerr
+        self.show_scale_line = DepthProfileDialog.line_scale
+        self.show_zero_line = DepthProfileDialog.line_zero
+
+        self.cross_sections = global_settings.get_cross_sections()
+
+        self._show_measurement_settings()
+        self._show_efficiency_files()
         self.exec_()
 
     @gutils.disable_widget
-    def __accept_params(self, *_):
+    def _accept_params(self, *_):
         """Accept given parameters.
 
         Args:
@@ -148,8 +160,8 @@ class DepthProfileDialog(QtWidgets.QDialog):
             
             # Get the filepaths of the selected items
             used_cuts = self.used_cuts
-            DepthProfileDialog.checked_cuts[self.measurement.name] = \
-                set(used_cuts)
+            DepthProfileDialog.checked_cuts[self.measurement.name] = set(
+                used_cuts)
             # TODO could take care of RBS selection here
             elements = [
                 Element.from_string(fp.name.split(".")[1])
@@ -162,11 +174,11 @@ class DepthProfileDialog(QtWidgets.QDialog):
             for radio_button in radio_buttons:
                 if radio_button.isChecked():
                     x_unit = radio_button.text()
+
             DepthProfileDialog.x_unit = x_unit
-            
-            DepthProfileDialog.line_zero = self.check_0line.isChecked()
-            DepthProfileDialog.line_scale = self.check_scaleline.isChecked()
-            DepthProfileDialog.systerr = self.spin_systerr.value()
+            DepthProfileDialog.line_zero = self.show_zero_line
+            DepthProfileDialog.line_scale = self.show_scale_line
+            DepthProfileDialog.systerr = self.systematic_error
 
             sbh.reporter.report(20)
 
@@ -177,14 +189,12 @@ class DepthProfileDialog(QtWidgets.QDialog):
                     self.parent.del_widget(self.parent.depth_profile_widget)
 
                 # If reference density changed, update value to measurement
-                if self.__reference_density_spinbox is not None:
-                    # FIXME selected reference density has no effect if
-                    #   measurement uses request settings
-                    if self.measurement.profile.reference_density != \
-                            self.__reference_density_spinbox.value():
-                        self.measurement.profile.reference_density = \
-                            self.__reference_density_spinbox.value()
-                        self.measurement.to_file()
+                if x_unit == "nm":
+                    _, _, _, profile, measurement = \
+                        self.measurement.get_used_settings()
+                    if profile.reference_density != self.reference_density:
+                        profile.reference_density = self.reference_density
+                        measurement.to_file()
                 
                 self.parent.depth_profile_widget = DepthProfileWidget(
                     self.parent, output_dir, used_cuts, elements, x_unit,
@@ -211,98 +221,41 @@ class DepthProfileDialog(QtWidgets.QDialog):
         finally:
             sbh.reporter.report(100)
 
-    def __add_reference_density(self):
+    def _show_reference_density(self):
         """
         Add a filed for modifying the reference density.
         """
-        layout = self.horizontalAxisUnitsLayout
+        self.label_reference_density.setVisible(True)
+        self.sbox_reference_density.setVisible(True)
 
-        ref_density_label = QtWidgets.QLabel(
-            '<html><head/><body><p>Reference density [g/cm<span '
-            'style=" vertical-align:super;">3</span>]:</p></body></html>')
-
-        ref_density_spin_box = QtWidgets.QDoubleSpinBox()
-        ref_density_spin_box.setMaximum(9999.00)
-        ref_density_spin_box.setDecimals(2)
-        ref_density_spin_box.setEnabled(True)
-        ref_density_spin_box.setLocale(self.locale)
-
-        ref_density_spin_box.setValue(
-            self.measurement.profile.reference_density)
-
-        layout.insertWidget(3, ref_density_label)
-        layout.insertWidget(4, ref_density_spin_box)
-
-        self.__reference_density_label = ref_density_label
-        self.__reference_density_spinbox = ref_density_spin_box
-
-    def __remove_reference_density(self):
+    def _hide_reference_density(self):
         """
         Remove reference density form dialog if it is there.
         """
-        if self.__reference_density_spinbox and self.__reference_density_label:
-            layout = self.horizontalAxisUnitsLayout
+        self.label_reference_density.setVisible(False)
+        self.sbox_reference_density.setVisible(False)
 
-            layout.removeWidget(self.__reference_density_label)
-            self.__reference_density_label.deleteLater()
-
-            layout.removeWidget(self.__reference_density_spinbox)
-            self.__reference_density_spinbox.deleteLater()
-
-            self.__reference_density_spinbox = None
-            self.__reference_density_label = None
-
-    def __update_eff_files(self):
+    def _show_efficiency_files(self):
         """Update efficiency files to UI which are used.
         """
-        detector = self.measurement.get_detector_or_default()
-        self.label_efficiency_files.setText(
-            df.get_efficiency_text(self.treeWidget, detector))
+        detector, *_ = self.measurement.get_used_settings()
+        self.used_efficiency_files = df.get_efficiency_text(
+            self.treeWidget, detector)
 
-    def __show_important_settings(self):
+    def _show_measurement_settings(self):
         """Show some important setting values in the depth profile parameter
         dialog for the user.
         """
-        detector = self.measurement.get_detector_or_default()
+        detector, _, _, profile, _ = self.measurement.get_used_settings()
 
-        if self.measurement.use_request_settings:
-            depth_step_for_stopping = \
-                self.measurement.request.default_measurement\
-                    .profile.depth_step_for_stopping
-            number_of_depth_steps = \
-                self.measurement.request.default_measurement\
-                    .profile.number_of_depth_steps
-            depth_step_for_output = \
-                self.measurement.request.default_measurement\
-                    .profile.depth_step_for_output
-            depth_for_concentration_from = \
-                self.measurement.request.default_measurement\
-                    .profile.depth_for_concentration_from
-            depth_for_concentration_to = \
-                self.measurement.request.default_measurement\
-                    .profile.depth_for_concentration_to
-        else:
-            depth_step_for_stopping = self.measurement.\
-                profile.depth_step_for_stopping
-            number_of_depth_steps = self.measurement.\
-                profile.number_of_depth_steps
-            depth_step_for_output = self.measurement.\
-                profile.depth_step_for_output
-            depth_for_concentration_from = self.measurement\
-                .profile.depth_for_concentration_from
-            depth_for_concentration_to = self.measurement\
-                .profile.depth_for_concentration_to
-
-        self.label_calibslope.setText(str(detector.tof_slope))
-        self.label_caliboffset.setText(str(detector.tof_offset))
-        self.label_depthstop.setText(str(depth_step_for_stopping))
-        self.label_depthnumber.setText(str(number_of_depth_steps))
-        self.label_depthbin.setText(str(depth_step_for_output))
-        self.label_depthscale.setText("{0} - {1}".format(
-            depth_for_concentration_from,
-            depth_for_concentration_to))
-
-        self.__update_eff_files()
+        self.tof_slope = detector.tof_slope
+        self.tof_offset = detector.tof_offset
+        self.depth_stop = profile.depth_step_for_stopping
+        self.depth_steps = profile.number_of_depth_steps
+        self.depth_bin = profile.depth_step_for_output
+        self.depth_scale = f"{profile.depth_for_concentration_from} - " \
+                           f"{profile.depth_for_concentration_to}"
+        self.reference_density = profile.reference_density
         
 
 class DepthProfileWidget(QtWidgets.QWidget):

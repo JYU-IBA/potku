@@ -350,7 +350,7 @@ class Measurement(Logger, Serializable):
         Return:
             A Detector.
         """
-        detector, *_ = self._get_used_settings()
+        detector, *_ = self.get_used_settings()
         return detector
 
     def get_measurement_file(self) -> Path:
@@ -965,7 +965,8 @@ class Measurement(Logger, Serializable):
         """
         self.selector.load(filename, progress=progress)
 
-    def _get_used_settings(self):
+    def get_used_settings(
+            self) -> Tuple[Detector, Run, Target, Profile, "Measurement"]:
         if self.use_request_settings:
             detector = self.request.default_detector
             run = self.request.default_run
@@ -1004,7 +1005,7 @@ class Measurement(Logger, Serializable):
         tof_in_file.parent.mkdir(exist_ok=True)
 
         # Get settings
-        detector, run, target, profile, measurement = self._get_used_settings()
+        detector, run, target, profile, measurement = self.get_used_settings()
         global_settings = self.request.global_settings
 
         reference_density = profile.reference_density

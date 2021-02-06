@@ -251,7 +251,7 @@
             <item>
              <widget class="QLabel" name="label_10">
               <property name="text">
-               <string>Number of depth steps:</string>
+               <string>Number of depth steps: </string>
               </property>
              </widget>
             </item>
@@ -329,7 +329,7 @@
      <item>
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>X axis units:</string>
+        <string>X axis units</string>
        </property>
       </widget>
      </item>
@@ -350,6 +350,23 @@
        </property>
        <property name="checked">
         <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_reference_density">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Reference density [g/cm&lt;span style=&quot; vertical-align:super;&quot;&gt;3&lt;/span&gt;]&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDoubleSpinBox" name="sbox_reference_density">
+       <property name="minimum">
+        <double>0.010000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>9999.000000000000000</double>
        </property>
       </widget>
      </item>
