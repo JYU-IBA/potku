@@ -47,6 +47,7 @@ from modules.element import Element
 from modules.measurement import Measurement
 from modules.global_settings import GlobalSettings
 from modules.observing import ProgressReporter
+from modules.enums import DepthProfileUnit
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -62,7 +63,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
     """
     # TODO replace these global variables with PropertySavingWidget
     checked_cuts = {}
-    x_unit = "1e15 at./cm²"     # TODO make this an enum
+    x_unit = DepthProfileUnit.ATOMS_PER_SQUARE_CM
     line_zero = False
     line_scale = False
     systerr = 0.0
@@ -76,13 +77,13 @@ class DepthProfileDialog(QtWidgets.QDialog):
     depth_steps = bnd.bind("label_depthnumber")
     depth_bin = bnd.bind("label_depthbin")
     depth_scale = bnd.bind("label_depthscale")
+    used_efficiency_files = bnd.bind("label_efficiency_files")
 
     systematic_error = bnd.bind("spin_systerr")
     show_scale_line = bnd.bind("check_scaleline")
     show_zero_line = bnd.bind("check_0line")
     reference_density = bnd.bind("sbox_reference_density")
-
-    used_efficiency_files = bnd.bind("label_efficiency_files")
+    x_axis_units = bnd.bind("group_x_axis_units")
     
     def __init__(self, parent: BaseTab, measurement: Measurement,
                  global_settings: GlobalSettings, statusbar:
@@ -110,10 +111,6 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.spin_systerr.setLocale(locale)
         self.sbox_reference_density.setLocale(locale)
 
-        self.radioButtonNm.clicked.connect(self._show_reference_density)
-        self.radioButtonAtPerCm2.clicked.connect(
-            self._hide_reference_density)
-
         m_name = self.measurement.name
         if m_name not in DepthProfileDialog.checked_cuts:
             DepthProfileDialog.checked_cuts[m_name] = set()
@@ -123,16 +120,17 @@ class DepthProfileDialog(QtWidgets.QDialog):
             self.treeWidget.invisibleRootItem(),
             use_elemloss=True)
         self.used_cuts = DepthProfileDialog.checked_cuts[m_name]
-        
-        x_unit = DepthProfileDialog.x_unit
-        radio_buttons = self.findChildren(QtWidgets.QRadioButton)
-        for radio_button in radio_buttons:
-            radio_button.setChecked(radio_button.text() == x_unit)
 
-        if x_unit == "nm":
+        gutils.set_btn_group_data(self.group_x_axis_units, DepthProfileUnit)
+        self.x_axis_units = DepthProfileDialog.x_unit
+        if self.x_axis_units == DepthProfileUnit.NM:
             self._show_reference_density()
         else:
             self._hide_reference_density()
+
+        self.radioButtonNm.clicked.connect(self._show_reference_density)
+        self.radioButtonAtPerCm2.clicked.connect(
+            self._hide_reference_density)
 
         self.systematic_error = DepthProfileDialog.systerr
         self.show_scale_line = DepthProfileDialog.line_scale
@@ -168,12 +166,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 for fp in used_cuts
             ]
 
-            # Get the x-axis unit to be used from the radio buttons
-            x_unit = DepthProfileDialog.x_unit
-            radio_buttons = self.findChildren(QtWidgets.QRadioButton)
-            for radio_button in radio_buttons:
-                if radio_button.isChecked():
-                    x_unit = radio_button.text()
+            x_unit = self.x_axis_units
 
             DepthProfileDialog.x_unit = x_unit
             DepthProfileDialog.line_zero = self.show_zero_line
@@ -189,7 +182,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                     self.parent.del_widget(self.parent.depth_profile_widget)
 
                 # If reference density changed, update value to measurement
-                if x_unit == "nm":
+                if x_unit == DepthProfileUnit.NM:
                     _, _, _, profile, measurement = \
                         self.measurement.get_used_settings()
                     if profile.reference_density != self.reference_density:
@@ -264,8 +257,8 @@ class DepthProfileWidget(QtWidgets.QWidget):
     save_file = "widget_depth_profile.save"
     
     def __init__(self, parent: BaseTab, output_dir: Path, use_cuts: List[Path],
-                 elements: List[Element], x_units: str, line_zero: bool,
-                 line_scale: bool, systematic_error: float,
+                 elements: List[Element], x_units: DepthProfileUnit,
+                 line_zero: bool, line_scale: bool, systematic_error: float,
                  progress: Optional[ProgressReporter] = None):
         """Inits widget.
         
@@ -328,9 +321,11 @@ class DepthProfileWidget(QtWidgets.QWidget):
                         elements[i] = rbs_list[rbs]
 
             if self.__line_scale:
-                depth_scale = \
-                    self.measurement.profile.depth_for_concentration_from, \
-                    self.measurement.profile.depth_for_concentration_to
+                _, _, _, profile, _ = self.measurement.get_used_settings()
+                depth_scale = (
+                    profile.depth_for_concentration_from,
+                    profile.depth_for_concentration_to
+                )
             else:
                 depth_scale = None
 

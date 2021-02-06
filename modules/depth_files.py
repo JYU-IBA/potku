@@ -53,6 +53,7 @@ from .element import Element
 from .parsing import CSVParser
 from .measurement import Measurement
 from .observing import ProgressReporter
+from .enums import DepthProfileUnit
 
 
 class DepthFileGenerator:
@@ -253,7 +254,11 @@ class DepthProfile:
         return len(self.depths)
 
     @classmethod
-    def from_file(cls, file_path, element=None, depth_units="nm"):
+    def from_file(
+            cls,
+            file_path: Path,
+            element: Optional[Element] = None,
+            depth_units: DepthProfileUnit = DepthProfileUnit.NM) -> "DepthProfile":
         """Reads a depth profile from a file and returns it.
 
         Args:
@@ -266,7 +271,7 @@ class DepthProfile:
         Return:
             DepthProfile object
         """
-        if depth_units == "nm":
+        if depth_units == DepthProfileUnit.NM:
             x_column = 2
         else:
             x_column = 0
@@ -509,7 +514,11 @@ class DepthProfileHandler:
         self.__absolute_profiles = {}
         self.__relative_profiles = {}
 
-    def read_directory(self, directory_path, elements, depth_units="nm"):
+    def read_directory(
+            self,
+            directory_path: Path,
+            elements,
+            depth_units: DepthProfileUnit = DepthProfileUnit.NM):
         """Reads depth files from the given directory that match the given
         set of elements and stores them internally as DepthProfiles.
 
@@ -525,8 +534,12 @@ class DepthProfileHandler:
         file_paths = get_depth_files(elements, directory_path)
         self.read_files(file_paths, elements, depth_units=depth_units)
 
-    def read_files(self, file_paths, elements, depth_units="nm",
-                   logger_name=None):
+    def read_files(
+            self,
+            file_paths,
+            elements,
+            depth_units: DepthProfileUnit = DepthProfileUnit.NM,
+            logger_name=None):
         """Reads depth files from given list of file paths that
         match the given set of elements.
 

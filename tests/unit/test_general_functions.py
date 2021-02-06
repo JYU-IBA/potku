@@ -122,7 +122,7 @@ class TestMatchingFunctions(unittest.TestCase):
         self.assertRaises(
             TypeError, lambda: comp.find_match_in_dicts(1, [[1]]))
         self.assertRaises(
-            TypeError, lambda: comp.find_match_in_dicts(1, [set(1, 2)]))
+            TypeError, lambda: comp.find_match_in_dicts(1, [{1, 2}]))
         self.assertRaises(
             TypeError, lambda: comp.find_match_in_dicts([], [{[]: []}]))
 
@@ -324,11 +324,11 @@ class TestFileIO(unittest.TestCase):
 
             self.assertRaises(
                 TypeError, lambda: gf.remove_matching_files(tmp_dir))
-            gf.remove_matching_files(tmp_dir, exts=[])
+            gf.remove_matching_files(tmp_dir, exts=set())
 
             self.assertTrue(no_ext.exists())
 
-            gf.remove_matching_files(tmp_dir, exts=[""])
+            gf.remove_matching_files(tmp_dir, exts={""})
             self.assertFalse(no_ext.exists())
 
     def test_file_name_conditions(self):
@@ -475,10 +475,9 @@ class TestCoinc(unittest.TestCase):
             self.assertEqual([], gf.coinc(**params))
 
     def test_coinc_returns_empty_list_if_no_timings(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            params = dict(self.params)
-            params["timing"] = {}
-            self.assertEqual([], gf.coinc(**params))
+        params = dict(self.params)
+        params["timing"] = {}
+        self.assertEqual([], gf.coinc(**params))
 
     def test_coinc_returns_expected_output_if_parameters_are_ok(self):
         with tempfile.TemporaryDirectory():
@@ -505,3 +504,22 @@ class TestCoinc(unittest.TestCase):
             params["timing"] = {}
             gf.coinc(output_file=output_file, **params)
             self.assertFalse(output_file.exists())
+
+
+class TestDigitsToSuperscript(unittest.TestCase):
+    def test_string_containing_no_digits_is_unchanged(self):
+        original = "one two three"
+        actual = gf.digits_to_superscript(original)
+        self.assertEqual(original, actual)
+
+    def test_string_containing_digit_is_changed(self):
+        original = "cm3"
+        actual = gf.digits_to_superscript(original)
+        expected = "cm³"
+        self.assertEqual(expected, actual)
+
+    def test_all_digits_in_string_are_superscripted(self):
+        original = "1234567890"
+        actual = gf.digits_to_superscript(original)
+        expected = "¹²³⁴⁵⁶⁷⁸⁹⁰"
+        self.assertEqual(expected, actual)

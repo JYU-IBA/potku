@@ -341,6 +341,9 @@
        <property name="checked">
         <bool>true</bool>
        </property>
+       <attribute name="buttonGroup">
+        <string notr="true">group_x_axis_units</string>
+       </attribute>
       </widget>
      </item>
      <item>
@@ -351,6 +354,9 @@
        <property name="checked">
         <bool>false</bool>
        </property>
+       <attribute name="buttonGroup">
+        <string notr="true">group_x_axis_units</string>
+       </attribute>
       </widget>
      </item>
      <item>
@@ -481,4 +487,7 @@
  </widget>
  <resources/>
  <connections/>
+ <buttongroups>
+  <buttongroup name="group_x_axis_units"/>
+ </buttongroups>
 </ui>

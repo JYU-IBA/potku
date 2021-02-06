@@ -52,6 +52,7 @@ from modules.depth_files import DepthProfileHandler
 from modules.depth_files import DepthProfile
 from modules.element import Element
 from modules.base import Range
+from modules.enums import DepthProfileUnit
 
 from PyQt5 import QtWidgets
 
@@ -61,8 +62,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
     """
 
     def __init__(self, parent, depth_dir: Path, elements: List[Element],
-                 rbs_list, x_units="nm", depth_scale: Optional[Range] = None,
-                 add_legend=True, add_line_zero=False, systematic_error=3.0,
+                 rbs_list, x_units: DepthProfileUnit = DepthProfileUnit.NM,
+                 depth_scale: Optional[Range] = None, add_legend=True,
+                 add_line_zero=False, systematic_error=3.0,
                  progress=None):
         """Inits depth profile widget.
 
@@ -85,13 +87,12 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.canvas.manager.set_title("Depth Profile")
         self.axes.fmt_xdata = lambda x: "{0:1.2f}".format(x)
         self.axes.fmt_ydata = lambda y: "{0:1.2f}".format(y)
-        self.x_units = x_units
         self.elements = elements
         self.__systerr = systematic_error
 
         self.profile_handler = DepthProfileHandler()
         self.profile_handler.read_directory(
-            depth_dir, self.elements, depth_units=self.x_units)
+            depth_dir, self.elements, depth_units=x_units)
         if progress is not None:
             progress.report(50)
 
@@ -118,7 +119,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__rbs_list = rbs_list
         self.__fork_toolbar_buttons()
 
-        self.axes.set_xlabel(f"Depth ({self.x_units})")
+        self.axes.set_xlabel(f"Depth ({x_units})")
         self.axes.set_ylabel('Concentration (at.%)')
 
         self.limit = AlternatingLimits(
