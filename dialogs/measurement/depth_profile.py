@@ -256,7 +256,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
     """
     save_file = "widget_depth_profile.save"
     
-    def __init__(self, parent: BaseTab, output_dir: Path, use_cuts: List[Path],
+    def __init__(self, parent: BaseTab, output_dir: Path, cut_files: List[Path],
                  elements: List[Element], x_units: DepthProfileUnit,
                  line_zero: bool, line_scale: bool, systematic_error: float,
                  progress: Optional[ProgressReporter] = None):
@@ -265,7 +265,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
         Args:
             parent: a MeasurementTabWidget.
             output_dir: full path to depth file location
-            use_cuts: A string list representing Cut files.
+            cut_files: A list of Cut files.
             elements: A list of Element objects that are used in depth profile.
             x_units: Units to be used for x-axis of depth profile.
             line_zero: A boolean representing if vertical line is drawn at zero.
@@ -278,24 +278,20 @@ class DepthProfileWidget(QtWidgets.QWidget):
             uic.loadUi(gutils.get_ui_dir() / "ui_depth_profile.ui", self)
 
             self.parent = parent
-            self.icon_manager = parent.icon_manager
             self.measurement: Measurement = parent.obj
             self.output_dir = output_dir
             self.elements = elements
             self.x_units = x_units
-            self.use_cuts = use_cuts
-            self.__line_zero = line_zero
-            self.__line_scale = line_scale
-            self.__systerr = systematic_error
+            self.use_cuts = cut_files
+            self._line_zero_shown = line_zero
+            self._line_scale_shown = line_scale
+            self._systematic_error = systematic_error
 
             if progress is not None:
-                sub_progress = progress.get_sub_reporter(
-                    lambda x: 0.5 * x
-                )
+                sub_progress = progress.get_sub_reporter(lambda x: 0.5 * x)
             else:
                 sub_progress = None
 
-            # TODO do this in thread
             depth_files.generate_depth_files(
                 self.use_cuts, self.output_dir, self.measurement,
                 progress=sub_progress
@@ -320,7 +316,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
                     if elem == element:
                         elements[i] = rbs_list[rbs]
 
-            if self.__line_scale:
+            if self._line_scale_shown:
                 _, _, _, profile, _ = self.measurement.get_used_settings()
                 depth_scale = (
                     profile.depth_for_concentration_from,
@@ -337,9 +333,11 @@ class DepthProfileWidget(QtWidgets.QWidget):
 
             self.matplotlib = MatplotlibDepthProfileWidget(
                 self, self.output_dir, self.elements, rbs_list,
+                icon_manager=self.parent.icon_manager,
+                selection_colors=self.measurement.selector.get_colors(),
                 depth_scale=depth_scale, x_units=self.x_units,
-                add_legend=True, add_line_zero=self.__line_zero,
-                systematic_error=self.__systerr, progress=sub_progress)
+                add_line_zero=self._line_zero_shown,
+                systematic_error=self._systematic_error, progress=sub_progress)
         except Exception as e:
             msg = f"Could not create Depth Profile graph: {e}"
             logging.getLogger(self.measurement.name).error(msg)
@@ -382,9 +380,9 @@ class DepthProfileWidget(QtWidgets.QWidget):
             fh.write("{0}\n".format("\t".join([
                 str(cut) for cut in self.use_cuts])))
             fh.write("{0}\n".format(self.x_units))
-            fh.write("{0}\n".format(self.__line_zero))
-            fh.write("{0}\n".format(self.__line_scale))
-            fh.write("{0}".format(self.__systerr))
+            fh.write("{0}\n".format(self._line_zero_shown))
+            fh.write("{0}\n".format(self._line_scale_shown))
+            fh.write("{0}".format(self._systematic_error))
 
     def update_use_cuts(self):
         """
