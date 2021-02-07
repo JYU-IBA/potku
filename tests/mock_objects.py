@@ -236,7 +236,7 @@ def get_selection() -> "MockSelection":
     return MockSelection()
 
 
-class TestObserver(Observer):
+class MockObserver(Observer):
     """Observer that appends messages it receives to its collections.
     """
     def __init__(self):
