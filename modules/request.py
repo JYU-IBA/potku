@@ -214,6 +214,12 @@ class Request(ElementSimulationContainer):
                 Path(self.default_folder, "Default.measurement"),
                 Path(self.default_folder, "Default.profile"),
                 self, **kwargs)
+
+            # Ensure that use_request_settings flag is False. Otherwise
+            # measurement settings would not be saved when calling
+            # measurement.to_file (this was change was introduced in commit
+            # fc68f07)
+            measurement.use_request_settings = False
         else:
             # Create default measurement for request
             measurement = Measurement(
