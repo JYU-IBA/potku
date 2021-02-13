@@ -28,7 +28,6 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
 __version__ = "2.0"
 
 import json
-import logging
 import os
 import time
 import itertools
@@ -412,10 +411,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 "channel_width": prof["energy_spectra"]["channel_width"]
             }
         except (json.JSONDecodeError, OSError, KeyError, AttributeError) as e:
-            logging.getLogger("request").error(
-                f"Failed to read data from element simulation .profile file "
-                f"{profile_file}: {e}."
-            )
+            msg = f"Failed to read data from element simulation .profile " \
+                  f"file {profile_file}: {e}."
+            request.log_error(msg)
             kwargs = {}
 
         rec_type = mcsimu["simulation_type"].get_recoil_type()

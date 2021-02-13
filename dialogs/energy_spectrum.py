@@ -31,7 +31,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Juhani Sundell"
 __version__ = "2.0"
 
-import logging
 import os
 import shutil
 
@@ -339,12 +338,11 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
         sbh.reporter.report(100)
 
-        simulation_name = self.element_simulation.simulation.name
         msg = f"Created Energy Spectrum. " \
               f"Bin width: {self.bin_width} " \
               f"Used files: {', '.join(str(f) for f in self.result_files)}"
 
-        logging.getLogger("request").info(f"[{simulation_name}] {msg}")
+        self.element_simulation.simulation.log(msg)
         self.simulation.log(msg)
         self.close()
 
@@ -380,16 +378,11 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 self.parent.add_widget(self.parent.energy_spectrum_widget,
                                        icon=icon)
 
-                measurement_name = self.measurement.name
-                msg = "[{0}] Created Energy Spectrum. {1} {2}".format(
-                    measurement_name,
-                    "Bin width: {0}".format(width),
-                    "Cut files: {0}".format(", ".join(str(cut) for cut
-                                                      in selected_cuts)))
-                logging.getLogger("request").info(msg)
-                self.measurement.log(
-                    f"Created Energy Spectrum. Bin width: {width} Cut files: "
-                    f"{', '.join(str(cut) for cut in selected_cuts)}")
+                cuts = ", ".join(str(cut) for cut in selected_cuts)
+                msg = f"Created Energy Spectrum. " \
+                      f"Bin width: {width}. " \
+                      f"Cut files: {cuts}"
+                self.measurement.log(msg)
                 log_info = "Energy Spectrum graph points:\n"
                 data = self.parent.energy_spectrum_widget.energy_spectrum_data
                 splitinfo = "\n".join(["{0}: {1}".format(key, ", ".join(

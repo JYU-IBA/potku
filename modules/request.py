@@ -31,7 +31,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import configparser
-import logging
 import os
 import re
 import time
@@ -40,6 +39,7 @@ from pathlib import Path
 from typing import Tuple
 from typing import List
 
+from .ui_log_handlers import RequestLogger
 from .base import ElementSimulationContainer
 from .detector import Detector
 from .element import Element
@@ -54,7 +54,7 @@ from .recoil_element import RecoilElement
 from .global_settings import GlobalSettings
 
 
-class Request(ElementSimulationContainer):
+class Request(ElementSimulationContainer, RequestLogger):
     """Request class to handle all measurements.
     """
 
@@ -70,6 +70,7 @@ class Request(ElementSimulationContainer):
             tabs: A dictionary of MeasurementTabWidgets and SimulationTabWidgets
                 of the request.
         """
+        RequestLogger.__init__(self, enable_logging)
         self.directory = Path(directory).resolve()
         self.default_folder = Path(self.directory, "Default")
 
@@ -118,8 +119,7 @@ class Request(ElementSimulationContainer):
                 target=self.default_target,
                 run=self.default_run)
 
-        if enable_logging:
-            self.__set_request_logger()
+        self.set_loggers(self.directory)
 
         # Request file containing necessary information of the request.
         # If it exists, we assume old request is loaded.
@@ -262,7 +262,7 @@ class Request(ElementSimulationContainer):
         """
         profile_path = Path(self.default_folder, "Default.profile")
         if profile_path.exists():
-            profile = Profile.from_file(profile_path)
+            profile = Profile.from_file(profile_path, logger=self)
         else:
             profile = Profile(
                 description="These are default profile parameters.")
@@ -576,23 +576,6 @@ class Request(ElementSimulationContainer):
             path = measurement.path
             self.__request_information["meta"]["master"] = path
         self._save()
-
-    def __set_request_logger(self):
-        """ Sets the logger which is used to log everything that doesn't happen
-        in measurements.
-        """
-        self.create_folder_structure()
-        logger = logging.getLogger("request")
-        logger.setLevel(logging.DEBUG)
-
-        formatter = logging.Formatter(
-            "%(asctime)s - %(levelname)s - %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S")
-        requestlog = logging.FileHandler(Path(self.directory, "request.log"))
-        requestlog.setLevel(logging.INFO)
-        requestlog.setFormatter(formatter)
-
-        logger.addHandler(requestlog)
 
     def get_imported_files_folder(self) -> Path:
         return self.directory / "Imported_files"

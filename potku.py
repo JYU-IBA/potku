@@ -706,15 +706,16 @@ class Potku(QtWidgets.QMainWindow):
         # TODO: regex check for directory. I.E. do not allow asd/asd
         if dialog.directory:
             self.__close_request()
-            title = "{0} - Request: {1}".format(self.title, dialog.name)
+            title = f"{self.title} - Request: {dialog.name}"
             self.setWindowTitle(title)
 
-            self.treeWidget.setHeaderLabel("Request: {0}".format(dialog.name))
+            self.treeWidget.setHeaderLabel(f"Request: {dialog.name}")
             self.__initialize_tree_view()
 
-            self.request = Request(dialog.directory, dialog.name, self.settings,
-                                   self.tab_widgets)
+            self.request = Request(
+                dialog.directory, dialog.name, self.settings, self.tab_widgets)
             self.settings.set_request_directory_last_open(dialog.directory)
+            self.request.log("Request created.")
             # Request made, close introduction tab
             self.__remove_introduction_tab()
             self.__open_info_tab()

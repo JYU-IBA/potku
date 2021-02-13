@@ -224,3 +224,17 @@ class SimulationLogger(_CategorizedLogger):
     @property
     def category(self) -> str:
         return "Simulation"
+
+
+class RequestLogger(Logger):
+    def set_loggers(self, request_directory: Path) -> None:
+        if not self.is_logging_enabled:
+            return
+        formatter = logging.Formatter(
+            "%(asctime)s - %(levelname)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S")
+        requestlog = logging.FileHandler(Path(request_directory, "request.log"))
+        requestlog.setLevel(logging.INFO)
+        requestlog.setFormatter(formatter)
+
+        self._logger.addHandler(requestlog)

@@ -33,7 +33,6 @@ __version__ = "2.0"
 
 import hashlib
 import json
-import logging
 import os
 import shutil
 import time
@@ -159,7 +158,7 @@ class Measurements:
                 run = None
 
             if profile_file is not None:
-                profile = Profile.from_file(profile_file)
+                profile = Profile.from_file(profile_file, logger=self.request)
             else:
                 profile = None
 
@@ -220,7 +219,7 @@ class Measurements:
                 except Exception as e:
                     log = f"Something went wrong while adding a new " \
                           f"measurement: {e}"
-                    logging.getLogger("request").critical(log)
+                    self.request.log_error(log)
 
         # Add Measurement to Measurements.
         if measurement is not None:
@@ -472,10 +471,9 @@ class Measurement(MeasurementLogger, Serializable):
                         obj_gen["modification_time_unix"]
                 }
             except (OSError, KeyError, AttributeError) as e:
-                logging.getLogger("request").error(
-                    f"Failed to read settings from .measurement file "
-                    f"{measurement_file}: {e}"
-                )
+                msg = f"Failed to read settings from .measurement file " \
+                      f"{measurement_file}: {e}"
+                request.log_error(msg)
                 mesu_general = {}
         else:
             mesu_general = {}
@@ -637,7 +635,7 @@ class Measurement(MeasurementLogger, Serializable):
         if selector_cls is not None:
             self.selector = selector_cls(self, element_colors)
 
-    def __make_directories(self, directory):
+    def __make_directories(self, directory: Path):
         """Make directories.
 
         Args:
@@ -647,12 +645,9 @@ class Measurement(MeasurementLogger, Serializable):
         if not new_dir.exists():
             try:
                 new_dir.mkdir()
-                log = f"Created a directory {new_dir}."
-                logging.getLogger("request").info(log)
+                self.request.log(f"Created a directory {new_dir}.")
             except OSError as e:
-                logging.getLogger("request").error(
-                    f"Failed to create a directory: {e}."
-                )
+                self.request.log_error(f"Failed to create a directory: {e}.")
 
     def copy_file_into_measurement(self, file_path: Path):
         """Copies the given file into the measurement's data folder
@@ -686,16 +681,13 @@ class Measurement(MeasurementLogger, Serializable):
                                               int(split[2]), n])
             self.selector.measurement = self
         except IOError as e:
-            error_log = "Error while loading the {0} {1}. {2}".format(
-                "measurement date for the measurement",
-                self.name,
-                "The error was:")
-            error_log_2 = "I/O error ({0}): {1}".format(e.errno, e.strerror)
-            logging.getLogger('request').error(error_log)
-            logging.getLogger('request').error(error_log_2)
+            error_log = "Error while loading the measurement date for the " \
+                        f"measurement {self.name}. The error was:"
+            error_log_2 = f"I/O error ({e.errno}): {e.strerror}"
+            self.request.log_error(error_log)
+            self.request.log_error(error_log_2)
         except Exception as e:
-            error_log = "Unexpected error: {0}".format(e)
-            logging.getLogger('request').error(error_log)
+            self.request.log_error(f"Unexpected error: {e}")
 
     def get_available_asc_file_name(self, new_name: str) -> Path:
         """Returns an .asc file name that does not already exist.

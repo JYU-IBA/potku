@@ -31,7 +31,6 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 __version__ = "2.0"
 
 import json
-import logging
 import time
 
 from collections import namedtuple
@@ -172,7 +171,7 @@ class Simulations:
                     simulation
             except Exception as e:
                 log = f"Something went wrong while adding a new simulation: {e}"
-                logging.getLogger("request").critical(log)
+                self.request.log_error(log)
         if simulation is not None:
             sample.simulations.simulations[tab_id] = simulation
         return simulation
@@ -298,8 +297,7 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
         """
         if not self.directory.exists():
             self.directory.mkdir(exist_ok=True)
-            log = f"Created a directory {self.directory}."
-            logging.getLogger("request").info(log)
+            self.request.log(f"Created a directory {self.directory}.")
         self.set_loggers(self.directory, self.request.directory)
 
     def get_measurement_file(self) -> Path:
