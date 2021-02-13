@@ -502,8 +502,7 @@ class Potku(QtWidgets.QMainWindow):
                 tab.tab_id)
             try:
                 # Close and remove logs
-                measurement.remove_and_close_log(measurement.defaultlog)
-                measurement.remove_and_close_log(measurement.errorlog)
+                measurement.remove_and_close_log()
 
                 # Remove measurement's directory tree
                 shutil.rmtree(measurement.directory)

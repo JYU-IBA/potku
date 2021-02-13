@@ -606,8 +606,7 @@ def rename_entity(entity: Union["Measurement", "Simulation"], new_name):
             entity.serial_number + "-" + new_name
 
         # Close and remove logs
-        entity.remove_and_close_log(entity.defaultlog)
-        entity.remove_and_close_log(entity.errorlog)
+        entity.remove_and_close_log()
 
         new_dir = rename_file(entity.directory, new_folder)
         entity.name = new_name
@@ -639,7 +638,6 @@ def get_data_dir() -> Path:
 # to root folder is stored as the value of sys._MEIPASS attribute:
 # https://pyinstaller.readthedocs.io/en/stable/runtime-information.html?
 #   highlight=bundle
-# TODO is this only needed in macOS app?
 _ROOT_DIR = Path(
     getattr(sys, "_MEIPASS", Path(__file__).parent.parent)
 ).resolve()

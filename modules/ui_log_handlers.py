@@ -134,8 +134,7 @@ class Logger:
 
 
 class _CategorizedLogger(Logger):
-    __slots__ = Logger.__slots__ + (
-        "datefmt", "defaultlog", "errorlog", "enable_logging")
+    __slots__ = Logger.__slots__ + ("datefmt", "defaultlog", "errorlog")
 
     def __init__(
             self,
@@ -193,14 +192,20 @@ class _CategorizedLogger(Logger):
         self._logger.addHandler(self.errorlog)
         self._logger.addHandler(requestlog)
 
-    def remove_and_close_log(self, log_filehandler):
+    def remove_and_close_log(self) -> None:
+        """Closes log files.
+        """
+        self._remove_and_close_log(self.defaultlog)
+        self._remove_and_close_log(self.errorlog)
+
+    def _remove_and_close_log(self, log_filehandler) -> None:
         """Closes the log file and removes it from the logger.
 
         Args:
             log_filehandler: Log's filehandler.
         """
-        self._logger.removeHandler(log_filehandler)
         if log_filehandler is not None:
+            self._logger.removeHandler(log_filehandler)
             log_filehandler.flush()
             log_filehandler.close()
 

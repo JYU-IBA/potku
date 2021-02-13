@@ -765,11 +765,6 @@ class Measurement(MeasurementLogger, Serializable):
             with selection_file.open("r"):
                 self.load_selection(selection_file, progress)
         except OSError:
-            # TODO: Is it necessary to inform user with this?
-            # FIXME crashes here when:
-            #       1. user deletes all measurements from a sample
-            #       2. user imports new .evnt file
-            #       3. user tries to open the imported data
             log_msg = "There was no old selection file to add to this " \
                       f"request."
             self.log(log_msg)
