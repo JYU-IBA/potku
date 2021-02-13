@@ -46,6 +46,7 @@ from dialogs.measurement.settings import MeasurementSettingsDialog
 
 from modules.element import Element
 from modules.measurement import Measurement
+from modules.enums import DepthProfileUnit
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -230,9 +231,13 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             elements_string = lines[1].strip().split("\t")
             elements = [Element.from_string(element)
                         for element in elements_string]
-            x_unit = lines[3].strip()
+            try:
+                x_unit = DepthProfileUnit(lines[3].strip())
+            except ValueError:
+                x_unit = DepthProfileUnit.ATOMS_PER_SQUARE_CM
             line_zero = False
             line_scale = False
+            systerr = 0.0
             if len(lines) == 7:  # "Backwards compatibility"
                 line_zero = lines[4].strip() == "True"
                 line_scale = lines[5].strip() == "True"

@@ -90,7 +90,8 @@ class ElementWidget(QtWidgets.QWidget):
         self.radio_button = QtWidgets.QRadioButton()
 
         if element.isotope:
-            isotope_superscript = general.to_superscript(str(element.isotope))
+            isotope_superscript = general.digits_to_superscript(
+                str(element.isotope))
             button_text = isotope_superscript + " " + element.symbol
         else:
             button_text = element.symbol
