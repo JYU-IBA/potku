@@ -166,9 +166,8 @@ class Measurements:
             # Create Measurement from file
             if file_path.exists() and file_path.suffix == ".info":
                 measurement = Measurement.from_file(
-                    file_path, mesu_file, profile_file,
-                    self.request, sample=sample, target=target,
-                    detector=detector, run=run, profile=profile)
+                    file_path, mesu_file, self.request, sample=sample,
+                    target=target, detector=detector, run=run, profile=profile)
 
                 measurement_folder_name = file_directory.name
                 serial_number = int(measurement_folder_name[
@@ -432,16 +431,21 @@ class Measurement(Logger, Serializable):
             profile_file, measurement_file, target_file, detector_file)
 
     @classmethod
-    def from_file(cls, info_file: Path, measurement_file: Path,
-                  profile_file: Path, request: "Request", detector=None,
-                  run=None, target=None, profile=None,
-                  sample=None) -> "Measurement":
+    def from_file(
+            cls,
+            info_file: Path,
+            measurement_file: Path,
+            request: "Request",
+            detector: Optional[Detector] = None,
+            run: Optional[Run] = None,
+            target: Optional[Target] = None,
+            profile: Optional[Profile] = None,
+            sample: Optional["Sample"] = None) -> "Measurement":
         """Read Measurement information from file.
 
         Args:
             info_file: Path to .info file.
             measurement_file: Path to .measurement file.
-            profile_file: Path to .profile file.
             request: Request that the Measurement belongs to.
             detector: Measurement's Detector object.
             run: Measurement's Run object.
