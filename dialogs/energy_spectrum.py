@@ -345,7 +345,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
               f"Used files: {', '.join(str(f) for f in self.result_files)}"
 
         logging.getLogger("request").info(f"[{simulation_name}] {msg}")
-        logging.getLogger(simulation_name).info(msg)
+        self.simulation.log(msg)
         self.close()
 
     @gutils.disable_widget
@@ -387,15 +387,15 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     "Cut files: {0}".format(", ".join(str(cut) for cut
                                                       in selected_cuts)))
                 logging.getLogger("request").info(msg)
-                logging.getLogger(measurement_name).info(
-                    "Created Energy Spectrum. Bin width: {0} Cut files: {1}".
-                    format(width, ", ".join(str(cut) for cut in selected_cuts)))
+                self.measurement.log(
+                    f"Created Energy Spectrum. Bin width: {width} Cut files: "
+                    f"{', '.join(str(cut) for cut in selected_cuts)}")
                 log_info = "Energy Spectrum graph points:\n"
                 data = self.parent.energy_spectrum_widget.energy_spectrum_data
                 splitinfo = "\n".join(["{0}: {1}".format(key, ", ".join(
                     "({0};{1})".format(round(v[0], 2), v[1])
                     for v in data[key])) for key in data.keys()])
-                logging.getLogger(measurement_name).info(log_info + splitinfo)
+                self.measurement.log(log_info + splitinfo)
             else:
                 QtWidgets.QMessageBox.critical(
                     self, "Error",
@@ -537,7 +537,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             # If the file path points to directory, this will either raise
             # PermissionError (Windows) or IsADirectoryError (Mac)
             msg = f"Could not create Energy Spectrum graph: {e}"
-            logging.getLogger(self.parent.obj.name).error(msg)
+            self.parent.obj.log_error(msg)
 
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()

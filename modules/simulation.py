@@ -50,7 +50,7 @@ from .detector import Detector
 from .element_simulation import ElementSimulation
 from .run import Run
 from .target import Target
-from .ui_log_handlers import Logger
+from .ui_log_handlers import SimulationLogger
 
 
 class Simulations:
@@ -199,7 +199,7 @@ class Simulations:
         self.simulations = remove_key(self.simulations, tab_id)
 
 
-class Simulation(Logger, ElementSimulationContainer, Serializable):
+class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
     """
     A Simulation class that handles information about one Simulation.
     """
@@ -245,7 +245,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             enable_logging: whether logging is enabled
         """
         # Run the base class initializer to establish logging
-        Logger.__init__(self, name, "Simulation", enable_logging=enable_logging)
+        SimulationLogger.__init__(self, enable_logging=enable_logging)
 
         self.tab_id = tab_id
         self.path = Path(path)

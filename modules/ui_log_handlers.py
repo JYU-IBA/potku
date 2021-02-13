@@ -30,6 +30,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import logging
+import uuid
 
 from pathlib import Path
 
@@ -103,40 +104,63 @@ class CustomLogHandler(logging.Handler):
 
 
 class Logger:
-    """Common base class for Measurements and Simulations to enable logging.
-    """
-    __slots__ = "logger_name", "category", "datefmt", "defaultlog", \
-                "errorlog", "enable_logging"
+    __slots__ = "_logger_name", "_logger", "_is_logging_enabled"
 
-    def __init__(self, logger_name, category, datefmt="%Y-%m-%d %H:%M:%S",
-                 enable_logging=True):
+    def __init__(self, enable_logging: bool = True) -> None:
+        self._logger_name = str(uuid.uuid4())
+        self._logger = logging.getLogger(self._logger_name)
+        self._logger.setLevel(logging.DEBUG)
+        self._is_logging_enabled = enable_logging
+
+    @property
+    def logger(self):
+        return self._logger
+
+    @property
+    def is_logging_enabled(self) -> bool:
+        return self._is_logging_enabled
+
+    @is_logging_enabled.setter
+    def is_logging_enabled(self, b: bool):
+        self._is_logging_enabled = b
+
+    def log(self, msg: str) -> None:
+        if self.is_logging_enabled:
+            self._logger.info(msg)
+
+    def log_error(self, msg: str) -> None:
+        if self.is_logging_enabled:
+            self._logger.error(msg)
+
+
+class _CategorizedLogger(Logger):
+    __slots__ = Logger.__slots__ + (
+        "datefmt", "defaultlog", "errorlog", "enable_logging")
+
+    def __init__(
+            self,
+            datefmt: str = "%Y-%m-%d %H:%M:%S",
+            enable_logging: bool = True):
         """Initializes a new Logger
-
-        Args:
-            logger_name: name of the Logger object.
-            category: category which the Logger belongs to
-            datefmt: format in which to display dates
         """
-        self.logger_name = logger_name
-        self.category = category
+        super(_CategorizedLogger, self).__init__(enable_logging)
         self.datefmt = datefmt
         self.defaultlog = None
         self.errorlog = None
-        self.enable_logging = enable_logging
 
-    def set_loggers(self, directory, request_directory):
+    @property
+    def category(self) -> str:
+        raise NotImplementedError
+
+    def set_loggers(self, directory: Path, request_directory: Path) -> None:
         """Sets the loggers for this Logger object.
 
         The logs will be displayed in the specified directory.
         After this, the logger can be called from anywhere of the
         program, using logging.getLogger([name]).
         """
-        if not self.enable_logging:
+        if not self.is_logging_enabled:
             return
-
-        # Initializes the logger for this simulation.
-        logger = logging.getLogger(self.logger_name)
-        logger.setLevel(logging.DEBUG)
 
         # Adds two loghandlers. The other one will be used to log info (and up)
         # messages to a default.log file. The other one will log errors and
@@ -154,11 +178,10 @@ class Logger:
 
         requestlog = logging.FileHandler(Path(request_directory, "request.log"))
 
-        req_fmt = "%(asctime)s - %(levelname)s - [{0} : '%(name)s] - " \
-                  "%(message)s".format(self.category)
+        req_fmt = f"%(asctime)s - %(levelname)s - [{self.category} : " \
+                  f"'%(name)s] - %(message)s"
 
-        requestlogformat = logging.Formatter(req_fmt,
-                                             datefmt=self.datefmt)
+        requestlogformat = logging.Formatter(req_fmt, datefmt=self.datefmt)
 
         # Set the formatters to the logs.
         requestlog.setFormatter(requestlogformat)
@@ -166,9 +189,9 @@ class Logger:
         self.errorlog.setFormatter(defaultformat)
 
         # Add handlers to this simulation's logger.
-        logger.addHandler(self.defaultlog)
-        logger.addHandler(self.errorlog)
-        logger.addHandler(requestlog)
+        self._logger.addHandler(self.defaultlog)
+        self._logger.addHandler(self.errorlog)
+        self._logger.addHandler(requestlog)
 
     def remove_and_close_log(self, log_filehandler):
         """Closes the log file and removes it from the logger.
@@ -176,7 +199,23 @@ class Logger:
         Args:
             log_filehandler: Log's filehandler.
         """
-        logging.getLogger(self.logger_name).removeHandler(log_filehandler)
+        self._logger.removeHandler(log_filehandler)
         if log_filehandler is not None:
             log_filehandler.flush()
             log_filehandler.close()
+
+
+class MeasurementLogger(_CategorizedLogger):
+    __slots__ = _CategorizedLogger.__slots__
+
+    @property
+    def category(self) -> str:
+        return "Measurement"
+
+
+class SimulationLogger(_CategorizedLogger):
+    __slots__ = _CategorizedLogger.__slots__
+
+    @property
+    def category(self) -> str:
+        return "Simulation"

@@ -52,7 +52,7 @@ from .detector import Detector
 from .profile import Profile
 from .run import Run
 from .target import Target
-from .ui_log_handlers import Logger
+from .ui_log_handlers import MeasurementLogger
 from .base import Serializable
 
 
@@ -247,7 +247,7 @@ class Measurements:
         self.measurements = remove_key(self.measurements, tab_id)
 
 
-class Measurement(Logger, Serializable):
+class Measurement(MeasurementLogger, Serializable):
     """Measurement class to handle one measurement data.
     """
 
@@ -276,8 +276,7 @@ class Measurement(Logger, Serializable):
             path: Full path to measurement's .info file.
         """
         # Run the base class initializer to establish logging
-        Logger.__init__(
-            self, name, "Measurement", enable_logging=enable_logging)
+        MeasurementLogger.__init__(self, enable_logging=enable_logging)
         # FIXME path should be to info file
         self.tab_id = tab_id
 
@@ -773,7 +772,7 @@ class Measurement(Logger, Serializable):
             #       3. user tries to open the imported data
             log_msg = "There was no old selection file to add to this " \
                       f"request."
-            logging.getLogger(self.name).info(log_msg)
+            self.log(log_msg)
 
     def add_point(self, point, canvas):
         """Add point into selection or create new selection if first or all
@@ -932,7 +931,7 @@ class Measurement(Logger, Serializable):
             progress.report(100)
 
         log_msg = f"Saving finished in {time.time() - starttime} seconds."
-        logging.getLogger(self.name).info(log_msg)
+        self.log(log_msg)
 
     def __remove_old_cut_files(self):
         """Remove old cut files.
@@ -1112,17 +1111,17 @@ class Measurement(Logger, Serializable):
                 shutil.copyfile(tof_in_file, new_file)
                 back_up_msg = "Backed up old tof.in file to {0}".format(
                     os.path.realpath(new_file))
-                logging.getLogger(self.name).info(back_up_msg)
+                self.log(back_up_msg)
             except Exception as e:
                 if not isinstance(e, FileNotFoundError):
                     error_msg = f"Error when generating tof.in: {e}"
-                    logging.getLogger(self.name).error(error_msg)
+                    self.log_error(error_msg)
             # Write new settings to the file.
             with tof_in_file.open("w") as fp:
                 fp.write(tof_in)
-            str_logmsg = "Generated tof.in with params> {0}". \
+            str_logmsg = f"Generated tof.in with params> {0}". \
                 format(tof_in.replace("\n", "; "))
-            logging.getLogger(self.name).info(str_logmsg)
+            self.log(str_logmsg)
 
         return tof_in_file
 

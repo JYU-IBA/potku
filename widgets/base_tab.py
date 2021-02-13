@@ -95,14 +95,12 @@ class BaseTab(abc.ABC, metaclass=QtABCMeta):
         log_widget specifies which ui element will handle the logging. That
         should be the one which is added to this tab.
         """
-        logger = logging.getLogger(self.obj.name)
         defaultformat = logging.Formatter(
             '%(asctime)s - %(levelname)s - %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S')
-        widgetlogger_default = CustomLogHandler(logging.INFO,
-                                                defaultformat,
-                                                log_widget)
-        logger.addHandler(widgetlogger_default)
+        widgetlogger_default = CustomLogHandler(
+            logging.INFO, defaultformat, log_widget)
+        self.obj.logger.addHandler(widgetlogger_default)
 
     def del_widget(self, widget):
         """Delete a widget from current tab.

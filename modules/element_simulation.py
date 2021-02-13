@@ -67,7 +67,6 @@ from .enums import SimulationMode
 from .run import Run
 from .detector import Detector
 from .element import Element
-from .profile import Profile
 
 
 # Mappings between the names of the MCERD parameters (keys) and
@@ -832,7 +831,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             msg = f"Simulation finished. Element " \
                   f"{self.get_main_recoil().get_full_name()}, " \
                   f"observed atoms: {atom_count}."
-            logging.getLogger(self.simulation.name).info(msg)
+            self.simulation.log(msg)
 
         self.on_completed(self.get_current_status())
 
