@@ -502,7 +502,7 @@ class Potku(QtWidgets.QMainWindow):
                 tab.tab_id)
             try:
                 # Close and remove logs
-                measurement.remove_and_close_log()
+                measurement.close_log_files()
 
                 # Remove measurement's directory tree
                 shutil.rmtree(measurement.directory)
@@ -515,8 +515,8 @@ class Potku(QtWidgets.QMainWindow):
                     QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 # TODO check that this is the intented way of setting the
                 #  loggers in case something went wrong.
-                measurement.set_loggers(measurement.directory,
-                                        measurement.request.directory)
+                measurement.set_up_log_files(measurement.directory,
+                                             measurement.request.directory)
                 return
 
             self.request.samples.measurements.remove_by_tab_id(tab.tab_id)

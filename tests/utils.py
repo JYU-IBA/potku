@@ -30,7 +30,6 @@ __version__ = "2.0"
 import os
 import hashlib
 import unittest
-import logging
 import platform
 import warnings
 import itertools
@@ -131,18 +130,8 @@ def verify_files(file_paths, checksum, msg=None):
     if b:
         return lambda func: func
     if msg is not None:
-        return unittest.skip("{0}: {1}.".format(msg, reason))
+        return unittest.skip(f"{msg}: {reason}.")
     return unittest.skip(reason)
-
-
-def disable_logging():
-    """Disables loggers and removes their file handles"""
-    loggers = [logging.getLogger(name) for name in
-               logging.root.manager.loggerDict]
-    for logger in loggers:
-        logger.disabled = True
-        for handler in logger.handlers:
-            handler.close()
 
 
 class PlatformSwitcher:

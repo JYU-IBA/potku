@@ -119,7 +119,7 @@ class Request(ElementSimulationContainer, RequestLogger):
                 target=self.default_target,
                 run=self.default_run)
 
-        self.set_loggers(self.directory)
+        self.set_up_log_files(self.directory)
 
         # Request file containing necessary information of the request.
         # If it exists, we assume old request is loaded.
@@ -154,7 +154,9 @@ class Request(ElementSimulationContainer, RequestLogger):
         self.default_simulation.to_file()
 
     @classmethod
-    def from_file(cls, file: Path, settings: GlobalSettings, tab_widgets=None):
+    def from_file(
+            cls, file: Path, settings: GlobalSettings,
+            tab_widgets=None, enable_logging: bool = True) -> "Request":
         """Returns a new Request from an existing .request file and folder
         structure.
 
@@ -163,6 +165,10 @@ class Request(ElementSimulationContainer, RequestLogger):
             settings: GlobalSettings object
             tab_widgets: A dictionary of MeasurementTabWidgets and
                 SimulationTabWidgets of the request.
+            enable_logging: whether logging is enabled or not
+
+        Return:
+            Request object
         """
         # TODO better error checking
         file_path = Path(file).resolve()
@@ -172,7 +178,9 @@ class Request(ElementSimulationContainer, RequestLogger):
             raise ValueError("Expected file, got a directory")
         if file_path.suffix != ".request":
             raise ValueError("Expected request file")
-        return cls(file_path.parent, file_path.stem, settings, tab_widgets)
+        return cls(
+            file_path.parent, file_path.stem, settings, tab_widgets,
+            enable_logging=enable_logging)
 
     def _create_default_detector(
             self, folder: Path, save_on_creation) -> Detector:
@@ -211,7 +219,8 @@ class Request(ElementSimulationContainer, RequestLogger):
             # Read measurement from file
             measurement_file = Path(self.default_folder, "Default.measurement")
             measurement = Measurement.from_file(
-                info_path, measurement_file, self, **kwargs)
+                info_path, measurement_file, self, **kwargs,
+                enable_logging=self.is_logging_enabled)
 
             # Ensure that use_request_settings flag is False. Otherwise
             # measurement settings would not be saved when calling
@@ -227,7 +236,8 @@ class Request(ElementSimulationContainer, RequestLogger):
                                                      "measurement "
                                                      "parameters.",
                 use_request_settings=False,
-                save_on_creation=save_on_creation)
+                save_on_creation=save_on_creation,
+                enable_logging=self.is_logging_enabled)
 
         return measurement
 
@@ -283,7 +293,9 @@ class Request(ElementSimulationContainer, RequestLogger):
             # Read default simulation from file
             sim = Simulation.from_file(
                 self, simulation_path, save_on_creation=save_on_creation,
-                target=target, detector=detector, run=run, **kwargs)
+                target=target, detector=detector, run=run, **kwargs,
+                enable_logging=self.is_logging_enabled)
+            sim.use_request_settings = False
         else:
             # Create default simulation for request
             sim = Simulation(
@@ -294,7 +306,8 @@ class Request(ElementSimulationContainer, RequestLogger):
                 measurement_setting_file_description="These are default "
                                                      "simulation "
                                                      "parameters.",
-                use_request_settings=False)
+                use_request_settings=False,
+                enable_logging=self.is_logging_enabled)
 
         mcsimu_path = Path(self.default_folder, "Default.mcsimu")
         if mcsimu_path.exists():

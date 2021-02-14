@@ -606,7 +606,7 @@ def rename_entity(entity: Union["Measurement", "Simulation"], new_name):
             entity.serial_number + "-" + new_name
 
         # Close and remove logs
-        entity.remove_and_close_log()
+        entity.close_log_files()
 
         new_dir = rename_file(entity.directory, new_folder)
         entity.name = new_name

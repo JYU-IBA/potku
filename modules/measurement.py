@@ -275,7 +275,8 @@ class Measurement(MeasurementLogger, Serializable):
             path: Full path to measurement's .info file.
         """
         # Run the base class initializer to establish logging
-        MeasurementLogger.__init__(self, enable_logging=enable_logging)
+        MeasurementLogger.__init__(
+            self, name, enable_logging=enable_logging, parent=request)
         # FIXME path should be to info file
         self.tab_id = tab_id
 
@@ -371,7 +372,7 @@ class Measurement(MeasurementLogger, Serializable):
                     self.measurement_file = path
                     break
 
-        self.set_loggers(self.directory, self.request.directory)
+        self.set_up_log_files(self.directory)
 
         element_colors = self.request.global_settings.get_element_colors()
         if selector_cls is not None:
@@ -390,7 +391,7 @@ class Measurement(MeasurementLogger, Serializable):
         if self.selector is not None:
             self.selector.update_references(self)
 
-        self.set_loggers(self.directory, self.request.directory)
+        self.set_up_log_files(self.directory)
 
     @staticmethod
     def find_measurement_files(directory: Path):
@@ -438,7 +439,8 @@ class Measurement(MeasurementLogger, Serializable):
             run: Optional[Run] = None,
             target: Optional[Target] = None,
             profile: Optional[Profile] = None,
-            sample: Optional["Sample"] = None) -> "Measurement":
+            sample: Optional["Sample"] = None,
+            enable_logging: bool = True) -> "Measurement":
         """Read Measurement information from file.
 
         Args:
@@ -450,6 +452,7 @@ class Measurement(MeasurementLogger, Serializable):
             target: Measurement's Target object.
             profile: Measurement's Profile object.
             sample: Sample under which this Measurement belongs to.
+            enable_logging: whether logging is enabled or not
 
         Return:
             Measurement object.
@@ -479,9 +482,9 @@ class Measurement(MeasurementLogger, Serializable):
             mesu_general = {}
 
         return cls(
-            request=request, path=info_file, run=run,
-            detector=detector, target=target, profile=profile,
-            **obj_info, **mesu_general, sample=sample)
+            request=request, path=info_file, run=run, detector=detector,
+            target=target, profile=profile, **obj_info, **mesu_general,
+            sample=sample, enable_logging=enable_logging)
 
     def get_data_dir(self) -> Path:
         """Returns path to Data directory.
@@ -629,7 +632,7 @@ class Measurement(MeasurementLogger, Serializable):
         self.__make_directories(self.get_energy_spectra_dir())
         self.__make_directories(self._get_tof_in_dir())
 
-        self.set_loggers(self.directory, self.request.directory)
+        self.set_up_log_files(self.directory)
 
         element_colors = self.request.global_settings.get_element_colors()
         if selector_cls is not None:

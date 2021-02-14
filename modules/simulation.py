@@ -244,7 +244,8 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             enable_logging: whether logging is enabled
         """
         # Run the base class initializer to establish logging
-        SimulationLogger.__init__(self, enable_logging=enable_logging)
+        SimulationLogger.__init__(
+            self, name, enable_logging=enable_logging, parent=request)
 
         self.tab_id = tab_id
         self.path = Path(path)
@@ -298,7 +299,7 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
         if not self.directory.exists():
             self.directory.mkdir(exist_ok=True)
             self.request.log(f"Created a directory {self.directory}.")
-        self.set_loggers(self.directory, self.request.directory)
+        self.set_up_log_files(self.directory)
 
     def get_measurement_file(self) -> Path:
         """Returns the path to .measurement file that contains the settings
@@ -536,7 +537,7 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
         for elem_sim in self.element_simulations:
             elem_sim.directory = new_dir
 
-        self.set_loggers(self.directory, self.request.directory)
+        self.set_up_log_files(self.directory)
 
     def get_running_simulations(self) -> List[ElementSimulation]:
         """Returns a list of currently running simulations.
