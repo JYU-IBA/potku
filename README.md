@@ -30,11 +30,12 @@ Please refer to the [full license](LICENSE) for details.
 # Getting started with development
 
 First step is to install Python 3.6 along with pip package installer. Make 
-sure they are added to your PATH. Then install Pipenv:
+sure they are added to your PATH environment variable. Then install Pipenv:
  
 ````
 $ pip install --user pipenv
 ````
+Install Git and add it to PATH.
 
 Once these prerequisites are met, you can clone the repository.
  
@@ -43,7 +44,7 @@ $ git clone --recursive https://github.com/JYU-IBA/potku.git
 $ cd potku
 ````
 
-Install and activate the virtual environment with Pipenv:
+Install and activate the virtual environment in `potku/` root directory with Pipenv:
 
 ````
 $ pipenv install
@@ -80,17 +81,17 @@ to compile all programs. Note that this script has no error checking, if you enc
 
 #### Windows
 
-Follow the instructions 1 - 4 described in [here](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#installation-instructions-for-microsoft-windows-10).
+For Jibal, follow the instructions 1 - 4 described in [here](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#installation-instructions-for-microsoft-windows-10).
 
-See [c_for_windows_example.md](c_for_windows_example.md) for an example on how to set up the rest of the C environment (make and gcc).
+For make and gcc see [c_for_windows_example.md](c_for_windows_example.md) for an example on how to set up the rest of the C environment .
 
-To compile the programs, run
+To compile the programs, run (in `potku/`) (in x64 Native Tools Command Prompt for VS 2019?) (twice??) 
 
 ````
 $ build.bat
 ````
 
-#### Data files
+## Data files
 
 Jibal requires additional data files, which can be downloaded from 
 [here](http://users.jyu.fi/~jaakjuli/jibal/data/). 
@@ -110,7 +111,18 @@ or generated with
 [Potku-gsto](https://github.com/JYU-IBA/potku/tree/master/external/Potku-gsto) 
 (no instructions available). `srim2013.tot` will be phased out in the future.
 
-### Tests
+## External dependencies
+
+Potku needs a copy of AWK to import data. It is probably installed on Linux 
+systems and possibly macOS too. Windows users will need to manually download
+it. [GNU AWK](https://www.gnu.org/software/gawk/) is tested and confirmed to be
+working on Windows.
+
+Place AWK under `external/bin/`. The executable must be named `awk` or 
+(`awk.exe` on Windows) for Potku detect and use it.
+
+
+## Tests
 
 Tests are located in the `tests` package. They are divided into unit tests 
 (tests that cover one or two functions at a time), integration tests 
@@ -124,16 +136,6 @@ activated, they can be run from the root directory of the project with:
 ````
 $ python -m unittest discover
 ````
-
-## External dependencies
-
-Potku needs a copy of AWK to import data. It is probably installed on Linux 
-systems and possibly macOS too. Windows users will need to manually download
-it. [GNU AWK](https://www.gnu.org/software/gawk/) is tested and confirmed to be
-working on Windows.
-
-Place AWK under `external/bin/`. The executable must be named `awk` or 
-(`awk.exe` on Windows) for Potku detect and use it.
 
 ## Packaging Potku into a standalone executable (work in progress)
 
