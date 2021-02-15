@@ -33,7 +33,7 @@ __version__ = "2.0"
 import uuid
 import logging
 from logging import Formatter, FileHandler, Handler
-from typing import Optional, Tuple, Iterable
+from typing import Optional, Tuple, Iterable, Mapping
 
 from pathlib import Path
 
@@ -133,7 +133,7 @@ class Logger:
             self._logger_name = unique_name
         self._logger = logging.getLogger(self._logger_name)
         self._logger.setLevel(logging.DEBUG)
-        self._is_logging_enabled = enable_logging
+        self.is_logging_enabled = enable_logging
 
     @property
     def logger(self) -> logging.Logger:
@@ -159,6 +159,20 @@ class Logger:
         """Sets logging either enabled or disabled.
         """
         self._is_logging_enabled = b
+
+    @property
+    def _kwargs_for_log(self) -> Mapping:
+        """Keyword arguments to be applied to self._logger.info.
+        """
+        return {}
+
+    @property
+    def _kwargs_for_error(self) -> Mapping:
+        """Keyword arguments to be applied to self._logger.error.
+        """
+        # Returns the same mapping as _kwargs_for_log. Subclasses may
+        # implement their own error kwargs if needed.
+        return self._kwargs_for_log
 
     def _get_handlers(self, directory: Path) -> Iterable[FileHandler]:
         """Returns log files that will be used when set_up_log_files is
@@ -192,13 +206,13 @@ class Logger:
         """Logs given message.
         """
         if self.is_logging_enabled:
-            self._logger.info(msg)
+            self._logger.info(msg, **self._kwargs_for_log)
 
     def log_error(self, msg: str) -> None:
         """Logs given message as an error.
         """
         if self.is_logging_enabled:
-            self._logger.error(msg)
+            self._logger.error(msg, **self._kwargs_for_error)
 
 
 class _CategorizedLogger(Logger):
@@ -217,12 +231,6 @@ class _CategorizedLogger(Logger):
         self._display_name = display_name
 
     @property
-    def request_format(self) -> logging.Formatter:
-        fmt = f"%(asctime)s - %(levelname)s - [{self.category} : " \
-              f"{self.display_name}] - %(message)s"
-        return logging.Formatter(fmt, datefmt=self.DATE_FMT)
-
-    @property
     def category(self) -> str:
         raise NotImplementedError
 
@@ -231,6 +239,14 @@ class _CategorizedLogger(Logger):
         """Name to be displayed in log messages.
         """
         return self._display_name
+
+    @property
+    def _kwargs_for_log(self) -> Mapping:
+        return {
+            "extra": {
+                "child_info": f" - [{self.category} : {self.display_name}]"
+            }
+        }
 
     def _get_handlers(
             self,
@@ -273,8 +289,23 @@ class RequestLogger(Logger):
     """
     REQUEST_LOG = "request.log"
 
+    @property
+    def request_formatter(self) -> logging.Formatter:
+        """Request formatter contains a field for child information.
+        """
+        fmt = f"%(asctime)s - %(levelname)s%(child_info)s - %(message)s"
+        return logging.Formatter(fmt, datefmt=self.DATE_FMT)
+
+    @property
+    def _kwargs_for_log(self) -> Mapping:
+        return {
+            "extra": {
+                "child_info": ""
+            }
+        }
+
     def _get_handlers(self, directory: Path) -> Tuple[FileHandler]:
         request_log = FileHandler(directory / self.REQUEST_LOG)
         request_log.setLevel(logging.INFO)
-        request_log.setFormatter(self.default_formatter)
+        request_log.setFormatter(self.request_formatter)
         return request_log,

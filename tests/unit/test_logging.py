@@ -54,7 +54,7 @@ class TestLogger(unittest.TestCase):
 
             logger.close_log_files()
 
-    def test_remove_and_close_log_releases_resources(self):
+    def test_close_log_files_releases_resources(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_dir = Path(tmp_dir)
             log_file = tmp_dir / MockLogger.FILE_NAME
@@ -66,7 +66,7 @@ class TestLogger(unittest.TestCase):
             # handle open
             self.assertRaises(OSError, lambda: log_file.unlink())
 
-            # after calling remove_and_close, we can exit the context manager
+            # after calling close_log_files, we can exit the context manager
             # without exception
             logger.close_log_files()
 
@@ -266,7 +266,6 @@ class TestCategorizedLoggers(unittest.TestCase):
 
             logger.close_log_files()
 
-    @unittest.expectedFailure
     def test_measurement_logs_are_correctly_formatted(self):
         request_logger = RequestLogger()
         measurement_logger = MeasurementLogger("mesu", parent=request_logger)
@@ -275,7 +274,6 @@ class TestCategorizedLoggers(unittest.TestCase):
             measurement_logger.display_name
         )
 
-    @unittest.expectedFailure
     def test_simulation_logs_are_correctly_formatted(self):
         request_logger = RequestLogger()
         measurement_logger = SimulationLogger("simu", parent=request_logger)
