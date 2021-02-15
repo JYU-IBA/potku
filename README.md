@@ -94,8 +94,8 @@ $ build.bat
 in the `potku/` root directory 
 
 (In case of errors in the build, try different command prompt ie. x64 Native Tools Command Prompt as an administrator)
-(In case of warnings run build again)
 
+(In case of warnings, run build again)
 
 
 ## Data files
