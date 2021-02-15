@@ -35,7 +35,7 @@ sure they are added to your PATH environment variable. Then install Pipenv:
 ````
 $ pip install --user pipenv
 ````
-Then install [Git](https://git-scm.com/downloads) and add it to PATH.
+Next install [Git](https://git-scm.com/downloads) and add it to PATH.
 
 Once these prerequisites are met, you can clone the repository.
  
@@ -51,7 +51,7 @@ $ pipenv install
 $ pipenv shell
 ````
 
-Once the virtual environment is up and running, Potku can be launched from the 
+Once the virtual environment is up and running, Potku GUI can be launched from the 
 command line:
  
 ````
@@ -68,7 +68,7 @@ must be installed:
 - gcc
 - Requirements for [Jibal](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#minimum-requirements)
 
-#### Linux and macOS
+### Linux and macOS
 
 Install cmake and gsl using the package manager of your distribution or 
 homebrew. Then run
@@ -79,17 +79,19 @@ $ ./build.sh
 
 to compile all programs. Note that this script has no error checking, if you encounter issues please check that all steps of the build have been successful.
 
-#### Windows
+### Windows
 
 For Jibal, follow the instructions 1 - 4 described in [here](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#installation-instructions-for-microsoft-windows-10).
 
 For make and gcc see [c_for_windows_example.md](c_for_windows_example.md) for an example on how to set up the rest of the C environment .
 
-To compile the programs, run (in `potku/`) (in x64 Native Tools Command Prompt for VS 2019? or some other command prompt?) (twice??) 
+To compile the programs, run
 
 ````
 $ build.bat
 ````
+
+in `potku/` root folder (in x64 Native Tools Command Prompt for VS 2019? or some other command prompt?) (twice??) 
 
 ## Data files
 
@@ -97,7 +99,7 @@ Jibal requires additional data files, which can be downloaded from
 [here](http://users.jyu.fi/~jaakjuli/jibal/data/). 
 These files need to be extracted to ``external/share/jibal``. You can run the 
 following command from the root folder of the repository to download and 
-extract the files. (note: curl not working by default on all windows versions)
+extract the files. (note: `curl` is not installed by default on all windows versions)
 
 ````
 $ curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && \
@@ -142,12 +144,15 @@ $ python -m unittest discover
 Potku can be packaged into a standalone executable using [PyInstaller](https://www.pyinstaller.org/). 
 For quick deployment, run these commands:
 ````
+$ pipenv install (if virtual enviroment not already created)
 $ pipenv shell
 $ pip install pyinstaller
 $ pyinstaller potku.spec
 ````
 This creates a `dist/potku` folder which contains the executable and all 
 necessary libraries.
+
+Make sure you have compiled potku with `build` and added needed data files and awk before the packacking
 
 For a more comprehensive packaging process, run the `create_bundle` script. 
 This script compiles all external programs, installs and updates Python 
