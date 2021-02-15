@@ -147,10 +147,10 @@ $ python -m unittest discover
 ## Packaging Potku into a standalone executable (work in progress)
 
 Potku can be packaged into a standalone executable using [PyInstaller](https://www.pyinstaller.org/). 
-Make sure you have compiled potku with `build` successfully and added needed data files and awk before the packaging
+Make sure you have compiled potku with `build` successfully and added the needed data files and awk before the packaging
 For quick deployment, run these commands:
 ````
-$ pipenv install (if the virtual environment has not been already created)
+$ pipenv install (if the virtual environment has not already been created)
 $ pipenv shell
 $ pip install pyinstaller
 $ pyinstaller potku.spec
