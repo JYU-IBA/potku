@@ -30,12 +30,12 @@ Please refer to the [full license](LICENSE) for details.
 # Getting started with development
 
 First step is to install Python 3.6 along with pip package installer. Make 
-sure they are added to your PATH environment variable. Then install Pipenv:
+sure the paths of the executables are added to your PATH environment variable. Then install Pipenv:
  
 ````
 $ pip install --user pipenv
 ````
-Next install [Git](https://git-scm.com/downloads) and add it to PATH.
+Next install [Git](https://git-scm.com/downloads) and add it to PATH too.
 
 Once these prerequisites are met, you can clone the repository.
  
@@ -81,7 +81,7 @@ to compile all programs. Note that this script has no error checking, if you enc
 
 ### Windows
 
-For Jibal, follow the instructions 1 - 4 described in [here](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#installation-instructions-for-microsoft-windows-10).
+For installing requirements for the Jibal, follow the instructions 1 - 4 described in [here](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#installation-instructions-for-microsoft-windows-10).
 
 For make and gcc see [c_for_windows_example.md](c_for_windows_example.md) for an example on how to set up the rest of the C environment .
 
@@ -91,7 +91,9 @@ To compile the programs, run
 $ build.bat
 ````
 
-in `potku/` root folder (in x64 Native Tools Command Prompt for VS 2019? or some other command prompt?) (twice??) 
+in `potku/` root directory (in x64 Native Tools Command Prompt for VS 2019? or some other command prompt?) (twice??) 
+
+
 
 ## Data files
 
@@ -142,17 +144,16 @@ $ python -m unittest discover
 ## Packaging Potku into a standalone executable (work in progress)
 
 Potku can be packaged into a standalone executable using [PyInstaller](https://www.pyinstaller.org/). 
+Make sure you have compiled potku with `build` successfully and added needed data files and awk before the packaging
 For quick deployment, run these commands:
 ````
-$ pipenv install (if virtual enviroment not already created)
+$ pipenv install (if the virtual environment has not been already created)
 $ pipenv shell
 $ pip install pyinstaller
 $ pyinstaller potku.spec
 ````
 This creates a `dist/potku` folder which contains the executable and all 
 necessary libraries.
-
-Make sure you have compiled potku with `build` and added needed data files and awk before the packacking
 
 For a more comprehensive packaging process, run the `create_bundle` script. 
 This script compiles all external programs, installs and updates Python 
