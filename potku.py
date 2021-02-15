@@ -1471,7 +1471,7 @@ class Potku(QtWidgets.QMainWindow):
     def __open_manual(self):
         """Open user manual.
         """
-        manual_filename = gf.get_root_dir() / "documentation" / "manual" /"Potku-manual.pdf"
+        manual_filename = gf.get_root_dir() / "documentation" / "Potku-User-Manual.pdf"
         self.__open_file(manual_filename)        
                 
                 
