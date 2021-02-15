@@ -35,7 +35,7 @@ sure the paths of the executables are added to your PATH environment variable. T
 ````
 $ pip install --user pipenv
 ````
-Next install [Git](https://git-scm.com/downloads) and add it to PATH too.
+Next install [Git](https://git-scm.com/downloads) and add it to the PATH too.
 
 Once these prerequisites are met, you can clone the repository.
  
@@ -81,7 +81,7 @@ to compile all programs. Note that this script has no error checking, if you enc
 
 ### Windows
 
-For installing requirements for the Jibal, follow the instructions 1 - 4 described in [here](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#installation-instructions-for-microsoft-windows-10).
+For installing the requirements for the Jibal, follow the instructions 1 - 4 described in [here](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#installation-instructions-for-microsoft-windows-10).
 
 For make and gcc see [c_for_windows_example.md](c_for_windows_example.md) for an example on how to set up the rest of the C environment .
 
@@ -91,7 +91,10 @@ To compile the programs, run
 $ build.bat
 ````
 
-in `potku/` root directory (in x64 Native Tools Command Prompt for VS 2019? or some other command prompt?) (twice??) 
+in the `potku/` root directory 
+
+(In case of errors in the build, try different command prompt ie. x64 Native Tools Command Prompt as an administrator)
+(In case of warnings run build again)
 
 
 
