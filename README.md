@@ -35,7 +35,7 @@ sure they are added to your PATH environment variable. Then install Pipenv:
 ````
 $ pip install --user pipenv
 ````
-Install Git and add it to PATH.
+Then install [Git](https://git-scm.com/downloads) and add it to PATH.
 
 Once these prerequisites are met, you can clone the repository.
  
@@ -85,7 +85,7 @@ For Jibal, follow the instructions 1 - 4 described in [here](https://github.com/
 
 For make and gcc see [c_for_windows_example.md](c_for_windows_example.md) for an example on how to set up the rest of the C environment .
 
-To compile the programs, run (in `potku/`) (in x64 Native Tools Command Prompt for VS 2019?) (twice??) 
+To compile the programs, run (in `potku/`) (in x64 Native Tools Command Prompt for VS 2019? or some other command prompt?) (twice??) 
 
 ````
 $ build.bat
@@ -97,7 +97,7 @@ Jibal requires additional data files, which can be downloaded from
 [here](http://users.jyu.fi/~jaakjuli/jibal/data/). 
 These files need to be extracted to ``external/share/jibal``. You can run the 
 following command from the root folder of the repository to download and 
-extract the files.
+extract the files. (note: curl not working by default on all windows versions)
 
 ````
 $ curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && \
