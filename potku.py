@@ -331,8 +331,7 @@ class Potku(QtWidgets.QMainWindow):
 
             # Remove object from Sample
             clicked_item.parent().obj.remove_obj(clicked_item.obj)
-            clicked_item.obj.defaultlog.close()
-            clicked_item.obj.errorlog.close()
+            clicked_item.obj.close_log_files()
 
             # Remove object directory
             shutil.rmtree(clicked_item.obj.directory)
