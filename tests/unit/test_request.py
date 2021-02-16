@@ -35,7 +35,7 @@ from pathlib import Path
 from modules.request import Request
 
 
-class TestInit(unittest.TestCase):
+class TestFolderStructure(unittest.TestCase):
     def setUp(self):
         # Expected folder structure when request is saved
         self.folder_name = "foo"
@@ -57,7 +57,7 @@ class TestInit(unittest.TestCase):
             f"{self.folder_name}.request": None
         }
 
-    def test_folder_structure_when_logging_is_not_enabled(self):
+    def test_no_folders_are_created_if_save_on_creation_is_false(self):
         """Tests the folder structure when request is created"""
         with tempfile.TemporaryDirectory() as tmp_dir:
             path = Path(tmp_dir, self.folder_name)
@@ -66,13 +66,29 @@ class TestInit(unittest.TestCase):
 
             self.assertEqual([], os.listdir(tmp_dir))
 
-            request = Request(path, "bar", mo.get_global_settings(),
-                              save_on_creation=True, enable_logging=False)
+    def test_folder_structure_when_logging_is_not_enabled(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            path = Path(tmp_dir, self.folder_name)
+            Request(
+                path, "bar", mo.get_global_settings(), save_on_creation=True,
+                enable_logging=False)
 
             utils.assert_folder_structure_equal(self.folder_structure, path)
 
-            request.to_file()
-            utils.assert_folder_structure_equal(self.folder_structure, path)
+    def test_folder_structure_when_logging_is_enabled(self):
+        """Tests the folder structure when request is created"""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            path = Path(tmp_dir, self.folder_name)
+            request = Request(
+                path, "bar", mo.get_global_settings(), save_on_creation=True,
+                enable_logging=True)
+
+            folder_structure = {
+                "request.log": None,
+                **self.folder_structure,
+            }
+            utils.assert_folder_structure_equal(folder_structure, path)
+            request.close_log_files()
 
 
 class TestSerialization(unittest.TestCase):

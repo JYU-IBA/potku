@@ -1166,6 +1166,7 @@ class Potku(QtWidgets.QMainWindow):
             # Clear the treewidget
             self.treeWidget.clear()
             self.tabs.clear()
+            self.request.close_log_files()
             self.request = None
             self.tab_widgets = {}
             self.tab_id = 0
