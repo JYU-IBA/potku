@@ -241,13 +241,11 @@ class TestParsing(unittest.TestCase):
                                                  method="row",
                                                  separator="\t")))
 
-    def test_slots(self):
+    def test_parsers_have_slots(self):
         """Tests that __slots__ work in CSVParser.
         """
-        self.assertRaises(AttributeError,
-                          lambda: utils.slots_test(CSVParser()))
-        self.assertRaises(AttributeError,
-                          lambda: utils.slots_test(ToFListParser()))
+        utils.assert_has_slots(CSVParser())
+        utils.assert_has_slots(ToFListParser())
 
 
 if __name__ == "__main__":

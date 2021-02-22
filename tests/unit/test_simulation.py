@@ -27,7 +27,6 @@ __version__ = "2.0"
 
 import unittest
 import tempfile
-import os
 
 import tests.mock_objects as mo
 import tests.utils as utils
@@ -39,21 +38,10 @@ from modules.enums import OptimizationType
 
 
 class TestSimulation(unittest.TestCase):
-    def test_slots(self):
+    def test_simulation_has_slots(self):
         """Tests that __slots__ work correctly for Simulation."""
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            req = mo.get_request()
-            sim = Simulation(Path(temp_dir, "test.simu"), req)
-
-            # Logging needs to be disabled, otherwise loggers retain file
-            # handlers that prevent removing the temp_dir
-            utils.disable_logging()
-
-            self.assertRaises(AttributeError, lambda: utils.slots_test(sim))
-
-        # Just in case make sure that the temp_dir got deleted
-        self.assertFalse(os.path.exists(temp_dir))
+        sim = mo.get_simulation()
+        utils.assert_has_slots(sim)
 
     @patch("modules.mcerd.MCERD.run", return_value=mo.get_mcerd_stream())
     def test_get_active_simulation(self, mock_run):

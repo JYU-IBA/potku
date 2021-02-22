@@ -39,7 +39,10 @@ import modules.general_functions as gf
 
 from pathlib import Path
 from string import Template
-from typing import Dict
+from typing import (
+    Dict,
+    Any
+)
 
 
 def get_sample_data_dir() -> Path:
@@ -210,17 +213,22 @@ def run_without_warnings(func):
         return func()
 
 
-def slots_test(obj):
-    """Checks whether the given object has a working __slots__ declaration,
-    this function raises an AttributeError
+def assert_has_slots(obj: Any):
+    """Asserts that the given object has a __slots__ declaration. If not,
+    raises AssertionError.
     """
     if not hasattr(obj, "__slots__"):
-        return
+        raise AssertionError("Object does not have __slots__.")
     for i in range(1000):
         attr = f"xyz{i}"
         if not hasattr(obj, attr) and attr not in getattr(obj, "__slots__"):
-            setattr(obj, attr, "foo")
-            break
+            try:
+                setattr(obj, attr, "foo")
+                raise AssertionError(
+                    "__slots__ declaration not working as intended, perhaps "
+                    "due to inheritance.")
+            except AttributeError:
+                return
 
 
 def assert_folder_structure_equal(expected_structure: Dict, directory: Path):

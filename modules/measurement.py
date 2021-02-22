@@ -166,9 +166,8 @@ class Measurements:
             # Create Measurement from file
             if file_path.exists() and file_path.suffix == ".info":
                 measurement = Measurement.from_file(
-                    file_path, mesu_file, profile_file,
-                    self.request, sample=sample, target=target,
-                    detector=detector, run=run, profile=profile)
+                    file_path, mesu_file, self.request, sample=sample,
+                    target=target, detector=detector, run=run, profile=profile)
 
                 measurement_folder_name = file_directory.name
                 serial_number = int(measurement_folder_name[
@@ -252,9 +251,14 @@ class Measurement(Logger, Serializable):
     """Measurement class to handle one measurement data.
     """
 
-    # __slots__ = "request", "tab_id", "name", "description",\
-    #             "modification_time", "run", "detector", "target", \
-    #             "profile"
+    __slots__ = "request", "tab_id", "name", "description",\
+                "modification_time", "run", "detector", "target", \
+                "profile", "path", "sample", "measurement_setting_file_name", \
+                "measurement_setting_file_description", "serial_number", \
+                "measurement_setting_modification_time", "data", \
+                "measurement_file", "directory", "use_request_settings", \
+                "selector"
+
     DIRECTORY_PREFIX = "Measurement_"
 
     def __init__(self, request, path, tab_id=-1, name="Default",
@@ -345,7 +349,7 @@ class Measurement(Logger, Serializable):
         Return:
             A Detector.
         """
-        detector, *_ = self._get_used_settings()
+        detector, *_ = self.get_used_settings()
         return detector
 
     def get_measurement_file(self) -> Path:
@@ -427,16 +431,21 @@ class Measurement(Logger, Serializable):
             profile_file, measurement_file, target_file, detector_file)
 
     @classmethod
-    def from_file(cls, info_file: Path, measurement_file: Path,
-                  profile_file: Path, request: "Request", detector=None,
-                  run=None, target=None, profile=None,
-                  sample=None) -> "Measurement":
+    def from_file(
+            cls,
+            info_file: Path,
+            measurement_file: Path,
+            request: "Request",
+            detector: Optional[Detector] = None,
+            run: Optional[Run] = None,
+            target: Optional[Target] = None,
+            profile: Optional[Profile] = None,
+            sample: Optional["Sample"] = None) -> "Measurement":
         """Read Measurement information from file.
 
         Args:
             info_file: Path to .info file.
             measurement_file: Path to .measurement file.
-            profile_file: Path to .profile file.
             request: Request that the Measurement belongs to.
             detector: Measurement's Detector object.
             run: Measurement's Run object.
@@ -960,7 +969,8 @@ class Measurement(Logger, Serializable):
         """
         self.selector.load(filename, progress=progress)
 
-    def _get_used_settings(self):
+    def get_used_settings(
+            self) -> Tuple[Detector, Run, Target, Profile, "Measurement"]:
         if self.use_request_settings:
             detector = self.request.default_detector
             run = self.request.default_run
@@ -999,7 +1009,7 @@ class Measurement(Logger, Serializable):
         tof_in_file.parent.mkdir(exist_ok=True)
 
         # Get settings
-        detector, run, target, profile, measurement = self._get_used_settings()
+        detector, run, target, profile, measurement = self.get_used_settings()
         global_settings = self.request.global_settings
 
         reference_density = profile.reference_density

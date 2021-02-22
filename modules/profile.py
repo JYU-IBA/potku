@@ -34,7 +34,7 @@ import time
 from pathlib import Path
 from typing import Set
 
-from modules.base import AdjustableSettings, Serializable
+from .base import AdjustableSettings, Serializable
 
 
 # TODO: Create unit tests / copy unit tests from measurement

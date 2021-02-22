@@ -308,7 +308,7 @@ class TestElementSimulation(unittest.TestCase):
             "number_of_preions": 3
         }
         self.elem_sim = ElementSimulation(
-            tempfile.gettempdir(), mo.get_request(), [self.main_rec],
+            Path(tempfile.gettempdir()), mo.get_request(), [self.main_rec],
             save_on_creation=False, use_default_settings=False, **self.kwargs)
 
     def test_get_full_name(self):
@@ -321,7 +321,7 @@ class TestElementSimulation(unittest.TestCase):
     def test_use_default_settings(self):
         """Tests that use_default_settings overrides kwargs"""
         elem_sim2 = ElementSimulation(
-            tempfile.gettempdir(), self.elem_sim.request,
+            Path(tempfile.gettempdir()), self.elem_sim.request,
             [mo.get_recoil_element()], save_on_creation=False,
             use_default_settings=True, **self.kwargs)
 
@@ -397,11 +397,10 @@ class TestElementSimulation(unittest.TestCase):
             number_of_ions_in_presimu="i dunno, two maybe?")
         self.assertEqual("i dunno, two maybe?", self.elem_sim.number_of_preions)
 
-    def test_slots(self):
+    def test_element_simulation_has_slots(self):
         """Tests that __slots__ declaration works.
         """
-        self.assertRaises(AttributeError,
-                          lambda: utils.slots_test(self.elem_sim))
+        utils.assert_has_slots(self.elem_sim)
 
     @patch("modules.get_espe.GetEspe.__init__", return_value=None)
     @patch("modules.get_espe.GetEspe.run", return_value=None)
