@@ -101,6 +101,10 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.canvas.manager.set_title("Energy Spectrum")
         self.axes.fmt_xdata = lambda x: "{0:1.2f}".format(x)
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
+        
+        # Set default filename for saving figure
+        default_filename ="Energy_spectra_binw_" + str(parent.bin_width).replace(".","_") + "MeV_" + parent.measurement.name
+        self.canvas.get_default_filename = lambda: default_filename 
 
         self.mpl_toolbar.addSeparator()
         self.__button_toggle_log = QtWidgets.QToolButton(self)
