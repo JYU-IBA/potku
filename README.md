@@ -65,7 +65,7 @@ must be installed:
 
 - make
 - gcc
-- Requirements for [Jibal](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#minimum-requirements)
+- Requirements for [JIBAL](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#minimum-requirements)
 
 #### Linux and macOS
 
@@ -99,7 +99,7 @@ $ build.bat
 
 #### Data files
 
-Jibal requires additional data files, which can be downloaded from 
+JIBAL requires additional data files, which can be downloaded from
 [here](http://users.jyu.fi/~jaakjuli/jibal/data/). 
 These files need to be extracted to ``external/share/jibal``. You can run the 
 following command from the root folder of the repository to download and 
