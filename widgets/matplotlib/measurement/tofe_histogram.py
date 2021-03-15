@@ -199,11 +199,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
         self.__on_draw_legend()
 
-        if 0.09 < x_max < 1.01:  # This works..
-            x_min, x_max = self.axes.get_xlim()
-        if 0.09 < y_max < 1.01:  # or self.axes_range_mode
-            y_min, y_max = self.axes.get_ylim()
-
         # Change zoom limits if compression factor was changed (or new graph).
         if not self.__range_mode_automated and self.axes_range_mode == 0 \
                 or self.axes_range_mode == 1:
