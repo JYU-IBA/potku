@@ -1473,8 +1473,7 @@ class Potku(QtWidgets.QMainWindow):
         """
         manual_filename = gf.get_root_dir() / "documentation" / "Potku-User-Manual.pdf"
         self.__open_file(manual_filename)        
-                
-                
+
     def __open_data_help(self):
         """Open data help file.
         """        
