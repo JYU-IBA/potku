@@ -30,6 +30,7 @@ from logging import FileHandler
 from pathlib import Path
 from typing import Tuple
 
+import tests.utils as utils
 from modules.ui_log_handlers import (
     RequestLogger, MeasurementLogger, SimulationLogger, Logger
 )
@@ -54,6 +55,7 @@ class TestLogger(unittest.TestCase):
 
             logger.close_log_files()
 
+    @utils.only_run_on(utils.WINDOWS)
     def test_close_log_files_releases_resources(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_dir = Path(tmp_dir)
@@ -91,6 +93,7 @@ class TestLogger(unittest.TestCase):
             self.assertTrue(new_dir.exists())
             logger.close_log_files()
 
+    @utils.only_run_on(utils.WINDOWS)
     def test_previous_handlers_are_closed_when_set_loggers_is_called_again(
             self):
         with tempfile.TemporaryDirectory() as tmp_dir:

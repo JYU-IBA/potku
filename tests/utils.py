@@ -40,7 +40,9 @@ from pathlib import Path
 from string import Template
 from typing import (
     Dict,
-    Any
+    Any,
+    Callable,
+    Optional,
 )
 
 
@@ -134,6 +136,11 @@ def verify_files(file_paths, checksum, msg=None):
     return unittest.skip(reason)
 
 
+WINDOWS = "Windows"
+LINUX = "Linux"
+MAC = "Darwin"
+
+
 class PlatformSwitcher:
     """Context manager that switches the value returned by platform.system().
 
@@ -141,7 +148,7 @@ class PlatformSwitcher:
     with PlatformSwitcher('name of the os'):
         # os specific code here
     """
-    platforms = {"Windows", "Linux", "Darwin"}
+    platforms = frozenset([WINDOWS, LINUX, MAC])
 
     def __init__(self, system):
         if system not in self.platforms:
@@ -185,11 +192,23 @@ def get_template_file_contents(template_file, **kwargs):
     return temp.substitute(kwargs)
 
 
-def expected_failure_if(cond):
-    """Decorator that expects a test to fail if the condition is True.
+def only_succeed_on(*systems: str) -> Callable:
+    """Expect the decorated test to fail on given systems:
     """
-    if cond:
+    systems = set(systems)
+    if platform.system() not in systems:
         return unittest.expectedFailure
+    return lambda func: func
+
+
+def only_run_on(*systems: str, reason: Optional[str] = None) -> Callable:
+    """Only runs the test function on given systems.
+    """
+    systems = set(systems)
+    if platform.system() not in systems:
+        if reason is None:
+            reason = f"This test is only for {', '.join(systems)}"
+        return unittest.skip(reason)
     return lambda func: func
 
 
