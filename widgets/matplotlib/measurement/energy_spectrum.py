@@ -103,7 +103,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
         
         # Set default filename for saving figure
-        default_filename ="Energy_spectra_binw_" + str(parent.bin_width).replace(".","_") + "MeV_" + parent.measurement.name
+        bin_width = str(parent.bin_width).replace(".", "_")
+        name = parent.parent.obj.name
+        default_filename = f"Energy_spectra_binw_{bin_width}MeV_{name}"
         self.canvas.get_default_filename = lambda: default_filename 
 
         self.mpl_toolbar.addSeparator()
