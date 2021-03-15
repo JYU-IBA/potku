@@ -81,10 +81,10 @@ class TofeGraphSettingsWidget(QtWidgets.QDialog):
     def toggle_manual(self, is_manual):
         # if manual is on, spinboxes are enabled
         is_disabled = not is_manual
-        self.spin_range_x_min.setDisabled(is_disabled )
-        self.spin_range_x_max.setDisabled(is_disabled )
-        self.spin_range_y_min.setDisabled(is_disabled )
-        self.spin_range_y_max.setDisabled(is_disabled ) 
+        self.spin_range_x_min.setDisabled(is_disabled)
+        self.spin_range_x_max.setDisabled(is_disabled)
+        self.spin_range_y_min.setDisabled(is_disabled)
+        self.spin_range_y_max.setDisabled(is_disabled) 
 
     def accept_settings(self):
         """Accept changed settings and save them.
