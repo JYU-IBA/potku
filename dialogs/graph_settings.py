@@ -71,19 +71,20 @@ class TofeGraphSettingsWidget(QtWidgets.QDialog):
         self.radio_range_auto.clicked.connect(lambda: self.toggle_manual(False))
         
         if self.radio_range_auto.isChecked():
-           self.toggle_manual(False)
+            self.toggle_manual(False)
            
         elif self.radio_range_manual.isChecked():
             self.toggle_manual(True)
  
         self.exec_()
     
-    def toggle_manual(self, isManual):
-        isDisabled = not isManual #if manual is on, spinboxes are enabled
-        self.spin_range_x_min.setDisabled(isDisabled)
-        self.spin_range_x_max.setDisabled(isDisabled)
-        self.spin_range_y_min.setDisabled(isDisabled)
-        self.spin_range_y_max.setDisabled(isDisabled) 
+    def toggle_manual(self, is_manual):
+        # if manual is on, spinboxes are enabled
+        is_disabled = not is_manual
+        self.spin_range_x_min.setDisabled(is_disabled )
+        self.spin_range_x_max.setDisabled(is_disabled )
+        self.spin_range_y_min.setDisabled(is_disabled )
+        self.spin_range_y_max.setDisabled(is_disabled ) 
 
     def accept_settings(self):
         """Accept changed settings and save them.
@@ -102,9 +103,8 @@ class TofeGraphSettingsWidget(QtWidgets.QDialog):
         
         if self.radio_range_auto.isChecked(): 
             self.parent.axes_range_mode = 0    
-                                                        
-         
-        elif self.radio_range_manual.isChecked():       
+
+        elif self.radio_range_manual.isChecked():
             self.parent.axes_range_mode = 1
             x_range_min = self.spin_range_x_min.value()
             x_range_max = self.spin_range_x_max.value()
@@ -113,6 +113,5 @@ class TofeGraphSettingsWidget(QtWidgets.QDialog):
             self.parent.axes_range = [(x_range_min, x_range_max),
                                       (y_range_min, y_range_max)]  
 
-        
         self.parent.on_draw()
         self.close()
