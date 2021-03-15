@@ -190,6 +190,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 QtWidgets.QMessageBox.Ok)
 
         colormap = cm.get_cmap(self.color_scheme.value)
+        
+        self.axes.set_ylim([y_min, y_max])
+        self.axes.set_xlim([x_min, x_max]) 
 
         self.axes.hist2d(x_data,
                          y_data,
@@ -199,11 +202,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                          cmap=colormap)
 
         self.__on_draw_legend()
-
-        if 0.09 < x_max < 1.01:  # This works..
-            x_min, x_max = self.axes.get_xlim()
-        if 0.09 < y_max < 1.01:  # or self.axes_range_mode
-            y_min, y_max = self.axes.get_ylim()
 
         # Change zoom limits if compression factor was changed (or new graph).
         if not self.__range_mode_automated and self.axes_range_mode == 0 \
@@ -219,14 +217,10 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 x_min, x_max = tx_min, tx_max
                 y_min, y_max = ty_min, ty_max
                 self.mpl_toolbar.update()
-        self.__range_mode_automated = self.axes_range_mode == 0
-        # print(self.axes.get_xlim())
-        # Set limits accordingly
-        self.axes.set_ylim([y_min, y_max])
-        self.axes.set_xlim([x_min, x_max])
-
+        self.__range_mode_automated = self.axes_range_mode == 0 
+        
         self.measurement.draw_selection()
-
+        
         # Invert axis
         if self.invert_Y and not self.__inverted_Y:
             self.axes.set_ylim(self.axes.get_ylim()[::-1])
