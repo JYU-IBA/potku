@@ -50,6 +50,8 @@ class BaseTab(QtWidgets.QWidget, abc.ABC, metaclass=QtABCMeta):
     """
     SAVE_WINDOW_GEOM_KEY = "save_window_geometries"
 
+    mdiArea: QtWidgets.QMdiArea
+
     def __init__(
             self,
             obj: Union[Measurement, Simulation],
