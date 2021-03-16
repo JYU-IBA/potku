@@ -241,6 +241,25 @@ class _CategorizedLogger(Logger):
         return self._display_name
 
     @property
+    def info_log_file(self) -> Optional[Path]:
+        """Absolute path to the info log file of this Logger instance.
+        """
+        return self._path_to_log_file(0)
+
+    @property
+    def error_log_file(self) -> Optional[Path]:
+        """Absolute path to the error log file of this Logger instance.
+        """
+        return self._path_to_log_file(-1)
+
+    def _path_to_log_file(self, idx: int) -> Optional[Path]:
+        if not self._logger.handlers:
+            return None
+        handler = self._logger.handlers[idx]
+        if isinstance(handler, FileHandler):
+            return Path(handler.baseFilename).resolve()
+
+    @property
     def _kwargs_for_log(self) -> Mapping:
         return {
             "extra": {
@@ -255,7 +274,7 @@ class _CategorizedLogger(Logger):
         """
         default_log = FileHandler(directory / self.DEFAULT_LOG)
         default_log.setLevel(logging.INFO)
-        error_log = FileHandler(directory / "errors.log")
+        error_log = FileHandler(directory / self.ERROR_LOG)
         error_log.setLevel(logging.ERROR)
 
         default_log.setFormatter(self.default_formatter)

@@ -319,6 +319,37 @@ class TestCategorizedLoggers(unittest.TestCase):
             parent.close_log_files()
             child.close_log_files()
 
+    def test_log_files_are_none_before_setting_log_files(self):
+        logger = MeasurementLogger("mesu")
+
+        self.assertIsNone(logger.info_log_file)
+        self.assertIsNone(logger.error_log_file)
+
+    def test_logger_returns_paths_to_log_files(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_dir = Path(tmp_dir)
+            info_log = tmp_dir / "default.log"
+            error_log = tmp_dir / "errors.log"
+
+            logger = MeasurementLogger("mesu")
+            logger.set_up_log_files(tmp_dir)
+
+            self.assertEqual(info_log, logger.info_log_file)
+            self.assertEqual(error_log, logger.error_log_file)
+
+            logger.close_log_files()
+
+    def test_log_files_are_none_after_closing_log_files(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_dir = Path(tmp_dir)
+
+            logger = MeasurementLogger("mesu")
+            logger.set_up_log_files(tmp_dir)
+            logger.close_log_files()
+
+            self.assertIsNone(logger.info_log_file)
+            self.assertIsNone(logger.error_log_file)
+
 
 if __name__ == '__main__':
     unittest.main()
