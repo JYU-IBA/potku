@@ -342,7 +342,6 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
               f"Bin width: {self.bin_width} " \
               f"Used files: {', '.join(str(f) for f in self.result_files)}"
 
-        self.element_simulation.simulation.log(msg)
         self.simulation.log(msg)
         self.close()
 
