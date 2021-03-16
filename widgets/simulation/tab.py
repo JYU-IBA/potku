@@ -58,13 +58,17 @@ from modules.observing import ProgressReporter
 from modules.concurrency import CancellationToken
 
 
-class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
+class SimulationTabWidget(BaseTab):
     """Tab widget where simulation stuff is added.
     """
 
-    def __init__(self, request: Request, tab_id: int, simulation: Simulation,
-                 icon_manager: IconManager,
-                 statusbar: Optional[QtWidgets.QStatusBar] = None):
+    def __init__(
+            self,
+            request: Request,
+            tab_id: int,
+            simulation: Simulation,
+            icon_manager: IconManager,
+            statusbar: Optional[QtWidgets.QStatusBar] = None):
         """ Init simulation tab class.
         
         Args:
@@ -74,30 +78,21 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
             icon_manager: An icon manager class object.
             statusbar: A QtGui.QMainWindow's QStatusBar.
         """
-        super().__init__()
+        super().__init__(simulation, tab_id, icon_manager, statusbar)
         uic.loadUi(gutils.get_ui_dir() / "ui_simulation_tab.ui", self)
 
         self.request = request
-        self.tab_id = tab_id
-        # TODO why 2 references to simulation?
+        # TODO remove this reference to simulation and just use self.obj
         self.simulation = simulation
-        self.obj = simulation
-        self.icon_manager = icon_manager
 
         self.simulation_target = None
         self.energy_spectrum_widgets = []
-        self.log = None
-
-        self.data_loaded = False
+        self.optimization_result_widget = None
 
         df.set_up_side_panel(self, "simu_panel_shown", "right")
 
         self.openSettingsButton.clicked.connect(self.__open_settings)
         self.optimizeButton.clicked.connect(self.__open_optimization_dialog)
-
-        self.optimization_result_widget = None
-
-        self.statusbar = statusbar
 
     def get_saveable_widgets(self):
         """Returns a list of Widgets whose geometries can be saved.

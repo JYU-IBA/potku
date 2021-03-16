@@ -29,24 +29,50 @@ import logging
 
 import widgets.gui_utils as gutils
 
+from typing import Union, Optional
 from pathlib import Path
 
 from widgets.log import LogWidget
 from widgets.gui_utils import QtABCMeta
+from widgets.icon_manager import IconManager
 
 from modules.ui_log_handlers import CustomLogHandler
+from modules.measurement import Measurement
+from modules.simulation import Simulation
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget
+from PyQt5 import QtWidgets
 
 
-class BaseTab(abc.ABC, metaclass=QtABCMeta):
+class BaseTab(QtWidgets.QWidget, abc.ABC, metaclass=QtABCMeta):
     """Base class for both Simulation and Measurement tabs.
     """
     SAVE_WINDOW_GEOM_KEY = "save_window_geometries"
 
-    def add_widget(self, widget: QWidget, minimized=None, has_close_button=True,
-                   icon=None):
+    def __init__(
+            self,
+            obj: Union[Measurement, Simulation],
+            tab_id: int,
+            icon_manager: IconManager,
+            statusbar: Optional[QtWidgets.QStatusBar] = None):
+        """Initializes BaseTab.
+
+        Args:
+            obj: either Measurement or Simulation
+            tab_id: An integer representing ID of the tabwidget.
+            icon_manager: An IconManager class object.
+            statusbar: A QtGui.QMainWindow's QStatusBar.
+        """
+        super().__init__()
+        self.obj = obj
+        self.tab_id = tab_id
+        self.icon_manager = icon_manager
+        self.statusbar = statusbar
+        self.log = None
+        self.data_loaded = False
+
+    def add_widget(self, widget: QtWidgets.QWidget, minimized=None,
+                   has_close_button=True, icon=None):
         """Adds a new widget to current tab.
 
         Args:
@@ -147,7 +173,7 @@ class BaseTab(abc.ABC, metaclass=QtABCMeta):
         pass
 
     @abc.abstractmethod
-    def get_default_widget(self) -> QWidget:
+    def get_default_widget(self) -> QtWidgets.QWidget:
         """Returns the default widget to activate when geometries are
         restored.
         """
