@@ -170,7 +170,7 @@ class BaseTab(QtWidgets.QWidget, abc.ABC, metaclass=QtABCMeta):
         pass
 
     @abc.abstractmethod
-    def get_default_widget(self) -> QtWidgets.QWidget:
+    def get_default_widget(self) -> Optional[QtWidgets.QWidget]:
         """Returns the default widget to activate when geometries are
         restored.
         """

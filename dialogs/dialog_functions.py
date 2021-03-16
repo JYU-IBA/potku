@@ -159,22 +159,17 @@ def delete_optim_espe(qdialog, elem_sim: ElementSimulation):
         delete_recoil_espe(qdialog.tab, opt_rec.get_full_name())
 
 
-def delete_recoil_espe(tab, recoil_name: str):
+def delete_recoil_espe(tab: "SimulationTabWidget", recoil_name: str):
     """Deletes recoil's energy spectra.
     """
-    for energy_spectra in tab.energy_spectrum_widgets:
+    # TODO make this a method of SimulationTabWidget
+    widgets = list(tab.energy_spectrum_widgets)
+    for energy_spectra in widgets:
         for element_path in energy_spectra.energy_spectrum_data:
             file_name = Path(element_path).name
             if file_name.startswith(recoil_name):
                 if file_name[len(recoil_name)] == ".":
-                    tab.del_widget(energy_spectra)
-                    tab.energy_spectrum_widgets.remove(energy_spectra)
-                    save_file_path = Path(tab.simulation.directory,
-                                          energy_spectra.save_file)
-                    try:
-                        save_file_path.unlink()
-                    except OSError:
-                        pass
+                    tab.remove_energy_spectrum_widget(energy_spectra)
                     break
 
 
@@ -202,16 +197,6 @@ def update_detector_settings(entity: Union[Measurement, Simulation],
     for eff_file in entity.request.default_detector.get_efficiency_files(
             return_full_paths=True):
         entity.detector.add_efficiency_file(eff_file)
-
-
-def update_tab(tab):
-    for energy_spectra in tab.energy_spectrum_widgets:
-        tab.del_widget(energy_spectra)
-        save_file_path = Path(tab.simulation.directory,
-                              energy_spectra.save_file)
-        if os.path.exists(save_file_path):
-            os.remove(save_file_path)
-    tab.energy_spectrum_widgets = []
 
 
 # TODO common base class for import dialogs
@@ -406,7 +391,7 @@ def delete_element_simulations(qdialog,
             pass
 
     if tab is not None:
-        update_tab(tab)
+        tab.remove_energy_spectrum_widgets()
 
     return True
 
