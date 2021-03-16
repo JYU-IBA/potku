@@ -31,7 +31,6 @@ import itertools
 
 from collections import namedtuple
 from collections import defaultdict
-from typing import Union
 from typing import Iterable
 from typing import Callable
 from pathlib import Path
@@ -45,7 +44,6 @@ from modules.request import Request
 from modules.base import ElementSimulationContainer
 from modules.detector import Detector
 from modules.measurement import Measurement
-from modules.simulation import Simulation
 from modules.element_simulation import ElementSimulation
 
 from PyQt5 import QtWidgets
@@ -171,35 +169,6 @@ def delete_recoil_espe(tab: "SimulationTabWidget", recoil_name: str):
                 if file_name[len(recoil_name)] == ".":
                     tab.remove_energy_spectrum_widget(energy_spectra)
                     break
-
-
-# TODO common base class for settings dialogs
-
-
-def update_detector_settings(entity: Union[Measurement, Simulation],
-                             detector_folder: Path, measurement_file: Path):
-    """
-
-    Args:
-        entity: either a Measurement or Simulation
-        detector_folder: path to the detector's folder,
-        measurement_file: path to .measurement file
-    """
-    # Create default Detector for Measurement
-    detector_file_path = Path(detector_folder, "Default.detector")
-    detector_folder.mkdir(exist_ok=True)
-
-    entity.detector = Detector(detector_file_path)
-    entity.detector.update_directories(detector_folder)
-
-    # Transfer the default detector efficiencies to new
-    # Detector
-    for eff_file in entity.request.default_detector.get_efficiency_files(
-            return_full_paths=True):
-        entity.detector.add_efficiency_file(eff_file)
-
-
-# TODO common base class for import dialogs
 
 
 def add_imported_files_to_tree(qdialog, files):
