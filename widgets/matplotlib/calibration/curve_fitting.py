@@ -149,12 +149,20 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
         """
         if self.cut is None:
             return
-
+            
+        # Get old limits before clearing the axes.
+        x_min, x_max = self.axes.get_xlim()
+        y_min, y_max = self.axes.get_ylim()
+        
         self.axes.clear()
 
         if self.selection_given_manually:
             self.axes.axvline(x=self.selected_tof)
-
+            
+            # Old limits are kept if the plot is zoomed
+            self.axes.set_ylim([y_min, y_max])
+            self.axes.set_xlim([x_min, x_max])
+            
         if self.cut.element:
             self.tof_histogram = TOFCalibrationHistogram(
                 self.cut, self.bin_width, self.use_column)
@@ -190,17 +198,10 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
                 self.tof_calibration_point = \
                     TOFCalibrationPoint(self.selected_tof, self.cut,
                                         self.detector, self.run)
+
                 # Update dialog and draw a vertical line
-                self.__update_dialog_values()
+                self.__update_dialog_values()  
                 self.axes.axvline(x=self.selected_tof, color="red")
-
-            # TODO: Unnecessary limits?
-            x_min, x_max = self.axes.get_xlim()
-            y_min, y_max = self.axes.get_ylim()
-
-            # Set limits accordingly
-            self.axes.set_ylim([y_min, y_max])
-            self.axes.set_xlim([x_min, x_max])
 
         self.axes.set_ylabel("Intensity [Counts]")
         self.axes.set_xlabel("Time of Flight [Channel]")
@@ -210,7 +211,7 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
 
         # Draw magic
         self.canvas.draw()
-
+        
     def toggle_clicks(self):
         """Toggle between manual ToF channel (x axis) selection.
         """
