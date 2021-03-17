@@ -39,8 +39,11 @@ from typing import List, Dict, Optional, Set
 
 from pathlib import Path
 
+from dialogs.measurement.depth_profile_numeric_limits \
+    import NumericLimitsDialog
 from dialogs.measurement.depth_profile_ignore_elements \
     import DepthProfileIgnoreElements
+    
 from widgets.matplotlib.base import MatplotlibWidget
 from widgets.matplotlib import mpl_utils
 from widgets.matplotlib.mpl_utils import AlternatingLimits
@@ -54,6 +57,7 @@ from modules.base import Range
 from modules.enums import DepthProfileUnit
 from modules.observing import ProgressReporter
 
+from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 
 
@@ -148,9 +152,45 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         Args:
             event: A click event on the graph
         """
+        # Only inside the actual graph axes, else do nothing.
+        if event.inaxes != self.axes:
+            return
+        cursor_location = [int(event.xdata), int(event.ydata)]
+        
         if event.button == 1 and self.limButton.isChecked():
-            self._limit_lines.update_graph(event.xdata)
-            self._make_legend_box()
+            self._limit_lines.update_graph(event.xdata)    
+        if event.button == 3:
+            self._numeric_limits_menu(event, cursor_location)
+        
+        self._make_legend_box()
+
+    def _numeric_limits_menu(self, event, cursor_location):
+        menu = QtWidgets.QMenu(self)
+
+        action = QtWidgets.QAction(self.tr("Set limits numerically..."), self)
+        action.triggered.connect(self.numeric_limits_dialog)
+        menu.addAction(action)
+        
+        coords = self.canvas.geometry().getCoords()
+        point = QtCore.QPoint(event.x, coords[3] - event.y - coords[1])
+        # coords[1] from spacing
+        menu.exec_(self.canvas.mapToGlobal(point))
+        
+    def numeric_limits_dialog(self):
+        """Show numeric limits dialog.
+        """
+        NumericLimitsDialog(self)
+        
+    def show_yourself(self, dialog):
+        """Show current depth profile limits in dialog.
+
+        Args:
+            dialog: A NumericLimitsDialog.
+        """
+        # Get values
+        lim_a, lim_b = self._limit_lines.get_range()
+        dialog.spinbox_limit_min.setValue(lim_a)
+        dialog.spinbox_limit_max.setValue(lim_b)
 
     def get_profiles_to_use(self) -> Dict[str, DepthProfile]:
         """Determines what files to use for plotting. Either relative, absolute
