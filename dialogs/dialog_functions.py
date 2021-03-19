@@ -171,25 +171,16 @@ def delete_recoil_espe(tab: "SimulationTabWidget", recoil_name: str):
                     break
 
 
-def add_imported_files_to_tree(qdialog, files):
-    """
-
-    Args:
-        qdialog: import dialog
-        files: list of files
-    """
-    if not files:
-        return
+def add_imported_files_to_tree(
+        qdialog: QtWidgets.QDialog, files: Iterable[Path]) -> None:
     for file in files:
         if file in qdialog.files_added:
             continue
-        directory, filename = os.path.split(file)
-        name, unused_ext = os.path.splitext(filename)
-        item = QtWidgets.QTreeWidgetItem([name])
+        item = QtWidgets.QTreeWidgetItem([file.stem])
         item.file = file
-        item.name = name
-        item.filename = filename
-        item.directory = directory
+        item.name = file.stem
+        item.filename = file.name
+        item.directory = file.parent
         qdialog.files_added[file] = file
         qdialog.treeWidget.addTopLevelItem(item)
 

@@ -411,10 +411,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         file_path = fdialogs.open_file_dialog(
             self, self.element_simulation.request.directory,
             "Select a file to import", "")
-        if not file_path:
+        if file_path is None:
             return
 
-        file_path = Path(file_path)
         name = file_path.name
 
         new_file_name = \
