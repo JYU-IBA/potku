@@ -85,7 +85,7 @@ def open_files_dialog(
     Returns:
         A full paths to the selected filenames if a file is selected.
     """
-    selected_files, = QtWidgets.QFileDialog.getOpenFileNames(
+    selected_files, *_ = QtWidgets.QFileDialog.getOpenFileNames(
         parent, title, str(default_folder), parent.tr(allowed_files))
     return [Path(file) for file in selected_files]
 
