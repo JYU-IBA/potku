@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, 2021 Aleksi Kauppi
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@ depth profile graph.
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n" \
-             "Juhani Sundell"
+             "Juhani Sundell \n Aleksi Kauppi"
 __version__ = "2.0"
 
 import modules.math_functions as mf
@@ -177,20 +177,16 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         menu.exec_(self.canvas.mapToGlobal(point))
         
     def numeric_limits_dialog(self):
-        """Show numeric limits dialog.
+        """Show numeric limits dialog and update graph if new limits are set.
         """
-        NumericLimitsDialog(self)
-        
-    def show_yourself(self, dialog):
-        """Show current depth profile limits in dialog.
-
-        Args:
-            dialog: A NumericLimitsDialog.
-        """
-        # Get values
         lim_a, lim_b = self._limit_lines.get_range()
-        dialog.spinbox_limit_min.setValue(lim_a)
-        dialog.spinbox_limit_max.setValue(lim_b)
+        limit_dialog = NumericLimitsDialog(lim_a, lim_b)
+        
+        if not limit_dialog.exec_():
+            return
+        
+        self._limit_lines.update_graph(limit_dialog.limit_min)
+        self._limit_lines.update_graph(limit_dialog.limit_max) 
 
     def get_profiles_to_use(self) -> Dict[str, DepthProfile]:
         """Determines what files to use for plotting. Either relative, absolute
