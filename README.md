@@ -13,7 +13,7 @@ development version.
 Ready to run binary packages are available are available on the 
 [official website](https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/).
 
-    Copyright (C) 2013-2020 Potku developers
+    Copyright (C) 2013-2021 Potku developers
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -67,13 +67,6 @@ must be installed:
 - make
 - gcc
 - Requirements for [Jibal](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#minimum-requirements)
-- Note: instead of cloning the vcpkg master branch, download the latest stable release from
-[here](https://github.com/microsoft/vcpkg/tags ) and then continue with
-````
-.\vcpkg\bootstrap-vcpkg.bat
-vcpkg.exe install gsl:x64-windows getopt:x64-windows
-````
-as instructed.
 
 ### Linux and macOS
 
@@ -90,6 +83,14 @@ to compile all programs. Note that this script has no error checking, if you enc
 
 For installing the requirements for the Jibal, follow the instructions 1 - 4 described in [here](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#installation-instructions-for-microsoft-windows-10).
 
+- Note: instead of cloning the vcpkg master branch, download the latest stable release from
+[here](https://github.com/microsoft/vcpkg/tags ) and then continue with
+````
+.\vcpkg\bootstrap-vcpkg.bat
+vcpkg.exe install gsl:x64-windows getopt:x64-windows
+````
+as instructed.
+
 For make and gcc see [c_for_windows_example.md](c_for_windows_example.md) for an example on how to set up the rest of the C environment .
 
 To compile the programs, run
@@ -100,9 +101,11 @@ $ build.bat
 
 in the `potku/` root directory 
 
-(In case of errors in the build, try different command prompt ie. x64 Native Tools Command Prompt as an administrator)
+If you get errors in the build, try different command prompt ie. x64 Native Tools Command Prompt as an administrator.
 
-(In case of warnings, run build again)
+Also be sure that make, gcc, cmake and vcpkg are installed and in the PATH
+
+In case of warnings but no errors, try running the build again.
 
 
 ## Data files
@@ -132,7 +135,7 @@ systems and possibly macOS too. Windows users will need to manually download
 it. [GNU AWK](https://www.gnu.org/software/gawk/) is tested and confirmed to be
 working on Windows.
 
-Place AWK under `external/bin/`. The executable must be named `awk` or 
+Place AWK under `potku/external/bin/`. The executable must be named `awk` or 
 (`awk.exe` on Windows) for Potku detect and use it.
 
 
@@ -154,7 +157,7 @@ $ python -m unittest discover
 ## Packaging Potku into a standalone executable (work in progress)
 
 Potku can be packaged into a standalone executable using [PyInstaller](https://www.pyinstaller.org/). 
-Make sure you have compiled potku with `build` successfully and added the needed data files and awk before the packaging
+Make sure you have compiled potku with `build` successfully and added the needed data files and awk before the packaging.
 For quick deployment, run these commands:
 ````
 $ pipenv install (if the virtual environment has not already been created)
