@@ -41,7 +41,7 @@ eval "$(pyenv init -)"
 # Set Python version
 pyenv global 3.6.10
 
-# Add data files required by Jibal
+# Add data files required by JIBAL
 curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C external/share/jibal
 
 # Create the Potku bundle

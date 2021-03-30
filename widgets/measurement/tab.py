@@ -35,6 +35,7 @@ import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
 
 from pathlib import Path
+from typing import Optional
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.energy_spectrum import EnergySpectrumWidget
@@ -46,6 +47,7 @@ from dialogs.measurement.settings import MeasurementSettingsDialog
 
 from modules.element import Element
 from modules.measurement import Measurement
+from modules.enums import DepthProfileUnit
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -54,16 +56,21 @@ from PyQt5 import uic
 from widgets.base_tab import BaseTab
 from widgets.measurement.tofe_histogram import TofeHistogramWidget
 from widgets.gui_utils import StatusBarHandler
+from widgets.icon_manager import IconManager
 
 
-class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
+class MeasurementTabWidget(BaseTab):
     """Tab widget where measurement stuff is added.
     """
 
     issueMaster = QtCore.pyqtSignal()
 
-    def __init__(self, tab_id, measurement: Measurement, icon_manager,
-                 statusbar=None):
+    def __init__(
+            self,
+            tab_id: int,
+            measurement: Measurement,
+            icon_manager: IconManager,
+            statusbar: Optional[QtWidgets.QStatusBar] = None):
         """Init measurement tab class.
         Args:
             tab_id: An integer representing ID of the tabwidget.
@@ -71,12 +78,8 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             icon_manager: An iconmanager class object.
             statusbar: A QtGui.QMainWindow's QStatusBar.
         """
-        super().__init__()
+        super().__init__(measurement, tab_id, icon_manager, statusbar)
         uic.loadUi(gutils.get_ui_dir() / "ui_measurement_tab.ui", self)
-
-        self.tab_id = tab_id
-        self.obj = measurement
-        self.icon_manager = icon_manager
 
         # Various widgets that are shown in the tab. These will be populated
         # using the load_data method
@@ -84,8 +87,6 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         self.elemental_losses_widget = None
         self.energy_spectrum_widget = None
         self.depth_profile_widget = None
-        self.log = None
-        self.data_loaded = False
 
         self.saveCutsButton.clicked.connect(self.measurement_save_cuts)
         self.analyzeElementLossesButton.clicked.connect(
@@ -100,7 +101,6 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         # Enable master button
         self.toggle_master_button()
         self.set_icons()
-        self.statusbar = statusbar
 
     def get_default_widget(self):
         """Histogram will be the widget that gets activated when the tab
@@ -230,9 +230,13 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             elements_string = lines[1].strip().split("\t")
             elements = [Element.from_string(element)
                         for element in elements_string]
-            x_unit = lines[3].strip()
+            try:
+                x_unit = DepthProfileUnit(lines[3].strip())
+            except ValueError:
+                x_unit = DepthProfileUnit.ATOMS_PER_SQUARE_CM
             line_zero = False
             line_scale = False
+            systerr = 0.0
             if len(lines) == 7:  # "Backwards compatibility"
                 line_zero = lines[4].strip() == "True"
                 line_scale = lines[5].strip() == "True"

@@ -31,15 +31,14 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import configparser
-import logging
 import os
 import re
 import time
 
 from pathlib import Path
-from typing import Tuple
-from typing import List
+from typing import Tuple, List, Union, Optional, Iterable
 
+from .ui_log_handlers import RequestLogger
 from .base import ElementSimulationContainer
 from .detector import Detector
 from .element import Element
@@ -52,15 +51,16 @@ from .simulation import Simulation
 from .target import Target
 from .recoil_element import RecoilElement
 from .global_settings import GlobalSettings
+from .observing import ProgressReporter
 
 
-class Request(ElementSimulationContainer):
+class Request(ElementSimulationContainer, RequestLogger):
     """Request class to handle all measurements.
     """
 
     def __init__(self, directory: Path, name: str,
                  global_settings: GlobalSettings, tabs=None,
-                 save_on_creation=True, enable_logging=True):
+                 save_on_creation: bool = True, enable_logging: bool = True):
         """ Initializes Request class.
         
         Args:
@@ -70,6 +70,7 @@ class Request(ElementSimulationContainer):
             tabs: A dictionary of MeasurementTabWidgets and SimulationTabWidgets
                 of the request.
         """
+        RequestLogger.__init__(self, enable_logging)
         self.directory = Path(directory).resolve()
         self.default_folder = Path(self.directory, "Default")
 
@@ -118,8 +119,7 @@ class Request(ElementSimulationContainer):
                 target=self.default_target,
                 run=self.default_run)
 
-        if enable_logging:
-            self.__set_request_logger()
+        self.set_up_log_files(self.directory)
 
         # Request file containing necessary information of the request.
         # If it exists, we assume old request is loaded.
@@ -143,18 +143,20 @@ class Request(ElementSimulationContainer):
         elif save_on_creation:
             self._save()
 
-    def create_folder_structure(self):
+    def create_folder_structure(self) -> None:
         self.directory.mkdir(exist_ok=True)
         self.default_folder.mkdir(exist_ok=True)
 
-    def to_file(self):
+    def to_file(self) -> None:
         self.create_folder_structure()
         self._save()
         self.default_measurement.to_file()
         self.default_simulation.to_file()
 
     @classmethod
-    def from_file(cls, file: Path, settings: GlobalSettings, tab_widgets=None):
+    def from_file(
+            cls, file: Path, settings: GlobalSettings,
+            tab_widgets=None, enable_logging: bool = True) -> "Request":
         """Returns a new Request from an existing .request file and folder
         structure.
 
@@ -163,6 +165,10 @@ class Request(ElementSimulationContainer):
             settings: GlobalSettings object
             tab_widgets: A dictionary of MeasurementTabWidgets and
                 SimulationTabWidgets of the request.
+            enable_logging: whether logging is enabled or not
+
+        Return:
+            Request object
         """
         # TODO better error checking
         file_path = Path(file).resolve()
@@ -172,10 +178,12 @@ class Request(ElementSimulationContainer):
             raise ValueError("Expected file, got a directory")
         if file_path.suffix != ".request":
             raise ValueError("Expected request file")
-        return cls(file_path.parent, file_path.stem, settings, tab_widgets)
+        return cls(
+            file_path.parent, file_path.stem, settings, tab_widgets,
+            enable_logging=enable_logging)
 
     def _create_default_detector(
-            self, folder: Path, save_on_creation) -> Detector:
+            self, folder: Path, save_on_creation: bool) -> Detector:
         """Returns default detector.
         """
         detector_path = folder / "Default.detector"
@@ -202,18 +210,23 @@ class Request(ElementSimulationContainer):
 
         return detector
 
-    def _create_default_measurement(self, save_on_creation, **kwargs) -> \
-            Measurement:
+    def _create_default_measurement(
+            self, save_on_creation: bool, **kwargs) -> Measurement:
         """Returns default measurement.
         """
         info_path = Path(self.default_folder, "Default.info")
         if info_path.exists():
             # Read measurement from file
+            measurement_file = Path(self.default_folder, "Default.measurement")
             measurement = Measurement.from_file(
-                info_path,
-                Path(self.default_folder, "Default.measurement"),
-                Path(self.default_folder, "Default.profile"),
-                self, **kwargs)
+                info_path, measurement_file, self, **kwargs,
+                enable_logging=False)
+
+            # Ensure that use_request_settings flag is False. Otherwise
+            # measurement settings would not be saved when calling
+            # measurement.to_file (this was change was introduced in commit
+            # fc68f07)
+            measurement.use_request_settings = False
         else:
             # Create default measurement for request
             measurement = Measurement(
@@ -223,11 +236,12 @@ class Request(ElementSimulationContainer):
                                                      "measurement "
                                                      "parameters.",
                 use_request_settings=False,
-                save_on_creation=save_on_creation)
+                save_on_creation=save_on_creation,
+                enable_logging=False)
 
         return measurement
 
-    def _create_default_target(self, save_on_creation) -> Target:
+    def _create_default_target(self, save_on_creation: bool) -> Target:
         """Returns default target.
         """
         target_path = Path(self.default_folder, "Default.target")
@@ -253,12 +267,12 @@ class Request(ElementSimulationContainer):
         except (KeyError, OSError):
             return Run()
 
-    def _create_default_profile(self, save_on_creation) -> Profile:
+    def _create_default_profile(self, save_on_creation: bool) -> Profile:
         """Returns default profile.
         """
         profile_path = Path(self.default_folder, "Default.profile")
         if profile_path.exists():
-            profile = Profile.from_file(profile_path)
+            profile = Profile.from_file(profile_path, logger=self)
         else:
             profile = Profile(
                 description="These are default profile parameters.")
@@ -270,7 +284,11 @@ class Request(ElementSimulationContainer):
         return profile
 
     def _create_default_simulation(
-            self, save_on_creation, target=None, detector=None, run=None,
+            self,
+            save_on_creation: bool,
+            target: Optional[Target] = None,
+            detector: Optional[Detector] = None,
+            run: Optional[Run] = None,
             **kwargs) -> Tuple[Simulation, ElementSimulation]:
         """Create default simulation and ElementSimulation
         """
@@ -279,7 +297,9 @@ class Request(ElementSimulationContainer):
             # Read default simulation from file
             sim = Simulation.from_file(
                 self, simulation_path, save_on_creation=save_on_creation,
-                target=target, detector=detector, run=run, **kwargs)
+                target=target, detector=detector, run=run, **kwargs,
+                enable_logging=False)
+            sim.use_request_settings = False
         else:
             # Create default simulation for request
             sim = Simulation(
@@ -290,7 +310,8 @@ class Request(ElementSimulationContainer):
                 measurement_setting_file_description="These are default "
                                                      "simulation "
                                                      "parameters.",
-                use_request_settings=False)
+                use_request_settings=False,
+                enable_logging=False)
 
         mcsimu_path = Path(self.default_folder, "Default.mcsimu")
         if mcsimu_path.exists():
@@ -313,7 +334,7 @@ class Request(ElementSimulationContainer):
         return sim, elem_sim
 
     def copy_default_detector(self, root_path: Path,
-                              save_on_creation=False) -> "Detector":
+                              save_on_creation=False) -> Detector:
         """Returns a copy of default detector."""
         detector_path = root_path / "Detector" / "Default.detector"
         detector = Detector(
@@ -326,14 +347,14 @@ class Request(ElementSimulationContainer):
         detector.set_settings(**detector_defaults)
         return detector
 
-    def copy_default_profile(self) -> "Profile":
+    def copy_default_profile(self) -> Profile:
         """Returns a copy of default profile."""
         profile = Profile()
         profile_defaults = self.default_profile.get_settings()
         profile.set_settings(**profile_defaults)
         return profile
 
-    def copy_default_run(self) -> "Run":
+    def copy_default_run(self) -> Run:
         """Returns a copy of default run."""
         run = Run()
         run_defaults = self.default_run.get_settings()
@@ -343,7 +364,7 @@ class Request(ElementSimulationContainer):
         run.set_settings(**run_defaults)
         return run
 
-    def copy_default_target(self) -> "Target":
+    def copy_default_target(self) -> Target:
         """Returns a copy of default target."""
         target = Target()
         target_defaults = self.default_target.get_settings()
@@ -351,7 +372,7 @@ class Request(ElementSimulationContainer):
         target.set_settings(**target_defaults)
         return target
 
-    def exclude_slave(self, measurement):
+    def exclude_slave(self, measurement: Measurement):
         """ Exclude measurement from slave category under master.
         
         Args:
@@ -366,7 +387,7 @@ class Request(ElementSimulationContainer):
             paths)
         self._save()
 
-    def include_slave(self, measurement):
+    def include_slave(self, measurement: Measurement) -> None:
         """ Include measurement to slave category under master.
         
         Args:
@@ -381,7 +402,7 @@ class Request(ElementSimulationContainer):
             paths)
         self._save()
 
-    def get_name(self):
+    def get_name(self) -> str:
         """ Get the request's name.
         
         Return:
@@ -394,7 +415,7 @@ class Request(ElementSimulationContainer):
         """
         return self.__master_measurement
 
-    def get_samples_files(self):
+    def get_samples_files(self) -> List[Path]:
         """
         Searches the directory for folders beginning with "Sample".
 
@@ -426,19 +447,19 @@ class Request(ElementSimulationContainer):
                     self._running_int = max(self._running_int, n)
         return samples
 
-    def get_running_int(self):
+    def get_running_int(self) -> int:
         """
         Get the running int needed for numbering the samples.
         """
         return self._running_int
 
-    def increase_running_int_by_1(self):
+    def increase_running_int_by_1(self) -> None:
         """
         Increase running int by one.
         """
         self._running_int = self._running_int + 1
 
-    def get_measurement_tabs(self, exclude_id=-1):
+    def get_measurement_tabs(self, exclude_id=-1) -> List:
         """ Get measurement tabs of a request.
         """
         list_m = []
@@ -448,12 +469,11 @@ class Request(ElementSimulationContainer):
                     list_m.append(tab)
         return list_m
 
-    def get_nonslaves(self):
+    def get_nonslaves(self) -> List[Measurement]:
         """ Get measurement names that will be excluded from slave category.
         """
-        paths = self.__request_information["meta"]["nonslave"] \
-            .split("|")
-        for measurement in self.samples.measurements.measurements.values():
+        paths = self.__request_information["meta"]["nonslave"].split("|")
+        for measurement in self._get_measurements():
             for path in paths:
                 if path == measurement.path:
                     if measurement in self.__non_slaves:
@@ -461,7 +481,7 @@ class Request(ElementSimulationContainer):
                     self.__non_slaves.append(measurement)
         return self.__non_slaves
 
-    def has_master(self):
+    def has_master(self) -> Union[str, Measurement]:
         """ Does request have master measurement? Check from config file as
         it is not loaded yet.
         
@@ -474,30 +494,33 @@ class Request(ElementSimulationContainer):
             Measurement object.
         """
         path = self.__request_information["meta"]["master"]
-        for measurement in self.samples.measurements.measurements.values():
+        for measurement in self._get_measurements():
             if measurement.path == path:
                 return measurement
         return ""
 
-    def _load(self):
+    def _load(self) -> None:
         """ Load request.
         """
         self.__request_information.read(self.request_file)
         paths = self.__request_information["meta"]["nonslave"] \
             .split("|")
-        for measurement in self.samples.measurements.measurements.values():
+        for measurement in self._get_measurements():
             for path in paths:
                 if path == measurement.path:
                     self.__non_slaves.append(measurement)
 
-    def _save(self):
+    def _save(self) -> None:
         """ Save request.
         """
         # TODO: Saving properly.
         with self.request_file.open("w") as configfile:
             self.__request_information.write(configfile)
 
-    def save_cuts(self, measurement, progress=None):
+    def save_cuts(
+            self,
+            measurement: Measurement,
+            progress: Optional[ProgressReporter] = None) -> None:
         """ Save cuts for all measurements except for master.
         
         Args:
@@ -526,7 +549,10 @@ class Request(ElementSimulationContainer):
         if progress is not None:
             progress.report(100)
 
-    def save_selection(self, measurement, progress=None):
+    def save_selection(
+            self,
+            measurement: Measurement,
+            progress: Optional[ProgressReporter] = None) -> None:
         """ Save selection for all measurements except for master.
         
         Args:
@@ -558,7 +584,7 @@ class Request(ElementSimulationContainer):
         if progress is not None:
             progress.report(100)
 
-    def set_master(self, measurement=None):
+    def set_master(self, measurement: Optional[Measurement] = None) -> None:
         """ Set master measurement for the request.
         
         Args:
@@ -572,23 +598,6 @@ class Request(ElementSimulationContainer):
             path = measurement.path
             self.__request_information["meta"]["master"] = path
         self._save()
-
-    def __set_request_logger(self):
-        """ Sets the logger which is used to log everything that doesn't happen
-        in measurements.
-        """
-        self.create_folder_structure()
-        logger = logging.getLogger("request")
-        logger.setLevel(logging.DEBUG)
-
-        formatter = logging.Formatter(
-            "%(asctime)s - %(levelname)s - %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S")
-        requestlog = logging.FileHandler(Path(self.directory, "request.log"))
-        requestlog.setLevel(logging.INFO)
-        requestlog.setFormatter(formatter)
-
-        logger.addHandler(requestlog)
 
     def get_imported_files_folder(self) -> Path:
         return self.directory / "Imported_files"
@@ -607,32 +616,53 @@ class Request(ElementSimulationContainer):
             pass
         return files
 
-    def _get_simulations(self):
+    def _get_simulations(self) -> Iterable[Simulation]:
         return (
             sim for sample in self.samples.samples
             for sim in sample.simulations.simulations.values()
         )
 
-    def get_running_simulations(self):
+    def _get_measurements(self) -> Iterable[Measurement]:
+        return (
+            measurement for sample in self.samples.samples
+            for measurement in sample.measurements.measurements.values()
+        )
+
+    def get_running_simulations(self) -> List[ElementSimulation]:
         return list(
             elem_sim for sim in self._get_simulations()
             for elem_sim in sim.get_running_simulations()
         )
 
-    def get_running_optimizations(self):
+    def get_running_optimizations(self) -> List[ElementSimulation]:
         return list(
             elem_sim for sim in self._get_simulations()
             for elem_sim in sim.get_running_optimizations()
         )
 
-    def get_finished_simulations(self):
+    def get_finished_simulations(self) -> List[ElementSimulation]:
         return list(
             elem_sim for sim in self._get_simulations()
             for elem_sim in sim.get_finished_simulations()
         )
 
-    def get_finished_optimizations(self):
+    def get_finished_optimizations(self) -> List[ElementSimulation]:
         return list(
             elem_sim for sim in self._get_simulations()
             for elem_sim in sim.get_finished_optimizations()
         )
+
+    def close_log_files(self) -> None:
+        """Closes the log file of this Request as well as log files of
+        all Measurements and Simulations belonging to this Request.
+        """
+        # default_simulation and default_measurement should not have open log
+        # files to begin with, but close them anyway just in case
+        self.default_simulation.close_log_files()
+        self.default_measurement.close_log_files()
+
+        for sim in self._get_simulations():
+            sim.close_log_files()
+        for measurement in self._get_measurements():
+            measurement.close_log_files()
+        RequestLogger.close_log_files(self)

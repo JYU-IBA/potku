@@ -66,7 +66,7 @@ must be installed:
 
 - make
 - gcc
-- Requirements for [Jibal](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#minimum-requirements)
+- Requirements for [JIBAL](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#minimum-requirements)
 
 ### Linux and macOS
 
@@ -85,10 +85,12 @@ For installing the requirements for the Jibal, follow the instructions 1 - 4 des
 
 - Note: instead of cloning the vcpkg master branch, download the latest stable release from
 [here](https://github.com/microsoft/vcpkg/tags ) and then continue with
+
 ````
 .\vcpkg\bootstrap-vcpkg.bat
 vcpkg.exe install gsl:x64-windows getopt:x64-windows
 ````
+
 as instructed.
 
 For make and gcc see [c_for_windows_example.md](c_for_windows_example.md) for an example on how to set up the rest of the C environment .
@@ -110,7 +112,7 @@ In case of warnings but no errors, try running the build again.
 
 ## Data files
 
-Jibal requires additional data files, which can be downloaded from 
+JIBAL requires additional data files, which can be downloaded from
 [here](http://users.jyu.fi/~jaakjuli/jibal/data/). 
 These files need to be extracted to ``external/share/jibal``. You can run the 
 following command from the root folder of the repository to download and 

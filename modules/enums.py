@@ -218,3 +218,14 @@ class Profile(str, Enum):
 
     def __str__(self):
         return self.value.capitalize()
+
+
+@enum.unique
+class DepthProfileUnit(str, Enum):
+    """X axis unit used for depth profiles.
+    """
+    ATOMS_PER_SQUARE_CM = "1e15 at./cm²"
+    NM = "nm"
+
+    def __str__(self):
+        return self.value

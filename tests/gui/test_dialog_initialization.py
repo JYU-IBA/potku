@@ -32,7 +32,6 @@ from unittest.mock import Mock
 from unittest.mock import patch
 
 from dialogs.measurement.element_losses import ElementLossesDialog
-from dialogs.measurement.depth_profile import DepthProfileDialog
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.measurement.calibration import CalibrationDialog
 from dialogs.simulation.optimization import OptimizationDialog
@@ -48,10 +47,6 @@ class TestDialogInitialization(unittest.TestCase):
         """
         e = ElementLossesDialog(Mock(), mo.get_measurement())
         e.close()
-
-        d = DepthProfileDialog(
-            Mock(), mo.get_measurement(), mo.get_global_settings())
-        d.close()
 
         c = CalibrationDialog(
             [mo.get_measurement()], mo.get_detector(), mo.get_run())
@@ -69,7 +64,7 @@ class TestDialogInitialization(unittest.TestCase):
         self.assertFalse(o.pushButton_OK.isEnabled())
         o.close()
 
-        assert mock_exec.call_count == 4
+        assert mock_exec.call_count == 3
 
     @patch("PyQt5.QtWidgets.QDialog.exec_")
     def test_espe_params(self, mock_exec):

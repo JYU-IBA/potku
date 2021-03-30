@@ -30,7 +30,6 @@ __version__ = "2.0"
 import os
 import hashlib
 import unittest
-import logging
 import platform
 import warnings
 import itertools
@@ -39,7 +38,12 @@ import modules.general_functions as gf
 
 from pathlib import Path
 from string import Template
-from typing import Dict
+from typing import (
+    Dict,
+    Any,
+    Callable,
+    Optional,
+)
 
 
 def get_sample_data_dir() -> Path:
@@ -128,18 +132,13 @@ def verify_files(file_paths, checksum, msg=None):
     if b:
         return lambda func: func
     if msg is not None:
-        return unittest.skip("{0}: {1}.".format(msg, reason))
+        return unittest.skip(f"{msg}: {reason}.")
     return unittest.skip(reason)
 
 
-def disable_logging():
-    """Disables loggers and removes their file handles"""
-    loggers = [logging.getLogger(name) for name in
-               logging.root.manager.loggerDict]
-    for logger in loggers:
-        logger.disabled = True
-        for handler in logger.handlers:
-            handler.close()
+WINDOWS = "Windows"
+LINUX = "Linux"
+MAC = "Darwin"
 
 
 class PlatformSwitcher:
@@ -149,7 +148,7 @@ class PlatformSwitcher:
     with PlatformSwitcher('name of the os'):
         # os specific code here
     """
-    platforms = {"Windows", "Linux", "Darwin"}
+    platforms = frozenset([WINDOWS, LINUX, MAC])
 
     def __init__(self, system):
         if system not in self.platforms:
@@ -193,11 +192,23 @@ def get_template_file_contents(template_file, **kwargs):
     return temp.substitute(kwargs)
 
 
-def expected_failure_if(cond):
-    """Decorator that expects a test to fail if the condition is True.
+def only_succeed_on(*systems: str) -> Callable:
+    """Expect the decorated test to fail on given systems:
     """
-    if cond:
+    systems = set(systems)
+    if platform.system() not in systems:
         return unittest.expectedFailure
+    return lambda func: func
+
+
+def only_run_on(*systems: str, reason: Optional[str] = None) -> Callable:
+    """Only runs the test function on given systems.
+    """
+    systems = set(systems)
+    if platform.system() not in systems:
+        if reason is None:
+            reason = f"This test is only for {', '.join(systems)}"
+        return unittest.skip(reason)
     return lambda func: func
 
 
@@ -210,17 +221,22 @@ def run_without_warnings(func):
         return func()
 
 
-def slots_test(obj):
-    """Checks whether the given object has a working __slots__ declaration,
-    this function raises an AttributeError
+def assert_has_slots(obj: Any):
+    """Asserts that the given object has a __slots__ declaration. If not,
+    raises AssertionError.
     """
     if not hasattr(obj, "__slots__"):
-        return
+        raise AssertionError("Object does not have __slots__.")
     for i in range(1000):
         attr = f"xyz{i}"
         if not hasattr(obj, attr) and attr not in getattr(obj, "__slots__"):
-            setattr(obj, attr, "foo")
-            break
+            try:
+                setattr(obj, attr, "foo")
+                raise AssertionError(
+                    "__slots__ declaration not working as intended, perhaps "
+                    "due to inheritance.")
+            except AttributeError:
+                return
 
 
 def assert_folder_structure_equal(expected_structure: Dict, directory: Path):

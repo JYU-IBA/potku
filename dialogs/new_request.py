@@ -30,7 +30,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import os
-import logging
 import platform
 
 import widgets.input_validation as iv
@@ -115,7 +114,6 @@ class RequestNewDialog(QtWidgets.QDialog):
             if not directory.exists():
                 os.makedirs(directory)
                 self.directory = directory
-                logging.getLogger("request").info("Created the request.")
                 self.__close = True
             else:
                 QtWidgets.QMessageBox.critical(self, "Already exists",

@@ -33,7 +33,6 @@ __version__ = "2.0"
 
 import hashlib
 import json
-import logging
 import os
 import shutil
 import time
@@ -52,7 +51,7 @@ from .detector import Detector
 from .profile import Profile
 from .run import Run
 from .target import Target
-from .ui_log_handlers import Logger
+from .ui_log_handlers import MeasurementLogger
 from .base import Serializable
 
 
@@ -159,16 +158,15 @@ class Measurements:
                 run = None
 
             if profile_file is not None:
-                profile = Profile.from_file(profile_file)
+                profile = Profile.from_file(profile_file, logger=self.request)
             else:
                 profile = None
 
             # Create Measurement from file
             if file_path.exists() and file_path.suffix == ".info":
                 measurement = Measurement.from_file(
-                    file_path, mesu_file, profile_file,
-                    self.request, sample=sample, target=target,
-                    detector=detector, run=run, profile=profile)
+                    file_path, mesu_file, self.request, sample=sample,
+                    target=target, detector=detector, run=run, profile=profile)
 
                 measurement_folder_name = file_directory.name
                 serial_number = int(measurement_folder_name[
@@ -221,7 +219,7 @@ class Measurements:
                 except Exception as e:
                     log = f"Something went wrong while adding a new " \
                           f"measurement: {e}"
-                    logging.getLogger("request").critical(log)
+                    self.request.log_error(log)
 
         # Add Measurement to Measurements.
         if measurement is not None:
@@ -248,13 +246,18 @@ class Measurements:
         self.measurements = remove_key(self.measurements, tab_id)
 
 
-class Measurement(Logger, Serializable):
+class Measurement(MeasurementLogger, Serializable):
     """Measurement class to handle one measurement data.
     """
 
-    # __slots__ = "request", "tab_id", "name", "description",\
-    #             "modification_time", "run", "detector", "target", \
-    #             "profile"
+    __slots__ = "request", "tab_id", "name", "description",\
+                "modification_time", "run", "detector", "target", \
+                "profile", "path", "sample", "measurement_setting_file_name", \
+                "measurement_setting_file_description", "serial_number", \
+                "measurement_setting_modification_time", "data", \
+                "measurement_file", "directory", "use_request_settings", \
+                "selector"
+
     DIRECTORY_PREFIX = "Measurement_"
 
     def __init__(self, request, path, tab_id=-1, name="Default",
@@ -272,8 +275,8 @@ class Measurement(Logger, Serializable):
             path: Full path to measurement's .info file.
         """
         # Run the base class initializer to establish logging
-        Logger.__init__(
-            self, name, "Measurement", enable_logging=enable_logging)
+        MeasurementLogger.__init__(
+            self, name, enable_logging=enable_logging, parent=request)
         # FIXME path should be to info file
         self.tab_id = tab_id
 
@@ -345,7 +348,7 @@ class Measurement(Logger, Serializable):
         Return:
             A Detector.
         """
-        detector, *_ = self._get_used_settings()
+        detector, *_ = self.get_used_settings()
         return detector
 
     def get_measurement_file(self) -> Path:
@@ -369,7 +372,7 @@ class Measurement(Logger, Serializable):
                     self.measurement_file = path
                     break
 
-        self.set_loggers(self.directory, self.request.directory)
+        self.set_up_log_files(self.directory)
 
         element_colors = self.request.global_settings.get_element_colors()
         if selector_cls is not None:
@@ -388,7 +391,7 @@ class Measurement(Logger, Serializable):
         if self.selector is not None:
             self.selector.update_references(self)
 
-        self.set_loggers(self.directory, self.request.directory)
+        self.set_up_log_files(self.directory)
 
     @staticmethod
     def find_measurement_files(directory: Path):
@@ -427,22 +430,29 @@ class Measurement(Logger, Serializable):
             profile_file, measurement_file, target_file, detector_file)
 
     @classmethod
-    def from_file(cls, info_file: Path, measurement_file: Path,
-                  profile_file: Path, request: "Request", detector=None,
-                  run=None, target=None, profile=None,
-                  sample=None) -> "Measurement":
+    def from_file(
+            cls,
+            info_file: Path,
+            measurement_file: Path,
+            request: "Request",
+            detector: Optional[Detector] = None,
+            run: Optional[Run] = None,
+            target: Optional[Target] = None,
+            profile: Optional[Profile] = None,
+            sample: Optional["Sample"] = None,
+            enable_logging: bool = True) -> "Measurement":
         """Read Measurement information from file.
 
         Args:
             info_file: Path to .info file.
             measurement_file: Path to .measurement file.
-            profile_file: Path to .profile file.
             request: Request that the Measurement belongs to.
             detector: Measurement's Detector object.
             run: Measurement's Run object.
             target: Measurement's Target object.
             profile: Measurement's Profile object.
             sample: Sample under which this Measurement belongs to.
+            enable_logging: whether logging is enabled or not
 
         Return:
             Measurement object.
@@ -464,18 +474,17 @@ class Measurement(Logger, Serializable):
                         obj_gen["modification_time_unix"]
                 }
             except (OSError, KeyError, AttributeError) as e:
-                logging.getLogger("request").error(
-                    f"Failed to read settings from .measurement file "
-                    f"{measurement_file}: {e}"
-                )
+                msg = f"Failed to read settings from .measurement file " \
+                      f"{measurement_file}: {e}"
+                request.log_error(msg)
                 mesu_general = {}
         else:
             mesu_general = {}
 
         return cls(
-            request=request, path=info_file, run=run,
-            detector=detector, target=target, profile=profile,
-            **obj_info, **mesu_general, sample=sample)
+            request=request, path=info_file, run=run, detector=detector,
+            target=target, profile=profile, **obj_info, **mesu_general,
+            sample=sample, enable_logging=enable_logging)
 
     def get_data_dir(self) -> Path:
         """Returns path to Data directory.
@@ -623,13 +632,13 @@ class Measurement(Logger, Serializable):
         self.__make_directories(self.get_energy_spectra_dir())
         self.__make_directories(self._get_tof_in_dir())
 
-        self.set_loggers(self.directory, self.request.directory)
+        self.set_up_log_files(self.directory)
 
         element_colors = self.request.global_settings.get_element_colors()
         if selector_cls is not None:
             self.selector = selector_cls(self, element_colors)
 
-    def __make_directories(self, directory):
+    def __make_directories(self, directory: Path):
         """Make directories.
 
         Args:
@@ -639,12 +648,9 @@ class Measurement(Logger, Serializable):
         if not new_dir.exists():
             try:
                 new_dir.mkdir()
-                log = f"Created a directory {new_dir}."
-                logging.getLogger("request").info(log)
+                self.request.log(f"Created a directory {new_dir}.")
             except OSError as e:
-                logging.getLogger("request").error(
-                    f"Failed to create a directory: {e}."
-                )
+                self.request.log_error(f"Failed to create a directory: {e}.")
 
     def copy_file_into_measurement(self, file_path: Path):
         """Copies the given file into the measurement's data folder
@@ -678,16 +684,13 @@ class Measurement(Logger, Serializable):
                                               int(split[2]), n])
             self.selector.measurement = self
         except IOError as e:
-            error_log = "Error while loading the {0} {1}. {2}".format(
-                "measurement date for the measurement",
-                self.name,
-                "The error was:")
-            error_log_2 = "I/O error ({0}): {1}".format(e.errno, e.strerror)
-            logging.getLogger('request').error(error_log)
-            logging.getLogger('request').error(error_log_2)
+            error_log = "Error while loading the measurement date for the " \
+                        f"measurement {self.name}. The error was:"
+            error_log_2 = f"I/O error ({e.errno}): {e.strerror}"
+            self.request.log_error(error_log)
+            self.request.log_error(error_log_2)
         except Exception as e:
-            error_log = "Unexpected error: {0}".format(e)
-            logging.getLogger('request').error(error_log)
+            self.request.log_error(f"Unexpected error: {e}")
 
     def get_available_asc_file_name(self, new_name: str) -> Path:
         """Returns an .asc file name that does not already exist.
@@ -757,14 +760,9 @@ class Measurement(Logger, Serializable):
             with selection_file.open("r"):
                 self.load_selection(selection_file, progress)
         except OSError:
-            # TODO: Is it necessary to inform user with this?
-            # FIXME crashes here when:
-            #       1. user deletes all measurements from a sample
-            #       2. user imports new .evnt file
-            #       3. user tries to open the imported data
             log_msg = "There was no old selection file to add to this " \
                       f"request."
-            logging.getLogger(self.name).info(log_msg)
+            self.log(log_msg)
 
     def add_point(self, point, canvas):
         """Add point into selection or create new selection if first or all
@@ -923,7 +921,7 @@ class Measurement(Logger, Serializable):
             progress.report(100)
 
         log_msg = f"Saving finished in {time.time() - starttime} seconds."
-        logging.getLogger(self.name).info(log_msg)
+        self.log(log_msg)
 
     def __remove_old_cut_files(self):
         """Remove old cut files.
@@ -960,7 +958,8 @@ class Measurement(Logger, Serializable):
         """
         self.selector.load(filename, progress=progress)
 
-    def _get_used_settings(self):
+    def get_used_settings(
+            self) -> Tuple[Detector, Run, Target, Profile, "Measurement"]:
         if self.use_request_settings:
             detector = self.request.default_detector
             run = self.request.default_run
@@ -999,7 +998,7 @@ class Measurement(Logger, Serializable):
         tof_in_file.parent.mkdir(exist_ok=True)
 
         # Get settings
-        detector, run, target, profile, measurement = self._get_used_settings()
+        detector, run, target, profile, measurement = self.get_used_settings()
         global_settings = self.request.global_settings
 
         reference_density = profile.reference_density
@@ -1102,17 +1101,17 @@ class Measurement(Logger, Serializable):
                 shutil.copyfile(tof_in_file, new_file)
                 back_up_msg = "Backed up old tof.in file to {0}".format(
                     os.path.realpath(new_file))
-                logging.getLogger(self.name).info(back_up_msg)
+                self.log(back_up_msg)
             except Exception as e:
                 if not isinstance(e, FileNotFoundError):
                     error_msg = f"Error when generating tof.in: {e}"
-                    logging.getLogger(self.name).error(error_msg)
+                    self.log_error(error_msg)
             # Write new settings to the file.
             with tof_in_file.open("w") as fp:
                 fp.write(tof_in)
-            str_logmsg = "Generated tof.in with params> {0}". \
+            str_logmsg = f"Generated tof.in with params> {0}". \
                 format(tof_in.replace("\n", "; "))
-            logging.getLogger(self.name).info(str_logmsg)
+            self.log(str_logmsg)
 
         return tof_in_file
 

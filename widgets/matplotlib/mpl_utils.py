@@ -103,22 +103,28 @@ def draw_and_flush(func):
     caller.
     """
     @functools.wraps(func)
-    def wrapper(canvas_wrapper: GraphWrapper, *args, **kwargs):
+    def wrapper(canvas_wrapper: Any, *args, **kwargs):
         res = func(canvas_wrapper, *args, **kwargs)
         # TODO using getattr here as this function could be used by classes
         #   other than GraphWrapper. If in the future all plotting is done
         #   via GraphWrapper class, this should just be a regular attribute
         #   check
-        if getattr(canvas_wrapper, "do_flush", False):
+        if isinstance(canvas_wrapper, GraphWrapper):
+            if getattr(canvas_wrapper, "do_flush", False):
+                canvas_wrapper.canvas.draw()
+                canvas_wrapper.canvas.flush_events()
+        else:
             canvas_wrapper.canvas.draw()
             canvas_wrapper.canvas.flush_events()
         return res
+
     return wrapper
 
 
 class GraphWrapper(abc.ABC):
     """Class that wraps Matplotlib canvas and axes and draws plots on them.
     """
+
     def __init__(self, canvas, axes, flush=True):
         """Initializes a new GraphWrapper.
         Args:
@@ -143,10 +149,11 @@ class VerticalLimits(GraphWrapper):
     _DEFAULT_X = 0.0
     _DEFAULT_COLOR = "blue"
 
-    def __init__(self, canvas, axes, xs: Optional[Range] = None, colors:
-                 Optional[StrTuple] = None, **kwargs):
+    def __init__(
+            self, canvas, axes, xs: Optional[Range] = None,
+            colors: Optional[StrTuple] = None, **kwargs):
         """Initializes a new VerticalLimits object
-        
+
         Args:
             canvas: Matplotlib canvas
             axes: Matplotlib axes
@@ -177,7 +184,7 @@ class VerticalLimits(GraphWrapper):
 
     @staticmethod
     def _unpack_args(tpl: Tuple, default_value: Any) -> Tuple[Any, Any]:
-        """Helper method for unpacking tuple argumenets.
+        """Helper method for unpacking tuple arguments.
         """
         if not tpl:
             return default_value, default_value
@@ -228,6 +235,7 @@ class VerticalLimits(GraphWrapper):
 class AlternatingLimits(VerticalLimits):
     """Draws limit lines in an alternating pattern.
     """
+
     def __init__(self, *args, **kwargs):
         VerticalLimits.__init__(self, *args, **kwargs)
         self._next_limit_idx = 1
@@ -253,6 +261,7 @@ class LineChart(GraphWrapper):
         def _inner_draw(key, xs, ys, **kwargs):
             line, = self.axes.plot(xs, ys, **kwargs)
             return key, line
+
         return dict([
             _inner_draw(**kwargs)
             for kwargs in lineargs

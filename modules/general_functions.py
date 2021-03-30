@@ -424,20 +424,25 @@ def md5_for_file(f, block_size=2 ** 20):
     return md5.digest()
 
 
-def to_superscript(string):
-    """TODO"""
-    sups = {"0": "\u2070",
-            "1": "\xb9",
-            "2": "\xb2",
-            "3": "\xb3",
-            "4": "\u2074",
-            "5": "\u2075",
-            "6": "\u2076",
-            "7": "\u2077",
-            "8": "\u2078",
-            "9": "\u2079"}
+_SUPERSCRIPTED_DIGITS = {
+    "0": "\u2070",
+    "1": "\xb9",
+    "2": "\xb2",
+    "3": "\xb3",
+    "4": "\u2074",
+    "5": "\u2075",
+    "6": "\u2076",
+    "7": "\u2077",
+    "8": "\u2078",
+    "9": "\u2079",
+}
 
-    return "".join(sups.get(char, char) for char in string)
+
+def digits_to_superscript(string: str) -> str:
+    """Changes all digits in given string to superscript,
+    i.e. 'cm3' => 'cm³'.
+    """
+    return "".join(_SUPERSCRIPTED_DIGITS.get(char, char) for char in string)
 
 
 def lower_case_first(s: str) -> str:
@@ -601,8 +606,7 @@ def rename_entity(entity: Union["Measurement", "Simulation"], new_name):
             entity.serial_number + "-" + new_name
 
         # Close and remove logs
-        entity.remove_and_close_log(entity.defaultlog)
-        entity.remove_and_close_log(entity.errorlog)
+        entity.close_log_files()
 
         new_dir = rename_file(entity.directory, new_folder)
         entity.name = new_name
@@ -634,7 +638,6 @@ def get_data_dir() -> Path:
 # to root folder is stored as the value of sys._MEIPASS attribute:
 # https://pyinstaller.readthedocs.io/en/stable/runtime-information.html?
 #   highlight=bundle
-# TODO is this only needed in macOS app?
 _ROOT_DIR = Path(
     getattr(sys, "_MEIPASS", Path(__file__).parent.parent)
 ).resolve()

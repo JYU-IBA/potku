@@ -67,8 +67,24 @@ class TofeGraphSettingsWidget(QtWidgets.QDialog):
         # Connect and show
         self.OKButton.clicked.connect(self.accept_settings)
         self.cancelButton.clicked.connect(self.close)
-
+        self.radio_range_manual.clicked.connect(lambda: self.toggle_manual(True))
+        self.radio_range_auto.clicked.connect(lambda: self.toggle_manual(False))
+        
+        if self.radio_range_auto.isChecked():
+            self.toggle_manual(False)
+           
+        elif self.radio_range_manual.isChecked():
+            self.toggle_manual(True)
+ 
         self.exec_()
+    
+    def toggle_manual(self, is_manual):
+        # if manual is on, spinboxes are enabled
+        is_disabled = not is_manual
+        self.spin_range_x_min.setDisabled(is_disabled)
+        self.spin_range_x_max.setDisabled(is_disabled)
+        self.spin_range_y_min.setDisabled(is_disabled)
+        self.spin_range_y_max.setDisabled(is_disabled) 
 
     def accept_settings(self):
         """Accept changed settings and save them.
@@ -84,16 +100,18 @@ class TofeGraphSettingsWidget(QtWidgets.QDialog):
         self.parent.transpose_axes = \
             self.transposeAxesCheckBox.checkState() == QtCore.Qt.Checked
         self.parent.color_scheme = self.color_scheme
-        if self.radio_range_auto.isChecked():
-            self.parent.axes_range_mode = 0
+        
+        if self.radio_range_auto.isChecked(): 
+            self.parent.axes_range_mode = 0    
+
         elif self.radio_range_manual.isChecked():
             self.parent.axes_range_mode = 1
-        x_range_min = self.spin_range_x_min.value()
-        x_range_max = self.spin_range_x_max.value()
-        y_range_min = self.spin_range_y_min.value()
-        y_range_max = self.spin_range_y_max.value()
+            x_range_min = self.spin_range_x_min.value()
+            x_range_max = self.spin_range_x_max.value()
+            y_range_min = self.spin_range_y_min.value()
+            y_range_max = self.spin_range_y_max.value()
+            self.parent.axes_range = [(x_range_min, x_range_max),
+                                      (y_range_min, y_range_max)]  
 
-        self.parent.axes_range = [(x_range_min, x_range_max),
-                                  (y_range_min, y_range_max)]
         self.parent.on_draw()
         self.close()
