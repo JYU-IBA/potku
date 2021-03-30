@@ -67,6 +67,13 @@ must be installed:
 - make
 - gcc
 - Requirements for [Jibal](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#minimum-requirements)
+- Note: instead of cloning the vcpkg master branch, download the latest stable release from
+[here](https://github.com/microsoft/vcpkg/tags ) and then continue with
+````
+.\vcpkg\bootstrap-vcpkg.bat
+vcpkg.exe install gsl:x64-windows getopt:x64-windows
+````
+as instructed.
 
 ### Linux and macOS
 
