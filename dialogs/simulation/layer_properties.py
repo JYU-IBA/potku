@@ -322,6 +322,8 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.sum_button.setText("Sum to 100%")
         self.sum_button.setFixedWidth(85)
         self.sum_button.setFixedHeight(28)
+        self.sum_button.setToolTip("Sets the amount remaining from " \
+        "100% to the box")
 
         self.sum_button.clicked.connect(self._sum_amount_to_one)
 
@@ -370,6 +372,8 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         else:
             missing_amount = 100 - sum_of_other        
         self.amount_spinbox.setValue(missing_amount)
+        
+        self.dialog._LayerPropertiesDialog__check_if_settings_ok()
 
     def __delete_element_layout(self):
         """Deletes element layout.
