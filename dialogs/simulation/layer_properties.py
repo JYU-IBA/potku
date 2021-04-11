@@ -46,6 +46,7 @@ from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 
+from math import isclose
 
 class LayerPropertiesDialog(QtWidgets.QDialog, bnd.PropertyTrackingWidget,
                             metaclass=gutils.QtABCMeta):
@@ -174,15 +175,15 @@ class LayerPropertiesDialog(QtWidgets.QDialog, bnd.PropertyTrackingWidget,
             else:
                 help_sum += elem.amount
 
-        if help_sum != 1.0 and help_sum != 100.0:
+        if isclose(help_sum, 1.0, rel_tol=1e-6) or isclose(help_sum, 100.0, rel_tol=1e-6):
+            for widget in elem_widgets:
+                iv.set_input_field_white(widget.amount_spinbox)
+            self.amount_mismatch = False
+        else:
             for widget in elem_widgets:
                 iv.set_input_field_red(widget.amount_spinbox)
             settings_ok = False
             self.amount_mismatch = True
-        else:
-            for widget in elem_widgets:
-                iv.set_input_field_white(widget.amount_spinbox)
-            self.amount_mismatch = False
         self.fields_are_valid = settings_ok
 
     def elements_changed(self):

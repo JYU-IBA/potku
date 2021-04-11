@@ -29,7 +29,6 @@ import unittest
 import tempfile
 import os
 import time
-import platform
 import threading
 import tests.utils as utils
 import tests.mock_objects as mo
@@ -42,7 +41,7 @@ from modules.element_simulation import ERDFileHandler
 from modules.element_simulation import ElementSimulation
 from modules.enums import OptimizationType
 
-from tests.utils import expected_failure_if
+from tests.utils import only_succeed_on
 
 from pathlib import Path
 from unittest.mock import patch
@@ -102,7 +101,7 @@ class TestErdFileHandler(unittest.TestCase):
     # Expect failure on *nix systems because they accept different file names
     # compared to Windows.
     # TODO correct behaviour should be specified in the future
-    @expected_failure_if(platform.system() != "Windows")
+    @only_succeed_on(utils.WINDOWS)
     def test_get_valid_erd_files(self):
         self.assertEqual([], list(fp.validate_erd_file_names(
             self.invalid_erd_files, self.elem_4he)))
@@ -330,7 +329,6 @@ class TestElementSimulation(unittest.TestCase):
             elem_sim2.get_settings())
         for key, value in self.kwargs.items():
             self.assertNotEqual(value, getattr(elem_sim2, key))
-
 
     def test_json_contents(self):
         self.elem_sim.use_default_settings = False

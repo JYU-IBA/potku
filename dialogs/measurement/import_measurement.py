@@ -28,8 +28,6 @@ __author__ = "Timo Konu \n Severi Jääskeläinen \n Samuel Kaiponen \n Heta " \
              "Rekilä \n Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
-import logging
-import os
 import re
 
 import dialogs.dialog_functions as df
@@ -194,17 +192,17 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
 
         filenames = ", ".join(filename_list)
         elapsed = timer() - start_time
-        log = "Imported measurements to request: {0}".format(filenames)
+        log = f"Imported measurements to request: {filenames}"
         log_var = "Variables used: {0} {1} {2} {3} {4}".format(
             "Skip lines: " + str(self.spin_skiplines.value()),
             "ADC trigger: " + str(self.spin_adctrigger.value()),
             "ADC count: " + str(self.spin_adccount.value()),
             "Timing: " + str(timing),
             "Event count: " + str(self.spin_eventcount.value()))
-        log_elapsed = "Importing finished {0} seconds".format(int(elapsed))
-        logging.getLogger("request").info(log)
-        logging.getLogger("request").info(log_var)
-        logging.getLogger("request").info(log_elapsed)
+        log_elapsed = f"Importing finished {elapsed} seconds"
+        self.request.log(log)
+        self.request.log(log_var)
+        self.request.log(log_elapsed)
 
         sbh.reporter.report(100)
         self.imported = True

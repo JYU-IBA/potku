@@ -95,6 +95,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self._ignore_from_graph: Set[Element] = set()
         self._ignore_from_ratio: Set[Element] = set()
         self._systematic_error = systematic_error
+        
+        # Set default filename for saving figure
+        default_filename = "Depth_profile_" + parent.measurement.name
+        self.canvas.get_default_filename = lambda: default_filename 
 
         self._profile_handler = DepthProfileHandler()
         self._profile_handler.read_directory(
