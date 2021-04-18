@@ -30,11 +30,18 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli " \
              "\n Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
+from pathlib import Path
+from typing import Optional, List
+
 from PyQt5 import QtWidgets
 
 
-def open_file_dialog(parent, default_folder, title, files):
-    """Opens open file dialog
+def open_file_dialog(
+        parent: QtWidgets.QWidget,
+        default_folder: Path,
+        title: str,
+        allowed_files: str) -> Optional[Path]:
+    """Opens open file dialog for single file.
 
     Opens dialog to select file to be opened and returns full file path to
     selected file if one is selected. If no file is selected returns None.
@@ -44,50 +51,53 @@ def open_file_dialog(parent, default_folder, title, files):
         default_folder: String or Path representing which folder is shown when
             dialog opens.
         title: String representing open file dialog title.
-        files: String representing what type of file can be opened.
+        allowed_files: String representing what type of file can be opened.
 
     Returns:
-        A full path to the selected filename if a file is selected. For
-        example:
-
-        "C:/Transfer/FinlandiaData/esimerkkidata.zip"
+        A full path to the selected filename if a file is selected.
     """
     # Convert the folder parameter to string to avoid TypeError when the
     # default_folder is a Path object
-    filename = QtWidgets.QFileDialog.getOpenFileName(
-        parent, title, str(default_folder), parent.tr(files))
-    return filename[0]
+    selected_file, *_ = QtWidgets.QFileDialog.getOpenFileName(
+        parent, title, str(default_folder), parent.tr(allowed_files))
+    if selected_file:
+        return Path(selected_file)
+    return None
 
 
-def open_files_dialog(parent, default_folder, title, files):
-    """Opens open file dialog for multiple files
+def open_files_dialog(
+        parent: QtWidgets.QWidget,
+        default_folder: Path,
+        title: str,
+        allowed_files: str) -> List[Path]:
+    """Opens open file dialog for multiple files.
 
-    Opens dialog to select files to be opened and returns full file path to
-    selected file if one or more is selected.
-    If no file is selected returns None.
+    Opens dialog to select files to be opened and returns full file paths to
+    selected files if one or more is selected.
 
     Args:
         parent: Parent object which opens the open file dialog.
         default_folder: String or Path representing which folder is shown when
             dialog opens.
         title: String representing open file dialog title.
-        files: String representing what type of file can be opened.
+        allowed_files: String representing what type of file can be opened.
 
     Returns:
-        A full path to the selected filename if a file is selected. For
-        example:
-
-        "C:/Transfer/FinlandiaData/esimerkkidata.zip"
+        A full paths to the selected filenames if a file is selected.
     """
-    filenames = QtWidgets.QFileDialog.getOpenFileNames(
-        parent, title, str(default_folder), parent.tr(files))
-    return filenames[0]
+    selected_files, *_ = QtWidgets.QFileDialog.getOpenFileNames(
+        parent, title, str(default_folder), parent.tr(allowed_files))
+    return [Path(file) for file in selected_files]
 
 
-def save_file_dialog(parent, default_folder, title, files):
-    """Opens save file dialog
+def save_file_dialog(
+        parent: QtWidgets.QWidget,
+        default_folder: Path,
+        title: str,
+        allowed_files: str) -> Optional[Path]:
+    """Opens save file dialog.
 
-    Opens dialog to select savefile name and returns full file path to
+    Opens dialog to select a save file name and returns full file path to
     selected file if one is selected. If no file is selected returns None.
 
     Args:
@@ -95,14 +105,13 @@ def save_file_dialog(parent, default_folder, title, files):
         default_folder: String or Path representing which folder is shown when
             dialog opens.
         title: String representing open file dialog title.
-        files: String representing what type of file can be opened.
+        allowed_files: String representing what type of file can be opened.
 
     Returns:
-        A full path to the selected filename if a file is selected. For
-        example:
-
-        "C:/Transfer/FinlandiaData/esimerkkidata.zip"
+        A full path to the selected filename if a file is selected.
     """
     filename = QtWidgets.QFileDialog.getSaveFileName(
-        parent, title, str(default_folder), parent.tr(files))[0]
-    return filename
+        parent, title, str(default_folder), parent.tr(allowed_files))[0]
+    if filename:
+        return Path(filename)
+    return None
