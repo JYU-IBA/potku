@@ -53,6 +53,8 @@ class NumericLimitsDialog(QtWidgets.QDialog):
         self.cancelButton.clicked.connect(self.close)
         self.spinbox_limit_min.setValue(lim_a)
         self.spinbox_limit_max.setValue(lim_b)
+        self.limit_min = lim_a
+        self.limit_max = lim_b
         
         
     def accept_limits(self):
