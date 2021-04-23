@@ -71,6 +71,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                  x_units: DepthProfileUnit = DepthProfileUnit.NM,
                  depth_scale: Optional[Range] = None,
                  add_line_zero: bool = False, systematic_error: float = 3.0,
+                 show_eff_files: bool = False,
                  progress: Optional[ProgressReporter] = None):
         """Inits depth profile widget.
 
@@ -84,6 +85,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             x_units: An unit to be used as x axis.
             add_line_zero: A boolean representing if vertical line is drawn at
                 zero.
+            show_eff_files: A boolean representing if used efficiency files
+                are shown
             systematic_error: A double representing systematic error.
             progress: a ProgressReporter object
         """
@@ -99,6 +102,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self._ignore_from_graph: Set[Element] = set()
         self._ignore_from_ratio: Set[Element] = set()
         self._systematic_error = systematic_error
+        self._show_eff_files = show_eff_files
 
         self._profile_handler = DepthProfileHandler()
         self._profile_handler.read_directory(
@@ -298,7 +302,13 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         leg = self.axes.legend(
             handles, labels_w_percentages, loc=3, bbox_to_anchor=(1, 0),
             borderaxespad=0, prop={"size": 11, "family": "monospace"})
-
+            
+        if self._show_eff_files:
+            invisible_plot, = self.axes.plot(0, 1, linewidth=0, label = "eff12 \n eff2")                                  
+            legEFF = self.axes.legend(handles = [invisible_plot], bbox_to_anchor=(1, 1),
+            loc=2, borderaxespad=0, prop={"size": 11, "family": "monospace"})        
+            self.axes.add_artist(leg);        
+        
         for handle in leg.legendHandles:
             handle.set_linewidth(3.0)
 
