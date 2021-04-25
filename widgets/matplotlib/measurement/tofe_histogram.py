@@ -252,30 +252,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.remove_axes_ticks()
         self.canvas.draw()
 
-    def _set_y_axis_on_right(self, yes) -> None:
-        if yes:
-            # self.axes.spines['left'].set_color('none')
-            self.axes.spines['right'].set_color('black')
-            self.axes.yaxis.tick_right()
-            self.axes.yaxis.set_label_position("right")
-        else:
-            self.axes.spines['left'].set_color('black')
-            # self.axes.spines['right'].set_color('none')
-            self.axes.yaxis.tick_left()
-            self.axes.yaxis.set_label_position("left")
-
-    def _set_x_axis_on_top(self, yes) -> None:
-        if yes:
-            # self.axes.spines['bottom'].set_color('none')
-            self.axes.spines['top'].set_color('black')
-            self.axes.xaxis.tick_top()
-            self.axes.xaxis.set_label_position("top")
-        else:
-            self.axes.spines['bottom'].set_color('black')
-            # self.axes.spines['top'].set_color('none')
-            self.axes.xaxis.tick_bottom()
-            self.axes.xaxis.set_label_position("bottom")
-
     def _on_draw_legend(self) -> None:
         self.axes.legend_ = None
         if not self.measurement.selector.selections:
