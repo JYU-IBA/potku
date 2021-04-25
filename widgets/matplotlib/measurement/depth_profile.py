@@ -309,6 +309,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             used_files_string = self.used_efficiency_files.replace("\t","")
             self.axes.text(1.01, 0.85, used_files_string,
             transform=self.axes.transAxes, fontsize=11, fontfamily="monospace")
+            self.axes.transData
         
         for handle in leg.legendHandles:
             handle.set_linewidth(3.0)
