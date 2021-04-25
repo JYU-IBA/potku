@@ -509,3 +509,18 @@ def disable_widget(func: Callable):
         finally:
             qwidget.setEnabled(True)
     return wrapper
+
+
+def assign_shortcut(
+        widget: QtWidgets.QWidget,
+        key: QtCore.Qt.Key,
+        activation_callback: Callable) -> QtWidgets.QShortcut:
+    """Assigns a keyboard short cut. When the widget is activated and the key
+    is pressed, activation callback is called.
+
+    Returns the assigned short cut.
+    """
+    sc = QtWidgets.QShortcut(widget)
+    sc.setKey(key)
+    sc.activated.connect(activation_callback)
+    return sc

@@ -29,12 +29,17 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import widgets.gui_utils as gutils
+from typing import Optional
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import Qt
 from PyQt5 import uic
 from PyQt5 import QtWidgets
 
+from modules.measurement import Measurement
+import widgets.gui_utils as gutils
+from widgets.base_tab import BaseTab
+from widgets.icon_manager import IconManager
 from widgets.matplotlib.measurement.tofe_histogram import \
     MatplotlibHistogramWidget
 
@@ -42,8 +47,23 @@ from widgets.matplotlib.measurement.tofe_histogram import \
 class TofeHistogramWidget(QtWidgets.QWidget):
     """HistogramWidget used to draw ToF-E Histograms.
     """
+    saveCutsButton: QtWidgets.QPushButton
+    loadSelectionsButton: QtWidgets.QPushButton
 
-    def __init__(self, measurement, icon_manager, tab, statusbar=None):
+    # shortcut keys that adjust compression
+    x_inc_comp = Qt.Key_Q
+    x_dec_comp = Qt.Key_W
+    y_inc_comp = Qt.Key_Z
+    y_dec_comp = Qt.Key_X
+    both_inc_comp = Qt.Key_A
+    both_dec_comp = Qt.Key_S
+
+    def __init__(
+            self,
+            measurement: Measurement,
+            icon_manager: IconManager,
+            tab: BaseTab,
+            statusbar: Optional[QtWidgets.QStatusBar] = None):
         """Inits TofeHistogramWidget widget.
 
         Args:
@@ -56,72 +76,67 @@ class TofeHistogramWidget(QtWidgets.QWidget):
 
         self.measurement = measurement
         self.tab = tab
-        self.statusbar = statusbar
-        self.matplotlib = MatplotlibHistogramWidget(self, measurement,
-                                                    icon_manager,
-                                                    statusbar=statusbar)
+        self.matplotlib = MatplotlibHistogramWidget(
+            self, measurement, icon_manager,
+            global_settings=self.measurement.request.global_settings,
+            statusbar=statusbar)
         self.saveCutsButton.clicked.connect(self.matplotlib.save_cuts)
         self.loadSelectionsButton.clicked.connect(
             self.matplotlib.load_selections)
         self.matplotlib.selectionsChanged.connect(self.set_cut_button_enabled)
 
-        self.matplotlib.saveCuts.connect(self.__save_cuts)
+        self.matplotlib.saveCuts.connect(self._save_cuts)
 
-        self.__set_shortcuts()
-        self.set_cut_button_enabled(measurement.selector.selections)
+        self._set_shortcuts()
+        self.set_cut_button_enabled()
 
         count = len(self.measurement.data)
         self.setWindowTitle(f"ToF-E Histogram - Event count: {count}")
 
-    def set_cut_button_enabled(self, selections=None):
-        """Enables save cuts button if the given selections list's length is
-        not 0.
-        Otherwise disable.
-        
-        Args:
-            selections: list of Selection objects
+    def set_cut_button_enabled(self) -> None:
+        """Enables save cuts button if Measurement has selections. Otherwise
+        disable.
         """
-        if not selections:
-            selections = self.measurement.selector.selections
-        if len(selections) == 0:
+        if not self.measurement.selector.selections:
             self.saveCutsButton.setEnabled(False)
         else:
             self.saveCutsButton.setEnabled(True)
-            # self.measurement.request.save_selection(self.measurement)
 
-    def __save_cuts(self):
+    def _save_cuts(self) -> None:
         """Connect to saving cuts. Issue it to request for every other
         measurement.
         """
         self.measurement.request.save_cuts(self.measurement)
 
-    def __set_shortcuts(self):
+    def _set_shortcuts(self) -> None:
         """Set shortcuts for the ToF-E histogram.
         """
         # X axis
-        self.__sc_comp_x_inc = QtWidgets.QShortcut(self)
-        self.__sc_comp_x_inc.setKey(QtCore.Qt.Key_Q)
-        self.__sc_comp_x_inc.activated.connect(
-            lambda: self.matplotlib.sc_comp_inc(0))
-        self.__sc_comp_x_dec = QtWidgets.QShortcut(self)
-        self.__sc_comp_x_dec.setKey(QtCore.Qt.Key_W)
-        self.__sc_comp_x_dec.activated.connect(
-            lambda: self.matplotlib.sc_comp_dec(0))
-        # Y axis
-        self.__sc_comp_y_inc = QtWidgets.QShortcut(self)
-        self.__sc_comp_y_inc.setKey(QtCore.Qt.Key_Z)
-        self.__sc_comp_y_inc.activated.connect(
-            lambda: self.matplotlib.sc_comp_inc(1))
-        self.__sc_comp_y_dec = QtWidgets.QShortcut(self)
-        self.__sc_comp_y_dec.setKey(QtCore.Qt.Key_X)
-        self.__sc_comp_y_dec.activated.connect(
-            lambda: self.matplotlib.sc_comp_dec(1))
-        # Both axes
-        self.__sc_comp_inc = QtWidgets.QShortcut(self)
-        self.__sc_comp_inc.setKey(QtCore.Qt.Key_A)
-        self.__sc_comp_inc.activated.connect(
-            lambda: self.matplotlib.sc_comp_inc(2))
-        self.__sc_comp_dec = QtWidgets.QShortcut(self)
-        self.__sc_comp_dec.setKey(QtCore.Qt.Key_S)
-        self.__sc_comp_dec.activated.connect(
-            lambda: self.matplotlib.sc_comp_dec(2))
+        gutils.assign_shortcut(
+            self,
+            TofeHistogramWidget.x_inc_comp,
+            lambda: self.matplotlib.increase_compression("x"))
+        gutils.assign_shortcut(
+            self,
+            TofeHistogramWidget.x_dec_comp,
+            lambda: self.matplotlib.decrease_compression("x"))
+
+        # Y Axis
+        gutils.assign_shortcut(
+            self,
+            TofeHistogramWidget.y_inc_comp,
+            lambda: self.matplotlib.increase_compression("y"))
+        gutils.assign_shortcut(
+            self,
+            QtCore.Qt.Key_X,
+            lambda: self.matplotlib.decrease_compression("y"))
+
+        # Both
+        gutils.assign_shortcut(
+            self,
+            QtCore.Qt.Key_A,
+            lambda: self.matplotlib.increase_compression("xy"))
+        gutils.assign_shortcut(
+            self,
+            QtCore.Qt.Key_S,
+            lambda: self.matplotlib.decrease_compression("xy"))
