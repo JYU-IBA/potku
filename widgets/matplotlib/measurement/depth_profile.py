@@ -72,6 +72,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                  depth_scale: Optional[Range] = None,
                  add_line_zero: bool = False, systematic_error: float = 3.0,
                  show_eff_files: bool = False,
+                 used_efficiency_files: str = None,
                  progress: Optional[ProgressReporter] = None):
         """Inits depth profile widget.
 
@@ -103,6 +104,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self._ignore_from_ratio: Set[Element] = set()
         self._systematic_error = systematic_error
         self._show_eff_files = show_eff_files
+        self.used_efficiency_files = used_efficiency_files
 
         self._profile_handler = DepthProfileHandler()
         self._profile_handler.read_directory(
@@ -303,11 +305,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             handles, labels_w_percentages, loc=3, bbox_to_anchor=(1, 0),
             borderaxespad=0, prop={"size": 11, "family": "monospace"})
             
-        if self._show_eff_files:
-            invisible_plot, = self.axes.plot(0, 1, linewidth=0, label = "eff12 \n eff2")                                  
-            legEFF = self.axes.legend(handles = [invisible_plot], bbox_to_anchor=(1, 1),
-            loc=2, borderaxespad=0, prop={"size": 11, "family": "monospace"})        
-            self.axes.add_artist(leg);        
+        if self._show_eff_files:     
+            used_files_string = self.used_efficiency_files.replace("\t","")
+            self.axes.text(1.01, 0.85, used_files_string,
+            transform=self.axes.transAxes, fontsize=11, fontfamily="monospace")
         
         for handle in leg.legendHandles:
             handle.set_linewidth(3.0)

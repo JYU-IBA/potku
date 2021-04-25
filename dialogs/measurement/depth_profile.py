@@ -143,6 +143,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
 
         self._show_measurement_settings()
         self._show_efficiency_files()
+        self.used_files2 = self.used_efficiency_files
         self.exec_()
 
     @gutils.disable_widget
@@ -176,6 +177,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
             DepthProfileDialog.line_scale = self.show_scale_line
             DepthProfileDialog.used_eff = self.show_used_eff
             DepthProfileDialog.systerr = self.systematic_error
+            DepthProfileDialog.used_files2 = self.used_files2
 
             sbh.reporter.report(20)
 
@@ -197,6 +199,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                     self.parent, output_dir, used_cuts, elements, x_unit,
                     DepthProfileDialog.line_zero, DepthProfileDialog.used_eff,
                     DepthProfileDialog.line_scale, DepthProfileDialog.systerr,
+                    DepthProfileDialog.used_files2,
                     progress=sbh.reporter.get_sub_reporter(
                         lambda x: 30 + 0.6 * x
                     ))
@@ -264,6 +267,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
                  elements: List[Element], x_units: DepthProfileUnit,
                  line_zero: bool, used_eff: bool, line_scale: bool,
                  systematic_error: float,
+                 used_files2: str,
                  progress: Optional[ProgressReporter] = None):
         """Inits widget.
         
@@ -337,7 +341,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
                     lambda x: 50 + 0.5 * x)
             else:
                 sub_progress = None
-
+            
             self.matplotlib = MatplotlibDepthProfileWidget(
                 self, self.output_dir, self.elements, rbs_list,
                 icon_manager=self.parent.icon_manager,
@@ -345,6 +349,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
                 depth_scale=depth_scale, x_units=self.x_units,
                 add_line_zero=self._line_zero_shown,
                 show_eff_files=self._eff_files_shown,
+                used_efficiency_files=used_files2,
                 systematic_error=self._systematic_error, progress=sub_progress)
         except Exception as e:
             msg = f"Could not create Depth Profile graph: {e}"
