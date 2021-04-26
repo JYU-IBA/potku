@@ -32,11 +32,9 @@ __version__ = "2.0"
 
 import configparser
 import functools
-
-from .enums import CrossSection
-from .enums import IonDivision
-from .enums import ToFEColorScheme
 from pathlib import Path
+
+from .enums import CrossSection, IonDivision, ToFEColorScheme, AxisRangeMode
 
 
 def handle_exceptions(return_value=None, attr=None):
@@ -381,24 +379,20 @@ class GlobalSettings:
         """
         self._config[self._TOFE]["color_scheme"] = str(value)
 
-    @handle_exceptions(return_value=0)
-    def get_tofe_bin_range_mode(self) -> int:
+    @handle_exceptions(return_value=AxisRangeMode.AUTOMATIC)
+    def get_tofe_bin_range_mode(self) -> AxisRangeMode:
         """Get ToF-E Histogram bin range mode.
 
         Return:
             Returns an integer representing ToF-E histogram bin range mode.
         """
-        return self._config.getint(self._TOFE, "bin_range_mode")
+        return AxisRangeMode(
+            self._config.getint(self._TOFE, "bin_range_mode"))
 
-    def set_tofe_bin_range_mode(self, value: int):
+    def set_tofe_bin_range_mode(self, value: AxisRangeMode):
         """Set ToF-E Histogram bin range automatic or manual.
-
-        Args:
-            value: An integer representing the mode.
-                   Automatic = 0
-                   Manual = 1
         """
-        self._config[self._TOFE]["bin_range_mode"] = str(value)
+        self._config[self._TOFE]["bin_range_mode"] = str(int(value))
 
     @handle_exceptions(return_value=(0, 8000))
     def get_tofe_bin_range_x(self) -> tuple:

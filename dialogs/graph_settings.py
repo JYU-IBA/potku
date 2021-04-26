@@ -30,88 +30,69 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen" \
              "Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
-import widgets.binding as bnd
-import widgets.gui_utils as gutils
+from typing import Tuple, Optional
 
-from PyQt5 import QtCore
 from PyQt5 import uic
 from PyQt5 import QtWidgets
+
+from modules.enums import ToFEColorScheme, AxisRangeMode
+import widgets.binding as bnd
+import widgets.gui_utils as gutils
 
 
 class TofeGraphSettingsWidget(QtWidgets.QDialog):
     """Graph settings dialog for the ToF-E histogram graph.
     """
-    color_scheme = bnd.bind("colorbox")
+    OKButton: QtWidgets.QPushButton
+    cancelButton: QtWidgets.QPushButton
+    colorbox: QtWidgets.QComboBox
+    btn_group_range_mode: QtWidgets.QButtonGroup
+    spin_range_x_min: QtWidgets.QSpinBox
+    spin_range_x_max: QtWidgets.QSpinBox
+    spin_range_y_min: QtWidgets.QSpinBox
+    spin_range_y_max: QtWidgets.QSpinBox
 
-    def __init__(self, parent):
+    color_scheme: ToFEColorScheme = bnd.bind("colorbox")
+    bin_x: int = bnd.bind("spin_bin_x")
+    bin_y: int = bnd.bind("spin_bin_y")
+    invert_x: bool = bnd.bind("chk_invert_x")
+    invert_y: bool = bnd.bind("chk_invert_y")
+    show_axis_ticks: bool = bnd.bind("chk_axes_ticks")
+    transpose_axes: bool = bnd.bind("transposeAxesCheckBox")
+    x_range: Tuple[int, int] = bnd.multi_bind(
+        ["spin_range_x_min", "spin_range_x_max"])
+    y_range: Tuple[int, int] = bnd.multi_bind(
+        ["spin_range_y_min", "spin_range_y_max"])
+    axis_range_mode: int = bnd.bind("btn_group_range_mode")
+
+    def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
         """Inits ToF-E graph histogram graph settings dialog.
         
         Args:
-            parent: MatplotlibHistogramWidget which settings are being changed.
+            parent: QWidget passed down to super().__init__.
         """
-        super().__init__()
+        super().__init__(parent)
         uic.loadUi(gutils.get_ui_dir() / "ui_tofe_graph_settings.ui", self)
-        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
-        self.parent = parent
-
+        gutils.fill_combobox(self.colorbox, ToFEColorScheme)
         gutils.set_min_max_handlers(
             self.spin_range_x_min, self.spin_range_x_max
         )
         gutils.set_min_max_handlers(
             self.spin_range_y_min, self.spin_range_y_max
         )
+        gutils.set_btn_group_data(self.btn_group_range_mode, AxisRangeMode)
+        self.btn_group_range_mode.buttonClicked.connect(
+            self._enable_manual_axes_ranges)
 
-        self.parent.show_yourself(self)
+        self.OKButton.clicked.connect(self.accept)
+        self.cancelButton.clicked.connect(self.reject)
 
-        # Connect and show
-        self.OKButton.clicked.connect(self.accept_settings)
-        self.cancelButton.clicked.connect(self.close)
-        self.radio_range_manual.clicked.connect(lambda: self.toggle_manual(True))
-        self.radio_range_auto.clicked.connect(lambda: self.toggle_manual(False))
-        
-        if self.radio_range_auto.isChecked():
-            self.toggle_manual(False)
-           
-        elif self.radio_range_manual.isChecked():
-            self.toggle_manual(True)
- 
-        self.exec_()
-    
-    def toggle_manual(self, is_manual):
-        # if manual is on, spinboxes are enabled
-        is_disabled = not is_manual
+    def _enable_manual_axes_ranges(self):
+        """Enables axes range spin boxes if manual mode is on.
+        """
+        is_disabled = self.axis_range_mode == AxisRangeMode.AUTOMATIC
         self.spin_range_x_min.setDisabled(is_disabled)
         self.spin_range_x_max.setDisabled(is_disabled)
         self.spin_range_y_min.setDisabled(is_disabled)
-        self.spin_range_y_max.setDisabled(is_disabled) 
-
-    def accept_settings(self):
-        """Accept changed settings and save them.
-        """
-        self.parent.compression_x = self.bin_x.value()
-        self.parent.compression_y = self.bin_y.value()
-        self.parent.invert_X = \
-            self.invert_x.checkState() == QtCore.Qt.Checked
-        self.parent.invert_Y = \
-            self.invert_y.checkState() == QtCore.Qt.Checked
-        self.parent.show_axis_ticks = \
-            self.axes_ticks.checkState() == QtCore.Qt.Checked
-        self.parent.transpose_axes = \
-            self.transposeAxesCheckBox.checkState() == QtCore.Qt.Checked
-        self.parent.color_scheme = self.color_scheme
-        
-        if self.radio_range_auto.isChecked(): 
-            self.parent.axes_range_mode = 0    
-
-        elif self.radio_range_manual.isChecked():
-            self.parent.axes_range_mode = 1
-            x_range_min = self.spin_range_x_min.value()
-            x_range_max = self.spin_range_x_max.value()
-            y_range_min = self.spin_range_y_min.value()
-            y_range_max = self.spin_range_y_max.value()
-            self.parent.axes_range = [(x_range_min, x_range_max),
-                                      (y_range_min, y_range_max)]  
-
-        self.parent.on_draw()
-        self.close()
+        self.spin_range_y_max.setDisabled(is_disabled)

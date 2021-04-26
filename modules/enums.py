@@ -229,3 +229,14 @@ class DepthProfileUnit(str, Enum):
 
     def __str__(self):
         return self.value
+
+
+@enum.unique
+class AxisRangeMode(IntEnum):
+    """Determines how the range of X and Y axis is set in TofeHistogram.
+
+    If MANUAL, user defined ranges are used. Otherwise ranges are calculated
+    based on data.
+    """
+    AUTOMATIC = 0
+    MANUAL = 1

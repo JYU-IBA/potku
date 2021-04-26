@@ -181,6 +181,9 @@
                    <property name="checked">
                     <bool>true</bool>
                    </property>
+                   <attribute name="buttonGroup">
+                    <string notr="true">range_mode_btn_group</string>
+                   </attribute>
                   </widget>
                  </item>
                  <item row="0" column="1">
@@ -188,6 +191,9 @@
                    <property name="text">
                     <string>Ma&amp;nual</string>
                    </property>
+                   <attribute name="buttonGroup">
+                    <string notr="true">range_mode_btn_group</string>
+                   </attribute>
                   </widget>
                  </item>
                  <item row="1" column="1">
@@ -398,7 +404,7 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_6">
           <property name="spacing">
-           <number>-1</number>
+           <number>6</number>
           </property>
           <property name="bottomMargin">
            <number>100</number>
@@ -3177,8 +3183,9 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="ion_division_radios"/>
   <buttongroup name="elementButtons"/>
   <buttongroup name="cross_section_radios"/>
+  <buttongroup name="ion_division_radios"/>
+  <buttongroup name="range_mode_btn_group"/>
  </buttongroups>
 </ui>

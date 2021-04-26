@@ -32,28 +32,32 @@ __version__ = "2.0"
 
 import platform
 
-import dialogs.dialog_functions as df
-import widgets.binding as bnd
-import widgets.gui_utils as gutils
-
-from widgets.base_tab import BaseTab
-from modules.global_settings import GlobalSettings
-from modules.enums import IonDivision
-from modules.enums import CrossSection
-from modules.enums import ToFEColorScheme
-
 from PyQt5 import QtCore
 from PyQt5 import uic
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 
+from modules.global_settings import GlobalSettings
+from modules.enums import IonDivision
+from modules.enums import CrossSection
+from modules.enums import ToFEColorScheme
+from modules.enums import AxisRangeMode
+
 from dialogs.measurement.import_measurement import CoincTiming
+import dialogs.dialog_functions as df
+import widgets.binding as bnd
+import widgets.gui_utils as gutils
+from widgets.base_tab import BaseTab
 
 
 class GlobalSettingsDialog(QtWidgets.QDialog):
     """
     A GlobalSettingsDialog.
     """
+    ion_division_radios: QtWidgets.QButtonGroup
+    cross_section_radios: QtWidgets.QButtonGroup
+    range_mode_btn_group: QtWidgets.QButtonGroup
+
     color_scheme = bnd.bind("combo_tofe_colors")
     tofe_invert_x = bnd.bind("check_tofe_invert_x")
     tofe_invert_y = bnd.bind("check_tofe_invert_y")
@@ -66,6 +70,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
     )
     comp_x = bnd.bind("spin_tofe_compression_x")
     comp_y = bnd.bind("spin_tofe_compression_y")
+    axes_range_mode = bnd.bind("range_mode_btn_group")
 
     depth_iters = bnd.bind("spin_depth_iterations")
 
@@ -73,11 +78,8 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
     sim_ions = bnd.bind("sim_spinbox")
     ion_division = bnd.bind("ion_division_radios")
     min_concentration = bnd.bind("min_conc_spinbox")
-
     coinc_count = bnd.bind("line_coinc_count")
-
     cross_section = bnd.bind("cross_section_radios")
-
     save_window_geometries = bnd.bind("window_geom_chkbox")
 
     settings_updated = QtCore.pyqtSignal(GlobalSettings)
@@ -100,6 +102,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         )
         gutils.set_btn_group_data(self.ion_division_radios, IonDivision)
         gutils.set_btn_group_data(self.cross_section_radios, CrossSection)
+        gutils.set_btn_group_data(self.range_mode_btn_group, AxisRangeMode)
         gutils.fill_combobox(self.combo_tofe_colors, ToFEColorScheme)
 
         # Connect UI buttons
@@ -208,10 +211,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.settings.set_tofe_invert_y(self.tofe_invert_y)
         self.settings.set_tofe_transposed(self.tofe_transposed)
         self.settings.set_tofe_color(self.color_scheme)
-        if self.radio_tofe_bin_auto.isChecked():
-            self.settings.set_tofe_bin_range_mode(0)
-        elif self.radio_tofe_bin_manual.isChecked():
-            self.settings.set_tofe_bin_range_mode(1)
+        self.settings.set_tofe_bin_range_mode(self.axes_range_mode)
 
         self.settings.set_tofe_bin_range_x(*self.tofe_bin_x)
         self.settings.set_tofe_bin_range_y(*self.tofe_bin_y)

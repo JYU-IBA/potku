@@ -31,7 +31,6 @@ __version__ = "2.0"
 
 from typing import Optional
 
-from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -51,12 +50,12 @@ class TofeHistogramWidget(QtWidgets.QWidget):
     loadSelectionsButton: QtWidgets.QPushButton
 
     # shortcut keys that adjust compression
-    x_inc_comp = Qt.Key_Q
-    x_dec_comp = Qt.Key_W
-    y_inc_comp = Qt.Key_Z
-    y_dec_comp = Qt.Key_X
-    both_inc_comp = Qt.Key_A
-    both_dec_comp = Qt.Key_S
+    X_INC_COMP = Qt.Key_Q
+    X_DEC_COMP = Qt.Key_W
+    Y_INC_COMP = Qt.Key_Z
+    Y_DEC_COM = Qt.Key_X
+    BOTH_INC_COMP = Qt.Key_A
+    BOTH_DEC_COMP = Qt.Key_S
 
     def __init__(
             self,
@@ -114,29 +113,29 @@ class TofeHistogramWidget(QtWidgets.QWidget):
         # X axis
         gutils.assign_shortcut(
             self,
-            TofeHistogramWidget.x_inc_comp,
+            TofeHistogramWidget.X_INC_COMP,
             lambda: self.matplotlib.increase_compression("x"))
         gutils.assign_shortcut(
             self,
-            TofeHistogramWidget.x_dec_comp,
+            TofeHistogramWidget.X_DEC_COMP,
             lambda: self.matplotlib.decrease_compression("x"))
 
         # Y Axis
         gutils.assign_shortcut(
             self,
-            TofeHistogramWidget.y_inc_comp,
+            TofeHistogramWidget.Y_INC_COMP,
             lambda: self.matplotlib.increase_compression("y"))
         gutils.assign_shortcut(
             self,
-            QtCore.Qt.Key_X,
+            TofeHistogramWidget.Y_DEC_COM,
             lambda: self.matplotlib.decrease_compression("y"))
 
         # Both
         gutils.assign_shortcut(
             self,
-            QtCore.Qt.Key_A,
+            TofeHistogramWidget.BOTH_INC_COMP,
             lambda: self.matplotlib.increase_compression("xy"))
         gutils.assign_shortcut(
             self,
-            QtCore.Qt.Key_S,
+            TofeHistogramWidget.BOTH_DEC_COMP,
             lambda: self.matplotlib.decrease_compression("xy"))

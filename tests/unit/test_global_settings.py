@@ -32,6 +32,7 @@ import random
 from modules.enums import IonDivision
 from modules.enums import CrossSection
 from modules.enums import ToFEColorScheme
+from modules.enums import AxisRangeMode
 from modules.global_settings import GlobalSettings
 from pathlib import Path
 
@@ -133,7 +134,14 @@ class TestGlobalSettings(unittest.TestCase):
         # The absolute minimum
         self.assertEqual(0.000001, self.gs.get_minimum_concentration())
 
-    def test_serialiazation(self):
+    def test_axis_range_mode(self):
+        self.assertEqual(
+            AxisRangeMode.AUTOMATIC, self.gs.get_tofe_bin_range_mode())
+        self.gs.set_tofe_bin_range_mode(AxisRangeMode.MANUAL)
+        self.assertEqual(
+            AxisRangeMode.MANUAL, self.gs.get_tofe_bin_range_mode())
+
+    def test_serialization(self):
         """Deserialized GlobalSettings object should have the same
         values as the serialized object.
         """
@@ -167,10 +175,10 @@ class TestGlobalSettings(unittest.TestCase):
             # Save the file
             self.gs.save_config()
             # Remove every second line from the ini file
-            with open(ini_file, "r") as f:
+            with ini_file.open("r") as f:
                 lines = f.readlines()
             self.assertTrue(1 < len(lines))
-            with open(ini_file, "w") as f:
+            with ini_file.open("w") as f:
                 for line in lines[::2]:
                     f.write(line)
 
