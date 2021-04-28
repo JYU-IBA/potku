@@ -62,6 +62,8 @@ from widgets.icon_manager import IconManager
 class MatplotlibHistogramWidget(MatplotlibWidget):
     """Matplotlib histogram widget, used to graph "bananas" (ToF-E).
     """
+    # Default titles used for X and Y axis
+    _DEFAULT_AXES_TITLES = "Energy (Ch)", "time of flight (Ch)"
     MAX_BIN_COUNT = 8000
     selectionsChanged = QtCore.pyqtSignal("PyQt_PyObject")
     saveCuts = QtCore.pyqtSignal("PyQt_PyObject")
@@ -94,7 +96,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
         self.parent = parent
         self.statusbar = statusbar
-        
+
         # Set default filename for saving figure
         default_filename = "ToF-E_Histogram_" + measurement.name
         self.canvas.get_default_filename = lambda: default_filename 
@@ -105,32 +107,53 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self._fork_toolbar_buttons(icon_manager)
 
         self.measurement = measurement
-        self._x_data = [x[0] for x in self.measurement.data]
-        self._y_data = [x[1] for x in self.measurement.data]
+        self._tof_values = [x[0] for x in self.measurement.data]
+        self._energy_values = [x[1] for x in self.measurement.data]
 
         # Variables
         self._inverted_y = False
         self._inverted_x = False
-        self._transposed = False
         self._inited = False
         self._range_mode_automated = False
+        self._img = None
 
         # Get settings from global settings
         self._invert_x(global_settings.get_tofe_invert_x())
         self._invert_y(global_settings.get_tofe_invert_y())
-        self.transpose_axes = global_settings.get_tofe_transposed()
+        self._transposed = global_settings.get_tofe_transposed()
         self.color_scheme = global_settings.get_tofe_color()
         self.compression_x = global_settings.get_tofe_compression_x()
         self.compression_y = global_settings.get_tofe_compression_y()
         self.axes_range_mode = global_settings.get_tofe_bin_range_mode()
-        self.axes_range = (
+        self._axes_range = (
             global_settings.get_tofe_bin_range_x(),
-            global_settings.get_tofe_bin_range_y())
-
-        self.name_y_axis = "Energy (Ch)"
-        self.name_x_axis = "time of flight (Ch)"
+            global_settings.get_tofe_bin_range_y()
+        )
 
         self.on_draw()
+
+    @property
+    def axes_range(self) -> Optional[Tuple[Tuple[int, int], Tuple[int, int]]]:
+        if self.axes_range_mode == AxisRangeMode.AUTOMATIC:
+            return None
+        return self._axes_range
+
+    @property
+    def colormap(self):
+        return mpl.cm.get_cmap(self.color_scheme.value)
+
+    @property
+    def axes_data(self):
+        if self._transposed:
+            return self._energy_values, self._tof_values
+        return self._tof_values, self._energy_values
+
+    @property
+    def axes_titles(self) -> Tuple[str, str]:
+        energy, tof = self._DEFAULT_AXES_TITLES
+        if self._transposed:
+            return tof, energy
+        return energy, tof
 
     def on_draw(self) -> None:
         """Draw method for matplotlib.
@@ -139,72 +162,17 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         x_min, x_max = self.axes.get_xlim()
         y_min, y_max = self.axes.get_ylim()
 
-        x_data = self._x_data
-        y_data = self._y_data
-
-        # Transpose
-        if self.transpose_axes:
-            x_data, y_data = y_data, x_data  # Always transpose data if checked.
-            if not self._transposed:
-                self._transposed = True
-                self.measurement.selector.transpose(True)
-                # Switch axes names
-                self.name_x_axis, self.name_y_axis = \
-                    self.name_y_axis, self.name_x_axis
-                # Switch min & max values
-                x_min, x_max, y_min, y_max = y_min, y_max, x_min, x_max
-                # Switch inverts
-                self._inverted_x, self._inverted_y = \
-                    self._inverted_y, self._inverted_x
-        if not self.transpose_axes and self._transposed:
-            self._transposed = False
-            self.measurement.selector.transpose(False)
-            # Switch axes names
-            self.name_x_axis, self.name_y_axis = \
-                self.name_y_axis, self.name_x_axis
-            # Switch min & max values
-            x_min, x_max, y_min, y_max = y_min, y_max, x_min, x_max
-            # Switch inverts
-            self._inverted_x, self._inverted_y = \
-                self._inverted_y, self._inverted_x
-
         # Clear old stuff
         self.axes.clear()
 
-        # Check bin counts and axes ranges
-        # If bin count too high -> it will crash the program, use 3500
-        # If 10 000, tofe_65 example can have compression as 1, but REALLY
-        # slow. Usually, bin count around 8000
-        if self.axes_range_mode == AxisRangeMode.MANUAL:
-            # Manual axe range mode
-            bin_counts, msg = mf.calculate_bin_counts(
-                self.axes_range, self.compression_x, self.compression_y,
-                max_count=MatplotlibHistogramWidget.MAX_BIN_COUNT
-            )
-            axes_range = self.axes_range
-        else:
-            # Automatic mode
-            bin_counts, msg = mf.calculate_bin_counts(
-                [x_data, y_data], self.compression_x, self.compression_y,
-                max_count=MatplotlibHistogramWidget.MAX_BIN_COUNT)
-            axes_range = None
-
-        if msg is not None:
-            # Message is displayed when bin count was too high and had to be
-            # lowered
-            QtWidgets.QMessageBox.warning(
-                self.parent, "Warning", msg,
-                QtWidgets.QMessageBox.Ok,
-                QtWidgets.QMessageBox.Ok)
-
-        colormap = mpl.cm.get_cmap(self.color_scheme.value)
+        bin_counts = self._calculate_bins()
         
         self.axes.set_ylim([y_min, y_max])
-        self.axes.set_xlim([x_min, x_max]) 
+        self.axes.set_xlim([x_min, x_max])
 
-        self.axes.hist2d(
-            x_data, y_data, bins=bin_counts, norm=LogNorm(), range=axes_range,
-            cmap=colormap)
+        _, _, _, self._img = self.axes.hist2d(
+            *self.axes_data, bins=bin_counts, norm=LogNorm(),
+            range=self.axes_range, cmap=self.colormap)
 
         self._on_draw_legend()
 
@@ -226,8 +194,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         
         self.measurement.draw_selection()
 
-        self.axes.set_ylabel(self.name_y_axis.title())
-        self.axes.set_xlabel(self.name_x_axis.title())
+        x_title, y_title = self.axes_titles
+        self.axes.set_xlabel(x_title)
+        self.axes.set_ylabel(y_title)
 
         # Remove axis ticks and draw
         self.remove_axes_ticks()
@@ -499,10 +468,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         widget.invert_x = self._inverted_x
         widget.invert_y = self._inverted_y
         widget.show_axis_ticks = self.show_axis_ticks
-        widget.transpose_axes = self.transpose_axes
+        widget.transpose_axes = self._transposed
         widget.axis_range_mode = self.axes_range_mode
-        widget.x_range = self.axes_range[0]
-        widget.y_range = self.axes_range[1]
+        widget.x_range, widget.y_range = self._axes_range
 
         if not widget.exec_():
             return
@@ -512,11 +480,10 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self._invert_x(widget.invert_x)
         self._invert_y(widget.invert_y)
         self.show_axis_ticks = widget.show_axis_ticks
-        self.transpose_axes = widget.transpose_axes
+        self._transposed = widget.transpose_axes
         self.color_scheme = widget.color_scheme
         self.axes_range_mode = widget.axis_range_mode
-        if self.axes_range_mode == AxisRangeMode.MANUAL:
-            self.axes_range = [widget.x_range, widget.y_range]
+        self._axes_range = widget.x_range, widget.y_range
         self.on_draw()
 
     def selection_settings_dialog(self) -> None:
@@ -813,3 +780,43 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.canvas.draw()
             self.canvas.flush_events()
         self._inverted_y = b
+
+    def transpose(self) -> None:
+        self._transposed = not self._transposed
+
+        self.measurement.selector.transpose(self._transposed)
+        if self._img is not None:
+            self._img.remove()
+
+        bin_counts = self._calculate_bins()
+        _, _, _, self._img = self.axes.hist2d(
+            *self.axes_data, bins=bin_counts, norm=LogNorm(),
+            range=self.axes_range, cmap=self.colormap)
+
+        self.canvas.draw()
+        self.canvas.flush_events()
+
+    def _calculate_bins(self) -> Tuple[int, int]:
+        # Check bin counts and axes ranges
+        # If bin count too high -> it will crash the program, use 3500
+        # If 10 000, tofe_65 example can have compression as 1, but REALLY
+        # slow. Usually, bin count around 8000
+        if self.axes_range_mode == AxisRangeMode.MANUAL:
+            data = self.axes_range
+        else:
+            data = self.axes_data
+
+        bin_counts, msg = mf.calculate_bin_counts(
+            data, self.compression_x, self.compression_y,
+            max_count=MatplotlibHistogramWidget.MAX_BIN_COUNT
+        )
+
+        if msg is not None:
+            # Message is displayed when bin count was too high and had to be
+            # lowered
+            QtWidgets.QMessageBox.warning(
+                self.parent, "Warning", msg,
+                QtWidgets.QMessageBox.Ok,
+                QtWidgets.QMessageBox.Ok)
+
+        return bin_counts

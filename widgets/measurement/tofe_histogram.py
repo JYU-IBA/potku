@@ -139,3 +139,7 @@ class TofeHistogramWidget(QtWidgets.QWidget):
             self,
             TofeHistogramWidget.BOTH_DEC_COMP,
             lambda: self.matplotlib.decrease_compression("xy"))
+
+        # Debug
+        gutils.assign_shortcut(
+            self, Qt.Key_K, self.matplotlib.transpose)
