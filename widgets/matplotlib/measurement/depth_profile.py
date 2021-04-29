@@ -105,6 +105,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self._systematic_error = systematic_error
         self._show_eff_files = show_eff_files
         self.used_efficiency_files = used_efficiency_files
+        self.eff_text = None
 
         self._profile_handler = DepthProfileHandler()
         self._profile_handler.read_directory(
@@ -304,11 +305,20 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         leg = self.axes.legend(
             handles, labels_w_percentages, loc=3, bbox_to_anchor=(1, 0),
             borderaxespad=0, prop={"size": 11, "family": "monospace"})
+        
+        # If "Show efficiency files" checked and text is not yet created.
+        if self._show_eff_files and self.eff_text is None:
+            eff_string = self.used_efficiency_files.replace("\t","") 
             
-        if self._show_eff_files:     
-            used_files_string = self.used_efficiency_files.replace("\t","")
-            self.axes.text(1.01, 0.85, used_files_string,
-            transform=self.axes.transAxes, fontsize=11, fontfamily="monospace")
+            # Set position of text according to amount of lines in the string
+            line_count = eff_string.count("\n") + 1
+            yposition_txt = 1 - 0.08 * line_count
+            xposition_txt = 1.01
+            
+            self.eff_text=self.axes.text(
+                xposition_txt, yposition_txt, eff_string,
+                transform=self.axes.transAxes,
+                fontsize=11, fontfamily="monospace")
             self.axes.transData
         
         for handle in leg.legendHandles:
