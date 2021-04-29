@@ -72,7 +72,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                  depth_scale: Optional[Range] = None,
                  add_line_zero: bool = False, systematic_error: float = 3.0,
                  show_eff_files: bool = False,
-                 used_efficiency_files: str = None,
+                 used_eff_str: str = None,
                  progress: Optional[ProgressReporter] = None):
         """Inits depth profile widget.
 
@@ -88,6 +88,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                 zero.
             show_eff_files: A boolean representing if used efficiency files
                 are shown
+            used_eff_str: A string representing used efficiency files   
             systematic_error: A double representing systematic error.
             progress: a ProgressReporter object
         """
@@ -103,8 +104,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self._ignore_from_graph: Set[Element] = set()
         self._ignore_from_ratio: Set[Element] = set()
         self._systematic_error = systematic_error
+        
         self._show_eff_files = show_eff_files
-        self.used_efficiency_files = used_efficiency_files
+        self.used_eff_str = used_eff_str
         self.eff_text = None
 
         self._profile_handler = DepthProfileHandler()
@@ -306,17 +308,18 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             handles, labels_w_percentages, loc=3, bbox_to_anchor=(1, 0),
             borderaxespad=0, prop={"size": 11, "family": "monospace"})
         
-        # If "Show efficiency files" checked and text is not yet created.
+        # If "Show used efficiency files" is checked and text-object is not
+        # yet created.
         if self._show_eff_files and self.eff_text is None:
-            eff_string = self.used_efficiency_files.replace("\t","") 
+            eff_str = self.used_eff_str.replace("\t","") 
             
             # Set position of text according to amount of lines in the string
-            line_count = eff_string.count("\n") + 1
+            line_count = eff_str.count("\n") + 1
             yposition_txt = 1 - 0.08 * line_count
             xposition_txt = 1.01
             
             self.eff_text=self.axes.text(
-                xposition_txt, yposition_txt, eff_string,
+                xposition_txt, yposition_txt, eff_str,
                 transform=self.axes.transAxes,
                 fontsize=11, fontfamily="monospace")
             self.axes.transData
