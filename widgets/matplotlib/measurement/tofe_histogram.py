@@ -43,7 +43,7 @@ from dialogs.graph_settings import TofeGraphSettingsWidget
 from dialogs.measurement.depth_profile import DepthProfileWidget
 from dialogs.measurement.element_losses import ElementLossesWidget
 from dialogs.measurement.selection import SelectionSettingsDialog
-from dialogs.file_dialogs import open_file_dialog
+import dialogs.file_dialogs as fdialogs
 
 from matplotlib import cm
 from matplotlib.colors import LogNorm
@@ -548,10 +548,10 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     def load_selections(self):
         """Show dialog to load selections.
         """
-        filename = open_file_dialog(self, self.measurement.directory,
-                                    "Load Element Selection",
-                                    "Selection file (*.selections)")
-        if filename:
+        filename = fdialogs.open_file_dialog(
+            self, self.measurement.directory, "Load Element Selection",
+            "Selection file (*.selections)")
+        if filename is not None:
             sbh = StatusBarHandler(self.statusbar)
             sbh.reporter.report(40)
 

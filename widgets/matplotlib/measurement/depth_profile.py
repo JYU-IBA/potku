@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, 2021 Aleksi Kauppi
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@ depth profile graph.
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n" \
-             "Juhani Sundell"
+             "Juhani Sundell \n Aleksi Kauppi"
 __version__ = "2.0"
 
 import modules.math_functions as mf
@@ -39,8 +39,11 @@ from typing import List, Dict, Optional, Set
 
 from pathlib import Path
 
+from dialogs.measurement.depth_profile_numeric_limits \
+    import NumericLimitsDialog
 from dialogs.measurement.depth_profile_ignore_elements \
     import DepthProfileIgnoreElements
+    
 from widgets.matplotlib.base import MatplotlibWidget
 from widgets.matplotlib import mpl_utils
 from widgets.matplotlib.mpl_utils import AlternatingLimits
@@ -54,6 +57,7 @@ from modules.base import Range
 from modules.enums import DepthProfileUnit
 from modules.observing import ProgressReporter
 
+from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 
 
@@ -152,9 +156,41 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         Args:
             event: A click event on the graph
         """
+        # Only inside the actual graph axes, else do nothing.
+        if event.inaxes != self.axes:
+            return
+        cursor_location = [int(event.xdata), int(event.ydata)]
+        
         if event.button == 1 and self.limButton.isChecked():
-            self._limit_lines.update_graph(event.xdata)
-            self._make_legend_box()
+            self._limit_lines.update_graph(event.xdata)    
+        if event.button == 3:
+            self._numeric_limits_menu(event, cursor_location)
+        
+        self._make_legend_box()
+
+    def _numeric_limits_menu(self, event, cursor_location):
+        menu = QtWidgets.QMenu(self)
+
+        action = QtWidgets.QAction(self.tr("Set limits numerically..."), self)
+        action.triggered.connect(self.numeric_limits_dialog)
+        menu.addAction(action)
+        
+        coords = self.canvas.geometry().getCoords()
+        point = QtCore.QPoint(event.x, coords[3] - event.y - coords[1])
+        # coords[1] from spacing
+        menu.exec_(self.canvas.mapToGlobal(point))
+        
+    def numeric_limits_dialog(self):
+        """Show numeric limits dialog and update graph if new limits are set.
+        """
+        lim_a, lim_b = self._limit_lines.get_range()
+        limit_dialog = NumericLimitsDialog(lim_a, lim_b)
+        
+        if not limit_dialog.exec_():
+            return
+        
+        self._limit_lines.update_graph(limit_dialog.limit_min)
+        self._limit_lines.update_graph(limit_dialog.limit_max) 
 
     def get_profiles_to_use(self) -> Dict[str, DepthProfile]:
         """Determines what files to use for plotting. Either relative, absolute

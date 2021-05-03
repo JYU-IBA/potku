@@ -39,7 +39,7 @@ from pathlib import Path
 
 from widgets.gui_utils import StatusBarHandler
 from dialogs.measurement.import_timing_graph import ImportTimingGraphDialog
-from dialogs.file_dialogs import open_files_dialog
+import dialogs.file_dialogs as fdialogs
 
 from modules.request import Request
 from widgets.icon_manager import IconManager
@@ -103,7 +103,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
     def __add_file(self):
         """Add a file to list of files to be imported.
         """
-        files = open_files_dialog(
+        files = fdialogs.open_files_dialog(
             self, self.request.directory,
             "Select an event collection to be imported",
             "Event collection (*.evnt)")
