@@ -174,22 +174,40 @@ class ElementManager:
             Created ElementSimulation
         """
         # TODO check that element does not exist
-        # Default points
+        # Set first point
         xs = [0.00]
-        ys = [1.0]
-
+        first_layer = self.parent.target.layers[0]
+        if element in first_layer.elements:
+            ys = [element.amount]
+        else: 
+            ys = [0.00]
+        
         # Make two points for each change between layers
+        layer_index = 0
         for layer in self.parent.target.layers:
-            x_1 = layer.start_depth + layer.thickness
-            y_1 = 1.0
+            x_1 = layer.start_depth + layer.thickness 
+            if element in layer.elements:
+                y_1 = element.amount
+            else:
+                y_1 = 0.0
+                
             xs.append(x_1)
             ys.append(y_1)
 
             x_2 = x_1 + self.parent.x_res
-            y_2 = 1.0
+            if layer_index + 1 < len(self.parent.target.layers):
+                next_layer = self.parent.target.layers[layer_index+1]
+                if element in next_layer.elements:
+                    y_2 = element.amount
+                else:
+                    y_2 = 0.0
+            else:
+                y_2 = 0.0
+                
             xs.append(x_2)
             ys.append(y_2)
-
+            layer_index += 1
+        # Removes last point from the list
         xs.pop()
         ys.pop()
 
