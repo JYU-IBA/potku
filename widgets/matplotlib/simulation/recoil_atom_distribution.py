@@ -185,12 +185,13 @@ class ElementManager:
         # Make two points for each change between layers
         layer_index = 0
         for layer in self.parent.target.layers:
-            # Set x-coordinates for the two points
+            # Set x-coordinates for the both points
             x_1 = layer.start_depth + layer.thickness 
             xs.append(x_1)
             x_2 = x_1 + self.parent.x_res
             xs.append(x_2)
             
+            # Set y-coordinate for the first point
             for element2 in layer.elements:
                 if element2.symbol is element.symbol:
                     y_1 = element2.amount
@@ -199,33 +200,26 @@ class ElementManager:
                     y_1 = element.amount
                 else:
                     y_1 = 0.0
-
+                    
             ys.append(y_1)
 
+            # Set y-coordinate for the second point if not in the last layer
             if layer_index + 1 < len(self.parent.target.layers):
                 next_layer = self.parent.target.layers[layer_index+1]
                 current_symbol = element.symbol
-                print(current_symbol)
                 
                 for next_element in next_layer.elements:
                     if next_element.symbol is current_symbol:
-                        print(next_element.symbol)
                         y_2 = next_element.amount
                         break
                     else:
-                        y_2 = 0.0
-            elif element in layer.elements:       
-                y_2 = element.amount
-                
-            else:
-                y_2 = 0.0
+                        y_2 = 0.0  
             
             ys.append(y_2)
             layer_index += 1
             
-        # Removes last point from the list
+        # Removes last x-coordinate from the list
         xs.pop()
-        ys.pop()
 
         xys = list(zip(xs, ys))
         points = []
