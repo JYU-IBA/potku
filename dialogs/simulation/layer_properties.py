@@ -307,7 +307,7 @@ class ElementLayout(QtWidgets.QVBoxLayout):
 
         self.amount_spinbox = QtWidgets.QDoubleSpinBox()
         self.amount_spinbox.setMinimum(0.001)
-        self.amount_spinbox.setMaximum(9999.00)
+        self.amount_spinbox.setMaximum(1)
         self.amount_spinbox.setDecimals(3)
         self.amount_spinbox.setLocale(QLocale.c())
         self.amount_spinbox.setFixedWidth(90)
@@ -320,11 +320,11 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.delete_button.clicked.connect(self.__delete_element_layout)
      
         self.sum_button = QtWidgets.QPushButton("")
-        self.sum_button.setText("Sum to 100%")
+        self.sum_button.setText("Sum to 1")
         self.sum_button.setFixedWidth(85)
         self.sum_button.setFixedHeight(28)
         self.sum_button.setToolTip("Sets the amount remaining from " \
-        "100% to the box")
+        "1 to the box")
 
         self.sum_button.clicked.connect(self._sum_amount_to_one)
 
