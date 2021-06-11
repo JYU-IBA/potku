@@ -1,0 +1,13 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\dialogs",
+    "\\dialogs\\measurement",
+    "\\dialogs\\simulation",
+    "\\modules",
+    "\\widgets",
+    "\\widgets\\simulation"
+  ],
+  "SelectedNode": "\\dialogs\\measurement\\depth_profile.py",
+  "PreviewInSolutionExplorer": false
+}

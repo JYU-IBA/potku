@@ -50,6 +50,8 @@ from modules.enums import DepthProfileUnit
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
+from PyQt5.QtWidgets import QMessageBox
+
 
 from widgets.matplotlib.measurement.depth_profile import \
     MatplotlibDepthProfileWidget
@@ -140,6 +142,34 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self._show_efficiency_files()
         self.exec_()
 
+    def _check_if_elemental_losses(self, used_cuts):
+            if len(used_cuts) > 1:
+                cuts = []
+                for cut in used_cuts:
+                    cuts.append(".".join(cut.name.split(".")[:2]))
+                indices = []
+                # TODO: Is there better way to find indices?
+                for c in cuts:
+                    indices.append([i for i, x in enumerate(cuts) if x == c])
+                # TODO: How much information do we want to print?
+                for index in indices:
+                    if len(index) < 2:  # If there are no elemental losses
+                        continue
+                    else:
+                        files = []
+                        for i in index:
+                            files.append(used_cuts[i].name)
+                        files = " and ".join(files)
+                        question = 'Do you want to continue?'
+                        warning = "There are multiple cut-files selected for the same element(s). " \
+                        "This will sum up " + files + " at least but there might be more. " \
+                        "Check the elemental losses if you are not sure what you are doing."
+                        msg = QMessageBox.warning(self, question, warning, QMessageBox.Ok | QMessageBox.Cancel, QMessageBox.Cancel)
+                        if msg == QMessageBox.Ok:
+                            return True
+                        else:
+                            return False
+
     @gutils.disable_widget
     def _accept_params(self, *_):
         """Accept given parameters.
@@ -156,6 +186,11 @@ class DepthProfileDialog(QtWidgets.QDialog):
             
             # Get the filepaths of the selected items
             used_cuts = self.used_cuts
+            if self._check_if_elemental_losses(used_cuts):
+                pass
+            else:
+                return
+
             DepthProfileDialog.checked_cuts[self.measurement.name] = set(
                 used_cuts)
             # TODO could take care of RBS selection here
@@ -211,6 +246,9 @@ class DepthProfileDialog(QtWidgets.QDialog):
             self.measurement.log_error(error_log)
         finally:
             sbh.reporter.report(100)
+
+    def _duplicates(lst, item):
+        return [i for i, x in enumerate(lst) if x == item]
 
     def _show_reference_density(self):
         """
