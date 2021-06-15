@@ -28,28 +28,17 @@ along with this program (file named 'LICENCE').
 __author__ = "Aleksi Kauppi"
 __version__ = "2.0"
 
-import os
-import shutil
-
-import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
-import dialogs.file_dialogs as fdialogs
-import widgets.binding as bnd
-
-from pathlib import Path
-
-from widgets.base_tab import BaseTab
 
 from PyQt5 import uic
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import QLocale
 
 from widgets.matplotlib.eff_plot import \
     MatplotlibEfficiencyWidget
 
 class EfficiencyWidget(QtWidgets.QWidget):
-    """Energy spectrum widget which is added to measurement tab.
+    """Efficiency widget which is opened on top of detector settings.
     """
 
     def __init__(self, efficiency_files, parent_widget=None):
@@ -63,17 +52,12 @@ class EfficiencyWidget(QtWidgets.QWidget):
         uic.loadUi(gutils.get_ui_dir() / "ui_eff_plot.ui", self)
         
         self.parent_widget = parent_widget
-        #self.icon_manager = parent.icon_manager
         self.efficiency_files = efficiency_files
-        print("2")
-        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
 
-        
-        #self.raise_()
         self.show()
+        self.raise_()
         self.activateWindow()
-        #self.raise_()
-        #self.setFocus(True)
+
 
         self.matplotlib = MatplotlibEfficiencyWidget(self, self.efficiency_files)
 
