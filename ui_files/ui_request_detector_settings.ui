@@ -484,6 +484,9 @@ T</string>
                    <property name="text">
                     <string/>
                    </property>
+                   <property name="toolTip">
+                   <string>File names must be in form symbol.eff or symbol-comments.eff, i.e. 1H-Jan2020.eff</string>
+                   </property>
                    <property name="icon">
                     <iconset>
                      <normaloff>../ui_icons/reinhardt/edit_add.svg</normaloff>../ui_icons/reinhardt/edit_add.svg</iconset>
