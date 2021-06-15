@@ -61,6 +61,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
     """
     ch: float = bnd.bind("histogramTicksDoubleSpinBox")
     use_efficiency: bool = bnd.bind("eff_file_check_box")
+    verbose: bool = bnd.bind("optimization_verbose_box")
     selected_cut_file: Path = bnd.bind(
         "measurementTreeWidget", fget=bnd.get_selected_tree_item,
         fset=bnd.set_selected_tree_item)
@@ -138,8 +139,9 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
 
         self.measurementTreeWidget.itemSelectionChanged.connect(
             self._enable_ok_button)
-
+        self.verbose = False
         self.eff_file_check_box.clicked.connect(self._enable_efficiency_label)
+        #self.optimization_verbose_box.clicked.connect(self._verbose)
         self._update_efficiency_label()
 
         self.exec_()
@@ -168,6 +170,12 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         """Enables or disables efficiency label.
         """
         self.efficiency_label.setEnabled(self.use_efficiency)
+
+    def _verbose(self):
+        if self.optimization_verbose_box.isChecked() == True:
+            return True
+        else:
+            return False
 
     def _fill_measurement_widget(self):
         """Add calculated tof_list files to tof_list_tree_widget by
@@ -261,7 +269,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         # TODO move following code to the result widget
         nsgaii = Nsgaii(
             element_simulation=elem_sim, measurement=measurement, cut_file=cut,
-            ch=self.ch, **params, use_efficiency=self.use_efficiency)
+            ch=self.ch, **params, use_efficiency=self.use_efficiency, verbose = self.verbose)
 
         # Optimization running thread
         ct = CancellationToken()

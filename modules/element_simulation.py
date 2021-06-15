@@ -847,6 +847,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def calculate_espe(
             self,
             recoil_element: RecoilElement,
+            verbose: None,
             ch: Optional[float] = None,
             fluence: Optional[float] = None,
             optimization_type: Optional[OptimizationType] = None,
@@ -908,7 +909,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             fluence=used_fluence,
             erd_file=erd_file,
             output_file=output_file,
-            recoil_file=recoil_file
+            recoil_file=recoil_file,
+            verbose=verbose
         )
         # TODO returning espe_file is a bit pointless if write_to_file is
         #   False

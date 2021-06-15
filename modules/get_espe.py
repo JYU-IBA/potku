@@ -94,7 +94,7 @@ class GetEspe:
     @staticmethod
     def calculate_simulated_spectrum(
             beam: Beam, detector: Detector, target: Target,
-            output_file: Optional[Path] = None, verbose: bool = True,
+            output_file: Optional[Path] = None, verbose: bool = None,
             **kwargs) -> Espe:
         """Calculates simulated spectrum. Calling this is the same as creating
         a new GetEspe object and calling its run method.

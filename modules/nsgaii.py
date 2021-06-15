@@ -71,7 +71,7 @@ class Nsgaii(Observable):
                  stop_percent=0.3, check_time=20, ch=0.025,
                  measurement=None, cut_file=None, dis_c=20,
                  dis_m=20, check_max=900, check_min=0, skip_simulation=False,
-                 use_efficiency=False):
+                 use_efficiency=False, verbose = False):
         """
         Initialize the NSGA-II algorithm with needed parameters and start
         running it.
@@ -146,6 +146,7 @@ class Nsgaii(Observable):
         self.population = None
         self.measured_espe = None
         self.use_efficiency = use_efficiency
+        self.verbose = verbose
 
     def __prepare_optimization(self, initial_pop=None,
                                cancellation_token=None,
@@ -343,7 +344,7 @@ class Nsgaii(Observable):
             for recoil in self.element_simulation.optimization_recoils:
                 # Run get_espe
                 espe, _ = self.element_simulation.calculate_espe(
-                    recoil, optimization_type=self.optimization_type,
+                    recoil, verbose = self.verbose, optimization_type=self.optimization_type,
                     ch=self.channel_width, write_to_file=False)
                 objective_values.append(self.get_objective_values(espe))
 
