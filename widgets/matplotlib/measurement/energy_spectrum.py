@@ -82,6 +82,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             channel_width: channel width used in spectra calculation
         """
         super().__init__(parent)
+        self.sum_key = 'SUM'
         self.parent = parent
         self.draw_legend = legend
         self.histed_files = copy.deepcopy(histed_files)
@@ -494,7 +495,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 element_counts[color_string] = 1
                 index_of_last_dot = 3
 
-                if 'SUM' in color_string:
+                if self.sum_key in color_string:
                     color = "red"
 
                 elif color_string not in self.__selection_colors:
@@ -504,7 +505,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 else:
                     color = self.__selection_colors[color_string]
                                
-                if element == 'SUM':
+                if element == self.sum_key:
                     sum_spectra_elements = '.'.join(cut_file[1:])
                     label = self.__set_label(isotope, element, rbs_string) + "$_{split: " + sum_spectra_elements + "}$"
 
