@@ -58,3 +58,6 @@ Pipfile.lock
 
 # Ignore hypothesis folder (in case it will be used in the future)
 .hypothesis
+
+# Visual Studio
+.vs
