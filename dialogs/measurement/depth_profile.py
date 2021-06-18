@@ -76,6 +76,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
     depth_bin = bnd.bind("label_depthbin")
     depth_scale = bnd.bind("label_depthscale")
     used_efficiency_files = bnd.bind("label_efficiency_files")
+    warning = bnd.bind("label_warning_text")
 
     systematic_error = bnd.bind("spin_systerr")
     show_scale_line = bnd.bind("check_scaleline")
@@ -119,6 +120,9 @@ class DepthProfileDialog(QtWidgets.QDialog):
             use_elemloss=True)
         self.used_cuts = DepthProfileDialog.checked_cuts[m_name]
 
+        self._update_label()
+        self.treeWidget.itemClicked.connect(self._update_label)
+
         gutils.set_btn_group_data(self.group_x_axis_units, DepthProfileUnit)
         self.x_axis_units = DepthProfileDialog.x_unit
         if self.x_axis_units == DepthProfileUnit.NM:
@@ -139,6 +143,48 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self._show_measurement_settings()
         self._show_efficiency_files()
         self.exec_()
+
+    def _update_label(self):
+        if len(self.used_cuts) == 0:
+            return
+        else:
+            if len(self.used_cuts) > 1:
+                cuts = []
+                for cut in self.used_cuts:
+                    cuts.append(cut.suffixes[0])
+
+                indices = []
+                for c in cuts:
+                    indices.append([i for i, sublist in enumerate(cuts) if sublist == c])
+
+                indices = [list(sublist) for sublist in set(tuple(sublist) for sublist in indices)]
+                indices_length = [len(x) for x in indices]
+
+                if any(length > 1 for length in indices_length):
+                    files = []
+                    for index in indices:
+                        if len(index) < 2:
+                            continue
+                        files.append((self.used_cuts[index[0]].suffixes[0].replace('.', '')))
+                    warning_message = "Multiple .cut-files selected for following element(s): {} \nCheck the elemental losses if you are not sure what you are doing."
+                    if len(files) > 1:  # If there are multiple elements
+                        files = ' and '.join(files)
+                        warning_message = warning_message.format(files)
+                    else:  # If theres is only one element
+                        warning_message = warning_message.format(files[0])
+                    self.label_warning_text.setText(warning_message)
+                    self.label_warning_text.setStyleSheet("color: red")
+                    return
+                self.label_warning_text.setText('')
+                return
+
+    def check_status(self):
+        if self.item1.checkState(0) == QtCore.Qt.Checked:
+            print('item 1 is checked')
+        if self.item2.checkState(0) == QtCore.Qt.Checked:
+            print('item 2 is checked')
+        if self.item3.checkState(0) == QtCore.Qt.Checked:
+            print('item 3 is checked')
 
     @gutils.disable_widget
     def _accept_params(self, *_):
