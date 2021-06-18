@@ -178,14 +178,6 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 self.label_warning_text.setText('')
                 return
 
-    def check_status(self):
-        if self.item1.checkState(0) == QtCore.Qt.Checked:
-            print('item 1 is checked')
-        if self.item2.checkState(0) == QtCore.Qt.Checked:
-            print('item 2 is checked')
-        if self.item3.checkState(0) == QtCore.Qt.Checked:
-            print('item 3 is checked')
-
     @gutils.disable_widget
     def _accept_params(self, *_):
         """Accept given parameters.
