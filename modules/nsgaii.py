@@ -71,7 +71,7 @@ class Nsgaii(Observable):
                  stop_percent=0.3, check_time=20, ch=0.025,
                  measurement=None, cut_file=None, dis_c=20,
                  dis_m=20, check_max=900, check_min=0, skip_simulation=False,
-                 use_efficiency=False):
+                 use_efficiency=False, optimize_by_area=True):
         """
         Initialize the NSGA-II algorithm with needed parameters and start
         running it.
@@ -146,6 +146,7 @@ class Nsgaii(Observable):
         self.population = None
         self.measured_espe = None
         self.use_efficiency = use_efficiency
+        self.optimize_by_area = optimize_by_area
 
     def __prepare_optimization(self, initial_pop=None,
                                cancellation_token=None,
@@ -363,29 +364,48 @@ class Nsgaii(Observable):
                                      ("solutions", "objective_values"))
         return pop(sols, objective_values)
 
+    def optimize_espe(self, optim_espe):
+        # Make spectra the same size
+        optim_espe, measured_espe = gf.uniform_espe_lists(
+            optim_espe, self.measured_espe,
+            channel_width=self.element_simulation.channel_width)
+
+        # Find the area between simulated and measured energy
+        # spectra
+        area = mf.calculate_area(optim_espe, measured_espe)
+
+        # Find the summed distance between thw points of these two
+        # spectra
+        sum_diff = sum(abs(opt_p[1] - mesu_p[1])
+                       for opt_p, mesu_p in zip(optim_espe, measured_espe))
+
+        return area, sum_diff
+
     def get_objective_values(self, optim_espe):
         """Calculates the objective values and returns them as a np.array.
         """
-        obj_values = collections.namedtuple(
-            "ObjectiveValues", ("area", "sum_distance"))
-        if optim_espe:
-            # Make spectra the same size
-            optim_espe, measured_espe = gf.uniform_espe_lists(
-                optim_espe, self.measured_espe,
-                channel_width=self.element_simulation.channel_width)
 
-            # Find the area between simulated and measured energy
-            # spectra
-            area = mf.calculate_area(optim_espe, measured_espe)
-
-            # Find the summed distance between thw points of these two
-            # spectra
-            sum_diff = sum(abs(opt_p[1] - mesu_p[1])
-                           for opt_p, mesu_p in zip(optim_espe, measured_espe))
-
-            return obj_values(area, sum_diff)
+        if self.optimize_by_area == True:
+            obj_values = collections.namedtuple(
+                "ObjectiveValues", ("area", "sum_distance"))
+            if optim_espe:
+                area, sum_diff = self.optimize_espe(optim_espe)
+                return obj_values(area, sum_diff)
+        else:
+            obj_values = collections.namedtuple(
+                "ObjectiveValues", ("sum_distance", "area"))
+            if optim_espe:
+                area, sum_diff = self.optimize_espe(optim_espe)
+                return obj_values(sum_diff, area)
         # If failed to create energy spectrum
         return obj_values(np.inf, np.inf)
+
+    def check(self):
+        rbtn = self.sender()
+        if rbtn.isChecked() == True:
+            return True
+        else:
+            False
 
     def find_bit_variable_lengths(self):
         # Find needed size to hold x and y in binary

@@ -259,9 +259,14 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             params = self.fluence_widget.get_properties()
 
         # TODO move following code to the result widget
-        nsgaii = Nsgaii(
-            element_simulation=elem_sim, measurement=measurement, cut_file=cut,
-            ch=self.ch, **params, use_efficiency=self.use_efficiency)
+        if self.current_mode == OptimizationType.RECOIL:
+            nsgaii = Nsgaii(
+                element_simulation=elem_sim, measurement=measurement, cut_file=cut,
+                ch=self.ch, **params, use_efficiency=self.use_efficiency, optimize_by_area=self.recoil_widget.optimize_by_area)
+        else:
+            nsgaii = Nsgaii(
+                element_simulation=elem_sim, measurement=measurement, cut_file=cut,
+                ch=self.ch, **params, use_efficiency=self.use_efficiency, optimize_by_area=self.fluence_widget.optimize_by_area)
 
         # Optimization running thread
         ct = CancellationToken()
