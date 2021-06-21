@@ -51,7 +51,6 @@ from modules.element_simulation import ElementSimulation
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QGuiApplication
 
-import random
 from scipy import integrate
 
 from widgets.matplotlib.base import MatplotlibWidget
@@ -82,7 +81,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             channel_width: channel width used in spectra calculation
         """
         super().__init__(parent)
-        self.sum_key = 'SUM'
         self.parent = parent
         self.draw_legend = legend
         self.histed_files = copy.deepcopy(histed_files)
@@ -417,11 +415,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                         break
         return recoils
 
-    def __set_label(self, isotope, element, rbs_string):
-        label = r"$^{" + str(isotope) + "}$" + element + rbs_string 
-        return label
-
-
     def on_draw(self):
         """Draw method for matplotlib.
         """
@@ -474,7 +467,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
                 # Get color for selection
                 dirtyinteger = 0
-
                 if rbs_string == "*":
                     color_string = "{0}{1}{2}{3}".format("RBS_", isotope,
                                                          element, dirtyinteger)
@@ -493,35 +485,19 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                                           dirtyinteger)
 
                 element_counts[color_string] = 1
-                index_of_last_dot = 3
-
-                if self.sum_key in color_string:
+                if color_string not in self.__selection_colors:
                     color = "red"
-
-                elif color_string not in self.__selection_colors:
-                    r = lambda: random.randint(0,255)
-                    color = '#%02X%02X%02X' % (r(),r(),r())
-
                 else:
                     color = self.__selection_colors[color_string]
-                               
-                if element == self.sum_key:
-                    sum_spectra_elements = '.'.join(cut_file[1:])
-                    label = self.__set_label(isotope, element, rbs_string) + "$_{split: " + sum_spectra_elements + "}$"
 
-                elif len(cut_file) == index_of_last_dot:
-                    label = self.__set_label(isotope, element, rbs_string)
-
-                elif len(cut_file) > index_of_last_dot:
-                    label = self.__set_label(isotope, element, rbs_string) + "$_{split: " + cut_file[3] + "}$"
-
+                if len(cut_file) == 3:
+                    label = r"$^{" + str(isotope) + "}$" + element + rbs_string
                 else:
-                    label = self.__set_label(isotope, element, rbs_string) + "$_{split: " + cut_file[2] + "}$"
-
+                    label = r"$^{" + str(isotope) + "}$" + element \
+                            + rbs_string + "$_{split: " + cut_file[2] + "}$"
                 line, = self.axes.plot(x, y, color=color, label=label,
                                        linestyle=self.default_linestyle)
                 self.plots[key] = line
-
 
         else:  # Simulation energy spectrum
             if self.__ignore_elements:
@@ -612,7 +588,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 self.__initiated_box = True
 
             handles, labels = self.axes.get_legend_handles_labels()
-            
             self.leg = self.axes.legend(handles,
                                         labels,
                                         loc=3,
@@ -621,13 +596,10 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                         prop={'size': 12})
             for handle in self.leg.legendHandles:
                 handle.set_linewidth(3.0)
-        
-        lower_lim = 0.09
-        upper_lim = 1.01
 
-        if lower_lim < x_max < upper_lim:  # This works...
+        if 0.09 < x_max < 1.01:  # This works...
             x_max = self.axes.get_xlim()[1]
-        if lower_lim < y_max < upper_lim:
+        if 0.09 < y_max < 1.01:
             y_max = self.axes.get_ylim()[1]
 
         # Set limits accordingly
