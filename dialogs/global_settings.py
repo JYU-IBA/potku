@@ -36,8 +36,6 @@ import dialogs.dialog_functions as df
 import widgets.binding as bnd
 import widgets.gui_utils as gutils
 
-from pathlib import Path
-
 from widgets.base_tab import BaseTab
 from modules.global_settings import GlobalSettings
 from modules.enums import IonDivision
@@ -77,9 +75,9 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
     min_concentration = bnd.bind("min_conc_spinbox")
 
     coinc_count = bnd.bind("line_coinc_count")
-    
+
     cross_section = bnd.bind("cross_section_radios")
- 
+
     save_window_geometries = bnd.bind("window_geom_chkbox")
 
     settings_updated = QtCore.pyqtSignal(GlobalSettings)
@@ -175,18 +173,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.ion_division = self.settings.get_ion_division()
         self.min_conc_spinbox.setMinimum(GlobalSettings.MIN_CONC_LIMIT)
         self.min_concentration = self.settings.get_minimum_concentration()
-        
-        # Set used paths to LineEdits
-        self.lineEdit_ini.setText(str(self.settings.get_config_file()))
-        self.lineEdit_Request.setText(str(self.settings.get_request_directory_last_open()))
-        eff_text = str(Path(str(self.settings.get_request_directory_last_open())) / 
-        "Default" / "Detector" / "efficiency_files")
-        self.lineEdit_Eff.setText(eff_text)
-        
-        self.lineEdit_ini.setReadOnly(True)
-        self.lineEdit_Request.setReadOnly(True)
-        self.lineEdit_Eff.setReadOnly(True)
-        
+
         self.save_window_geometries = gutils.get_potku_setting(
             BaseTab.SAVE_WINDOW_GEOM_KEY, True
         )
@@ -244,7 +231,6 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.settings_updated.emit(self.settings)
         self.close()
 
-        # TODO This is not used anywhere?
     def __change_request_directory(self):
         """Change default request directory.
         """
