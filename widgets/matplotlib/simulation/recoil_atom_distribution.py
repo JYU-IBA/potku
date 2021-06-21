@@ -174,24 +174,52 @@ class ElementManager:
             Created ElementSimulation
         """
         # TODO check that element does not exist
-        # Default points
+        # Set first point
         xs = [0.00]
-        ys = [1.0]
-
+        first_layer = self.parent.target.layers[0]
+        if element in first_layer.elements:
+            ys = [element.amount]
+        else: 
+            ys = [0.00]
+        
         # Make two points for each change between layers
+        layer_index = 0
         for layer in self.parent.target.layers:
-            x_1 = layer.start_depth + layer.thickness
-            y_1 = 1.0
+            # Set x-coordinates for the both points
+            x_1 = layer.start_depth + layer.thickness 
             xs.append(x_1)
+            x_2 = x_1 + self.parent.x_res
+            xs.append(x_2)
+            
+            # Set y-coordinate for the first point
+            for element2 in layer.elements:
+                if element2.symbol is element.symbol:
+                    y_1 = element2.amount
+                    break
+                elif element in layer.elements:
+                    y_1 = element.amount
+                else:
+                    y_1 = 0.0
+                    
             ys.append(y_1)
 
-            x_2 = x_1 + self.parent.x_res
-            y_2 = 1.0
-            xs.append(x_2)
+            # Set y-coordinate for the second point if not in the last layer
+            if layer_index + 1 < len(self.parent.target.layers):
+                next_layer = self.parent.target.layers[layer_index+1]
+                current_symbol = element.symbol
+                
+                for next_element in next_layer.elements:
+                    if next_element.symbol is current_symbol:
+                        y_2 = next_element.amount
+                        break
+                    else:
+                        y_2 = 0.0  
+            
             ys.append(y_2)
-
+            layer_index += 1
+            
+        # Removes last x-coordinate from the list
         xs.pop()
-        ys.pop()
 
         xys = list(zip(xs, ys))
         points = []

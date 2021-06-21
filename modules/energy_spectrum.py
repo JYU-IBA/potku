@@ -30,7 +30,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Juhani Sundell"
 __version__ = "2.0"
 
-import logging
 import subprocess
 import platform
 
@@ -46,6 +45,7 @@ from typing import Dict
 from .observing import ProgressReporter
 from . import general_functions as gf
 from . import subprocess_utils as sutils
+from .ui_log_handlers import Logger
 from .parsing import ToFListParser
 from .measurement import Measurement
 from .element import Element
@@ -175,14 +175,14 @@ class EnergySpectrum:
 
                 cut_dict[key] = EnergySpectrum.tof_list(
                     cut_file, directory, no_foil=no_foil,
-                    logger_name=self._measurement.name,
+                    logger=self._measurement,
                     tof_in=tof_in, verbose=verbose)
 
                 if progress is not None:
                     progress.report(i / count * 90)
         except Exception as e:
             msg = f"Could not calculate Energy Spectrum: {e}."
-            logging.getLogger(self._measurement.name).error(msg)
+            self._measurement.log_error(msg)
         finally:
             if progress is not None:
                 progress.report(100)
@@ -193,7 +193,7 @@ class EnergySpectrum:
             cut_file: Path,
             directory: Optional[Path] = None,
             no_foil: bool = False,
-            logger_name: Optional[str] = None,
+            logger: Optional[Logger] = None,
             tof_in: Path = Path("tof.in"),
             verbose: bool = True) -> TofListData:
         """ToF_list
@@ -206,7 +206,7 @@ class EnergySpectrum:
                 directory.
             no_foil: whether foil thickness was used when .cut files were
                 generated. This affects the file path when saving output
-            logger_name: name of a logging entity
+            logger: optional Logger entity used for logging
             tof_in: path to tof_in_file
             verbose: whether tof_list's stderr is printed to console
 
@@ -242,8 +242,8 @@ class EnergySpectrum:
                 return tof_list_data
         except Exception as e:
             msg = f"Error in tof_list: {e}"
-            if logger_name is not None:
-                logging.getLogger(logger_name).error(msg)
+            if logger is not None:
+                logger.log_error(msg)
             else:
                 print(msg)
             return []

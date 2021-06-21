@@ -35,7 +35,7 @@ from pathlib import Path
 from modules.request import Request
 
 
-class TestInit(unittest.TestCase):
+class TestFolderStructure(unittest.TestCase):
     def setUp(self):
         # Expected folder structure when request is saved
         self.folder_name = "foo"
@@ -46,7 +46,6 @@ class TestInit(unittest.TestCase):
                     "Default.detector": None
                 },
                 "Default.measurement": None,
-                "default.log": None,
                 "Default.simulation": None,
                 "Default.mcsimu": None,
                 "Default.profile": None,
@@ -54,13 +53,11 @@ class TestInit(unittest.TestCase):
                 "Default.target": None,
                 "Default_element.profile": None,
                 "Default.info": None,
-                "errors.log": None
             },
-            "request.log": None,
             f"{self.folder_name}.request": None
         }
 
-    def test_folder_structure(self):
+    def test_no_folders_are_created_if_save_on_creation_is_false(self):
         """Tests the folder structure when request is created"""
         with tempfile.TemporaryDirectory() as tmp_dir:
             path = Path(tmp_dir, self.folder_name)
@@ -69,23 +66,38 @@ class TestInit(unittest.TestCase):
 
             self.assertEqual([], os.listdir(tmp_dir))
 
-            request = Request(path, "bar", mo.get_global_settings(),
-                              save_on_creation=True, enable_logging=False)
+    def test_folder_structure_when_logging_is_not_enabled(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            path = Path(tmp_dir, self.folder_name)
+            Request(
+                path, "bar", mo.get_global_settings(), save_on_creation=True,
+                enable_logging=False)
 
             utils.assert_folder_structure_equal(self.folder_structure, path)
 
-            request.to_file()
-            utils.assert_folder_structure_equal(self.folder_structure, path)
+    def test_folder_structure_when_logging_is_enabled(self):
+        """Tests the folder structure when request is created"""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            path = Path(tmp_dir, self.folder_name)
+            request = Request(
+                path, "bar", mo.get_global_settings(), save_on_creation=True,
+                enable_logging=True)
 
-            utils.disable_logging()
+            folder_structure = {
+                "request.log": None,
+                **self.folder_structure,
+            }
+            utils.assert_folder_structure_equal(folder_structure, path)
+            request.close_log_files()
 
 
 class TestSerialization(unittest.TestCase):
     def test_serialization(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             path = Path(tmp_dir, "request")
-            request = Request(path, "foo", mo.get_global_settings(),
-                              save_on_creation=False, enable_logging=False)
+            request = Request(
+                path, "foo", mo.get_global_settings(),
+                save_on_creation=False, enable_logging=False)
 
             request.default_run.charge = 1
             request.default_run.fluence = 2
@@ -94,7 +106,8 @@ class TestSerialization(unittest.TestCase):
             request.to_file()
 
             request_from_file = Request.from_file(
-                request.request_file, mo.get_global_settings())
+                request.request_file, mo.get_global_settings(),
+                enable_logging=False)
 
             self.assertEqual(
                 request.default_run.get_settings(),
@@ -106,8 +119,6 @@ class TestSerialization(unittest.TestCase):
                 request_from_file.default_target.description
             )
 
-            utils.disable_logging()
-
     def test_default_values_are_same(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             path = Path(tmp_dir, "request")
@@ -116,7 +127,8 @@ class TestSerialization(unittest.TestCase):
             self.assert_request_values_are_same(request)
 
             request_from_file = Request.from_file(
-                request.request_file, mo.get_global_settings())
+                request.request_file, mo.get_global_settings(),
+                enable_logging=False)
             self.assert_request_values_are_same(request_from_file)
 
             self.assertEqual(
@@ -137,7 +149,6 @@ class TestSerialization(unittest.TestCase):
                 request.default_simulation,
                 request_from_file.default_simulation
             )
-            utils.disable_logging()
 
     @staticmethod
     def assert_request_values_are_same(request: Request):

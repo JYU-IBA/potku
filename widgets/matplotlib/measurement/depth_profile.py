@@ -109,6 +109,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.used_eff_str = used_eff_str
         self.eff_text = None
 
+        # Set default filename for saving figure
+        default_filename = "Depth_profile_" + parent.measurement.name
+        self.canvas.get_default_filename = lambda: default_filename 
+
         self._profile_handler = DepthProfileHandler()
         self._profile_handler.read_directory(
             depth_dir, self._elements, depth_units=x_units)

@@ -34,7 +34,7 @@ import widgets.gui_utils as gutils
 
 from collections import Counter
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from dialogs.energy_spectrum import EnergySpectrumWidget
 from dialogs.simulation.optimization import OptimizationDialog
@@ -42,6 +42,7 @@ from dialogs.simulation.settings import SimulationSettingsDialog
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
+from PyQt5.QtCore import pyqtSignal
 
 from widgets.simulation.optimized_fluence import OptimizedFluenceWidget
 from widgets.simulation.optimized_recoils import OptimizedRecoilsWidget
@@ -58,13 +59,17 @@ from modules.observing import ProgressReporter
 from modules.concurrency import CancellationToken
 
 
-class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
+class SimulationTabWidget(BaseTab):
     """Tab widget where simulation stuff is added.
     """
 
-    def __init__(self, request: Request, tab_id: int, simulation: Simulation,
-                 icon_manager: IconManager,
-                 statusbar: Optional[QtWidgets.QStatusBar] = None):
+    def __init__(
+            self,
+            request: Request,
+            tab_id: int,
+            simulation: Simulation,
+            icon_manager: IconManager,
+            statusbar: Optional[QtWidgets.QStatusBar] = None):
         """ Init simulation tab class.
         
         Args:
@@ -74,44 +79,34 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
             icon_manager: An icon manager class object.
             statusbar: A QtGui.QMainWindow's QStatusBar.
         """
-        super().__init__()
+        super().__init__(simulation, tab_id, icon_manager, statusbar)
         uic.loadUi(gutils.get_ui_dir() / "ui_simulation_tab.ui", self)
 
         self.request = request
-        self.tab_id = tab_id
-        # TODO why 2 references to simulation?
-        self.simulation = simulation
-        self.obj = simulation
-        self.icon_manager = icon_manager
 
         self.simulation_target = None
         self.energy_spectrum_widgets = []
-        self.log = None
-
-        self.data_loaded = False
+        self.optimization_result_widget = None
 
         df.set_up_side_panel(self, "simu_panel_shown", "right")
 
         self.openSettingsButton.clicked.connect(self.__open_settings)
         self.optimizeButton.clicked.connect(self.__open_optimization_dialog)
 
-        self.optimization_result_widget = None
-
-        self.statusbar = statusbar
-
     def get_saveable_widgets(self):
         """Returns a list of Widgets whose geometries can be saved.
         """
         return {}
 
-    def get_default_widget(self):
+    def get_default_widget(self) -> None:
         # TODO
         return None
 
     def add_simulation_target_and_recoil(
-            self, settings: GlobalSettings,
+            self,
+            settings: GlobalSettings,
             progress: Optional[ProgressReporter] = None,
-            **kwargs):
+            **kwargs) -> None:
         """Add target widget for modifying the target and recoils into tab.
 
         Args:
@@ -125,9 +120,12 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
         self.add_widget(self.simulation_target, has_close_button=False)
 
     def add_optimization_results_widget(
-            self, elem_sim: ElementSimulation, cut_file_name: str,
+            self,
+            elem_sim: ElementSimulation,
+            cut_file_name: str,
             mode_recoil: OptimizationType,
-            ct: Optional[CancellationToken] = None):
+            ct: Optional[CancellationToken] = None) -> \
+            Union[OptimizedRecoilsWidget, OptimizedFluenceWidget]:
         """
         Add a widget that holds progress and results of optimization.
 
@@ -152,7 +150,8 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
         self.add_widget(self.optimization_result_widget, icon=icon)
         return self.optimization_result_widget
     
-    def check_previous_state_files(self, progress=None):
+    def check_previous_state_files(
+            self, progress: Optional[ProgressReporter] = None) -> None:
         """Check if saved state for Energy Spectra exist.
         If yes, make widgets.
 
@@ -163,7 +162,7 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
             spectra_changed=self.simulation_target.spectra_changed)
         # Show optimized results if there are any
         used_measured_element = ""
-        for element_simulation in self.simulation.element_simulations:
+        for element_simulation in self.obj.element_simulations:
             if element_simulation.optimization_recoils:
                 # Find file that contains measurement element name used in
                 # optimization
@@ -195,18 +194,19 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
         if progress is not None:
             progress.report(100)
 
-    def make_energy_spectra(self, spectra_changed=None):
+    def make_energy_spectra(
+            self, spectra_changed: Optional[pyqtSignal] = None) -> None:
         """
         Make corresponding energy spectra for each save file in simulation
         directory.
         """
         save_energy_spectrum = False
-        for file in os.listdir(self.simulation.directory):
+        for file in os.listdir(self.obj.directory):
             if file.endswith(".save"):
                 # TODO this can be a problem if the request folder has been
                 #   copied elsewhere, as the '.save' file has the old file
                 #   paths saved
-                file_path = Path(self.simulation.directory, file)
+                file_path = Path(self.obj.directory, file)
                 save_file_int = int(file.rsplit('_', 1)[1].split(".save")[0])
                 with open(file_path, 'r') as save_file:
                     lines = save_file.readlines()
@@ -234,22 +234,23 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
                     energy_spectrum_widget.save_to_file(
                         measurement=False, update=True)
 
-    def __open_settings(self):
-        SimulationSettingsDialog(self, self.simulation, self.icon_manager)
+    def __open_settings(self) -> None:
+        SimulationSettingsDialog(self, self.obj, self.icon_manager)
 
-    def __open_optimization_dialog(self):
-        OptimizationDialog(self.simulation, self)
+    def __open_optimization_dialog(self) -> None:
+        OptimizationDialog(self.obj, self)
 
-    def load_data(self, progress=None, **kwargs):
+    def load_data(
+            self,
+            progress: Optional[ProgressReporter] = None,
+            **kwargs) -> None:
         """Loads the data belonging to the Simulation into view.
         """
         if not self.data_loaded:
             self.data_loaded = True
 
             if progress is not None:
-                sub_progress = progress.get_sub_reporter(
-                    lambda x: 0.70 * x
-                )
+                sub_progress = progress.get_sub_reporter(lambda x: 0.70 * x)
             else:
                 sub_progress = None
 
@@ -258,10 +259,28 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
 
             if progress is not None:
                 sub_progress = progress.get_sub_reporter(
-                    lambda x: 70 + 0.25 * x
-                )
+                    lambda x: 70 + 0.25 * x)
 
             self.check_previous_state_files(progress=sub_progress)
 
         if progress is not None:
             progress.report(100)
+
+    def remove_energy_spectrum_widgets(self) -> None:
+        """Removes all EnergySpectrumWidgets from this tab.
+        """
+        widgets = list(self.energy_spectrum_widgets)
+        for widget in widgets:
+            self.remove_energy_spectrum_widget(widget)
+
+    def remove_energy_spectrum_widget(
+            self, widget: EnergySpectrumWidget) -> None:
+        """Removes given EnergySpectrumWidget from this tab.
+        """
+        self.del_widget(widget)
+        self.energy_spectrum_widgets.remove(widget)
+        save_file_path = Path(self.obj.directory, widget.save_file)
+        try:
+            save_file_path.unlink()
+        except OSError:
+            pass

@@ -43,7 +43,7 @@ from dialogs.graph_settings import TofeGraphSettingsWidget
 from dialogs.measurement.depth_profile import DepthProfileWidget
 from dialogs.measurement.element_losses import ElementLossesWidget
 from dialogs.measurement.selection import SelectionSettingsDialog
-from dialogs.file_dialogs import open_file_dialog
+import dialogs.file_dialogs as fdialogs
 
 from matplotlib import cm
 from matplotlib.colors import LogNorm
@@ -87,6 +87,10 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__icon_manager = icon_manager
         self.parent = parent
         self.statusbar = statusbar
+        
+        # Set default filename for saving figure
+        default_filename = "ToF-E_Histogram_" + measurement.name
+        self.canvas.get_default_filename = lambda: default_filename 
 
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
@@ -186,6 +190,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 QtWidgets.QMessageBox.Ok)
 
         colormap = cm.get_cmap(self.color_scheme.value)
+        
+        self.axes.set_ylim([y_min, y_max])
+        self.axes.set_xlim([x_min, x_max]) 
 
         self.axes.hist2d(x_data,
                          y_data,
@@ -195,11 +202,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                          cmap=colormap)
 
         self.__on_draw_legend()
-
-        if 0.09 < x_max < 1.01:  # This works..
-            x_min, x_max = self.axes.get_xlim()
-        if 0.09 < y_max < 1.01:  # or self.axes_range_mode
-            y_min, y_max = self.axes.get_ylim()
 
         # Change zoom limits if compression factor was changed (or new graph).
         if not self.__range_mode_automated and self.axes_range_mode == 0 \
@@ -215,14 +217,10 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 x_min, x_max = tx_min, tx_max
                 y_min, y_max = ty_min, ty_max
                 self.mpl_toolbar.update()
-        self.__range_mode_automated = self.axes_range_mode == 0
-        # print(self.axes.get_xlim())
-        # Set limits accordingly
-        self.axes.set_ylim([y_min, y_max])
-        self.axes.set_xlim([x_min, x_max])
-
+        self.__range_mode_automated = self.axes_range_mode == 0 
+        
         self.measurement.draw_selection()
-
+        
         # Invert axis
         if self.invert_Y and not self.__inverted_Y:
             self.axes.set_ylim(self.axes.get_ylim()[::-1])
@@ -550,10 +548,10 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     def load_selections(self):
         """Show dialog to load selections.
         """
-        filename = open_file_dialog(self, self.measurement.directory,
-                                    "Load Element Selection",
-                                    "Selection file (*.selections)")
-        if filename:
+        filename = fdialogs.open_file_dialog(
+            self, self.measurement.directory, "Load Element Selection",
+            "Selection file (*.selections)")
+        if filename is not None:
             sbh = StatusBarHandler(self.statusbar)
             sbh.reporter.report(40)
 

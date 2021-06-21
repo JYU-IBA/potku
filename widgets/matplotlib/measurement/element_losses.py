@@ -84,6 +84,10 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
         self.canvas.manager.set_title("Elemental Losses")
         self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
+        
+        # Set default filename for saving figure
+        default_filename = "Elemental_losses_" + parent.measurement.name + "_" + str(parent.partition_count) + "_splits"
+        self.canvas.get_default_filename = lambda: default_filename 
 
         # Add button to toggle scaling of the graph
         self.mpl_toolbar.addSeparator()
