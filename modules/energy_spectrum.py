@@ -315,6 +315,7 @@ class EnergySpectrum:
         else:
             y_col = None
 
+        keys = []
         for key, tof_list_data in tof_listed_files.items():
             espe = gf.hist(
                 tof_list_data, col=2, weight_col=y_col,
@@ -324,6 +325,7 @@ class EnergySpectrum:
                 espes[key] = espe
                 continue
 
+            keys.append(key)
             espes[key] = EnergySpectrum.pad_with_zeroes(espe, spectrum_width)
 
             filename = EnergySpectrum.get_hist_file_name(
@@ -333,4 +335,33 @@ class EnergySpectrum:
                 espe, dtype=[("float", float), ("int", int)])
             np.savetxt(filename, numpy_array, delimiter=" ", fmt="%5.5f %6d")
 
+        if len(espes) > 0:
+            x_files = [[] for _ in range(len(espes))]
+            y_files = [[] for _ in range(len(espes))]
+            for key in keys:
+                for tuple in espes[key]:
+                    x_files[keys.index(key)].append(tuple[0])
+                    y_files[keys.index(key)].append(tuple[1])
+            x_files_flat = [item for sublist in x_files for item in sublist]
+            x_files_flat = np.unique(x_files_flat)
+            y_sum = []
+            for i in range(len(keys)):
+                y_sum.append(np.interp(x_files_flat, x_files[i], y_files[i]))
+            y_sum = np.sum(y_sum, axis = 0)
+            x_files = list(map(sum, zip(*x_files)))
+            y_files = list(map(sum, zip(*y_files)))
+
+            sum_key = 'SUM'
+            for value in espes:
+                sum_key += '.' + value.split('.')[0]
+            espes[sum_key] = list(zip(x_files_flat, y_sum))
+
+            import os
+            path = os.path.join(
+                directory_es, measurement.name + '.' + sum_key + '.hist')
+
+            numpy_array = np.array(
+                espes[sum_key], dtype=[("float", float), ("int", int)])
+            np.savetxt(path, numpy_array, delimiter=" ", fmt="%5.5f %6d")
+        
         return espes
