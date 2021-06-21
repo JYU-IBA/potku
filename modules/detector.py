@@ -233,11 +233,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         gf.remove_matching_files(self.get_used_efficiencies_dir(), {".eff"})
 
     @classmethod
-    def from_file(
-            cls,
-            detector_file: Path,
-            request: "Request",
-            save_on_creation: bool = True) -> "Detector":
+    def from_file(cls, detector_file: Path, request, save_on_creation=True):
         """Initialize Detector from a JSON file.
 
         Args:

@@ -28,13 +28,13 @@ __author__ = "Tuomas Pitkänen"
 __version__ = "2.0"
 
 import json
+import logging
 import time
 
 from pathlib import Path
-from typing import Set, Optional
+from typing import Set
 
 from .base import AdjustableSettings, Serializable
-from .ui_log_handlers import Logger
 
 
 # TODO: Create unit tests / copy unit tests from measurement
@@ -76,10 +76,7 @@ class Profile(AdjustableSettings, Serializable):
         self.normalization = normalization
 
     @classmethod
-    def from_file(
-            cls,
-            profile_file: Path,
-            logger: Optional[Logger] = None) -> "Profile":
+    def from_file(cls, profile_file: Path) -> "Profile":
         # TODO: Copy from measurement.from_file (lines 502 to 556)
         try:
             with profile_file.open("r") as prof_file:
@@ -96,14 +93,12 @@ class Profile(AdjustableSettings, Serializable):
             comp = profile["composition_changes"]
 
         except (OSError, KeyError, AttributeError, json.JSONDecodeError) as e:
-            if logger is not None:
-                msg = f"Failed to read settings from .profile file " \
-                      f"{profile_file}: {e}"
-                logger.log_error(msg)
+            logging.getLogger("request").error(
+                f"Failed to read settings from .profile file {profile_file}: {e}"
+            )
             # TODO: Initialize a request.default_profile elsewhere and
             #       use its values here, or just let it crash?
-            raise NotImplementedError(
-                "Error handling not implemented for .profile")
+            raise NotImplementedError("Error handling not implemented for .profile")
 
         return cls(channel_width=channel_width, **general, **depth, **comp)
 

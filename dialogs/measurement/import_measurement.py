@@ -28,6 +28,8 @@ __author__ = "Timo Konu \n Severi Jääskeläinen \n Samuel Kaiponen \n Heta " \
              "Rekilä \n Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
+import logging
+import os
 import re
 
 import dialogs.dialog_functions as df
@@ -39,7 +41,7 @@ from pathlib import Path
 
 from widgets.gui_utils import StatusBarHandler
 from dialogs.measurement.import_timing_graph import ImportTimingGraphDialog
-import dialogs.file_dialogs as fdialogs
+from dialogs.file_dialogs import open_files_dialog
 
 from modules.request import Request
 from widgets.icon_manager import IconManager
@@ -103,7 +105,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
     def __add_file(self):
         """Add a file to list of files to be imported.
         """
-        files = fdialogs.open_files_dialog(
+        files = open_files_dialog(
             self, self.request.directory,
             "Select an event collection to be imported",
             "Event collection (*.evnt)")
@@ -192,17 +194,17 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
 
         filenames = ", ".join(filename_list)
         elapsed = timer() - start_time
-        log = f"Imported measurements to request: {filenames}"
+        log = "Imported measurements to request: {0}".format(filenames)
         log_var = "Variables used: {0} {1} {2} {3} {4}".format(
             "Skip lines: " + str(self.spin_skiplines.value()),
             "ADC trigger: " + str(self.spin_adctrigger.value()),
             "ADC count: " + str(self.spin_adccount.value()),
             "Timing: " + str(timing),
             "Event count: " + str(self.spin_eventcount.value()))
-        log_elapsed = f"Importing finished {elapsed} seconds"
-        self.request.log(log)
-        self.request.log(log_var)
-        self.request.log(log_elapsed)
+        log_elapsed = "Importing finished {0} seconds".format(int(elapsed))
+        logging.getLogger("request").info(log)
+        logging.getLogger("request").info(log_var)
+        logging.getLogger("request").info(log_elapsed)
 
         sbh.reporter.report(100)
         self.imported = True

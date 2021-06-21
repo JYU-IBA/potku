@@ -29,6 +29,8 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
+import logging
+
 import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
 import widgets.binding as bnd
@@ -216,7 +218,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         except Exception as e:
             error_log = f"Exception occurred when trying to create depth " \
                         f"profiles: {e}"
-            self.measurement.log_error(error_log)
+            logging.getLogger(self.measurement.name).error(error_log)
         finally:
             sbh.reporter.report(100)
 
@@ -353,7 +355,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
                 systematic_error=self._systematic_error, progress=sub_progress)
         except Exception as e:
             msg = f"Could not create Depth Profile graph: {e}"
-            self.measurement.log_error(msg)
+            logging.getLogger(self.measurement.name).error(msg)
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
         finally:

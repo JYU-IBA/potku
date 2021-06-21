@@ -35,7 +35,6 @@ import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
 
 from pathlib import Path
-from typing import Optional
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.energy_spectrum import EnergySpectrumWidget
@@ -56,21 +55,16 @@ from PyQt5 import uic
 from widgets.base_tab import BaseTab
 from widgets.measurement.tofe_histogram import TofeHistogramWidget
 from widgets.gui_utils import StatusBarHandler
-from widgets.icon_manager import IconManager
 
 
-class MeasurementTabWidget(BaseTab):
+class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
     """Tab widget where measurement stuff is added.
     """
 
     issueMaster = QtCore.pyqtSignal()
 
-    def __init__(
-            self,
-            tab_id: int,
-            measurement: Measurement,
-            icon_manager: IconManager,
-            statusbar: Optional[QtWidgets.QStatusBar] = None):
+    def __init__(self, tab_id, measurement: Measurement, icon_manager,
+                 statusbar=None):
         """Init measurement tab class.
         Args:
             tab_id: An integer representing ID of the tabwidget.
@@ -78,8 +72,12 @@ class MeasurementTabWidget(BaseTab):
             icon_manager: An iconmanager class object.
             statusbar: A QtGui.QMainWindow's QStatusBar.
         """
-        super().__init__(measurement, tab_id, icon_manager, statusbar)
+        super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_measurement_tab.ui", self)
+
+        self.tab_id = tab_id
+        self.obj = measurement
+        self.icon_manager = icon_manager
 
         # Various widgets that are shown in the tab. These will be populated
         # using the load_data method
@@ -87,6 +85,8 @@ class MeasurementTabWidget(BaseTab):
         self.elemental_losses_widget = None
         self.energy_spectrum_widget = None
         self.depth_profile_widget = None
+        self.log = None
+        self.data_loaded = False
 
         self.saveCutsButton.clicked.connect(self.measurement_save_cuts)
         self.analyzeElementLossesButton.clicked.connect(
@@ -101,6 +101,7 @@ class MeasurementTabWidget(BaseTab):
         # Enable master button
         self.toggle_master_button()
         self.set_icons()
+        self.statusbar = statusbar
 
     def get_default_widget(self):
         """Histogram will be the widget that gets activated when the tab

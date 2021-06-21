@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen, 2021 Juhani Sundell
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -26,19 +26,17 @@ along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
-             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n " \
-             "Juhani Sundell"
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import uuid
 import logging
-from logging import Formatter, FileHandler, Handler
-from typing import Optional, Tuple, Iterable, Mapping
 
 from pathlib import Path
 
+# TODO move CustomLogHandler to widgets and Logger to base classes
 
-class CustomLogHandler(Handler):
+
+class CustomLogHandler(logging.Handler):
     """Custom log handler, that handles log messages and emits them to the
     given LogWidget's log field.
     """
@@ -52,7 +50,7 @@ class CustomLogHandler(Handler):
             log_dialog: The log dialog, which can add the message to the
             interface.
         """
-        Handler.__init__(self)
+        logging.Handler.__init__(self)
         self.log_dialog = log_dialog
         self.formatter = formatter
         self.level = level
@@ -105,226 +103,80 @@ class CustomLogHandler(Handler):
 
 
 class Logger:
-    """Base class for entities that write messages to log files.
-
-    Loggers can form a parent - child hierarchy. Messages logged by children
-    will also be logged by parents.
+    """Common base class for Measurements and Simulations to enable logging.
     """
+    __slots__ = "logger_name", "category", "datefmt", "defaultlog", \
+                "errorlog", "enable_logging"
 
-    __slots__ = "_logger_name", "_logger", "_is_logging_enabled"
-
-    MSG_FMT = "%(asctime)s - %(levelname)s - %(message)s"
-    DATE_FMT = "%Y-%m-%d %H:%M:%S"
-
-    def __init__(
-            self,
-            enable_logging: bool = True,
-            parent: Optional["Logger"] = None) -> None:
-        """Initializes a logger.
+    def __init__(self, logger_name, category, datefmt="%Y-%m-%d %H:%M:%S",
+                 enable_logging=True):
+        """Initializes a new Logger
 
         Args:
-            enable_logging: whether logging is enabled or not
-            parent: optional parent logger.
+            logger_name: name of the Logger object.
+            category: category which the Logger belongs to
+            datefmt: format in which to display dates
         """
-        unique_name = str(uuid.uuid4())
-        if parent is not None:
-            self._logger_name = f"{parent._logger_name}.{unique_name}"
-        else:
-            self._logger_name = unique_name
-        self._logger = logging.getLogger(self._logger_name)
-        self._logger.setLevel(logging.DEBUG)
-        self.is_logging_enabled = enable_logging
+        self.logger_name = logger_name
+        self.category = category
+        self.datefmt = datefmt
+        self.defaultlog = None
+        self.errorlog = None
+        self.enable_logging = enable_logging
 
-    @property
-    def logger(self) -> logging.Logger:
-        """Returns the underlying logging.Logger object of this Logger.
-        """
-        return self._logger
+    def set_loggers(self, directory, request_directory):
+        """Sets the loggers for this Logger object.
 
-    @property
-    def default_formatter(self) -> Formatter:
-        """Returns the default formatter for Loggers.
+        The logs will be displayed in the specified directory.
+        After this, the logger can be called from anywhere of the
+        program, using logging.getLogger([name]).
         """
-        return logging.Formatter(self.MSG_FMT, datefmt=self.DATE_FMT)
-
-    @property
-    def is_logging_enabled(self) -> bool:
-        """Whether logging is enabled or not. If logging is not enabled,
-        messages will not be logged.
-        """
-        return self._is_logging_enabled
-
-    @is_logging_enabled.setter
-    def is_logging_enabled(self, b: bool) -> None:
-        """Sets logging either enabled or disabled.
-        """
-        self._is_logging_enabled = b
-
-    @property
-    def _kwargs_for_log(self) -> Mapping:
-        """Keyword arguments to be applied to self._logger.info.
-        """
-        return {}
-
-    @property
-    def _kwargs_for_error(self) -> Mapping:
-        """Keyword arguments to be applied to self._logger.error.
-        """
-        # Returns the same mapping as _kwargs_for_log. Subclasses may
-        # implement their own error kwargs if needed.
-        return self._kwargs_for_log
-
-    def _get_handlers(self, directory: Path) -> Iterable[FileHandler]:
-        """Returns log files that will be used when set_up_log_files is
-        called.
-        """
-        raise NotImplementedError
-
-    def set_up_log_files(self, log_file_folder: Path) -> None:
-        """Closes old log files and sets up new log files in given folder.
-        """
-        self.close_log_files()
-        if not self.is_logging_enabled:
+        if not self.enable_logging:
             return
 
-        log_file_folder.mkdir(parents=True, exist_ok=True)
+        # Initializes the logger for this simulation.
+        logger = logging.getLogger(self.logger_name)
+        logger.setLevel(logging.DEBUG)
 
-        new_handlers = self._get_handlers(log_file_folder)
-        for handler in new_handlers:
-            self._logger.addHandler(handler)
+        # Adds two loghandlers. The other one will be used to log info (and up)
+        # messages to a default.log file. The other one will log errors and
+        # criticals to the errors.log file.
+        self.defaultlog = logging.FileHandler(Path(directory, "default.log"))
+        self.defaultlog.setLevel(logging.INFO)
+        self.errorlog = logging.FileHandler(Path(directory, "errors.log"))
+        self.errorlog.setLevel(logging.ERROR)
 
-    def close_log_files(self) -> None:
-        """Closes current log files.
+        # Set the formatter which will be used to log messages. Here you can
+        # edit the format so it will be deprived to all log messages.
+        defaultformat = logging.Formatter(
+            "%(asctime)s - %(levelname)s - %(message)s",
+            datefmt=self.datefmt)
+
+        requestlog = logging.FileHandler(Path(request_directory, "request.log"))
+
+        req_fmt = "%(asctime)s - %(levelname)s - [{0} : '%(name)s] - " \
+                  "%(message)s".format(self.category)
+
+        requestlogformat = logging.Formatter(req_fmt,
+                                             datefmt=self.datefmt)
+
+        # Set the formatters to the logs.
+        requestlog.setFormatter(requestlogformat)
+        self.defaultlog.setFormatter(defaultformat)
+        self.errorlog.setFormatter(defaultformat)
+
+        # Add handlers to this simulation's logger.
+        logger.addHandler(self.defaultlog)
+        logger.addHandler(self.errorlog)
+        logger.addHandler(requestlog)
+
+    def remove_and_close_log(self, log_filehandler):
+        """Closes the log file and removes it from the logger.
+
+        Args:
+            log_filehandler: Log's filehandler.
         """
-        current_handlers = list(self._logger.handlers)
-        for handler in current_handlers:
-            self._logger.removeHandler(handler)
-            handler.flush()
-            handler.close()
-
-    def log(self, msg: str) -> None:
-        """Logs given message.
-        """
-        if self.is_logging_enabled:
-            self._logger.info(msg, **self._kwargs_for_log)
-
-    def log_error(self, msg: str) -> None:
-        """Logs given message as an error.
-        """
-        if self.is_logging_enabled:
-            self._logger.error(msg, **self._kwargs_for_error)
-
-
-class _CategorizedLogger(Logger):
-    __slots__ = Logger.__slots__ + ("_display_name",)
-    DEFAULT_LOG = "default.log"
-    ERROR_LOG = "errors.log"
-
-    def __init__(
-            self,
-            display_name: str,
-            enable_logging: bool = True,
-            parent: Optional[Logger] = None) -> None:
-        """Initializes a new Logger
-        """
-        super(_CategorizedLogger, self).__init__(enable_logging, parent=parent)
-        self._display_name = display_name
-
-    @property
-    def category(self) -> str:
-        raise NotImplementedError
-
-    @property
-    def display_name(self) -> str:
-        """Name to be displayed in log messages.
-        """
-        return self._display_name
-
-    @property
-    def info_log_file(self) -> Optional[Path]:
-        """Absolute path to the info log file of this Logger instance.
-        """
-        return self._path_to_log_file(0)
-
-    @property
-    def error_log_file(self) -> Optional[Path]:
-        """Absolute path to the error log file of this Logger instance.
-        """
-        return self._path_to_log_file(-1)
-
-    def _path_to_log_file(self, idx: int) -> Optional[Path]:
-        if not self._logger.handlers:
-            return None
-        handler = self._logger.handlers[idx]
-        if isinstance(handler, FileHandler):
-            return Path(handler.baseFilename).resolve()
-
-    @property
-    def _kwargs_for_log(self) -> Mapping:
-        return {
-            "extra": {
-                "child_info": f" - [{self.category} : {self.display_name}]"
-            }
-        }
-
-    def _get_handlers(
-            self,
-            directory: Path) -> Tuple[FileHandler, FileHandler]:
-        """Returns log handler for default log messages and errors.
-        """
-        default_log = FileHandler(directory / self.DEFAULT_LOG)
-        default_log.setLevel(logging.INFO)
-        error_log = FileHandler(directory / self.ERROR_LOG)
-        error_log.setLevel(logging.ERROR)
-
-        default_log.setFormatter(self.default_formatter)
-        error_log.setFormatter(self.default_formatter)
-
-        return default_log, error_log
-
-
-class MeasurementLogger(_CategorizedLogger):
-    """Logger class for Measurements.
-    """
-    __slots__ = _CategorizedLogger.__slots__
-
-    @property
-    def category(self) -> str:
-        return "Measurement"
-
-
-class SimulationLogger(_CategorizedLogger):
-    """Logger class for Simulations.
-    """
-    __slots__ = _CategorizedLogger.__slots__
-
-    @property
-    def category(self) -> str:
-        return "Simulation"
-
-
-class RequestLogger(Logger):
-    """Logger class for Requests.
-    """
-    REQUEST_LOG = "request.log"
-
-    @property
-    def request_formatter(self) -> logging.Formatter:
-        """Request formatter contains a field for child information.
-        """
-        fmt = f"%(asctime)s - %(levelname)s%(child_info)s - %(message)s"
-        return logging.Formatter(fmt, datefmt=self.DATE_FMT)
-
-    @property
-    def _kwargs_for_log(self) -> Mapping:
-        return {
-            "extra": {
-                "child_info": ""
-            }
-        }
-
-    def _get_handlers(self, directory: Path) -> Tuple[FileHandler]:
-        request_log = FileHandler(directory / self.REQUEST_LOG)
-        request_log.setLevel(logging.INFO)
-        request_log.setFormatter(self.request_formatter)
-        return request_log,
+        logging.getLogger(self.logger_name).removeHandler(log_filehandler)
+        if log_filehandler is not None:
+            log_filehandler.flush()
+            log_filehandler.close()

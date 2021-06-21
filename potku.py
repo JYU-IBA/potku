@@ -331,7 +331,8 @@ class Potku(QtWidgets.QMainWindow):
 
             # Remove object from Sample
             clicked_item.parent().obj.remove_obj(clicked_item.obj)
-            clicked_item.obj.close_log_files()
+            clicked_item.obj.defaultlog.close()
+            clicked_item.obj.errorlog.close()
 
             # Remove object directory
             shutil.rmtree(clicked_item.obj.directory)
@@ -501,7 +502,8 @@ class Potku(QtWidgets.QMainWindow):
                 tab.tab_id)
             try:
                 # Close and remove logs
-                measurement.close_log_files()
+                measurement.remove_and_close_log(measurement.defaultlog)
+                measurement.remove_and_close_log(measurement.errorlog)
 
                 # Remove measurement's directory tree
                 shutil.rmtree(measurement.directory)
@@ -514,8 +516,8 @@ class Potku(QtWidgets.QMainWindow):
                     QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 # TODO check that this is the intented way of setting the
                 #  loggers in case something went wrong.
-                measurement.set_up_log_files(measurement.directory,
-                                             measurement.request.directory)
+                measurement.set_loggers(measurement.directory,
+                                        measurement.request.directory)
                 return
 
             self.request.samples.measurements.remove_by_tab_id(tab.tab_id)
@@ -705,16 +707,15 @@ class Potku(QtWidgets.QMainWindow):
         # TODO: regex check for directory. I.E. do not allow asd/asd
         if dialog.directory:
             self.__close_request()
-            title = f"{self.title} - Request: {dialog.name}"
+            title = "{0} - Request: {1}".format(self.title, dialog.name)
             self.setWindowTitle(title)
 
-            self.treeWidget.setHeaderLabel(f"Request: {dialog.name}")
+            self.treeWidget.setHeaderLabel("Request: {0}".format(dialog.name))
             self.__initialize_tree_view()
 
-            self.request = Request(
-                dialog.directory, dialog.name, self.settings, self.tab_widgets)
+            self.request = Request(dialog.directory, dialog.name, self.settings,
+                                   self.tab_widgets)
             self.settings.set_request_directory_last_open(dialog.directory)
-            self.request.log("Request created.")
             # Request made, close introduction tab
             self.__remove_introduction_tab()
             self.__open_info_tab()
@@ -1165,7 +1166,6 @@ class Potku(QtWidgets.QMainWindow):
             # Clear the treewidget
             self.treeWidget.clear()
             self.tabs.clear()
-            self.request.close_log_files()
             self.request = None
             self.tab_widgets = {}
             self.tab_id = 0

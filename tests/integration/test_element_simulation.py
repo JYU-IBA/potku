@@ -27,6 +27,7 @@ __version__ = "2.0"
 import unittest
 import tempfile
 
+import tests.utils as utils
 import tests.mock_objects as mo
 
 from pathlib import Path
@@ -49,7 +50,7 @@ class TestElementSimulationSettings(unittest.TestCase):
     # TODO: This test doesn't make much sense after changing how default
     #       settings work with ElementSimulations. Convert this into a
     #       general integration test for ElementSimulation.
-    def test_element_simulation_settings(self):
+    def test_elementsimulation_settings(self):
         """This tests that ElementSimulation is run with the correct settings
         depending on how 'use_default_settings' and 'use_request_settings'
         have been set.
@@ -64,8 +65,7 @@ class TestElementSimulationSettings(unittest.TestCase):
 
             # Request
             request = Request(
-                req_dir, "test_req", GlobalSettings(config_dir=tmp_dir), {},
-                enable_logging=False)
+                req_dir, "test_req", GlobalSettings(config_dir=tmp_dir), {})
 
             self.assertEqual(req_dir, request.directory)
             self.assertEqual("test_req", request.request_name)
@@ -81,10 +81,6 @@ class TestElementSimulationSettings(unittest.TestCase):
             # Simulation
             sim = sample.simulations.add_simulation_file(
                 sample, simu_file, 0)
-            # Disable logging so the logging file handlers do not cause
-            # an exception when the tmp dir is removed
-            sim.close_log_files()
-
             self.assertIs(sim, sample.simulations.get_key_value(0))
             self.assertIsInstance(sim.detector, Detector)
             self.assertIsInstance(sim.run, Run)
@@ -101,6 +97,10 @@ class TestElementSimulationSettings(unittest.TestCase):
             elem_sim.number_of_ions = 3
             self.assertEqual(request, elem_sim.request)
             self.assertEqual("Fe-Default", elem_sim.get_full_name())
+
+            # Disable logging so the logging file handlers do not cause
+            # an exception when the tmp dir is removed
+            utils.disable_logging()
 
             # Some pre-simulation checks
             self.assertIsNot(sim.target, request.default_target)
@@ -131,6 +131,8 @@ class TestElementSimulationSettings(unittest.TestCase):
             # sim.use_request_settings = False
             # self.assert_expected_settings(elem_sim, request, sim)
 
+        self.assertFalse(tmp_dir.exists())
+
     @patch("modules.mcerd.MCERD.__init__", return_value=None)
     @patch("modules.mcerd.MCERD.run", return_value=mo.get_mcerd_stream())
     def assert_expected_settings(self, elem_sim: ElementSimulation,
@@ -144,10 +146,11 @@ class TestElementSimulationSettings(unittest.TestCase):
         seed, d = args[0], args[1]
         settings = {**d, "seed_number": seed}
         self.assertEqual(
-            get_expected_settings(elem_sim, sim), settings)
+            get_expected_settings(elem_sim, request, sim), settings)
 
 
-def get_expected_settings(elem_sim: ElementSimulation, simulation: Simulation):
+def get_expected_settings(elem_sim: ElementSimulation, request: Request,
+                          simulation: Simulation):
     detector = simulation.detector
     run = simulation.run
     expected_sim = elem_sim

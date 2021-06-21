@@ -29,20 +29,18 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import collections
-from typing import Optional
-
-import numpy as np
 import scipy.optimize as optimize
+
+from . import general_functions as gf
+
+from numpy import array
+from numpy import linspace
+
 from scipy import cos
 from scipy import sin
 from scipy import sqrt
 from scipy import pi
 from scipy.special import erf
-
-from .run import Run
-from .detector import Detector
-from .ui_log_handlers import Logger
-from . import general_functions as gf
 
 
 class TOFCalibrationHistogram:
@@ -125,8 +123,8 @@ class TOFCalibrationHistogram:
         if len(x) < 2 or len(y) < 2:
             return None
 
-        x = np.array(x)
-        y = np.array(y)
+        x = array(x)  # Numpy array
+        y = array(y)
 
         Param = collections.namedtuple("Param", "x0 a k")
         p_guess = Param(x0=guess_x0, a=guess_a, k=guess_k)
@@ -209,8 +207,9 @@ class TOFCalibrationHistogram:
         Return:
             tuple(xp, pxp) of generated lists of axis data (x and y axis)
         """
-        x_values = np.linspace(
-            self.histogram_x[0], self.histogram_x[-1], points_in_range)
+        x_values = linspace(self.histogram_x[0],
+                            self.histogram_x[-1],
+                            points_in_range)
         y_values = self.error_function(x_values, params)
         return x_values, y_values
 
@@ -319,8 +318,8 @@ class TOFCalibration:
             self.offset = None
             return None, None
 
-        x = np.array(x)
-        y = np.array(y)
+        x = array(x)  # Numpy array
+        y = array(y)
 
         Param = collections.namedtuple('Param', 'a b')
         p_guess = Param(a=guess_a, b=guess_b)
@@ -353,7 +352,7 @@ class TOFCalibration:
             tuple(x_values, y_values) of generated lists of axis data (x and y
             axis).
         """
-        x_values = np.linspace(x_min, x_max, points_in_range)
+        x_values = linspace(x_min, x_max, points_in_range)
         y_values = self.linear_function(x_values, params)
         return x_values, y_values
 
@@ -370,8 +369,7 @@ class TOFCalibrationPoint:
     """ Class for the calculation of a theoretical time of flight.
     """
 
-    def __init__(self, time_of_flight, cut, detector: Detector, run: Run,
-                 logger: Optional[Logger] = None):
+    def __init__(self, time_of_flight, cut, detector, run):
         """ Inits the class.
 
         Args:
@@ -432,8 +430,7 @@ class TOFCalibrationPoint:
         except Exception as e:
             error_msg = f"Carbon stopping doesn't work: {e}. Continuing " \
                         f"without it. Carbon stopping energy set to 0."
-            if logger is not None:
-                logger.log_error(error_msg)
+            # logging.getLogger("").error(error_msg) # TODO: Add to error logger
             print(error_msg)
             carbon_energy_loss = 0
         self.energy_loss = carbon_energy_loss

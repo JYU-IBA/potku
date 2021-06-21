@@ -31,6 +31,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Juhani Sundell"
 __version__ = "2.0"
 
+import logging
 import os
 import shutil
 
@@ -338,11 +339,13 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
         sbh.reporter.report(100)
 
+        simulation_name = self.element_simulation.simulation.name
         msg = f"Created Energy Spectrum. " \
               f"Bin width: {self.bin_width} " \
               f"Used files: {', '.join(str(f) for f in self.result_files)}"
 
-        self.simulation.log(msg)
+        logging.getLogger("request").info(f"[{simulation_name}] {msg}")
+        logging.getLogger(simulation_name).info(msg)
         self.close()
 
     @gutils.disable_widget
@@ -377,17 +380,22 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 self.parent.add_widget(self.parent.energy_spectrum_widget,
                                        icon=icon)
 
-                cuts = ", ".join(str(cut) for cut in selected_cuts)
-                msg = f"Created Energy Spectrum. " \
-                      f"Bin width: {width}. " \
-                      f"Cut files: {cuts}"
-                self.measurement.log(msg)
+                measurement_name = self.measurement.name
+                msg = "[{0}] Created Energy Spectrum. {1} {2}".format(
+                    measurement_name,
+                    "Bin width: {0}".format(width),
+                    "Cut files: {0}".format(", ".join(str(cut) for cut
+                                                      in selected_cuts)))
+                logging.getLogger("request").info(msg)
+                logging.getLogger(measurement_name).info(
+                    "Created Energy Spectrum. Bin width: {0} Cut files: {1}".
+                    format(width, ", ".join(str(cut) for cut in selected_cuts)))
                 log_info = "Energy Spectrum graph points:\n"
                 data = self.parent.energy_spectrum_widget.energy_spectrum_data
                 splitinfo = "\n".join(["{0}: {1}".format(key, ", ".join(
                     "({0};{1})".format(round(v[0], 2), v[1])
                     for v in data[key])) for key in data.keys()])
-                self.measurement.log(log_info + splitinfo)
+                logging.getLogger(measurement_name).info(log_info + splitinfo)
             else:
                 QtWidgets.QMessageBox.critical(
                     self, "Error",
@@ -411,9 +419,10 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         file_path = fdialogs.open_file_dialog(
             self, self.element_simulation.request.directory,
             "Select a file to import", "")
-        if file_path is None:
+        if not file_path:
             return
 
+        file_path = Path(file_path)
         name = file_path.name
 
         new_file_name = \
@@ -528,7 +537,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             # If the file path points to directory, this will either raise
             # PermissionError (Windows) or IsADirectoryError (Mac)
             msg = f"Could not create Energy Spectrum graph: {e}"
-            self.parent.obj.log_error(msg)
+            logging.getLogger(self.parent.obj.name).error(msg)
 
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()

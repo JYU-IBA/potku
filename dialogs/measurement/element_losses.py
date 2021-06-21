@@ -29,6 +29,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli " \
              "Kaiponen \n Heta Rekilä \n Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
+import logging
 import os
 
 import dialogs.dialog_functions as df
@@ -153,10 +154,12 @@ class ElementLossesDialog(QtWidgets.QDialog):
             self.parent.add_widget(self.parent.elemental_losses_widget,
                                    icon=icon)
 
-            msg = f"Created Element Losses. Splits: {split_count} " \
-                  f"Reference cut: {reference_cut} " \
-                  f"List of cuts: {used_cuts}"
-            self.measurement.log(msg)
+            measurement_name = self.measurement.name
+            msg = "Created Element Losses. Splits: {0} {1} {2}" \
+                .format(split_count,
+                        "Reference cut: {0}".format(reference_cut),
+                        "List of cuts: {0}".format(used_cuts))
+            logging.getLogger(measurement_name).info(msg)
 
             log_info = "Elemental Losses split counts:\n"
 
@@ -165,7 +168,7 @@ class ElementLossesDialog(QtWidgets.QDialog):
                 ["{0}: {1}".format(
                     key, ", ".join(str(v) for v in split_counts[key]))
                     for key in split_counts])
-            self.measurement.log(log_info + splitinfo)
+            logging.getLogger(measurement_name).info(log_info + splitinfo)
 
             sbh.reporter.report(100)
             self.close()
@@ -242,7 +245,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
                 rbs_list=rbs_list, reference_cut_file=reference_cut_file)
         except Exception as e:
             msg = f"Could not create Elemental Losses graph: {e}"
-            self.measurement.log_error(msg)
+            logging.getLogger(self.measurement.name).error(msg)
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
         finally:

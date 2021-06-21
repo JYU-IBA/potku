@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>500</width>
+    <width>376</width>
     <height>472</height>
    </rect>
   </property>
@@ -124,7 +124,7 @@
            </size>
           </property>
           <property name="text">
-           <string>Amount [at. %]</string>
+           <string>Amount</string>
           </property>
          </widget>
         </item>

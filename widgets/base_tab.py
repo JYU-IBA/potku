@@ -29,57 +29,24 @@ import logging
 
 import widgets.gui_utils as gutils
 
-from typing import Union, Optional, Callable, Dict
 from pathlib import Path
 
 from widgets.log import LogWidget
 from widgets.gui_utils import QtABCMeta
-from widgets.icon_manager import IconManager
 
 from modules.ui_log_handlers import CustomLogHandler
-from modules.measurement import Measurement
-from modules.simulation import Simulation
 
 from PyQt5 import QtCore
-from PyQt5 import QtWidgets
-from PyQt5 import QtGui
+from PyQt5.QtWidgets import QWidget
 
 
-class BaseTab(QtWidgets.QWidget, abc.ABC, metaclass=QtABCMeta):
+class BaseTab(abc.ABC, metaclass=QtABCMeta):
     """Base class for both Simulation and Measurement tabs.
     """
     SAVE_WINDOW_GEOM_KEY = "save_window_geometries"
 
-    mdiArea: QtWidgets.QMdiArea
-
-    def __init__(
-            self,
-            obj: Union[Measurement, Simulation],
-            tab_id: int,
-            icon_manager: IconManager,
-            statusbar: Optional[QtWidgets.QStatusBar] = None):
-        """Initializes BaseTab.
-
-        Args:
-            obj: either Measurement or Simulation
-            tab_id: An integer representing ID of the tabwidget.
-            icon_manager: An IconManager class object.
-            statusbar: A QtGui.QMainWindow's QStatusBar.
-        """
-        super().__init__()
-        self.obj = obj
-        self.tab_id = tab_id
-        self.icon_manager = icon_manager
-        self.statusbar = statusbar
-        self.log = None
-        self.data_loaded = False
-
-    def add_widget(
-            self,
-            widget: QtWidgets.QWidget,
-            minimized: bool = False,
-            has_close_button: bool = True,
-            icon: Optional[QtGui.QIcon] = None):
+    def add_widget(self, widget: QWidget, minimized=None, has_close_button=True,
+                   icon=None):
         """Adds a new widget to current tab.
 
         Args:
@@ -95,7 +62,7 @@ class BaseTab(QtWidgets.QWidget, abc.ABC, metaclass=QtABCMeta):
                 widget, QtCore.Qt.CustomizeWindowHint |
                 QtCore.Qt.WindowTitleHint |
                 QtCore.Qt.WindowMinMaxButtonsHint)
-        if icon is not None:
+        if icon:
             subwindow.setWindowIcon(icon)
         subwindow.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         widget.subwindow = subwindow
@@ -105,7 +72,7 @@ class BaseTab(QtWidgets.QWidget, abc.ABC, metaclass=QtABCMeta):
         else:
             widget.show()
 
-    def add_log(self) -> None:
+    def add_log(self):
         """Add the log to tab widget.
 
         Checks also if there's already some logging for this logging entity
@@ -113,23 +80,31 @@ class BaseTab(QtWidgets.QWidget, abc.ABC, metaclass=QtABCMeta):
         """
         self.log = LogWidget()
         self.add_widget(self.log, minimized=True, has_close_button=False)
-        self._add_ui_logger()
+        self.add_ui_logger(self.log)
 
-        self._read_log_file(self.obj.info_log_file, self.log.add_text)
-        self._read_log_file(self.obj.error_log_file, self.log.add_error)
+        # Checks for log file and appends it to the field.
+        log_default = Path(self.obj.directory, "default.log")
+        log_error = Path(self.obj.directory, "errors.log")
+        self.__read_log_file(log_default, 1)
+        self.__read_log_file(log_error, 0)
 
-    def _add_ui_logger(self) -> None:
+    def add_ui_logger(self, log_widget):
         """Adds handlers to logging entity so the entity can log the
         events to the user interface too.
 
         log_widget specifies which ui element will handle the logging. That
         should be the one which is added to this tab.
         """
-        widgetlogger_default = CustomLogHandler(
-            logging.INFO, self.obj.default_formatter, self.log)
-        self.obj.logger.addHandler(widgetlogger_default)
+        logger = logging.getLogger(self.obj.name)
+        defaultformat = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S')
+        widgetlogger_default = CustomLogHandler(logging.INFO,
+                                                defaultformat,
+                                                log_widget)
+        logger.addHandler(widgetlogger_default)
 
-    def del_widget(self, widget: QtWidgets.QWidget) -> None:
+    def del_widget(self, widget):
         """Delete a widget from current tab.
 
         Args:
@@ -142,43 +117,45 @@ class BaseTab(QtWidgets.QWidget, abc.ABC, metaclass=QtABCMeta):
             # If window was manually closed, do nothing.
             pass
 
-    @staticmethod
-    def _read_log_file(
-            file: Optional[Path],
-            add_func: Callable[[str], None]) -> None:
-        """Read the log file into the log window and add its lines to log
-        widget.
+    def __read_log_file(self, file, state=1):
+        """Read the log file into the log window.
+
+        Args:
+            file: A string representing log file.
+            state: An integer (0, 1) representing what sort of log we read.
+                   0 = error
+                   1 = text (default)
         """
-        if file is None:
-            return
-        try:
-            with file.open("r") as f:
-                for line in f:
-                    add_func(line.strip())
-        except OSError:
-            pass
+        p = Path(file)
+        if p.exists():
+            with open(p) as log_file:
+                for line in log_file:
+                    if state == 0:
+                        self.log.add_error(line.strip())
+                    else:
+                        self.log.add_text(line.strip())
 
     @abc.abstractmethod
-    def load_data(self) -> None:
+    def load_data(self):
         """Loads the data belonging to the object into view.
         """
         pass
 
     @abc.abstractmethod
-    def get_saveable_widgets(self) -> Dict[str, Optional[QtWidgets.QWidget]]:
+    def get_saveable_widgets(self) -> dict:
         """Returns a dictionary of where values are widgets and keys are
         strings that are used when widget geometries are saved.
         """
         pass
 
     @abc.abstractmethod
-    def get_default_widget(self) -> Optional[QtWidgets.QWidget]:
+    def get_default_widget(self) -> QWidget:
         """Returns the default widget to activate when geometries are
         restored.
         """
         pass
 
-    def save_geometries(self) -> None:
+    def save_geometries(self):
         """Saves the geometries of all saveable widgets that this tab
         has.
         """
@@ -186,10 +163,10 @@ class BaseTab(QtWidgets.QWidget, abc.ABC, metaclass=QtABCMeta):
             return
         for key, widget in self.get_saveable_widgets().items():
             if widget is not None:
-                gutils.set_potku_setting(
-                    key, widget.subwindow.saveGeometry())
+                gutils.set_potku_setting(key,
+                                         widget.subwindow.saveGeometry())
 
-    def restore_geometries(self) -> None:
+    def restore_geometries(self):
         """Restores the geometries of all the widgets that have had their
         geometries saved. Activates the widget that is returned by
         get_default_widget.

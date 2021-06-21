@@ -179,7 +179,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         file = fdialogs.open_file_dialog(
             self, self.request.default_folder, "Select detector file",
             "Detector File (*.detector)")
-        if file is None:
+        if not file:
             return
 
         temp_detector = Detector.from_file(file, self.request, False)
@@ -209,10 +209,11 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         file = fdialogs.save_file_dialog(
             self, self.request.default_folder, "Save detector file",
             "Detector File (*.detector)")
-        if file is None:
+        if not file:
             return
-
-        file = file.with_suffix(".detector")
+        file = Path(file)
+        if file.suffix != ".detector":
+            file = Path(file.parent, f"{file.name}.detector")
         if not self.some_values_changed():
             self.obj.to_file(file)
         else:
@@ -501,11 +502,12 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         }
 
         for eff_file in new_eff_files:
-            used_eff_file = Detector.get_used_efficiency_file_name(eff_file)
+            new_eff_file = Path(eff_file)
+            used_eff_file = Detector.get_used_efficiency_file_name(new_eff_file)
 
             if used_eff_file not in used_eff_files:
                 try:
-                    self.obj.add_efficiency_file(eff_file)
+                    self.obj.add_efficiency_file(new_eff_file)
                     used_eff_files.add(used_eff_file)
                 except OSError as e:
                     QtWidgets.QMessageBox.critical(
@@ -523,7 +525,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         # Store the folder where we previously fetched an eff-file
         gutils.set_potku_setting(
             DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
-            str(eff_file.parent))
+            str(new_eff_file.parent))
 
     def __remove_efficiency(self):
         """Removes efficiency files from detector's efficiency directory and

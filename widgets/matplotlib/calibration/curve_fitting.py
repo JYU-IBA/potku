@@ -73,7 +73,6 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
 
         self.tof_histogram = None
         self.tof_calibration_point = None
-        self._calibration_point = None
         self.selected_tof = None
         self.selection_given_manually = False
         self.canvas.mpl_connect('button_press_event', self.onclick)
@@ -91,23 +90,11 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
             self.__set_calibration_point(event.xdata)
 
     def __set_calibration_point(self, tof):
-        """Sets calibration point and draws or updates the vertical line
-
-        Args:
-            tof: Integer representing x axis value Time of Flight [Channel].
-        """       
         self.selected_tof = tof
         self.tof_calibration_point = TOFCalibrationPoint(
             self.selected_tof, self.cut, self.detector, self.run)
         self.__update_dialog_values()
-        
-        if self._calibration_point is None:
-            self._calibration_point = self.axes.axvline(
-                x=self.selected_tof, color="red")
-        else:           
-            self._calibration_point.set_xdata(self.selected_tof)
-        self.canvas.draw()
-        self.canvas.flush_events()        
+        self.on_draw()
 
     def set_calibration_point_externally(self, tof):
         """Set calibration point.
@@ -162,13 +149,12 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
         """
         if self.cut is None:
             return
-        
+
         self.axes.clear()
 
         if self.selection_given_manually:
-            self._calibration_point = self.axes.axvline(
-                x=self.selected_tof, color="red")
-            
+            self.axes.axvline(x=self.selected_tof)
+
         if self.cut.element:
             self.tof_histogram = TOFCalibrationHistogram(
                 self.cut, self.bin_width, self.use_column)
@@ -204,11 +190,17 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
                 self.tof_calibration_point = \
                     TOFCalibrationPoint(self.selected_tof, self.cut,
                                         self.detector, self.run)
-
                 # Update dialog and draw a vertical line
-                self.__update_dialog_values() 
-                self._calibration_point = self.axes.axvline(
-                x=self.selected_tof, color="red")
+                self.__update_dialog_values()
+                self.axes.axvline(x=self.selected_tof, color="red")
+
+            # TODO: Unnecessary limits?
+            x_min, x_max = self.axes.get_xlim()
+            y_min, y_max = self.axes.get_ylim()
+
+            # Set limits accordingly
+            self.axes.set_ylim([y_min, y_max])
+            self.axes.set_xlim([x_min, x_max])
 
         self.axes.set_ylabel("Intensity [Counts]")
         self.axes.set_xlabel("Time of Flight [Channel]")
@@ -218,8 +210,7 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
 
         # Draw magic
         self.canvas.draw()
-        self.canvas.flush_events()
-        
+
     def toggle_clicks(self):
         """Toggle between manual ToF channel (x axis) selection.
         """
