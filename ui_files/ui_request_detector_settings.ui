@@ -484,9 +484,6 @@ T</string>
                    <property name="text">
                     <string/>
                    </property>
-                   <property name="toolTip">
-                   <string>File names must be in form symbol.eff or symbol-comments.eff, i.e. 1H-Jan2020.eff</string>
-                   </property>
                    <property name="icon">
                     <iconset>
                      <normaloff>../ui_icons/reinhardt/edit_add.svg</normaloff>../ui_icons/reinhardt/edit_add.svg</iconset>
@@ -507,19 +504,6 @@ T</string>
                    <property name="icon">
                     <iconset>
                      <normaloff>../ui_icons/reinhardt/edit_delete.svg</normaloff>../ui_icons/reinhardt/edit_delete.svg</iconset>
-                   </property>
-                  </widget>
-                 </item>
-                 <item alignment="Qt::AlignTop">
-                  <widget class="QPushButton" name="plotEfficiencyButton">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="text">
-                    <string>Plot efficiencies</string>
                    </property>
                   </widget>
                  </item>
