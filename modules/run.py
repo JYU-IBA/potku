@@ -109,7 +109,7 @@ class Run(Serializable, AdjustableSettings):
             json.dump(obj, file, indent=4)
 
     @classmethod
-    def from_file(cls, measurement_file: Path):
+    def from_file(cls, measurement_file: Path) -> "Run":
         """
         Reads parameter sfrom file and makes a Run object from them.
         Args:

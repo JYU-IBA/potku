@@ -33,7 +33,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 # TODO move this module under widgets.matplotlib
 
-import logging
 import os
 import itertools
 
@@ -339,7 +338,7 @@ class Selector:
         sel = self.selections[-1]  # Get last one
         if sel.count() < 3:  # Required point count
             message = "At least two points required to close selection"
-            logging.getLogger(self.measurement_name).error(message)
+            self.measurement.log_error(message)
             return 0
         elif not sel.is_closed:
             selection_is_ok = sel.end_selection(canvas)
@@ -480,14 +479,14 @@ class Selector:
                                     measurement=self.measurement)
                     self.selections.append(sel)
             message = f"Selection file {filename} was read successfully!"
-            logging.getLogger(self.measurement_name).info(message)
+            self.measurement.log(message)
         except OSError as e:
             message = f"Could not read selection file: {e}."
-            logging.getLogger(self.measurement_name).error(message)
+            self.measurement.log_error(message)
         except (ValueError, IndexError) as e:
             message = f"Could not read selection data from {filename}. " \
                       f"Reason: {e}. Check that the file contains valid data."
-            logging.getLogger(self.measurement_name).error(message)
+            self.measurement.log_error(message)
         self.update_axes_limits()
         self.draw()  # Draw all selections
         self.auto_save()
