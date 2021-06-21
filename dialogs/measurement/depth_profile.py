@@ -64,6 +64,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
     x_unit = DepthProfileUnit.ATOMS_PER_SQUARE_CM
     line_zero = False
     line_scale = False
+    used_eff = False
     systerr = 0.0
 
     status_msg = bnd.bind("label_status")
@@ -76,9 +77,11 @@ class DepthProfileDialog(QtWidgets.QDialog):
     depth_bin = bnd.bind("label_depthbin")
     depth_scale = bnd.bind("label_depthscale")
     used_efficiency_files = bnd.bind("label_efficiency_files")
+    warning = bnd.bind("label_warning_text")
 
     systematic_error = bnd.bind("spin_systerr")
     show_scale_line = bnd.bind("check_scaleline")
+    show_used_eff = bnd.bind("show_eff")
     show_zero_line = bnd.bind("check_0line")
     reference_density = bnd.bind("sbox_reference_density")
     x_axis_units = bnd.bind("group_x_axis_units")
@@ -119,6 +122,9 @@ class DepthProfileDialog(QtWidgets.QDialog):
             use_elemloss=True)
         self.used_cuts = DepthProfileDialog.checked_cuts[m_name]
 
+        self._update_label()
+        self.treeWidget.itemClicked.connect(self._update_label)
+
         gutils.set_btn_group_data(self.group_x_axis_units, DepthProfileUnit)
         self.x_axis_units = DepthProfileDialog.x_unit
         if self.x_axis_units == DepthProfileUnit.NM:
@@ -133,11 +139,13 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.systematic_error = DepthProfileDialog.systerr
         self.show_scale_line = DepthProfileDialog.line_scale
         self.show_zero_line = DepthProfileDialog.line_zero
+        self.show_used_eff = DepthProfileDialog.used_eff
 
         self.cross_sections = global_settings.get_cross_sections()
 
         self._show_measurement_settings()
         self._show_efficiency_files()
+        self.eff_files_str = self.used_efficiency_files
         self.exec_()
 
     def _check_if_elemental_losses(self, used_cuts):
@@ -165,6 +173,39 @@ class DepthProfileDialog(QtWidgets.QDialog):
                         else:
                             return False
 
+    def _update_label(self):
+        if len(self.used_cuts) == 0:
+            return
+        else:
+            if len(self.used_cuts) > 1:
+                cuts = []
+                for cut in self.used_cuts:
+                    cuts.append(cut.suffixes[0])
+
+                indices = []
+                for c in cuts:
+                    indices.append([i for i, sublist in enumerate(cuts) if sublist == c])
+
+                indices = [list(sublist) for sublist in set(tuple(sublist) for sublist in indices)]
+                indices_length = [len(x) for x in indices]
+
+                if any(length > 1 for length in indices_length):
+                    files = []
+                    for index in indices:
+                        if len(index) < 2:
+                            continue
+                        files.append((self.used_cuts[index[0]].suffixes[0].replace('.', '')))
+                    warning_message = "Multiple .cut-files selected for following element(s): {} \nCheck the elemental losses if you are not sure what you are doing."
+                    if len(files) > 1:  # If there are multiple elements
+                        files = ' and '.join(files)
+                        warning_message = warning_message.format(files)
+                    else:  # If theres is only one element
+                        warning_message = warning_message.format(files[0])
+                    self.label_warning_text.setText(warning_message)
+                    self.label_warning_text.setStyleSheet("color: red")
+                    return
+                self.label_warning_text.setText('')
+                return
 
     @gutils.disable_widget
     def _accept_params(self, *_):
@@ -201,6 +242,8 @@ class DepthProfileDialog(QtWidgets.QDialog):
             DepthProfileDialog.line_zero = self.show_zero_line
             DepthProfileDialog.line_scale = self.show_scale_line
             DepthProfileDialog.systerr = self.systematic_error
+            DepthProfileDialog.used_eff = self.show_used_eff
+            DepthProfileDialog.eff_files_str = self.eff_files_str
 
             sbh.reporter.report(20)
 
@@ -220,8 +263,9 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 
                 self.parent.depth_profile_widget = DepthProfileWidget(
                     self.parent, output_dir, used_cuts, elements, x_unit,
-                    DepthProfileDialog.line_zero, DepthProfileDialog.line_scale,
-                    DepthProfileDialog.systerr,
+                    DepthProfileDialog.line_zero, DepthProfileDialog.used_eff,
+                    DepthProfileDialog.line_scale, DepthProfileDialog.systerr,
+                    DepthProfileDialog.eff_files_str,
                     progress=sbh.reporter.get_sub_reporter(
                         lambda x: 30 + 0.6 * x
                     ))
@@ -290,7 +334,9 @@ class DepthProfileWidget(QtWidgets.QWidget):
     
     def __init__(self, parent: BaseTab, output_dir: Path, cut_files: List[Path],
                  elements: List[Element], x_units: DepthProfileUnit,
-                 line_zero: bool, line_scale: bool, systematic_error: float,
+                 line_zero: bool, used_eff: bool, line_scale: bool,
+                 systematic_error: float,
+                 eff_files_str: str,
                  progress: Optional[ProgressReporter] = None):
         """Inits widget.
         
@@ -301,6 +347,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
             elements: A list of Element objects that are used in depth profile.
             x_units: Units to be used for x-axis of depth profile.
             line_zero: A boolean representing if vertical line is drawn at zero.
+            used_eff: A boolean representing if used eff files are shown.
             line_scale: A boolean representing if horizontal line is drawn at 
                         the defined depth scale.
             systematic_error: A double representing systematic error.
@@ -316,6 +363,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
             self.x_units = x_units
             self.use_cuts = cut_files
             self._line_zero_shown = line_zero
+            self._eff_files_shown = used_eff
             self._line_scale_shown = line_scale
             self._systematic_error = systematic_error
 
@@ -362,13 +410,15 @@ class DepthProfileWidget(QtWidgets.QWidget):
                     lambda x: 50 + 0.5 * x)
             else:
                 sub_progress = None
-
+            
             self.matplotlib = MatplotlibDepthProfileWidget(
                 self, self.output_dir, self.elements, rbs_list,
                 icon_manager=self.parent.icon_manager,
                 selection_colors=self.measurement.selector.get_colors(),
                 depth_scale=depth_scale, x_units=self.x_units,
                 add_line_zero=self._line_zero_shown,
+                show_eff_files=self._eff_files_shown,
+                used_eff_str=eff_files_str,
                 systematic_error=self._systematic_error, progress=sub_progress)
         except Exception as e:
             msg = f"Could not create Depth Profile graph: {e}"
