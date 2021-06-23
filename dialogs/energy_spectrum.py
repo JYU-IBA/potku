@@ -425,6 +425,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             return
 
+        if not os.path.exists(new_file_name.parent):
+            os.makedirs(new_file_name.parent)
+
         shutil.copyfile(file_path, new_file_name)
 
         item = QtWidgets.QTreeWidgetItem()
