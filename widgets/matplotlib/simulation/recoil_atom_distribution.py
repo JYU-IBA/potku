@@ -1770,6 +1770,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def update_plot(self):
         """Updates marker and line data and redraws the plot.
         """
+        if hasattr(self.parent, 'recoil_distribution_widget'):
+            self.parent._save_target_and_recoils(True)
         if self.current_element_simulation is None:
             self.markers.set_visible(False)
             self.lines.set_visible(False)
