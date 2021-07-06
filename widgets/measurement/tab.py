@@ -30,12 +30,15 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import os
+from pathlib import Path
+from typing import Optional
+
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+from PyQt5 import uic
 
 import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
-
-from pathlib import Path
-from typing import Optional
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.energy_spectrum import EnergySpectrumWidget
@@ -46,17 +49,13 @@ from dialogs.measurement.element_losses import ElementLossesWidget
 from dialogs.measurement.settings import MeasurementSettingsDialog
 
 from modules.element import Element
-from modules.measurement import Measurement
 from modules.enums import DepthProfileUnit
-
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
-from PyQt5 import uic
+from modules.measurement import Measurement
 
 from widgets.base_tab import BaseTab
-from widgets.measurement.tofe_histogram import TofeHistogramWidget
 from widgets.gui_utils import StatusBarHandler
 from widgets.icon_manager import IconManager
+from widgets.measurement.tofe_histogram import TofeHistogramWidget
 
 
 class MeasurementTabWidget(BaseTab):
@@ -199,7 +198,7 @@ class MeasurementTabWidget(BaseTab):
             progress.report(100)
 
     def make_depth_profile(self, directory: Path, name: str, serial_number_m:
-                           int, sample_folder_name: str, progress=None):
+    int, sample_folder_name: str, progress=None):
         """Make depth profile from loaded lines from saved file.
         
         Args:

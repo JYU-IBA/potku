@@ -28,35 +28,34 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 __version__ = "2.0"
 
 import os
-
-import dialogs.dialog_functions as df
-import widgets.gui_utils as gutils
-
 from collections import Counter
 from pathlib import Path
 from typing import Optional, Union
-
-from dialogs.energy_spectrum import EnergySpectrumWidget
-from dialogs.simulation.optimization import OptimizationDialog
-from dialogs.simulation.settings import SimulationSettingsDialog
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import pyqtSignal
 
+import dialogs.dialog_functions as df
+import widgets.gui_utils as gutils
+
+from dialogs.energy_spectrum import EnergySpectrumWidget
+from dialogs.simulation.optimization import OptimizationDialog
+from dialogs.simulation.settings import SimulationSettingsDialog
+
+from modules.concurrency import CancellationToken
+from modules.element_simulation import ElementSimulation
+from modules.enums import OptimizationType
+from modules.global_settings import GlobalSettings
+from modules.observing import ProgressReporter
+from modules.request import Request
+from modules.simulation import Simulation
+
+from widgets.base_tab import BaseTab
+from widgets.icon_manager import IconManager
 from widgets.simulation.optimized_fluence import OptimizedFluenceWidget
 from widgets.simulation.optimized_recoils import OptimizedRecoilsWidget
 from widgets.simulation.target import TargetWidget
-from widgets.base_tab import BaseTab
-from widgets.icon_manager import IconManager
-
-from modules.enums import OptimizationType
-from modules.element_simulation import ElementSimulation
-from modules.simulation import Simulation
-from modules.request import Request
-from modules.global_settings import GlobalSettings
-from modules.observing import ProgressReporter
-from modules.concurrency import CancellationToken
 
 
 class SimulationTabWidget(BaseTab):

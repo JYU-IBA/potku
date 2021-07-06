@@ -28,21 +28,18 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
-import dialogs.dialog_functions as df
-import widgets.binding as bnd
-import modules.general_functions as gf
-import widgets.gui_utils as gutils
-
-from modules.simulation import Simulation
-
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
+import dialogs.dialog_functions as df
+import modules.general_functions as gf
+import widgets.binding as bnd
+import widgets.gui_utils as gutils
+
+from modules.simulation import Simulation
 from widgets.detector_settings import DetectorSettingsWidget
 from widgets.measurement.settings import MeasurementSettingsWidget
-
-from widgets.base_tab import BaseTab
 
 
 class SimulationSettingsDialog(QtWidgets.QDialog):
@@ -156,7 +153,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
          Update Simulation's Run, Detector and Target objects. If simulation
          specific parameters are in use, save them into a file.
         """
-        if self.measurement_settings_widget.isotopeComboBox.currentIndex()\
+        if self.measurement_settings_widget.isotopeComboBox.currentIndex() \
                 == -1:
             QtWidgets.QMessageBox.critical(
                 self, "Warning",
