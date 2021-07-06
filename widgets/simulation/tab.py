@@ -92,6 +92,7 @@ class SimulationTabWidget(BaseTab):
 
         self.openSettingsButton.clicked.connect(self.__open_settings)
         self.optimizeButton.clicked.connect(self.__open_optimization_dialog)
+        BaseTab.check_default_settings(self)
 
     def get_saveable_widgets(self):
         """Returns a list of Widgets whose geometries can be saved.
@@ -149,7 +150,7 @@ class SimulationTabWidget(BaseTab):
         icon = self.icon_manager.get_icon("potku_icon.ico")
         self.add_widget(self.optimization_result_widget, icon=icon)
         return self.optimization_result_widget
-    
+
     def check_previous_state_files(
             self, progress: Optional[ProgressReporter] = None) -> None:
         """Check if saved state for Energy Spectra exist.
@@ -235,6 +236,8 @@ class SimulationTabWidget(BaseTab):
                         measurement=False, update=True)
 
     def __open_settings(self) -> None:
+        """Opens simulation settings dialog.
+        """
         SimulationSettingsDialog(self, self.obj, self.icon_manager)
 
     def __open_optimization_dialog(self) -> None:
@@ -284,3 +287,15 @@ class SimulationTabWidget(BaseTab):
             save_file_path.unlink()
         except OSError:
             pass
+
+    def check_default_settings_clicked(self) -> None:
+        """Gives an warning if the default settings are checked in the
+        settings tab.
+        """
+        if not self.obj.use_request_settings:
+            self.warning_text.setText("")
+            self.warning_text.setStyleSheet("")
+        else:
+            self.warning_text.setText("Using request setting values ("
+                                      "default)")
+            self.warning_text.setStyleSheet("background-color: yellow")

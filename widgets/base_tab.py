@@ -204,3 +204,15 @@ class BaseTab(QtWidgets.QWidget, abc.ABC, metaclass=QtABCMeta):
         active_widget = self.get_default_widget()
         if active_widget is not None:
             self.mdiArea.setActiveSubWindow(active_widget.subwindow)
+
+    def check_default_settings(self) -> None:
+        """Gives an warning if the default settings are checked in the
+        settings tab.
+        """
+        if not self.obj.use_request_settings:
+            self.warning_text.setText("")
+            self.warning_text.setStyleSheet("")
+        else:
+            self.warning_text.setText("Using request setting values ("
+                                      "default)")
+            self.warning_text.setStyleSheet("background-color: yellow")

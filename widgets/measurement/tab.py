@@ -101,6 +101,7 @@ class MeasurementTabWidget(BaseTab):
         # Enable master button
         self.toggle_master_button()
         self.set_icons()
+        BaseTab.check_default_settings(self)
 
     def get_default_widget(self):
         """Histogram will be the widget that gets activated when the tab
@@ -348,7 +349,7 @@ class MeasurementTabWidget(BaseTab):
     def __open_settings(self):
         """Opens measurement settings dialog.
         """
-        MeasurementSettingsDialog(self.obj, self.icon_manager)
+        MeasurementSettingsDialog(self, self.obj, self.icon_manager)
 
     def open_depth_profile(self):
         """Opens depth profile dialog.
@@ -530,6 +531,18 @@ class MeasurementTabWidget(BaseTab):
 
         if progress is not None:
             progress.report(100)
+
+    def check_default_settings_clicked(self) -> None:
+        """Gives an warning if the default settings are checked in the
+        settings tab.
+        """
+        if not self.obj.use_request_settings:
+            self.warning_text.setText("")
+            self.warning_text.setStyleSheet("")
+        else:
+            self.warning_text.setText("Using request setting values ("
+                                      "default)")
+            self.warning_text.setStyleSheet("background-color: yellow")
 
 
 def rreplace(s, old, new, old_folder_prefix, new_folder_prefix,

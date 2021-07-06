@@ -42,6 +42,8 @@ from PyQt5 import uic
 from widgets.detector_settings import DetectorSettingsWidget
 from widgets.measurement.settings import MeasurementSettingsWidget
 
+from widgets.base_tab import BaseTab
+
 
 class SimulationSettingsDialog(QtWidgets.QDialog):
     """
@@ -233,4 +235,5 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         True.
         """
         if self._update_parameters():
+            self.tab.check_default_settings_clicked()
             self.close()

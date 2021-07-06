@@ -53,7 +53,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
     """
     use_request_settings = bnd.bind("defaultSettingsCheckBox")
 
-    def __init__(self, measurement: Measurement, icon_manager):
+    def __init__(self, tab, measurement: Measurement, icon_manager):
         """
         Initializes the dialog.
 
@@ -63,7 +63,9 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         """
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_specific_settings.ui", self)
+        self.warning_text = bnd.bind('warning_text')
 
+        self.tab = tab
         self.measurement = measurement
         self.icon_manager = icon_manager
         self.setWindowTitle("Measurement Settings")
@@ -102,7 +104,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         self.measurement_settings_widget.nameLineEdit.setText(
             self.measurement.measurement_setting_file_name)
         self.measurement_settings_widget.descriptionPlainTextEdit.setPlainText(
-                self.measurement.measurement_setting_file_description)
+            self.measurement.measurement_setting_file_description)
         self.measurement_settings_widget.dateLabel.setText(time.strftime(
             "%c %z %Z", time.localtime(self.measurement.modification_time)))
 
@@ -131,7 +133,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             exts={".detector"})
 
     def _update_parameters(self):
-        if self.measurement_settings_widget.isotopeComboBox.currentIndex()\
+        if self.measurement_settings_widget.isotopeComboBox.currentIndex() \
                 == -1:
             QtWidgets.QMessageBox.critical(
                 self, "Warning",
@@ -200,4 +202,5 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         """ Save settings and close dialog if __update_parameters returns True.
         """
         if self._update_parameters():
+            self.tab.check_default_settings_clicked()
             self.close()
