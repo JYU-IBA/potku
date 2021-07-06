@@ -209,9 +209,10 @@ class BaseTab(QtWidgets.QWidget, abc.ABC, metaclass=QtABCMeta):
         settings tab.
         """
         if not self.obj.use_request_settings:
-            self.warning_text.setText("")
-            self.warning_text.setStyleSheet("")
-        else:
-            self.warning_text.setText("Using request setting values ("
+            self.warning_text.setText("Not using request setting values ("
                                       "default)")
             self.warning_text.setStyleSheet("background-color: yellow")
+        else:
+            self.warning_text.setText("")
+            self.warning_text.setStyleSheet("")
+
