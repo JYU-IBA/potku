@@ -31,26 +31,21 @@ import copy
 import math
 import platform
 
-import widgets.input_validation as iv
-import widgets.binding as bnd
-import dialogs.file_dialogs as fdialogs
-import widgets.gui_utils as gutils
-
-from pathlib import Path
-
-from dialogs.measurement.calibration import CalibrationDialog
-from dialogs.simulation.foil import FoilDialog
-
-from modules.detector import Detector
-from modules.foil import CircularFoil
-from modules.request import Request
-from modules.enums import DetectorType
-
+from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
-from PyQt5 import QtCore
 
+import dialogs.file_dialogs as fdialogs
+import widgets.binding as bnd
+import widgets.gui_utils as gutils
+import widgets.input_validation as iv
+from dialogs.measurement.calibration import CalibrationDialog
+from dialogs.simulation.foil import FoilDialog
+from modules.detector import Detector
+from modules.enums import DetectorType
+from modules.foil import CircularFoil
+from modules.request import Request
 from widgets.foil import FoilWidget
 from widgets.scientific_spinbox import ScientificSpinBox
 
@@ -141,6 +136,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.timeResSpinBox.setLocale(locale)
         self.virtualSizeXSpinBox.setLocale(locale)
         self.virtualSizeYSpinBox.setLocale(locale)
+        self.angleSlopeLineEdit.setLocale(locale)
+        self.angleOffsetLineEdit.setLocale(locale)
 
         # Create scientific spinboxes for tof slope and tof offset
         self.formLayout_2.removeRow(self.slopeLineEdit)
