@@ -131,8 +131,16 @@ class CalibrationDialog(QtWidgets.QDialog):
         # Set the validator for lineEdit so user can't give invalid values
         double_validator = QtGui.QDoubleValidator()
         self.tofChannelLineEdit.setValidator(double_validator)
-        
-        self.timer = QtCore.QTimer(interval=1500, timeout=self.timeout)
+
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.label_remove_timeout)
+
+        try:
+            self.__load_object(self.POINTS_OBJECT_FILENAME)
+            for p in self.tof_calibration.tof_points:
+                self.__accept_points(p)
+        except OSError:
+            pass
 
         self.exec_()
 
@@ -264,9 +272,9 @@ class CalibrationDialog(QtWidgets.QDialog):
             text: String to be set to the label.
         """
         self.acceptPointLabel.setText(text)
-        self.timer.start()
+        self.timer.start(1500)
 
-    def timeout(self):
+    def label_remove_timeout(self):
         """Timeout event method to remove label text.
         """
         self.acceptPointLabel.setText("")
