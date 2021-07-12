@@ -149,31 +149,6 @@ class DepthProfileDialog(QtWidgets.QDialog):
 
         self.exec_()
 
-    def _check_if_elemental_losses(self, used_cuts):
-            if len(used_cuts) > 1:
-                cuts = []
-                for cut in used_cuts:
-                    cuts.append(".".join(cut.name.split(".")[:2]))
-                indices = []
-                # TODO: Is there better way to find indices?
-                for c in cuts:
-                    indices.append([i for i, x in enumerate(cuts) if x == c])
-                # TODO: How much information do we want to print?
-                for index in indices:
-                    if len(index) < 2:  # If there are no elemental losses
-                        continue
-                    else:
-                        files = []
-                        for i in index:
-                            files.append(used_cuts[i].name)
-                        files = " and ".join(files)
-                        from PyQt5.QtWidgets import QMessageBox
-                        msg = QMessageBox.warning(self, 'Are you sure?', "There are multiple cut-files selected for the same element(s). This will sum up " + files + " at least but there might be more. Check the elemental losses if you are not sure what you are doing.", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                        if msg == QMessageBox.Yes:
-                            return True
-                        else:
-                            return False
-
     def _update_label(self):
         if len(self.used_cuts) == 0:
             return
