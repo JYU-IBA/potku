@@ -27,31 +27,28 @@ __author__ = "Heta Rekilä \n Juhani Sundell"
 __version__ = "2.0"
 
 import threading
+from pathlib import Path
+from typing import Any
+from typing import Dict
+
+from PyQt5 import QtWidgets
+from PyQt5 import uic
+from PyQt5.QtCore import QLocale
 
 import dialogs.dialog_functions as df
 import widgets.binding as bnd
 import widgets.gui_utils as gutils
-
-from pathlib import Path
-from typing import Dict
-from typing import Any
-
-from modules.nsgaii import Nsgaii
 from modules.concurrency import CancellationToken
-from modules.simulation import Simulation
 from modules.element_simulation import ElementSimulation
 from modules.enums import OptimizationType
-
+from modules.nsgaii import Nsgaii
+from modules.simulation import Simulation
 from widgets.binding import PropertySavingWidget
 from widgets.gui_utils import QtABCMeta
 from widgets.simulation.optimization_parameters import \
     OptimizationFluenceParameterWidget
 from widgets.simulation.optimization_parameters import \
     OptimizationRecoilParameterWidget
-
-from PyQt5 import uic
-from PyQt5.QtCore import QLocale
-from PyQt5 import QtWidgets
 
 
 class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
@@ -61,6 +58,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
     """
     ch: float = bnd.bind("histogramTicksDoubleSpinBox")
     use_efficiency: bool = bnd.bind("eff_file_check_box")
+    verbose: bool = bnd.bind("optimization_verbose_box")
     selected_cut_file: Path = bnd.bind(
         "measurementTreeWidget", fget=bnd.get_selected_tree_item,
         fset=bnd.set_selected_tree_item)
@@ -138,8 +136,9 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
 
         self.measurementTreeWidget.itemSelectionChanged.connect(
             self._enable_ok_button)
-
+        self.verbose = False
         self.eff_file_check_box.clicked.connect(self._enable_efficiency_label)
+        # self.optimization_verbose_box.clicked.connect(self._verbose)
         self._update_efficiency_label()
 
         self.exec_()
@@ -168,6 +167,12 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         """Enables or disables efficiency label.
         """
         self.efficiency_label.setEnabled(self.use_efficiency)
+
+    def _verbose(self):
+        if self.optimization_verbose_box.isChecked() == True:
+            return True
+        else:
+            return False
 
     def _fill_measurement_widget(self):
         """Add calculated tof_list files to tof_list_tree_widget by
@@ -261,7 +266,8 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         # TODO move following code to the result widget
         nsgaii = Nsgaii(
             element_simulation=elem_sim, measurement=measurement, cut_file=cut,
-            ch=self.ch, **params, use_efficiency=self.use_efficiency)
+            ch=self.ch, **params, use_efficiency=self.use_efficiency,
+            verbose=self.verbose)
 
         # Optimization running thread
         ct = CancellationToken()
