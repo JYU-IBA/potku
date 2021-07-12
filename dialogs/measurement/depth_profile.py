@@ -140,12 +140,13 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.show_scale_line = DepthProfileDialog.line_scale
         self.show_zero_line = DepthProfileDialog.line_zero
         self.show_used_eff = DepthProfileDialog.used_eff
-
+        self.eff_files_str = DepthProfileDialog.used_efficiency_files
+        
         self.cross_sections = global_settings.get_cross_sections()
 
         self._show_measurement_settings()
         self._show_efficiency_files()
-        self.eff_files_str = self.used_efficiency_files
+
         self.exec_()
 
     def _check_if_elemental_losses(self, used_cuts):
@@ -364,6 +365,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
             self.use_cuts = cut_files
             self._line_zero_shown = line_zero
             self._eff_files_shown = used_eff
+            self._eff_files_str = eff_files_str
             self._line_scale_shown = line_scale
             self._systematic_error = systematic_error
 
@@ -418,7 +420,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
                 depth_scale=depth_scale, x_units=self.x_units,
                 add_line_zero=self._line_zero_shown,
                 show_eff_files=self._eff_files_shown,
-                used_eff_str=eff_files_str,
+                used_eff_str=self._eff_files_str,
                 systematic_error=self._systematic_error, progress=sub_progress)
         except Exception as e:
             msg = f"Could not create Depth Profile graph: {e}"
