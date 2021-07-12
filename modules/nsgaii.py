@@ -2,23 +2,19 @@
 """
 Created on 7.5.2019
 Updated on 27.5.2019
-
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2019 Heta Rekilä, 2020 Juhani Sundell
-
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
 of the License, or (at your option) any later version.
-
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
-
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
@@ -71,11 +67,11 @@ class Nsgaii(Observable):
                  stop_percent=0.3, check_time=20, ch=0.025,
                  measurement=None, cut_file=None, dis_c=20,
                  dis_m=20, check_max=900, check_min=0, skip_simulation=False,
-                 use_efficiency=False, optimize_by_area=True):
+                 use_efficiency=False, optimize_by_area=True, verbose = False):
+
         """
         Initialize the NSGA-II algorithm with needed parameters and start
         running it.
-
         Args:
             gen: Number of generations to be done.
             element_simulation: ElementSimulation object that is optimized.
@@ -146,6 +142,7 @@ class Nsgaii(Observable):
         self.population = None
         self.measured_espe = None
         self.use_efficiency = use_efficiency
+        self.verbose = verbose
         self.optimize_by_area = optimize_by_area
 
     def __prepare_optimization(self, initial_pop=None,
@@ -279,11 +276,9 @@ class Nsgaii(Observable):
     def crowding_distance(front_no, objective_values):
         """Calculate crowding distance for each solution in the population, by
         the Pareto front it belongs to.
-
         Args:
             front_no: Front numbers for all solutions.
             objective_values: collection of objective values
-
         Return:
             Array that holds crowding distances for all solutions.
         """
@@ -328,10 +323,8 @@ class Nsgaii(Observable):
     def evaluate_solutions(self, sols):
         """
         Calculate objective function values for given solutions.
-
         Args:
              sols: List of solutions.
-
         Return:
             Solutions and their objective function values.
         """
@@ -344,7 +337,7 @@ class Nsgaii(Observable):
             for recoil in self.element_simulation.optimization_recoils:
                 # Run get_espe
                 espe, _ = self.element_simulation.calculate_espe(
-                    recoil, optimization_type=self.optimization_type,
+                    recoil, verbose = self.verbose, optimization_type=self.optimization_type,
                     ch=self.channel_width, write_to_file=False)
                 objective_values.append(self.get_objective_values(espe))
 
@@ -431,12 +424,10 @@ class Nsgaii(Observable):
     def form_recoil(self, current_solution, name=""):
         """
         Form recoil based on solution size.
-
         Args:
             current_solution: Solution which holds the information needed t
             form the recoil.
             name: Possible name for recoil element.
-
         Return:
              Recoil Element.
         """
@@ -620,7 +611,6 @@ class Nsgaii(Observable):
     def initialize_population(self):
         """
         Create a new starting population.
-
         Return:
             Created population with solutions and objective function values.
         """
@@ -824,12 +814,10 @@ class Nsgaii(Observable):
     def nd_sort(pop_obj, n, r_n=np.inf):
         """
         Sort population pop_obj according to non-domination.
-
         Args:
             pop_obj: Solutions (objective function values).
             n: Size of the current population to be sorted.
             r_n: How many elements fit inside the resulting population.
-
         Return:
             List with front numbers, corresponding to pop_obj indices, number of
             last front found.
@@ -896,11 +884,9 @@ class Nsgaii(Observable):
         """
         Select individuals to a new population based on crowded comparison
         operator.
-
         Args:
             population: Current intermediate population.
             pop_size: TODO
-
         Return:
             Next generation population.
         """
@@ -941,7 +927,6 @@ class Nsgaii(Observable):
         non-domination and crowding distance, creating offspring population
         by crossover and mutation, and selecting individuals to the new
         population.
-
         Args:
             starting_solutions: First solutions used in optimization. If
                 None, initialize new solutions.
@@ -1101,10 +1086,8 @@ class Nsgaii(Observable):
         Generate offspring population using SBX and polynomial mutation for
         fluence, and simple binary crossover and binary
         mutation for recoil element points.
-
         Args:
             pop_sols: Solutions that are used to create offspring population.
-
         Return:
             Offspring size self.pop_size.
         """
@@ -1320,12 +1303,10 @@ def solution_to_binary(solution, bit_length_x, bit_length_y):
 def pick_final_solutions(objective_values, solutions, count=2):
     """Picks solutions from the given set of solutions based on the
     corresponding objective values.
-
     Args:
         objective_values: collections of objective values
         solutions: collections of solutions
         count: how many solutions to return (2 or 3)
-
     Returns:
         tuple of solutions. Either (first solution, last solution) or
         (first solution, median solution, last solution) depending on

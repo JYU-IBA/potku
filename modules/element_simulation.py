@@ -2,24 +2,20 @@
 """
 Created on 25.4.2018
 Updated on 8.2.2020
-
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
 Sinikka Siironen, 2020 Juhani Sundell, Tuomas Pitkänen
-
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
 of the License, or (at your option) any later version.
-
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
-
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
@@ -27,46 +23,44 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
+import functools
+import itertools
 import json
 import os
 import time
-import itertools
-import functools
+from collections import deque
+from pathlib import Path
+from threading import Event
+from typing import Any
+from typing import Dict
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Set
+from typing import Tuple
+from typing import Union
+
 import rx
+from rx import operators as ops
 
 from . import file_paths as fp
 from . import general_functions as gf
-
-from typing import Optional
-from typing import List
-from typing import Iterable
-from typing import Tuple
-from typing import Dict
-from typing import Set
-from typing import Union
-from typing import Any
-from rx import operators as ops
-from pathlib import Path
-from collections import deque
-from threading import Event
-
-from .concurrency import CancellationToken
-from .base import Serializable
 from .base import AdjustableSettings
 from .base import MCERDParameterContainer
+from .base import Serializable
+from .concurrency import CancellationToken
+from .detector import Detector
+from .element import Element
+from .enums import IonDivision
+from .enums import OptimizationType
+from .enums import SimulationMode
+from .enums import SimulationState
+from .enums import SimulationType
 from .get_espe import GetEspe
 from .mcerd import MCERD
 from .observing import Observable
 from .recoil_element import RecoilElement
-from .enums import OptimizationType
-from .enums import SimulationState
-from .enums import IonDivision
-from .enums import SimulationType
-from .enums import SimulationMode
 from .run import Run
-from .detector import Detector
-from .element import Element
-
 
 # Mappings between the names of the MCERD parameters (keys) and
 # ElementSimulation attributes (values)
@@ -124,7 +118,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                  optimized_fluence=None, save_on_creation=True):
         """Initializes ElementSimulation. Most arguments are ignored if
         use_default_settings is True.
-
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
             request: Request object reference.
@@ -267,7 +260,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
     def get_full_edit_on(self):
         """Get whether full edit is on or not.
-
         Return:
             True of False.
         """
@@ -307,7 +299,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
     def update_recoil_element(self, recoil_element: RecoilElement, new_values):
         """Updates RecoilElement object with new values.
-
         Args:
             recoil_element: RecoilElement object to update.
             new_values: New values as a dictionary.
@@ -359,7 +350,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                   simulation: Optional["Simulation"] = None,
                   save_on_creation=True) -> "ElementSimulation":
         """Initialize ElementSimulation from JSON files.
-
         Args:
             request: Request that ElementSimulation belongs to.
             prefix: String that is used to prefix ".rec" files of this
@@ -373,7 +363,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             simulation: parent Simulation object of this ElementSimulation
             save_on_creation: whether ElementSimulation object is saved after
                 it has been initialized
-
         Return:
             ElementSimulation object
         """
@@ -521,7 +510,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def to_file(self, file_path: Optional[Path] = None,
                 save_optim_results=False):
         """Save mcsimu settings to file.
-
         Args:
             file_path: File in which the mcsimu settings will be saved.
             save_optim_results: whether to save optimization results or not (
@@ -538,7 +526,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
     def profile_to_file(self, file_path: Path):
         """Save profile settings (only channel width) to file.
-
         Args:
             file_path: File in which the channel width will be saved.
         """
@@ -571,7 +558,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
               **kwargs) -> Optional[rx.Observable]:
         """
         Start the simulation.
-
         Args:
             number_of_processes: How many processes are started.
             start_value: Which is the first seed.
@@ -587,7 +573,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 overwritten by later processes)
             status_check_interval: seconds between each observed atoms count.
             kwargs: keyword arguments passed down to MCERD's run method
-
         Return:
             observable stream
         """
@@ -682,7 +667,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def _start(self, recoil, seed_number, optimization_type, settings, ct,
                **kwargs) -> rx.Observable:
         """Inner method that creates an MCERD instance and runs it.
-
         Returns an observable stream of MCERD output.
         """
         new_erd_file = fp.get_erd_file_name(
@@ -745,7 +729,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def get_current_status(self) -> Dict:
         """Returns the number of atoms counted, number of running processes and
         the state of simulation.
-
         Return:
             dictionary
         """
@@ -807,7 +790,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
     def get_max_seed(self) -> int:
         """Returns maximum seed that has been used in simulations.
-
         Return:
             maximum seed value used in simulation processes
         """
@@ -847,19 +829,18 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def calculate_espe(
             self,
             recoil_element: RecoilElement,
+            verbose: None,
             ch: Optional[float] = None,
             fluence: Optional[float] = None,
             optimization_type: Optional[OptimizationType] = None,
             write_to_file: bool = True) -> Tuple[List, Optional[Path]]:
         """Calculate the energy spectrum from the MCERD result file.
-
         Args:
             recoil_element: Recoil element.
             ch: Channel width to use.
             fluence: Fluence to use.
             optimization_type: either recoil, fluence or None
             write_to_file: whether spectrum is written to file
-
         Return:
             tuple consisting of spectrum data and espe file
         """
@@ -908,7 +889,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             fluence=used_fluence,
             erd_file=erd_file,
             output_file=output_file,
-            recoil_file=recoil_file
+            recoil_file=recoil_file,
+            verbose=verbose
         )
         # TODO returning espe_file is a bit pointless if write_to_file is
         #   False
@@ -951,7 +933,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def delete_optimization_results(self, optim_mode=None):
         """Deletes optimization results. Also stops the optimization if
         it is running.
-
         Args:
             optim_mode: OptimizationType
         """
@@ -1015,7 +996,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
     def reset(self, remove_result_files=True):
         """Function that resets the state of ElementSimulation.
-
         Args:
             remove_result_files: whether simulation result files are also
                 removed
@@ -1033,14 +1013,12 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
 class ERDFileHandler:
     """Helper class to handle ERD files that belong to the ElementSimulation
-
     Handles counting atoms and getting seeds.
     """
     def __init__(self, files: Iterable[Union[Path, str]],
                  recoil_element: RecoilElement):
         """Initializes a new ERDFileHandler that tracks old and new .erd files
         belonging to the given recoil element
-
         Args:
             files: list of absolute paths to .erd files that contain data
                 that has already been simulated
@@ -1060,12 +1038,10 @@ class ERDFileHandler:
             -> "ERDFileHandler":
         """Initializes a new ERDFileHandler by reading ERD files
         from a directory.
-
         Args:
             directory: path to a directory
             recoil_element: recoil element for which the ERD files belong
                             to
-
         Return:
             new ERDFileHandler.
         """
@@ -1077,7 +1053,6 @@ class ERDFileHandler:
 
     def __iter__(self):
         """Iterates over all of the ERD files, both active and old ones.
-
         Yield:
             tuple consisting of absolute file path, seed value and boolean
             that tells if the ERD file is used in a running simulation or
@@ -1094,10 +1069,8 @@ class ERDFileHandler:
 
     def add_active_file(self, erd_file: Union[Path, str]):
         """Adds an active ERD file to the handler.
-
         File must not already exist in active or old files, otherwise
         ValueError is raised.
-
         Args:
             erd_file: file name of an .erd file
         """
