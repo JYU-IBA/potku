@@ -64,7 +64,11 @@ class Element(MCERDParameterContainer):
         Return:
             Element object.
         """
-        m = re.match(r"(?P<isotope>[0-9]{0,3})(?P<symbol>[a-zA-Z]{1,2})"
+        if element_str == 'SUM':
+            m = re.match(r"(?P<isotope>[0-9]{0,3})(?P<symbol>[a-zA-Z]{1,3})"
+                     r"(\s(?P<amount>\d*(\.?\d+)?))?", element_str.strip())
+        else:
+            m = re.match(r"(?P<isotope>[0-9]{0,3})(?P<symbol>[a-zA-Z]{1,2})"
                      r"(\s(?P<amount>\d*(\.?\d+)?))?", element_str.strip())
         if m:
             symbol = m.group("symbol")

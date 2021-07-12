@@ -237,6 +237,8 @@ class MeasurementTabWidget(BaseTab):
             line_zero = False
             line_scale = False
             systerr = 0.0
+            used_eff = False
+            eff_files_str = None
             if len(lines) == 7:  # "Backwards compatibility"
                 line_zero = lines[4].strip() == "True"
                 line_scale = lines[5].strip() == "True"
@@ -246,9 +248,14 @@ class MeasurementTabWidget(BaseTab):
             DepthProfileDialog.line_zero = line_zero
             DepthProfileDialog.line_scale = line_scale
             DepthProfileDialog.systerr = systerr
+            DepthProfileDialog.used_eff = used_eff
+            DepthProfileDialog.eff_files_str = eff_files_str
+            
             self.depth_profile_widget = DepthProfileWidget(
                 self, output_dir, use_cuts, elements, x_unit, line_zero,
-                line_scale, systerr, progress=progress)
+                used_eff, line_scale, systerr, eff_files_str,
+                progress=progress
+                )
             icon = self.icon_manager.get_icon("depth_profile_icon_2_16.png")
             self.add_widget(self.depth_profile_widget, icon=icon)
         except Exception as e:
