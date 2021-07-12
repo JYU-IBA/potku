@@ -130,6 +130,24 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
         """
         self.simGroupBox.setEnabled(not self.skip_simulation)
 
+    def radio_buttons(self):
+        """Radio buttons for optimization parameters Sum and Area
+        """
+        self.optimize_by_area = True
+        self.radios = QtWidgets.QButtonGroup(self)
+        self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
+        self.isChecked)
+        self.radios.addButton(self.areaRadioButton)
+        self.radios.addButton(self.sumRadioButton)
+
+    def isChecked(self, button, checked):
+        """Choose whether to optimize by Sum or Area
+        """
+        if checked and button.text() == 'Sum':
+            self.optimize_by_area = False
+        else:
+            self.optimize_by_area = True
+
 
 class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
     """
@@ -143,6 +161,7 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
     lower_limits = bnd.multi_bind(
         ("lowerXDoubleSpinBox", "lowerYDoubleSpinBox")
     )
+    
     # sol_size values are unique (5, 7, 9 or 11) so they can be used in
     # two-way binding
     sol_size = bnd.bind("recoilTypeComboBox", fget=sol_size_from_combobox,
@@ -162,13 +181,12 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
         """
         ui_file = gutils.get_ui_dir() / "ui_optimization_recoil_params.ui"
         super().__init__(ui_file, **kwargs)
-
+        self.radio_buttons()
         locale = QLocale.c()
         self.upperXDoubleSpinBox.setLocale(locale)
         self.lowerXDoubleSpinBox.setLocale(locale)
         self.upperYDoubleSpinBox.setLocale(locale)
         self.lowerYDoubleSpinBox.setLocale(locale)
-
 
 class OptimizationFluenceParameterWidget(OptimizationParameterWidget):
     """
@@ -199,7 +217,8 @@ class OptimizationFluenceParameterWidget(OptimizationParameterWidget):
             kwargs: property values to be shown in the widget.
         """
         ui_file = gutils.get_ui_dir() / "ui_optimization_fluence_params.ui"
-        self.fluenceDoubleSpinBox = ScientificSpinBox(10e12)
         super().__init__(ui_file, **kwargs)
+        self.radio_buttons()
+        self.fluenceDoubleSpinBox = ScientificSpinBox(10e12)
         self.fluence_form_layout.addRow(
             "Upper limit", self.fluenceDoubleSpinBox)
