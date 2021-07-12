@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>691</width>
-    <height>423</height>
+    <height>446</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -32,7 +32,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>5</number>
      </property>
      <widget class="QWidget" name="tab_6">
       <attribute name="title">
@@ -398,7 +398,7 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_6">
           <property name="spacing">
-           <number>-1</number>
+           <number>6</number>
           </property>
           <property name="bottomMargin">
            <number>100</number>
@@ -2998,7 +2998,7 @@
        <string>General</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_3">
-       <item row="0" column="0">
+       <item row="1" column="1">
         <widget class="QGroupBox" name="groupBox_7">
          <property name="title">
           <string>Registry items</string>
@@ -3030,6 +3030,82 @@
            </widget>
           </item>
          </layout>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QGroupBox" name="groupBox_10">
+         <property name="title">
+          <string>Paths</string>
+         </property>
+         <widget class="QLabel" name="label_11">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>20</y>
+            <width>171</width>
+            <height>16</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Default global settings:</string>
+          </property>
+         </widget>
+         <widget class="QLineEdit" name="lineEdit_ini">
+          <property name="geometry">
+           <rect>
+            <x>170</x>
+            <y>20</y>
+            <width>461</width>
+            <height>20</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QLabel" name="label_12">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>60</y>
+            <width>81</width>
+            <height>16</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Current request:</string>
+          </property>
+         </widget>
+         <widget class="QLineEdit" name="lineEdit_Request">
+          <property name="geometry">
+           <rect>
+            <x>170</x>
+            <y>60</y>
+            <width>461</width>
+            <height>20</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QLabel" name="label_13">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>100</y>
+            <width>151</width>
+            <height>16</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Efficiency files of the request:</string>
+          </property>
+         </widget>
+         <widget class="QLineEdit" name="lineEdit_Eff">
+          <property name="geometry">
+           <rect>
+            <x>170</x>
+            <y>100</y>
+            <width>461</width>
+            <height>20</height>
+           </rect>
+          </property>
+         </widget>
         </widget>
        </item>
       </layout>
@@ -3177,8 +3253,8 @@
  <resources/>
  <connections/>
  <buttongroups>
+  <buttongroup name="cross_section_radios"/>
   <buttongroup name="ion_division_radios"/>
   <buttongroup name="elementButtons"/>
-  <buttongroup name="cross_section_radios"/>
  </buttongroups>
 </ui>
