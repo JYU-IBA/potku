@@ -199,6 +199,11 @@ class DepthProfileDialog(QtWidgets.QDialog):
             
             # Get the filepaths of the selected items
             used_cuts = self.used_cuts
+            if self._check_if_elemental_losses(used_cuts):
+                pass
+            else:
+                return
+
             DepthProfileDialog.checked_cuts[self.measurement.name] = set(
                 used_cuts)
             # TODO could take care of RBS selection here
@@ -257,6 +262,9 @@ class DepthProfileDialog(QtWidgets.QDialog):
             self.measurement.log_error(error_log)
         finally:
             sbh.reporter.report(100)
+
+    def _duplicates(lst, item):
+        return [i for i, x in enumerate(lst) if x == item]
 
     def _show_reference_density(self):
         """
