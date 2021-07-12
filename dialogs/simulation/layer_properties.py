@@ -88,7 +88,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog, bnd.PropertyTrackingWidget,
         self.okButton.clicked.connect(self.__save_layer)
         self.cancelButton.clicked.connect(self.close)
 
-        self.thicknessEdit.setMinimum(0.01)
+        self.thicknessEdit.setMinimum(0.00)
         self.densityEdit.setMinimum(0.01)
 
         self.__original_properties = {}
@@ -306,8 +306,13 @@ class ElementLayout(QtWidgets.QVBoxLayout):
             self.isotope_combobox.setFixedWidth(150)
 
         self.amount_spinbox = QtWidgets.QDoubleSpinBox()
+
+        self.amount_spinbox.setMinimum(0.000)
+        self.amount_spinbox.setMaximum(9999.00)
+
         self.amount_spinbox.setMinimum(0.001)
         self.amount_spinbox.setMaximum(1)
+
         self.amount_spinbox.setDecimals(3)
         self.amount_spinbox.setLocale(QLocale.c())
         self.amount_spinbox.setFixedWidth(90)
