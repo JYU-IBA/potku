@@ -31,27 +31,27 @@ import copy
 import math
 import platform
 
-import widgets.input_validation as iv
-import widgets.binding as bnd
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+from PyQt5 import uic
+from PyQt5.QtCore import QLocale
+
 import dialogs.file_dialogs as fdialogs
+import widgets.binding as bnd
 import widgets.gui_utils as gutils
+import widgets.input_validation as iv
+import modules.general_functions as gf
 
 from pathlib import Path
 
 from dialogs.measurement.calibration import CalibrationDialog
 from dialogs.simulation.foil import FoilDialog
-
 from modules.detector import Detector
+from modules.enums import DetectorType
 from modules.foil import CircularFoil
 from modules.request import Request
-from modules.enums import DetectorType
-
-from PyQt5 import QtWidgets
-from PyQt5 import uic
-from PyQt5.QtCore import QLocale
-from PyQt5 import QtCore
-
 from widgets.foil import FoilWidget
+from widgets.eff_plot import EfficiencyWidget
 from widgets.scientific_spinbox import ScientificSpinBox
 
 
@@ -115,6 +115,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
 
         self.addEfficiencyButton.clicked.connect(self.__add_efficiency)
         self.removeEfficiencyButton.clicked.connect(self.__remove_efficiency)
+        self.plotEfficiencyButton.clicked.connect(self.__plot_efficiency)
 
         self.efficiencyListWidget.itemSelectionChanged.connect(
             self._enable_remove_btn)
@@ -141,6 +142,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.timeResSpinBox.setLocale(locale)
         self.virtualSizeXSpinBox.setLocale(locale)
         self.virtualSizeYSpinBox.setLocale(locale)
+        self.angleSlopeLineEdit.setLocale(locale)
+        self.angleOffsetLineEdit.setLocale(locale)
 
         # Create scientific spinboxes for tof slope and tof offset
         self.formLayout_2.removeRow(self.slopeLineEdit)
@@ -547,6 +550,22 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
 
             self.efficiency_files = self.obj.get_efficiency_files()
             self._enable_remove_btn()
+            
+    def __plot_efficiency(self):
+        """
+        Open efficiency plot widget
+        """
+        self.eff_folder = gutils.get_potku_setting(
+            DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
+            self.request.default_folder) 
+        self.efficiency_files = self.obj.get_efficiency_files()
+        self.efficiency_files_list = []    
+        i=0
+        for file in self.efficiency_files:
+            file_name = gf.get_root_dir() / self.eff_folder / str(self.efficiency_files[i])
+            self.efficiency_files_list.append(file_name)
+            i+=1
+        EfficiencyWidget(self.efficiency_files_list, self)
 
     def __open_calibration_dialog(self):
         """
