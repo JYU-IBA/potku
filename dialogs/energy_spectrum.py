@@ -33,30 +33,27 @@ __version__ = "2.0"
 
 import os
 import shutil
-
-import dialogs.dialog_functions as df
-import widgets.gui_utils as gutils
-import modules.cut_file as cut_file
-import dialogs.file_dialogs as fdialogs
-import widgets.binding as bnd
-
 from pathlib import Path
 from typing import Optional
 
-from widgets.gui_utils import StatusBarHandler
-from widgets.base_tab import BaseTab
-from modules.energy_spectrum import EnergySpectrum
-from modules.measurement import Measurement
-from modules.get_espe import GetEspe
-from modules.enums import OptimizationType
-from modules.element_simulation import ElementSimulation
-from modules.simulation import Simulation
-
-from PyQt5 import uic
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
+from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 
+import dialogs.dialog_functions as df
+import dialogs.file_dialogs as fdialogs
+import modules.cut_file as cut_file
+import widgets.binding as bnd
+import widgets.gui_utils as gutils
+from modules.element_simulation import ElementSimulation
+from modules.energy_spectrum import EnergySpectrum
+from modules.enums import OptimizationType
+from modules.get_espe import GetEspe
+from modules.measurement import Measurement
+from modules.simulation import Simulation
+from widgets.base_tab import BaseTab
+from widgets.gui_utils import StatusBarHandler
 from widgets.matplotlib.measurement.energy_spectrum import \
     MatplotlibEnergySpectrumWidget
 
@@ -316,7 +313,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         for elem_sim, lst in used_simulations.items():
             for d in lst:
                 _, espe_file = elem_sim.calculate_espe(
-                    **d, write_to_file=True, ch=self.bin_width)
+                    **d, verbose=False, write_to_file=True, ch=self.bin_width)
                 self.result_files.append(espe_file)
 
         sbh.reporter.report(66)

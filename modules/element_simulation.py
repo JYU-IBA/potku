@@ -829,7 +829,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def calculate_espe(
             self,
             recoil_element: RecoilElement,
-            verbose: None,
+            verbose: False,
             ch: Optional[float] = None,
             fluence: Optional[float] = None,
             optimization_type: Optional[OptimizationType] = None,
@@ -837,10 +837,11 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         """Calculate the energy spectrum from the MCERD result file.
         Args:
             recoil_element: Recoil element.
+            verbose: In terminal (disabled by default).
             ch: Channel width to use.
             fluence: Fluence to use.
-            optimization_type: either recoil, fluence or None
-            write_to_file: whether spectrum is written to file
+            optimization_type: Either recoil, fluence or None
+            write_to_file: Whether spectrum is written to file
         Return:
             tuple consisting of spectrum data and espe file
         """
