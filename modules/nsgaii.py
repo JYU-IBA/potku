@@ -21,33 +21,32 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä \n Juhani Sundell"
 __version__ = "2.0"
 
-import numpy as np
-import os
 import collections
-import rx
-import subprocess
 import math
-
-from . import optimization as opt
-from . import general_functions as gf
-from . import file_paths as fp
-from . import math_functions as mf
-
+import os
+import subprocess
 from pathlib import Path
 from timeit import default_timer as timer
+
+import numpy as np
+import rx
 from rx import operators as ops
 
-from .recoil_element import RecoilElement
-from .element_simulation import ElementSimulation
-from .mcerd import MCERD
-from .point import Point
-from .parsing import CSVParser
-from .energy_spectrum import EnergySpectrum
-from .observing import Observable
+from . import file_paths as fp
+from . import general_functions as gf
+from . import math_functions as mf
+from . import optimization as opt
 from .concurrency import CancellationToken
-from .enums import OptimizationType
-from .enums import OptimizationState
+from .element_simulation import ElementSimulation
+from .energy_spectrum import EnergySpectrum
 from .enums import IonDivision
+from .enums import OptimizationState
+from .enums import OptimizationType
+from .mcerd import MCERD
+from .observing import Observable
+from .parsing import CSVParser
+from .point import Point
+from .recoil_element import RecoilElement
 
 
 class Nsgaii(Observable):
@@ -67,7 +66,7 @@ class Nsgaii(Observable):
                  stop_percent=0.3, check_time=20, ch=0.025,
                  measurement=None, cut_file=None, dis_c=20,
                  dis_m=20, check_max=900, check_min=0, skip_simulation=False,
-                 use_efficiency=False, optimize_by_area=True, verbose = False):
+                 use_efficiency=False, optimize_by_area=True, verbose=False):
 
         """
         Initialize the NSGA-II algorithm with needed parameters and start
@@ -246,7 +245,8 @@ class Nsgaii(Observable):
                 )
                 merged = rx.merge(observable, spectra_chk).pipe(
                     ops.take_while(
-                        lambda x: not isinstance(x, dict) or x[MCERD.IS_RUNNING],
+                        lambda x: not isinstance(x, dict) or x[
+                            MCERD.IS_RUNNING],
                         inclusive=True)
                 )
                 # Simulation needs to finish before optimization can start
@@ -310,7 +310,7 @@ class Nsgaii(Observable):
                     ind_front_prev = front[rank[j - 1]]
                     # Normalize the objective function values
                     dist = pop_obj[(ind_front_next, i)] - \
-                        pop_obj[(ind_front_prev, i)]
+                           pop_obj[(ind_front_prev, i)]
                     if dist == 0:
                         current_distance = 0
                     else:
@@ -337,7 +337,8 @@ class Nsgaii(Observable):
             for recoil in self.element_simulation.optimization_recoils:
                 # Run get_espe
                 espe, _ = self.element_simulation.calculate_espe(
-                    recoil, verbose = self.verbose, optimization_type=self.optimization_type,
+                    recoil, verbose=self.verbose,
+                    optimization_type=self.optimization_type,
                     ch=self.channel_width, write_to_file=False)
                 objective_values.append(self.get_objective_values(espe))
 
@@ -647,10 +648,10 @@ class Nsgaii(Observable):
 
                     # Add as first solution coordinate values that make
                     # simulation concern the whole x coordinate range
-                    first_x = np.array([0.0, round((x_upper - x_lower)/2, 2),
-                                       x_upper])
+                    first_x = np.array([0.0, round((x_upper - x_lower) / 2, 2),
+                                        x_upper])
                     x_coords_full = np.insert(x_coords, 0, first_x, axis=0)
-                    first_y = np.array([round((y_upper - y_lower)/2, 4),
+                    first_y = np.array([round((y_upper - y_lower) / 2, 4),
                                         0.0001])
                     y_coords_full = np.insert(y_coords, 0, first_y, axis=1)
 
@@ -714,7 +715,7 @@ class Nsgaii(Observable):
                     x_coords_full = np.insert(x_coords, 0, first_x, axis=0)
                     first_y = np.array([round((y_upper - y_lower) / 2, 4),
                                         0.0001,
-                                       round((y_upper - y_lower) / 2, 4),
+                                        round((y_upper - y_lower) / 2, 4),
                                         0.0001])
                     y_coords_full = np.insert(y_coords, 0, first_y, axis=1)
                 else:  # First peak not at the surface
@@ -778,8 +779,8 @@ class Nsgaii(Observable):
             # Create a random population
             init_sols = np.random.random_sample(
                 (self.pop_size, self.sol_size)) * \
-                (self.upper_limits - self.lower_limits) \
-                + self.lower_limits
+                        (self.upper_limits - self.lower_limits) \
+                        + self.lower_limits
 
         return init_sols
 
@@ -980,7 +981,7 @@ class Nsgaii(Observable):
                 self.clean_up(cancellation_token)
                 return
             pop_sol, pop_obj = np.array(self.population[0]), \
-                np.array(self.population[1])
+                               np.array(self.population[1])
             pool = [pop_sol[pool_ind, :], pop_obj[pool_ind, :]]
             # Form offspring solutions with this pool, and do variation on them
             try:
@@ -1017,8 +1018,9 @@ class Nsgaii(Observable):
                 elapsed=elapsed_time))
 
             # Temporary prints
-            if evaluations % (10*self.evaluations/self.pop_size) == 0:
-                percent = 100*(self.evaluations - evaluations)/self.evaluations
+            if evaluations % (10 * self.evaluations / self.pop_size) == 0:
+                percent = 100 * (
+                        self.evaluations - evaluations) / self.evaluations
                 print(
                     'Running time %10.2f, percentage %s, done %f' % (
                         elapsed_time - start_time, percent, self.evaluations -
@@ -1168,7 +1170,7 @@ class Nsgaii(Observable):
             # Indicate mutation for all variables that have a random number
             # over mut_p / sol_length
             do_mutation_prob = np.random.random_sample(
-                (self.pop_size,  sol_length)) < self.mut_p / sol_length
+                (self.pop_size, sol_length)) < self.mut_p / sol_length
             total_mutation_bool = np.logical_and(do_mutation, do_mutation_prob)
 
             # Change offspring array that holds each binary string in an array
@@ -1194,10 +1196,10 @@ class Nsgaii(Observable):
                         # Make one variable list into string
                         str_bin = ''.join(
                             str(b) for b in offspring[k][b_i:b_i +
-                                                         self.bit_length_x])
+                                                             self.bit_length_x])
                         b_i += self.bit_length_x
                         # Turn variable back into decimal
-                        dec = round(int(str_bin, 2)/100, 2)
+                        dec = round(int(str_bin, 2) / 100, 2)
                         if h not in self.__const_var_i:
                             # Check of out of limits, not for constants
                             if dec < self.lower_limits[0]:
@@ -1208,10 +1210,10 @@ class Nsgaii(Observable):
                         # Make one variable list into string
                         str_bin = ''.join(
                             str(b) for b in offspring[k][b_i:b_i +
-                                                         self.bit_length_y])
+                                                             self.bit_length_y])
                         b_i += self.bit_length_y
                         # Turn variable back into decimal
-                        dec = round(int(str_bin, 2)/10000, 4)
+                        dec = round(int(str_bin, 2) / 10000, 4)
                         # Don't do anything to constants
                         if h not in self.__const_var_i:
                             if dec < self.lower_limits[1]:
@@ -1261,21 +1263,25 @@ class Nsgaii(Observable):
             # offspring[use_r_bigger] += (upper[use_r_bigger] -
             #                             lower[use_r_bigger]) * delta
             norm = (offspring[use_r_smaller] - lower[use_r_smaller]) / (
-                        upper[use_r_smaller] - lower[use_r_smaller])
-            offspring[use_r_smaller] += (upper[use_r_smaller] - lower[use_r_smaller]) * \
-                                   (np.power(2. * r[use_r_smaller] + (
-                                               1. - 2. * r[use_r_smaller]) * np.power(
-                                       1. - norm, self.dis_m + 1.),
-                                             1. / (self.dis_m + 1)) - 1.)
+                    upper[use_r_smaller] - lower[use_r_smaller])
+            offspring[use_r_smaller] += (upper[use_r_smaller] - lower[
+                use_r_smaller]) * \
+                                        (np.power(2. * r[use_r_smaller] + (
+                                                1. - 2. * r[
+                                            use_r_smaller]) * np.power(
+                                            1. - norm, self.dis_m + 1.),
+                                                  1. / (self.dis_m + 1)) - 1.)
             use_r_bigger = do_mutation_prob & (r >= 0.5)
             norm = (upper[use_r_bigger] - offspring[use_r_bigger]) / (
-                        upper[use_r_bigger] - lower[use_r_bigger])
-            offspring[use_r_bigger] += (upper[use_r_bigger] - lower[use_r_bigger]) * \
-                                   (1. - np.power(
-                                       2. * (1. - r[use_r_bigger]) + 2. * (
-                                                   r[use_r_bigger] - 0.5) * np.power(
-                                           1. - norm, self.dis_m + 1.),
-                                       1. / (self.dis_m + 1.)))
+                    upper[use_r_bigger] - lower[use_r_bigger])
+            offspring[use_r_bigger] += (upper[use_r_bigger] - lower[
+                use_r_bigger]) * \
+                                       (1. - np.power(
+                                           2. * (1. - r[use_r_bigger]) + 2. * (
+                                                   r[
+                                                       use_r_bigger] - 0.5) * np.power(
+                                               1. - norm, self.dis_m + 1.),
+                                           1. / (self.dis_m + 1.)))
             offspring_limits = np.maximum(np.minimum(offspring, upper), lower)
             offspring = offspring_limits
 
