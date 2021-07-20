@@ -943,7 +943,9 @@ class Measurement(MeasurementLogger, Serializable):
             Returns a list of cut files in measurement.
         """
         cuts = self._get_cut_files(self.get_cuts_dir())
+        cuts.sort()
         elem_losses = self._get_cut_files(self.get_changes_dir())
+        elem_losses.sort()
         return cuts, elem_losses
 
     def load_selection(self, filename, progress=None):
