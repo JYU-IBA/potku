@@ -730,6 +730,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         self.canvas.draw()
         self.canvas.flush_events()
+        self.on_draw()
 
     def update_spectra(self, rec_elem: RecoilElement,
                        elem_sim: ElementSimulation):
