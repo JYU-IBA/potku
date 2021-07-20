@@ -30,26 +30,26 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Juhani Sundell"
 __version__ = "2.0"
 
-import subprocess
+import os
 import platform
+import subprocess
+from pathlib import Path
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
 
 import numpy as np
 
-from pathlib import Path
-from typing import List
-from typing import Tuple
-from typing import Optional
-from typing import Sequence
-from typing import Dict
-
-from .observing import ProgressReporter
 from . import general_functions as gf
 from . import subprocess_utils as sutils
-from .ui_log_handlers import Logger
-from .parsing import ToFListParser
-from .measurement import Measurement
-from .element import Element
 from .base import Espe
+from .element import Element
+from .measurement import Measurement
+from .observing import ProgressReporter
+from .parsing import ToFListParser
+from .ui_log_handlers import Logger
 
 TofListData = List[Tuple[float, float, float, int, float, str, float, int]]
 
@@ -59,6 +59,7 @@ TofListData = List[Tuple[float, float, float, int, float, str, float, int]]
 class EnergySpectrum:
     """Class for energy spectrum.
     """
+
     def __init__(
             self,
             measurement: Measurement,
@@ -159,9 +160,9 @@ class EnergySpectrum:
                 directory = None
 
             count = len(self._cut_files)
-            
+
             self._directory_es.mkdir(exist_ok=True)
-            
+
             for i, cut_file in enumerate(self._cut_files):
                 # TODO move cut file handling to cut_file module
                 filename_split = cut_file.name.split('.')
@@ -338,30 +339,30 @@ class EnergySpectrum:
         if len(espes) > 0:
             x_files = [[] for _ in range(len(espes))]
             y_files = [[] for _ in range(len(espes))]
+
             for key in keys:
-                for tuple in espes[key]:
-                    x_files[keys.index(key)].append(tuple[0])
-                    y_files[keys.index(key)].append(tuple[1])
+                for espe_tuple in espes[key]:
+                    x_files[keys.index(key)].append(espe_tuple[0])
+                    y_files[keys.index(key)].append(espe_tuple[1])
+
             x_files_flat = [item for sublist in x_files for item in sublist]
             x_files_flat = np.unique(x_files_flat)
+            # Adds sum spectra
             y_sum = []
             for i in range(len(keys)):
                 y_sum.append(np.interp(x_files_flat, x_files[i], y_files[i]))
-            y_sum = np.sum(y_sum, axis = 0)
-            x_files = list(map(sum, zip(*x_files)))
-            y_files = list(map(sum, zip(*y_files)))
+            y_sum = np.sum(y_sum, axis=0)
 
             sum_key = 'SUM'
             for value in espes:
                 sum_key += '.' + value.split('.')[0]
             espes[sum_key] = list(zip(x_files_flat, y_sum))
 
-            import os
             path = os.path.join(
                 directory_es, measurement.name + '.' + sum_key + '.hist')
 
             numpy_array = np.array(
                 espes[sum_key], dtype=[("float", float), ("int", int)])
             np.savetxt(path, numpy_array, delimiter=" ", fmt="%5.5f %6d")
-        
+
         return espes

@@ -29,28 +29,26 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import dialogs.dialog_functions as df
-import widgets.gui_utils as gutils
-import widgets.binding as bnd
-import modules.depth_files as depth_files
-import modules.cut_file as cut_file
-
 from pathlib import Path
 from typing import List
 from typing import Optional
-
-from widgets.gui_utils import StatusBarHandler
-from widgets.base_tab import BaseTab
-from modules.element import Element
-from modules.measurement import Measurement
-from modules.global_settings import GlobalSettings
-from modules.observing import ProgressReporter
-from modules.enums import DepthProfileUnit
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 
+import dialogs.dialog_functions as df
+import modules.cut_file as cut_file
+import modules.depth_files as depth_files
+import widgets.binding as bnd
+import widgets.gui_utils as gutils
+from modules.element import Element
+from modules.enums import DepthProfileUnit
+from modules.global_settings import GlobalSettings
+from modules.measurement import Measurement
+from modules.observing import ProgressReporter
+from widgets.base_tab import BaseTab
+from widgets.gui_utils import StatusBarHandler
 from widgets.matplotlib.measurement.depth_profile import \
     MatplotlibDepthProfileWidget
 
@@ -85,10 +83,10 @@ class DepthProfileDialog(QtWidgets.QDialog):
     show_zero_line = bnd.bind("check_0line")
     reference_density = bnd.bind("sbox_reference_density")
     x_axis_units = bnd.bind("group_x_axis_units")
-    
+
     def __init__(self, parent: BaseTab, measurement: Measurement,
                  global_settings: GlobalSettings, statusbar:
-                 Optional[QtWidgets.QStatusBar] = None):
+            Optional[QtWidgets.QStatusBar] = None):
         """Inits depth profile dialog.
         
         Args:
@@ -103,7 +101,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.parent = parent
         self.measurement = measurement
         self.statusbar = statusbar
-        
+
         # Connect buttons
         self.OKButton.clicked.connect(self._accept_params)
         self.cancelButton.clicked.connect(self.close)
@@ -141,7 +139,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.show_zero_line = DepthProfileDialog.line_zero
         self.show_used_eff = DepthProfileDialog.used_eff
         self.eff_files_str = DepthProfileDialog.used_efficiency_files
-        
+
         self.cross_sections = global_settings.get_cross_sections()
 
         self._show_measurement_settings()
@@ -150,38 +148,44 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.exec_()
 
     def _update_label(self):
-        if len(self.used_cuts) == 0:
+        if len(self.used_cuts) <= 1:
+            self.label_warning_text.setText('')
             return
         else:
-            if len(self.used_cuts) > 1:
-                cuts = []
-                for cut in self.used_cuts:
-                    cuts.append(cut.suffixes[0])
+            cuts = []
+            for cut in self.used_cuts:
+                cuts.append(cut.suffixes[0])
 
-                indices = []
-                for c in cuts:
-                    indices.append([i for i, sublist in enumerate(cuts) if sublist == c])
+            indices = []
+            for c in cuts:
+                indices.append(
+                    [i for i, sublist in enumerate(cuts) if sublist == c])
 
-                indices = [list(sublist) for sublist in set(tuple(sublist) for sublist in indices)]
-                indices_length = [len(x) for x in indices]
+            indices = [list(sublist) for sublist in
+                       set(tuple(sublist) for sublist in indices)]
+            indices_length = [len(x) for x in indices]
 
-                if any(length > 1 for length in indices_length):
-                    files = []
-                    for index in indices:
-                        if len(index) < 2:
-                            continue
-                        files.append((self.used_cuts[index[0]].suffixes[0].replace('.', '')))
-                    warning_message = "Multiple .cut-files selected for following element(s): {} \nCheck the elemental losses if you are not sure what you are doing."
-                    if len(files) > 1:  # If there are multiple elements
-                        files = ' and '.join(files)
-                        warning_message = warning_message.format(files)
-                    else:  # If theres is only one element
-                        warning_message = warning_message.format(files[0])
-                    self.label_warning_text.setText(warning_message)
-                    self.label_warning_text.setStyleSheet("color: red")
-                    return
-                self.label_warning_text.setText('')
+            if any(length > 1 for length in indices_length):
+                files = []
+                for index in indices:
+                    if len(index) < 2:
+                        continue
+                    files.append((self.used_cuts[index[0]].suffixes[
+                                      0].replace('.', '')))
+                warning_message = "Multiple .cut-files selected for " \
+                                  "following element(s): {} \nCheck the " \
+                                  "elemental losses if you are not sure " \
+                                  "what you are doing. "
+                if len(files) > 1:  # If there are multiple elements
+                    files = ' and '.join(files)
+                    warning_message = warning_message.format(files)
+                else:  # If theres is only one element
+                    warning_message = warning_message.format(files[0])
+                self.label_warning_text.setText(warning_message)
+                self.label_warning_text.setStyleSheet("color: red")
                 return
+            self.label_warning_text.setText('')
+            return
 
     @gutils.disable_widget
     def _accept_params(self, *_):
@@ -196,7 +200,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
 
         try:
             output_dir = self.measurement.get_depth_profile_dir()
-            
+
             # Get the filepaths of the selected items
             used_cuts = self.used_cuts
             DepthProfileDialog.checked_cuts[self.measurement.name] = set(
@@ -231,7 +235,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                     if profile.reference_density != self.reference_density:
                         profile.reference_density = self.reference_density
                         measurement.to_file()
-                
+
                 self.parent.depth_profile_widget = DepthProfileWidget(
                     self.parent, output_dir, used_cuts, elements, x_unit,
                     DepthProfileDialog.line_zero, DepthProfileDialog.used_eff,
@@ -242,7 +246,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                     ))
 
                 sbh.reporter.report(90)
-                
+
                 icon = self.parent.icon_manager.get_icon(
                     "depth_profile_icon_2_16.png")
                 self.parent.add_widget(
@@ -293,13 +297,13 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.depth_scale = f"{profile.depth_for_concentration_from} - " \
                            f"{profile.depth_for_concentration_to}"
         self.reference_density = profile.reference_density
-        
+
 
 class DepthProfileWidget(QtWidgets.QWidget):
     """Depth Profile widget which is added to measurement tab.
     """
     save_file = "widget_depth_profile.save"
-    
+
     def __init__(self, parent: BaseTab, output_dir: Path, cut_files: List[Path],
                  elements: List[Element], x_units: DepthProfileUnit,
                  line_zero: bool, used_eff: bool, line_scale: bool,
@@ -348,7 +352,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
 
             if progress is not None:
                 progress.report(50)
-            
+
             # Check for RBS selections.
             rbs_list = cut_file.get_rbs_selections(self.use_cuts)
 
@@ -379,7 +383,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
                     lambda x: 50 + 0.5 * x)
             else:
                 sub_progress = None
-            
+
             self.matplotlib = MatplotlibDepthProfileWidget(
                 self, self.output_dir, self.elements, rbs_list,
                 icon_manager=self.parent.icon_manager,
