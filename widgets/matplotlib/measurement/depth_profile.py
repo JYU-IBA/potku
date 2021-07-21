@@ -33,32 +33,28 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Juhani Sundell \n Aleksi Kauppi"
 __version__ = "2.0"
 
-import modules.math_functions as mf
-
-from typing import List, Dict, Optional, Set
-
 from pathlib import Path
-
-from dialogs.measurement.depth_profile_numeric_limits \
-    import NumericLimitsDialog
-from dialogs.measurement.depth_profile_ignore_elements \
-    import DepthProfileIgnoreElements
-    
-from widgets.matplotlib.base import MatplotlibWidget
-from widgets.matplotlib import mpl_utils
-from widgets.matplotlib.mpl_utils import AlternatingLimits
-from widgets.matplotlib.mpl_utils import LineChart
-from widgets.icon_manager import IconManager
-
-from modules.depth_files import DepthProfileHandler
-from modules.depth_files import DepthProfile
-from modules.element import Element
-from modules.base import Range
-from modules.enums import DepthProfileUnit
-from modules.observing import ProgressReporter
+from typing import List, Dict, Optional, Set
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
+
+import modules.math_functions as mf
+from dialogs.measurement.depth_profile_ignore_elements \
+    import DepthProfileIgnoreElements
+from dialogs.measurement.depth_profile_numeric_limits \
+    import NumericLimitsDialog
+from modules.base import Range
+from modules.depth_files import DepthProfile
+from modules.depth_files import DepthProfileHandler
+from modules.element import Element
+from modules.enums import DepthProfileUnit
+from modules.observing import ProgressReporter
+from widgets.icon_manager import IconManager
+from widgets.matplotlib import mpl_utils
+from widgets.matplotlib.base import MatplotlibWidget
+from widgets.matplotlib.mpl_utils import AlternatingLimits
+from widgets.matplotlib.mpl_utils import LineChart
 
 
 class MatplotlibDepthProfileWidget(MatplotlibWidget):
@@ -104,14 +100,14 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self._ignore_from_graph: Set[Element] = set()
         self._ignore_from_ratio: Set[Element] = set()
         self._systematic_error = systematic_error
-        
+
         self._show_eff_files = show_eff_files
         self.used_eff_str = used_eff_str
         self.eff_text = None
 
         # Set default filename for saving figure
         default_filename = "Depth_profile_" + parent.measurement.name
-        self.canvas.get_default_filename = lambda: default_filename 
+        self.canvas.get_default_filename = lambda: default_filename
 
         self._profile_handler = DepthProfileHandler()
         self._profile_handler.read_directory(
@@ -169,12 +165,12 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         if event.inaxes != self.axes:
             return
         cursor_location = [int(event.xdata), int(event.ydata)]
-        
+
         if event.button == 1 and self.limButton.isChecked():
-            self._limit_lines.update_graph(event.xdata)    
+            self._limit_lines.update_graph(event.xdata)
         if event.button == 3:
             self._numeric_limits_menu(event, cursor_location)
-        
+
         self._make_legend_box()
 
     def _numeric_limits_menu(self, event, cursor_location):
@@ -183,23 +179,23 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         action = QtWidgets.QAction(self.tr("Set limits numerically..."), self)
         action.triggered.connect(self.numeric_limits_dialog)
         menu.addAction(action)
-        
+
         coords = self.canvas.geometry().getCoords()
         point = QtCore.QPoint(event.x, coords[3] - event.y - coords[1])
         # coords[1] from spacing
         menu.exec_(self.canvas.mapToGlobal(point))
-        
+
     def numeric_limits_dialog(self):
         """Show numeric limits dialog and update graph if new limits are set.
         """
         lim_a, lim_b = self._limit_lines.get_range()
         limit_dialog = NumericLimitsDialog(lim_a, lim_b)
-        
+
         if not limit_dialog.exec_():
             return
-        
+
         self._limit_lines.update_graph(limit_dialog.limit_min)
-        self._limit_lines.update_graph(limit_dialog.limit_max) 
+        self._limit_lines.update_graph(limit_dialog.limit_max)
 
     def get_profiles_to_use(self) -> Dict[str, DepthProfile]:
         """Determines what files to use for plotting. Either relative, absolute
@@ -273,7 +269,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                 ignored_str, lim_a, lim_b, self._systematic_error)
             concentrations = {}
 
-        # Fix labels to proper format, with MoE
+        # Fixes labels to proper format, with MoE
         labels_w_percentages = []
         rbs_values = {elem.symbol for elem in self._rbs_list.values()}
         for element_str in labels:
@@ -302,7 +298,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             else:
                 lbl_str = f"{element_isotope:>3}{element_name:<3}"
 
-            # Use absolute values for the elements instead of percentages.
+            # Uses absolute values for the elements instead of percentages.
             if self._absolute_values:
                 conc = concentrations[element_str]
                 lbl_str = f"{elem_lbl} {round(conc, 3):<7} at./1e15 at./cm²"
@@ -311,23 +307,22 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         leg = self.axes.legend(
             handles, labels_w_percentages, loc=3, bbox_to_anchor=(1, 0),
             borderaxespad=0, prop={"size": 11, "family": "monospace"})
-        
+
         # If "Show used efficiency files" is checked and text-object is not
         # yet created.
         if self._show_eff_files and self.eff_text is None:
-            eff_str = self.used_eff_str.replace("\t","") 
-            
+            eff_str = self.used_eff_str.replace("\t", "")
+
             # Set position of text according to amount of lines in the string
             line_count = eff_str.count("\n") + 1
-            yposition_txt = 1 - 0.08 * line_count
-            xposition_txt = 1.01
-            
-            self.eff_text=self.axes.text(
-                xposition_txt, yposition_txt, eff_str,
+            y_position_txt = 1 - 0.08 * line_count
+            x_position_txt = 1.01
+
+            self.eff_text = self.axes.text(
+                x_position_txt, y_position_txt, eff_str,
                 transform=self.axes.transAxes,
                 fontsize=11, fontfamily="monospace")
-            self.axes.transData
-        
+
         for handle in leg.legendHandles:
             handle.set_linewidth(3.0)
 
