@@ -152,13 +152,6 @@ class DepthProfileDialog(QtWidgets.QDialog):
 
         self.exec_()
 
-    def state_changed(self):
-        if self.check_scaleline.isChecked() or self.check_0line.isChecked() \
-                or self.show_eff.isChecked():
-            return True
-        else:
-            return False
-
     def _update_label(self):
         if len(self.used_cuts) <= 1:
             self.label_warning_text.setText('')
