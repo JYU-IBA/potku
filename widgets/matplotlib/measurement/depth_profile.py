@@ -255,8 +255,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             self._position_set = True
         handles, labels = self.axes.get_legend_handles_labels()
         # Removes element letters from the depth profile legend
-        if len(self._ignore_from_graph) > 0:
-            labels = []
+        if len(self._ignore_from_graph) > 0 and len(
+                self._ignore_from_ratio) > 0:
+            self.axes.get_legend().remove()
+            return
 
         # Calculate values to be displayed in the legend box
         # TODO make profile_handler use Element objects as keys so
@@ -318,14 +320,16 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
 
             # Set position of text according to amount of lines in the string
             line_count = eff_str.count("\n") + 1
-            yposition_txt = 1 - 0.08 * line_count
-            xposition_txt = 1.01
+            y_position_txt = 1 - 0.08 * line_count
+            x_position_txt = 1.01
 
             self.eff_text = self.axes.text(
-                xposition_txt, yposition_txt, eff_str,
+                x_position_txt, y_position_txt, eff_str,
                 transform=self.axes.transAxes,
                 fontsize=11, fontfamily="monospace")
-            self.axes.transData
+
+        for handle in leg.legendHandles:
+            handle.set_linewidth(3.0)
 
         for handle in leg.legendHandles:
             handle.set_linewidth(3.0)
