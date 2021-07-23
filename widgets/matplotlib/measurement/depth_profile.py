@@ -254,16 +254,17 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                 [box.x0, box.y0, box.width * 0.8, box.height])
             self._position_set = True
         handles, labels = self.axes.get_legend_handles_labels()
+        ignored_str = set(str(elem) for elem in self._ignore_from_ratio)
+
         # Removes element letters from the depth profile legend
-        if len(self._ignore_from_graph) > 0 and len(
-                self._ignore_from_ratio) > 0:
+        if len(list(self._ignore_from_graph)) == len(handles) or len(list(
+                self._ignore_from_graph)) == len(handles) == 1:
             self.axes.get_legend().remove()
             return
 
-        # Calculate values to be displayed in the legend box
         # TODO make profile_handler use Element objects as keys so
         #   there is no need to do this conversion
-        ignored_str = set(str(elem) for elem in self._ignore_from_ratio)
+
         lim_a, lim_b = self._limit_lines.get_range()
         if self._absolute_values:
             concentrations = self._profile_handler.integrate_concentrations(
@@ -309,6 +310,18 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                 lbl_str = f"{elem_lbl} {round(conc, 3):<7} at./1e15 at./cm²"
             labels_w_percentages.append(lbl_str)
 
+        # Removes element letters + colors from the depth profile legend
+        # depending on the checkboxes
+        if len(ignored_str) > 0:
+            for element in list(ignored_str):  # Every element letter
+                for label in labels_w_percentages:  # Every label
+                    if element in label:  # Every element letter in label
+                        del labels_w_percentages[labels_w_percentages.index(
+                            label)]  # Removes from the legend
+                        for h in handles:  # Every handle
+                            if h._label == element:  # Removes a handle if
+                                # there is a corresponding element
+                                handles.remove(h)  # Goes to the legend too
         leg = self.axes.legend(
             handles, labels_w_percentages, loc=3, bbox_to_anchor=(1, 0),
             borderaxespad=0, prop={"size": 11, "family": "monospace"})
@@ -327,9 +340,6 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                 x_position_txt, y_position_txt, eff_str,
                 transform=self.axes.transAxes,
                 fontsize=11, fontfamily="monospace")
-
-        for handle in leg.legendHandles:
-            handle.set_linewidth(3.0)
 
         for handle in leg.legendHandles:
             handle.set_linewidth(3.0)
