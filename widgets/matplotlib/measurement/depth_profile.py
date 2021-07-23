@@ -99,6 +99,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self._elements = elements
         self._ignore_from_graph: Set[Element] = set()
         self._ignore_from_ratio: Set[Element] = set()
+        self._ignore_from_both: Set[Element] = set()
         self._systematic_error = systematic_error
 
         self._show_eff_files = show_eff_files
@@ -452,7 +453,11 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
 
         self._ignore_from_graph = set(dialog.ignored_from_graph)
         self._ignore_from_ratio = set(dialog.ignored_from_ratio)
+        
+        # Intersection is an union of two sets
+        self._ignore_from_both = self._ignore_from_graph.intersection(self._ignore_from_ratio)
         self._line_chart.hide_lines(self._ignore_from_graph)
+        self._line_chart.hide_legend(self._ignore_from_both)
         self._make_legend_box()
 
     def _toggle_absolute_values(self) -> None:
