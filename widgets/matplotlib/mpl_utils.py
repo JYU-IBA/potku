@@ -296,6 +296,16 @@ class LineChart(GraphWrapper):
                 line.set_linestyle("None")
             else:
                 line.set_linestyle(LineChart._DEFAULT_LINESTYLE)
+                
+    @draw_and_flush
+    def hide_legend(self, legends_to_hide: Set):
+        for label, line in self._lines.items():
+            if label in legends_to_hide:
+                # Underscore in front of a label hides it
+                if not line.get_label().startswith("_"):
+                    line.set_label("_" + line.get_label())
+            else:
+                line.set_label(line.get_label().replace("_",""))
 
     @draw_and_flush
     def set_yscale(self, y_scale: str):
