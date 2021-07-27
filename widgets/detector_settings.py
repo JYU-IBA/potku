@@ -593,13 +593,12 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
             self.request.default_folder) 
         self.efficiency_files = self.obj.get_efficiency_files()
-        self.efficiency_files_list = []    
-        i=0
+        self.efficiency_files_list = []
         for file in self.efficiency_files:
-            file_name = gf.get_root_dir() / self.eff_folder / str(self.efficiency_files[i])
+            file_name = gf.get_root_dir() / self.eff_folder / str(
+                self.efficiency_files[self.efficiency_files.index(file)])
             self.efficiency_files_list.append(file_name)
-            i+=1
-        EfficiencyWidget(self.efficiency_files_list, self)
+        EfficiencyDialog(self.efficiency_files_list, self)
 
     def __open_calibration_dialog(self):
         """
