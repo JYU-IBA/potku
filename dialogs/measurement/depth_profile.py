@@ -85,8 +85,8 @@ class DepthProfileDialog(QtWidgets.QDialog):
     x_axis_units = bnd.bind("group_x_axis_units")
 
     def __init__(self, parent: BaseTab, measurement: Measurement,
-                 global_settings: GlobalSettings, statusbar:
-            Optional[QtWidgets.QStatusBar] = None):
+                 global_settings: GlobalSettings,
+                 statusbar: Optional[QtWidgets.QStatusBar] = None):
         """Inits depth profile dialog.
         
         Args:
@@ -98,6 +98,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_depth_profile_params.ui", self)
 
+        # Basic stuff
         self.parent = parent
         self.measurement = measurement
         self.statusbar = statusbar
@@ -135,15 +136,19 @@ class DepthProfileDialog(QtWidgets.QDialog):
             self._hide_reference_density)
 
         self.systematic_error = DepthProfileDialog.systerr
+
+        # Checkboxes
+        self.systematic_error = DepthProfileDialog.systerr
         self.show_scale_line = DepthProfileDialog.line_scale
         self.show_zero_line = DepthProfileDialog.line_zero
         self.show_used_eff = DepthProfileDialog.used_eff
-        self.eff_files_str = DepthProfileDialog.used_efficiency_files
 
         self.cross_sections = global_settings.get_cross_sections()
 
         self._show_measurement_settings()
         self._show_efficiency_files()
+        # Does not work correctly if self is replaced with DepthProfileDialog
+        self.eff_files_str = self.used_efficiency_files
 
         self.exec_()
 
@@ -218,6 +223,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
             DepthProfileDialog.line_scale = self.show_scale_line
             DepthProfileDialog.systerr = self.systematic_error
             DepthProfileDialog.used_eff = self.show_used_eff
+
             DepthProfileDialog.eff_files_str = self.eff_files_str
 
             sbh.reporter.report(20)
