@@ -28,17 +28,16 @@ along with this program (file named 'LICENCE').
 __author__ = "Aleksi Kauppi"
 __version__ = "2.0"
 
-import widgets.gui_utils as gutils
-
-from PyQt5 import uic
-from PyQt5 import QtCore
 from PyQt5 import QtWidgets
+from PyQt5 import uic
 
+import widgets.gui_utils as gutils
 from widgets.matplotlib.eff_plot import \
     MatplotlibEfficiencyWidget
 
-class EfficiencyWidget(QtWidgets.QWidget):
-    """Efficiency widget which is opened on top of detector settings.
+
+class EfficiencyDialog(QtWidgets.QDialog):
+    """Efficiency dialog which is opened on top of detector settings.
     """
 
     def __init__(self, efficiency_files, parent_widget=None):
@@ -50,16 +49,12 @@ class EfficiencyWidget(QtWidgets.QWidget):
         """
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_eff_plot.ui", self)
-        
+
         self.parent_widget = parent_widget
         self.efficiency_files = efficiency_files
-
-        self.show()
-        self.raise_()
-        self.activateWindow()
-
-
-        self.matplotlib = MatplotlibEfficiencyWidget(self, self.efficiency_files)
+        self.matplotlib = MatplotlibEfficiencyWidget(self,
+                                                     self.efficiency_files)
+        self.exec_()
 
     def delete(self):
         """Delete variables and do clean up.
