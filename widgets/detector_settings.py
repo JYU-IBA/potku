@@ -51,7 +51,7 @@ from modules.enums import DetectorType
 from modules.foil import CircularFoil
 from modules.request import Request
 from widgets.foil import FoilWidget
-from widgets.eff_plot import EfficiencyWidget
+from widgets.eff_plot import EfficiencyDialog
 from widgets.scientific_spinbox import ScientificSpinBox
 
 
@@ -565,7 +565,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             file_name = gf.get_root_dir() / self.eff_folder / str(self.efficiency_files[i])
             self.efficiency_files_list.append(file_name)
             i+=1
-        EfficiencyWidget(self.efficiency_files_list, self)
+        EfficiencyDialog(self.efficiency_files_list, self)
 
     def __open_calibration_dialog(self):
         """
