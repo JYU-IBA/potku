@@ -30,42 +30,17 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli " \
              "Kaiponen \n Heta Rekilä \n Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
+import functools
 import gc
 import os
 import platform
 import shutil
 import subprocess
 import sys
-import functools
-
-import dialogs.dialog_functions as df
-import widgets.input_validation as iv
-import widgets.gui_utils as gutils
-
 from datetime import datetime
 from datetime import timedelta
 from pathlib import Path
 from typing import Union
-
-from dialogs.about import AboutDialog
-from dialogs.global_settings import GlobalSettingsDialog
-from dialogs.measurement.import_binary import ImportDialogBinary
-from dialogs.measurement.import_measurement import ImportMeasurementsDialog
-from dialogs.measurement.load_measurement import LoadMeasurementDialog
-from dialogs.new_request import RequestNewDialog
-from dialogs.request_settings import RequestSettingsDialog
-from dialogs.simulation.new_simulation import SimulationNewDialog
-from dialogs.file_dialogs import open_file_dialog
-
-from widgets.gui_utils import StatusBarHandler
-from widgets.icon_manager import IconManager
-from widgets.base_tab import BaseTab
-
-from modules.global_settings import GlobalSettings
-from modules.measurement import Measurement
-from modules.request import Request
-from modules.simulation import Simulation
-from modules.selection import Selector
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -75,6 +50,26 @@ from PyQt5.QtWidgets import QAbstractItemView
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QTreeWidgetItem
 
+import dialogs.dialog_functions as df
+import widgets.gui_utils as gutils
+import widgets.input_validation as iv
+from dialogs.about import AboutDialog
+from dialogs.file_dialogs import open_file_dialog
+from dialogs.global_settings import GlobalSettingsDialog
+from dialogs.measurement.import_binary import ImportDialogBinary
+from dialogs.measurement.import_measurement import ImportMeasurementsDialog
+from dialogs.measurement.load_measurement import LoadMeasurementDialog
+from dialogs.new_request import RequestNewDialog
+from dialogs.request_settings import RequestSettingsDialog
+from dialogs.simulation.new_simulation import SimulationNewDialog
+from modules.global_settings import GlobalSettings
+from modules.measurement import Measurement
+from modules.request import Request
+from modules.selection import Selector
+from modules.simulation import Simulation
+from widgets.base_tab import BaseTab
+from widgets.gui_utils import StatusBarHandler
+from widgets.icon_manager import IconManager
 from widgets.measurement.tab import MeasurementTabWidget
 from widgets.simulation.tab import SimulationTabWidget
 
@@ -579,7 +574,7 @@ class Potku(QtWidgets.QMainWindow):
             self.__change_tab_icon(clicked_item)
 
         except AttributeError as e:
-            print(e)    # TODO remove print
+            print(e)  # TODO remove print
         sbh.reporter.report(100)
 
     def import_pelletron(self):
@@ -787,9 +782,10 @@ class Potku(QtWidgets.QMainWindow):
                 self.request.directory, sample_item.obj.directory,
                 Simulation.DIRECTORY_PREFIX + "%02d" % serial_number + "-" +
                 dialog.name, f"{dialog.name}.simulation"), sample_item.obj,
-                load_data=True, progress=sbh.reporter.get_sub_reporter(
-                    lambda x: 0.9 * x
-                ))
+                             load_data=True,
+                             progress=sbh.reporter.get_sub_reporter(
+                                 lambda x: 0.9 * x
+                             ))
             self.__remove_info_tab()
 
             sbh.reporter.report(100)
@@ -969,7 +965,7 @@ class Potku(QtWidgets.QMainWindow):
                                          master_measurement_name))
                     elif tab_widget.obj in nonslaves or \
                             not master_measurement_name or type(
-                            tab_widget.obj) == Simulation:
+                        tab_widget.obj) == Simulation:
                         item.setText(0, tab_name)
                     else:
                         item.setText(0, "{0} (slave)".format(tab_name))
