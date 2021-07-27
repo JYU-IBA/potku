@@ -525,9 +525,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
                     f"{current_eff_file.stem}.\n",
                     QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
+        self.efficiency_files = self.obj.get_efficiency_files()
         # Store the folder where we previously fetched an eff-file
         gutils.set_potku_setting(DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
-                                 str(selected_eff_files[0].parent))
+                                 str(eff_file.parent))
 
     def __check_chosen_elements(self, cuts_list, current_eff_file,
                                 current_eff_files, eff_file):
@@ -559,7 +560,6 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             else:
                 self.obj.add_efficiency_file(eff_file)
                 current_eff_files.add(current_eff_file)
-                self.efficiency_files = self.obj.get_efficiency_files()
                 break
 
     def __remove_efficiency(self):
