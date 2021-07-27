@@ -28,35 +28,34 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 __version__ = "2.0"
 
 import os
-
-import dialogs.dialog_functions as df
-import widgets.gui_utils as gutils
-
 from collections import Counter
 from pathlib import Path
 from typing import Optional, Union
-
-from dialogs.energy_spectrum import EnergySpectrumWidget
-from dialogs.simulation.optimization import OptimizationDialog
-from dialogs.simulation.settings import SimulationSettingsDialog
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import pyqtSignal
 
+import dialogs.dialog_functions as df
+import widgets.gui_utils as gutils
+
+from dialogs.energy_spectrum import EnergySpectrumWidget
+from dialogs.simulation.optimization import OptimizationDialog
+from dialogs.simulation.settings import SimulationSettingsDialog
+
+from modules.concurrency import CancellationToken
+from modules.element_simulation import ElementSimulation
+from modules.enums import OptimizationType
+from modules.global_settings import GlobalSettings
+from modules.observing import ProgressReporter
+from modules.request import Request
+from modules.simulation import Simulation
+
+from widgets.base_tab import BaseTab
+from widgets.icon_manager import IconManager
 from widgets.simulation.optimized_fluence import OptimizedFluenceWidget
 from widgets.simulation.optimized_recoils import OptimizedRecoilsWidget
 from widgets.simulation.target import TargetWidget
-from widgets.base_tab import BaseTab
-from widgets.icon_manager import IconManager
-
-from modules.enums import OptimizationType
-from modules.element_simulation import ElementSimulation
-from modules.simulation import Simulation
-from modules.request import Request
-from modules.global_settings import GlobalSettings
-from modules.observing import ProgressReporter
-from modules.concurrency import CancellationToken
 
 
 class SimulationTabWidget(BaseTab):
@@ -92,6 +91,7 @@ class SimulationTabWidget(BaseTab):
 
         self.openSettingsButton.clicked.connect(self.__open_settings)
         self.optimizeButton.clicked.connect(self.__open_optimization_dialog)
+        BaseTab.check_default_settings(self)
 
     def get_saveable_widgets(self):
         """Returns a list of Widgets whose geometries can be saved.
@@ -149,7 +149,7 @@ class SimulationTabWidget(BaseTab):
         icon = self.icon_manager.get_icon("potku_icon.ico")
         self.add_widget(self.optimization_result_widget, icon=icon)
         return self.optimization_result_widget
-    
+
     def check_previous_state_files(
             self, progress: Optional[ProgressReporter] = None) -> None:
         """Check if saved state for Energy Spectra exist.
@@ -235,6 +235,8 @@ class SimulationTabWidget(BaseTab):
                         measurement=False, update=True)
 
     def __open_settings(self) -> None:
+        """Opens simulation settings dialog.
+        """
         SimulationSettingsDialog(self, self.obj, self.icon_manager)
 
     def __open_optimization_dialog(self) -> None:
@@ -284,3 +286,16 @@ class SimulationTabWidget(BaseTab):
             save_file_path.unlink()
         except OSError:
             pass
+
+    def check_default_settings_clicked(self) -> None:
+        """Gives an warning if the default settings are checked in the
+        settings tab.
+        """
+        if not self.obj.use_request_settings:
+            self.warning_text.setText("Not using request setting values ("
+                                      "default)")
+            self.warning_text.setStyleSheet("background-color: yellow")
+        else:
+            self.warning_text.setText("")
+            self.warning_text.setStyleSheet("")
+

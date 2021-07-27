@@ -26,23 +26,22 @@ __version__ = "2.0"
 
 import abc
 import logging
+from pathlib import Path
+from typing import Union, Optional, Callable, Dict
+
+from PyQt5 import QtCore
+from PyQt5 import QtGui
+from PyQt5 import QtWidgets
 
 import widgets.gui_utils as gutils
 
-from typing import Union, Optional, Callable, Dict
-from pathlib import Path
-
-from widgets.log import LogWidget
-from widgets.gui_utils import QtABCMeta
-from widgets.icon_manager import IconManager
-
-from modules.ui_log_handlers import CustomLogHandler
 from modules.measurement import Measurement
 from modules.simulation import Simulation
+from modules.ui_log_handlers import CustomLogHandler
 
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
-from PyQt5 import QtGui
+from widgets.gui_utils import QtABCMeta
+from widgets.icon_manager import IconManager
+from widgets.log import LogWidget
 
 
 class BaseTab(QtWidgets.QWidget, abc.ABC, metaclass=QtABCMeta):
@@ -93,8 +92,8 @@ class BaseTab(QtWidgets.QWidget, abc.ABC, metaclass=QtABCMeta):
         else:
             subwindow = self.mdiArea.addSubWindow(
                 widget, QtCore.Qt.CustomizeWindowHint |
-                QtCore.Qt.WindowTitleHint |
-                QtCore.Qt.WindowMinMaxButtonsHint)
+                        QtCore.Qt.WindowTitleHint |
+                        QtCore.Qt.WindowMinMaxButtonsHint)
         if icon is not None:
             subwindow.setWindowIcon(icon)
         subwindow.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -204,3 +203,16 @@ class BaseTab(QtWidgets.QWidget, abc.ABC, metaclass=QtABCMeta):
         active_widget = self.get_default_widget()
         if active_widget is not None:
             self.mdiArea.setActiveSubWindow(active_widget.subwindow)
+
+    def check_default_settings(self) -> None:
+        """Gives an warning if the default settings are checked in the
+        settings tab.
+        """
+        if not self.obj.use_request_settings:
+            self.warning_text.setText("Not using request setting values ("
+                                      "default)")
+            self.warning_text.setStyleSheet("background-color: yellow")
+        else:
+            self.warning_text.setText("")
+            self.warning_text.setStyleSheet("")
+

@@ -30,12 +30,15 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import os
+from pathlib import Path
+from typing import Optional
+
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+from PyQt5 import uic
 
 import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
-
-from pathlib import Path
-from typing import Optional
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.energy_spectrum import EnergySpectrumWidget
@@ -46,17 +49,13 @@ from dialogs.measurement.element_losses import ElementLossesWidget
 from dialogs.measurement.settings import MeasurementSettingsDialog
 
 from modules.element import Element
-from modules.measurement import Measurement
 from modules.enums import DepthProfileUnit
-
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
-from PyQt5 import uic
+from modules.measurement import Measurement
 
 from widgets.base_tab import BaseTab
-from widgets.measurement.tofe_histogram import TofeHistogramWidget
 from widgets.gui_utils import StatusBarHandler
 from widgets.icon_manager import IconManager
+from widgets.measurement.tofe_histogram import TofeHistogramWidget
 
 
 class MeasurementTabWidget(BaseTab):
@@ -101,6 +100,7 @@ class MeasurementTabWidget(BaseTab):
         # Enable master button
         self.toggle_master_button()
         self.set_icons()
+        BaseTab.check_default_settings(self)
 
     def get_default_widget(self):
         """Histogram will be the widget that gets activated when the tab
@@ -198,7 +198,7 @@ class MeasurementTabWidget(BaseTab):
             progress.report(100)
 
     def make_depth_profile(self, directory: Path, name: str, serial_number_m:
-                           int, sample_folder_name: str, progress=None):
+    int, sample_folder_name: str, progress=None):
         """Make depth profile from loaded lines from saved file.
         
         Args:
@@ -355,7 +355,7 @@ class MeasurementTabWidget(BaseTab):
     def __open_settings(self):
         """Opens measurement settings dialog.
         """
-        MeasurementSettingsDialog(self.obj, self.icon_manager)
+        MeasurementSettingsDialog(self, self.obj, self.icon_manager)
 
     def open_depth_profile(self):
         """Opens depth profile dialog.
@@ -537,6 +537,18 @@ class MeasurementTabWidget(BaseTab):
 
         if progress is not None:
             progress.report(100)
+
+    def check_default_settings_clicked(self) -> None:
+        """Gives an warning if the default settings are checked in the
+        settings tab.
+        """
+        if not self.obj.use_request_settings:
+            self.warning_text.setText("Not using request setting values ("
+                                      "default)")
+            self.warning_text.setStyleSheet("background-color: yellow")
+        else:
+            self.warning_text.setText("")
+            self.warning_text.setStyleSheet("")
 
 
 def rreplace(s, old, new, old_folder_prefix, new_folder_prefix,
