@@ -32,27 +32,26 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import hashlib
+import itertools
 import json
 import os
 import shutil
 import time
-import itertools
-
-from pathlib import Path
 from collections import namedtuple
-from typing import Optional
+from pathlib import Path
 from typing import List
+from typing import Optional
 from typing import Tuple
 
-from . import general_functions as gf
 from . import file_paths as fpaths
+from . import general_functions as gf
+from .base import Serializable
 from .cut_file import CutFile
 from .detector import Detector
 from .profile import Profile
 from .run import Run
 from .target import Target
 from .ui_log_handlers import MeasurementLogger
-from .base import Serializable
 
 
 class Measurements:
@@ -585,6 +584,8 @@ class Measurement(MeasurementLogger, Serializable):
 
         with measurement_file.open("w") as file:
             json.dump(obj_measurement, file, indent=4)
+
+        return measurement_file
 
     def _info_to_file(self, info_file: Optional[Path] = None):
         """Write an .info file.

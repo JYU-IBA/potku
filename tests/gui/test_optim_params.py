@@ -25,16 +25,14 @@ __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 import unittest
-import tests.gui
-
-from modules.nsgaii import OptimizationType
-
-from widgets.simulation.optimization_parameters import \
-    OptimizationRecoilParameterWidget
-from widgets.simulation.optimization_parameters import \
-    OptimizationFluenceParameterWidget
 
 from PyQt5.QtCore import QTime
+
+from modules.nsgaii import OptimizationType
+from widgets.simulation.optimization_parameters import \
+    OptimizationFluenceParameterWidget
+from widgets.simulation.optimization_parameters import \
+    OptimizationRecoilParameterWidget
 
 
 class TestRecoilParameters(unittest.TestCase):
@@ -115,7 +113,7 @@ class TestRecoilParameters(unittest.TestCase):
             "cross_p": 0.9,
             "mut_p": 1.0,
             "check_time": 20,
-            "skip_simulation": False
+            "skip_simulation": True
         }
         fluence_expected = {
             "stop_percent": 0.7,

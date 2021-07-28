@@ -28,19 +28,17 @@ __version__ = "2.0"
 
 import abc
 
-import widgets.binding as bnd
-import widgets.gui_utils as gutils
-
-from modules.nsgaii import OptimizationType
-
-from widgets.binding import PropertyBindingWidget
-from widgets.gui_utils import QtABCMeta
-from widgets.scientific_spinbox import ScientificSpinBox
-
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 from PyQt5.QtCore import Qt
+
+import widgets.binding as bnd
+import widgets.gui_utils as gutils
+from modules.nsgaii import OptimizationType
+from widgets.binding import PropertyBindingWidget
+from widgets.gui_utils import QtABCMeta
+from widgets.scientific_spinbox import ScientificSpinBox
 
 _REC_TYPES = {
     "4-point box": ("box", 5),
@@ -187,6 +185,7 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
         self.lowerXDoubleSpinBox.setLocale(locale)
         self.upperYDoubleSpinBox.setLocale(locale)
         self.lowerYDoubleSpinBox.setLocale(locale)
+
 
 class OptimizationFluenceParameterWidget(OptimizationParameterWidget):
     """
