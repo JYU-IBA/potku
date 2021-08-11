@@ -180,7 +180,7 @@ class ElementManager:
         if element in first_layer.elements:
             ys = [element.amount]
         else: 
-            ys = [0.00]
+            ys = [self.parent.get_minimum_concentration()]
         
         # Make two points for each change between layers
         layer_index = 0
@@ -192,14 +192,12 @@ class ElementManager:
             xs.append(x_2)
             
             # Set y-coordinate for the first point
-            for element2 in layer.elements:
-                if element2.symbol is element.symbol:
-                    y_1 = element2.amount
+            for current_element in layer.elements:
+                if current_element.symbol == element.symbol:
+                    y_1 = current_element.amount
                     break
-                elif element in layer.elements:
-                    y_1 = element.amount
                 else:
-                    y_1 = 0.0
+                    y_1 = self.parent.get_minimum_concentration()
                     
             ys.append(y_1)
 
@@ -209,16 +207,17 @@ class ElementManager:
                 current_symbol = element.symbol
                 
                 for next_element in next_layer.elements:
-                    if next_element.symbol is current_symbol:
+                    if next_element.symbol == current_symbol:
                         y_2 = next_element.amount
                         break
                     else:
-                        y_2 = 0.0  
+                        y_2 = self.parent.get_minimum_concentration()  
             
             ys.append(y_2)
             layer_index += 1
             
-        # Removes last x-coordinate from the list
+        # Removes last point from the list
+        ys.pop()
         xs.pop()
 
         xys = list(zip(xs, ys))
