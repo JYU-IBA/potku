@@ -749,7 +749,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         espe_file = Path(elem_sim.directory, f"{rec_elem.get_full_name()}.simu")
 
         if espe_file in self.plots:
-            espe, _ = elem_sim.calculate_espe(rec_elem, ch=self.channel_width)
+            verbose = None
+            espe, _ = elem_sim.calculate_espe(rec_elem, ch=self.channel_width, verbose = verbose)
 
             data = get_axis_values(espe)
 
