@@ -174,6 +174,9 @@ class ElementManager:
             Created ElementSimulation
         """
         # TODO check that element does not exist
+        
+        # There is no y_2 if there is only one layer
+        y_2 = None
         # Set first point
         xs = [0.00]
         first_layer = self.parent.target.layers[0]
@@ -213,11 +216,13 @@ class ElementManager:
                     else:
                         y_2 = self.parent.get_minimum_concentration()  
             
-            ys.append(y_2)
+            if y_2 is not None:
+                ys.append(y_2)
             layer_index += 1
             
         # Removes last point from the list
-        ys.pop()
+        if y_2 is not None:
+            ys.pop()
         xs.pop()
 
         xys = list(zip(xs, ys))
