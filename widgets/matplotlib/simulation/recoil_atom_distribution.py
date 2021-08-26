@@ -196,7 +196,8 @@ class ElementManager:
             
             # Set y-coordinate for the first point
             for current_element in layer.elements:
-                if current_element.symbol == element.symbol:
+                if (current_element.symbol == element.symbol and 
+                        current_element.isotope == element.isotope):
                     y_1 = current_element.amount
                     break
                 else:
@@ -208,9 +209,11 @@ class ElementManager:
             if layer_index + 1 < len(self.parent.target.layers):
                 next_layer = self.parent.target.layers[layer_index+1]
                 current_symbol = element.symbol
+                current_isotope = element.isotope
                 
                 for next_element in next_layer.elements:
-                    if next_element.symbol == current_symbol:
+                    if (next_element.symbol == current_symbol and
+                            next_element.isotope == current_isotope):
                         y_2 = next_element.amount
                         break
                     else:
