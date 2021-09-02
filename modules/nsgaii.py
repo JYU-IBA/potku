@@ -65,7 +65,7 @@ class Nsgaii(Observable):
                  recoil_type="box", number_of_processes=1, cross_p=0.9, mut_p=1,
                  stop_percent=0.3, check_time=20, ch=0.025,
                  measurement=None, cut_file=None, dis_c=20,
-                 dis_m=20, check_max=900, check_min=0, skip_simulation=False,
+                 dis_m=20, check_max=900, check_min=0, skip_simulation=True,
                  use_efficiency=False, optimize_by_area=True, verbose=False):
 
         """
@@ -393,13 +393,6 @@ class Nsgaii(Observable):
                 return obj_values(sum_diff, area)
         # If failed to create energy spectrum
         return obj_values(np.inf, np.inf)
-
-    def check(self):
-        rbtn = self.sender()
-        if rbtn.isChecked() == True:
-            return True
-        else:
-            False
 
     def find_bit_variable_lengths(self):
         # Find needed size to hold x and y in binary
