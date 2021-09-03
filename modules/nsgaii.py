@@ -394,13 +394,6 @@ class Nsgaii(Observable):
         # If failed to create energy spectrum
         return obj_values(np.inf, np.inf)
 
-    def check(self):
-        rbtn = self.sender()
-        if rbtn.isChecked() == True:
-            return True
-        else:
-            False
-
     def find_bit_variable_lengths(self):
         # Find needed size to hold x and y in binary
         size_of_x = (self.upper_limits[0] - self.lower_limits[0]) * 100
