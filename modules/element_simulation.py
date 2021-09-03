@@ -829,7 +829,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def calculate_espe(
             self,
             recoil_element: RecoilElement,
-            verbose: False,
+            verbose: bool = False,
             ch: Optional[float] = None,
             fluence: Optional[float] = None,
             optimization_type: Optional[OptimizationType] = None,
