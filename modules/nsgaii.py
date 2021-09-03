@@ -65,7 +65,7 @@ class Nsgaii(Observable):
                  recoil_type="box", number_of_processes=1, cross_p=0.9, mut_p=1,
                  stop_percent=0.3, check_time=20, ch=0.025,
                  measurement=None, cut_file=None, dis_c=20,
-                 dis_m=20, check_max=900, check_min=0, skip_simulation=True,
+                 dis_m=20, check_max=900, check_min=0, skip_simulation=False,
                  use_efficiency=False, optimize_by_area=True, verbose=False):
 
         """
