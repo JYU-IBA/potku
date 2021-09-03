@@ -69,7 +69,7 @@ class EnergySpectrum:
             no_foil: bool = False,
             verbose: bool = True):
         """Inits energy spectrum
-        
+
         Args:
             measurement: A Measurement class object for which Energy Spectrum
                          is made.
@@ -347,12 +347,12 @@ class EnergySpectrum:
 
             x_files_flat = [item for sublist in x_files for item in sublist]
             x_files_flat = np.unique(x_files_flat)
+
             # Adds sum spectra
             y_sum = []
             for i in range(len(keys)):
                 y_sum.append(np.interp(x_files_flat, x_files[i], y_files[i]))
-            y_sum = np.sum(y_sum, axis=0)
-
+            y_sum = [np.sum(y_sum, axis=0)]
             sum_key = 'SUM'
             for value in espes:
                 sum_key += '.' + value.split('.')[0]
@@ -364,5 +364,6 @@ class EnergySpectrum:
             numpy_array = np.array(
                 espes[sum_key], dtype=[("float", float), ("int", int)])
             np.savetxt(path, numpy_array, delimiter=" ", fmt="%5.5f %6d")
-
-        return espes
+            return espes
+        else:
+            return espes
