@@ -585,8 +585,6 @@ class Measurement(MeasurementLogger, Serializable):
         with measurement_file.open("w") as file:
             json.dump(obj_measurement, file, indent=4)
 
-        return measurement_file
-
     def _info_to_file(self, info_file: Optional[Path] = None):
         """Write an .info file.
 
