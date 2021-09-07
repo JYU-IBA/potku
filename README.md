@@ -29,7 +29,7 @@ Please refer to the [full license](LICENSE) for details.
 
 # Getting started with development
 
-First step is to install Python 3.6 along with pip package installer. Make 
+First step is to install the latest version of Python 3.6.x along with pip package installer. Make 
 sure the paths of the executables are added to your PATH environment variable. Then install Pipenv:
  
 ````
@@ -184,6 +184,16 @@ or
 `````
 $ pipenv run ./create_bundle.sh
 `````
+
+## Issues
+
+### Timing-based tests
+
+Some tests are timing-based. They may fail if executed too slowly or quickly.
+
+### Tests using temporary files
+
+Some tests in `tests/unit/test_general_functions.py` or `tests/unit/test_get_espe.py` may fail because of permission issues with the directory returned by `tempfile.TemporaryDirectory()`. See issue #189 for more information.
 
 ## Licence
 
