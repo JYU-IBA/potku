@@ -328,8 +328,8 @@ class TestCategorizedLoggers(unittest.TestCase):
     def test_logger_returns_paths_to_log_files(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_dir = Path(tmp_dir)
-            info_log = tmp_dir / "default.log"
-            error_log = tmp_dir / "errors.log"
+            info_log = (tmp_dir / "default.log").resolve()
+            error_log = (tmp_dir / "errors.log").resolve()
 
             logger = MeasurementLogger("mesu")
             logger.set_up_log_files(tmp_dir)
