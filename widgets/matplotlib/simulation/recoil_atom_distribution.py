@@ -1394,19 +1394,32 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.parent.elementInfoWidget.hide()
         self.update_plot()
 
-    def remove_all_elements(self):
+    def remove_all_elements(self, export_dialog=False):
         """Removes all element simulations
         """
         # Confirmation dialog
-        reply = QtWidgets.QMessageBox.question(
-            self.parent, "Confirmation",
-            "If you delete all element simulations, all possible recoils "
-            f"connected to them will be deleted. "
-            f"Their simulations will be stopped. "
-            f"This also applies to possible optimizations.\n\n"
-            "Are you sure you want to delete all element simulations?",
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-            QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+        if not export_dialog:
+            reply = QtWidgets.QMessageBox.question(
+                self.parent, "Confirmation",
+                "If you delete all element simulations, all possible recoils "
+                f"connected to them will be deleted. "
+                f"Their simulations will be stopped. "
+                f"This also applies to possible optimizations.\n\n"
+                "Are you sure you want to delete all element simulations?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+        # Confirmation dialog when exporting elements
+        else:
+            reply = QtWidgets.QMessageBox.question(
+                self.parent, "Confirmation",
+                "Replace all existing element simulations? "
+                f"\n\nAll existing element simulations and all possible recoils "
+                f"connected to them will be deleted. "
+                f"Their simulations will be stopped. "
+                f"This also applies to possible optimizations.",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)        
+            
         if reply == QtWidgets.QMessageBox.No or reply == \
                 QtWidgets.QMessageBox.Cancel:
             return  # If clicked Yes, then continue normally
@@ -1421,6 +1434,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """Export elements from target layers into element simulations if they
         do not already exist.
         """
+        if len(self.element_manager.element_simulations) >= 1:
+            self.remove_all_elements(export_dialog=True)
         for layer in self.target.layers:
             for element in layer.elements:
                 if not self.element_manager.has_element(element):
