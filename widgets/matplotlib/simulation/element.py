@@ -29,23 +29,19 @@ __version__ = "2.0"
 
 import copy
 import platform
+from collections import Counter
+
+from PyQt5 import QtWidgets
 
 import modules.general_functions as general
-
-from widgets.icon_manager import IconManager
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.energy_spectrum import EnergySpectrumWidget
 from dialogs.simulation.element_simulation_settings import \
     ElementSimulationSettingsDialog
-
-from collections import Counter
-
-from modules.recoil_element import RecoilElement
-from modules.element_simulation import ElementSimulation
 from modules.element import Element
-
-from PyQt5 import QtWidgets
-
+from modules.element_simulation import ElementSimulation
+from modules.recoil_element import RecoilElement
+from widgets.icon_manager import IconManager
 from widgets.simulation.circle import Circle
 from widgets.simulation.recoil_element import RecoilElementWidget
 

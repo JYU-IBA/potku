@@ -33,7 +33,6 @@ __version__ = "2.0"
 import re
 
 from . import masses as masses
-
 from .base import MCERDParameterContainer
 
 
@@ -41,6 +40,7 @@ class Element(MCERDParameterContainer):
     """
     Element class that handles information about one element.
     """
+
     def __init__(self, symbol, isotope=None, amount=0.0, sequence=0):
         """Initializes an element object.
         Args:
@@ -112,8 +112,8 @@ class Element(MCERDParameterContainer):
         """
         if self.isotope and self.amount:
             return "{0}{1}{2}".format(int(round(self.isotope)), self.symbol,
-                                       self.amount)
-        if self.isotope:    # TODO unnecessary int?
+                                      self.amount)
+        if self.isotope:  # TODO unnecessary int?
             return "{0}{1}".format(int(round(self.isotope)), self.symbol)
         if self.amount:
             return "{0}{1}".format(self.symbol, self.amount)
@@ -267,10 +267,10 @@ class Element(MCERDParameterContainer):
                 })
 
         isotopes.extend({
-                "element": cls(symbol, iso.pop("number")),
-                **iso
-            }
-            for iso in masses.get_isotopes(
-                symbol, filter_unlikely=True, sort_by_abundance=True))
+                            "element": cls(symbol, iso.pop("number")),
+                            **iso
+                        }
+                        for iso in masses.get_isotopes(
+            symbol, filter_unlikely=True, sort_by_abundance=True))
 
         return isotopes

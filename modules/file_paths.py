@@ -25,15 +25,15 @@ __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 from pathlib import Path
-from typing import Union
-from typing import Optional
-from typing import Iterable
-from typing import Tuple
 from typing import Callable
+from typing import Iterable
 from typing import Iterator
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
-from .enums import OptimizationType
 from . import general_functions as gf
+from .enums import OptimizationType
 
 
 def get_erd_file_name(recoil_element: "RecoilElement", seed: Union[int, str],
@@ -83,7 +83,7 @@ def get_seed(erd_file: Path) -> Optional[int]:
 
 def validate_erd_file_names(erd_files: Iterable[Union[Path, str]],
                             recoil_element: "RecoilElement") -> \
-                            Iterator[Tuple[Path, int]]:
+        Iterator[Tuple[Path, int]]:
     """Checks if the iterable of .erd files contains valid file names
     for the given recoil element.
 
@@ -115,7 +115,7 @@ def is_erd_file(recoil_element: "RecoilElement", file: Path) -> bool:
     recoil element.
     """
     return file.name.startswith(recoil_element.get_full_name()) and \
-        file.suffix == ".erd"
+           file.suffix == ".erd"
 
 
 def recoil_filter(prefix: str) -> Callable:
@@ -148,8 +148,8 @@ def is_optfl_result(prefix: str, file: Path) -> bool:
     """Checks whether a file name is a optfl result for the given prefix.
     """
     return file.name.startswith(prefix) and \
-        file.name.endswith("-optfl.result") and \
-        not file.name[file.name.index(prefix) + len(prefix)].isalpha()
+           file.name.endswith("-optfl.result") and \
+           not file.name[file.name.index(prefix) + len(prefix)].isalpha()
 
 
 def is_optfirst(prefix: str, file: Path) -> bool:
