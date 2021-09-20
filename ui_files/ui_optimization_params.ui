@@ -97,7 +97,36 @@
         </spacer>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBox">
+        <widget class="QGroupBox" name="methodGroupBox">
+         <property name="title">
+          <string/>
+         </property>
+         <property name="flat">
+          <bool>false</bool>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <item>
+           <widget class="QRadioButton" name="nsgaiiRadioButton">
+            <property name="text">
+             <string>NSGA-II (slow)</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="linearRadioButton">
+            <property name="text">
+             <string>Linear (fast)</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="typeGroupBox">
          <property name="title">
           <string/>
          </property>

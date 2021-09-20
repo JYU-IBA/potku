@@ -40,7 +40,7 @@ import widgets.binding as bnd
 import widgets.gui_utils as gutils
 from modules.concurrency import CancellationToken
 from modules.element_simulation import ElementSimulation
-from modules.enums import OptimizationType
+from modules.enums import OptimizationType, OptimizationMethod
 from modules.nsgaii import Nsgaii
 from modules.simulation import Simulation
 from widgets.binding import PropertySavingWidget
@@ -94,6 +94,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         super().__init__()
         self.simulation = simulation
         self.tab = parent
+        self.current_method = OptimizationMethod.NSGAII
         self.current_mode = OptimizationType.RECOIL
 
         uic.loadUi(gutils.get_ui_dir() / "ui_optimization_params.ui", self)
@@ -111,15 +112,22 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         self.pushButton_Cancel.clicked.connect(self.close)
         self.pushButton_OK.clicked.connect(self.start_optimization)
 
-        self.radios = QtWidgets.QButtonGroup(self)
-        self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
+        self.method_radios = QtWidgets.QButtonGroup(self)
+        self.method_radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
+            self.choose_optimization_method)
+
+        self.method_radios.addButton(self.nsgaiiRadioButton)
+        self.method_radios.addButton(self.linearRadioButton)
+
+        self.mode_radios = QtWidgets.QButtonGroup(self)
+        self.mode_radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
             self.choose_optimization_mode)
         self.parametersLayout.addWidget(self.recoil_widget)
         self.parametersLayout.addWidget(self.fluence_widget)
         self.fluence_widget.hide()
 
-        self.radios.addButton(self.fluenceRadioButton)
-        self.radios.addButton(self.recoilRadioButton)
+        self.mode_radios.addButton(self.fluenceRadioButton)
+        self.mode_radios.addButton(self.recoilRadioButton)
 
         gutils.fill_tree(
             self.simulationTreeWidget.invisibleRootItem(),
@@ -227,6 +235,14 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         _, max_x = elem_sim.get_main_recoil().get_range()
         _, prev_y = self.recoil_widget.upper_limits
         self.recoil_widget.upper_limits = max_x, prev_y
+
+    def choose_optimization_method(self, button, checked):
+        """Choose whether to use NSGA-II or linear optimization method."""
+        if checked:
+            if button.text() == "NSGA-II (slow)":
+                self.current_method = OptimizationMethod.NSGAII
+            else:
+                self.current_method = OptimizationMethod.LINEAR
 
     def choose_optimization_mode(self, button, checked):
         """Choose whether to optimize recoils or fluence. Show correct widget.
