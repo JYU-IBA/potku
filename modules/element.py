@@ -41,7 +41,7 @@ class Element(MCERDParameterContainer):
     """
     Element class that handles information about one element.
     """
-    def __init__(self, symbol, isotope=None, amount=0.0):
+    def __init__(self, symbol, isotope=None, amount=0.0, sequence=0):
         """Initializes an element object.
         Args:
               symbol: Two letter symbol of the element. E.g. 'He' for Helium.
@@ -53,6 +53,7 @@ class Element(MCERDParameterContainer):
         self.symbol = symbol
         self.isotope = isotope
         self.amount = amount
+        self.sequence = sequence
 
     @classmethod
     def from_string(cls, element_str):
@@ -66,21 +67,31 @@ class Element(MCERDParameterContainer):
         """
         if element_str == 'SUM':
             m = re.match(r"(?P<isotope>[0-9]{0,3})(?P<symbol>[a-zA-Z]{1,3})"
-                     r"(\s(?P<amount>\d*(\.?\d+)?))?", element_str.strip())
+                         r"(\s(?P<amount>\d*(\.?\d+)?))?", element_str.strip())
         else:
             m = re.match(r"(?P<isotope>[0-9]{0,3})(?P<symbol>[a-zA-Z]{1,2})"
-                     r"(\s(?P<amount>\d*(\.?\d+)?))?", element_str.strip())
+                         r"(#(?P<sequence>[0-9]+))?"
+                         r"(\s(?P<amount>\d*(\.?\d+)?))?", element_str.strip())
         if m:
             symbol = m.group("symbol")
             isotope = m.group("isotope")
             amount = m.group("amount")
+            sequence = m.group("sequence")
 
-            if isotope and amount:
+            if isotope and amount and sequence:
+                return cls(symbol, int(isotope), float(amount), sequence=int(sequence))
+            elif isotope and amount:
                 return cls(symbol, int(isotope), float(amount))
+            elif isotope and sequence:
+                return cls(symbol, int(isotope), sequence=int(sequence))
+            elif amount and sequence:
+                return cls(symbol, float(amount), sequence=int(sequence))
             elif isotope:
                 return cls(symbol, int(isotope))
             elif amount:
                 return cls(symbol, None, float(amount))
+            elif sequence:
+                return cls(symbol, sequence=int(sequence))
             else:
                 return cls(symbol)
         else:
@@ -100,12 +111,14 @@ class Element(MCERDParameterContainer):
             Returns element, isotope and amount in string format.
         """
         if self.isotope and self.amount:
-            return "{0}{1} {2}".format(int(round(self.isotope)), self.symbol,
+            return "{0}{1}{2}".format(int(round(self.isotope)), self.symbol,
                                        self.amount)
         if self.isotope:    # TODO unnecessary int?
             return "{0}{1}".format(int(round(self.isotope)), self.symbol)
         if self.amount:
-            return "{0} {1}".format(self.symbol, self.amount)
+            return "{0}{1}".format(self.symbol, self.amount)
+        if self.sequence:
+            return "{0}{1}".format(self.symbol, self.sequence)
         return self.symbol
 
     def __eq__(self, other):
@@ -119,7 +132,8 @@ class Element(MCERDParameterContainer):
         return all((
             self.isotope == other.isotope,
             self.symbol == other.symbol,
-            self.amount == other.amount
+            self.amount == other.amount,
+            self.sequence == other.sequence
         ))
 
     def __lt__(self, other):
@@ -155,10 +169,10 @@ class Element(MCERDParameterContainer):
         """Returns a human readable representation of the Element object.
         """
         return f"Element(symbol={self.symbol}, isotope={self.isotope}, " \
-               f"amount={self.amount})"
+               f"amount={self.amount}, sequence={self.sequence})"
 
     def __hash__(self):
-        return hash((self.isotope, self.symbol, self.amount))
+        return hash((self.isotope, self.symbol, self.amount, self.sequence))
 
     def get_prefix(self):
         """Returns a string representation of an element without amount.
@@ -166,7 +180,12 @@ class Element(MCERDParameterContainer):
         Return:
             '[isotope][symbol]' if isotope is specified, otherwise '[symbol]'
         """
-        if self.isotope is None:
+        if self.amount == 0 and self.isotope is None:
+            if self.sequence == 0:
+                return f"{self.symbol}"
+            else:
+                return f"{self.symbol}#{self.sequence}"
+        elif self.isotope is None:
             return self.symbol
         return f"{round(self.isotope)}{self.symbol}"
 

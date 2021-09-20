@@ -123,10 +123,12 @@ def recoil_filter(prefix: str) -> Callable:
     that begin with the given prefix and end in either 'rec' or 'sct'.
     """
     exts = {".rec", ".sct"}
-    # Last line ensures that e.g. C and Cu are handled separately
+    # The last line ensures that e.g. C and Cu are handled separately
+    # The last line ensures that e.g. Cu and Cu#2 are handled separately
     return lambda file: file.name.startswith(prefix) and \
-        file.suffix in exts and \
-        not file.name[file.name.index(prefix) + len(prefix)].isalpha()
+                        file.suffix in exts and \
+                        not file.name[file.name.index(prefix) + len(prefix)].isalpha() and \
+                        not file.name[file.name.index(prefix) + len(prefix)] == '#'
 
 
 # TODO document what the prefix actually is in the following functions

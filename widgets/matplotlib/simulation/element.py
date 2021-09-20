@@ -93,6 +93,8 @@ class ElementWidget(QtWidgets.QWidget):
             isotope_superscript = general.digits_to_superscript(
                 str(element.isotope))
             button_text = isotope_superscript + " " + element.symbol
+        elif element.sequence:
+            button_text = element.symbol + '#' + str(element.sequence)
         else:
             button_text = element.symbol
 
