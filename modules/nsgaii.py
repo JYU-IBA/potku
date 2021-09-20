@@ -116,7 +116,7 @@ class Nsgaii(Observable):
         self.optimization_type = optimization_type
         self.rec_type = recoil_type
 
-        # MCERd specific parameters
+        # MCERD-specific parameters
         self.number_of_processes = number_of_processes
         self._skip_simulation = skip_simulation
         self.stop_percent = stop_percent
@@ -131,7 +131,7 @@ class Nsgaii(Observable):
         self.dis_c = dis_c
         self.mut_p = mut_p
         self.dis_m = dis_m
-        self.__const_var_i = []
+        self._const_var_i = []
         self.bit_length_x = 0
         self.bit_length_y = 0
 
@@ -144,9 +144,9 @@ class Nsgaii(Observable):
         self.verbose = verbose
         self.optimize_by_area = optimize_by_area
 
-    def __prepare_optimization(self, initial_pop=None,
-                               cancellation_token=None,
-                               ion_division=IonDivision.BOTH):
+    def _prepare_optimization(self, initial_pop=None,
+                              cancellation_token=None,
+                              ion_division=IonDivision.BOTH):
         """Performs internal preparation before optimization begins.
         """
         self.element_simulation.optimization_recoils = []
@@ -276,9 +276,11 @@ class Nsgaii(Observable):
     def crowding_distance(front_no, objective_values):
         """Calculate crowding distance for each solution in the population, by
         the Pareto front it belongs to.
+
         Args:
             front_no: Front numbers for all solutions.
             objective_values: collection of objective values
+
         Return:
             Array that holds crowding distances for all solutions.
         """
@@ -323,8 +325,10 @@ class Nsgaii(Observable):
     def evaluate_solutions(self, sols):
         """
         Calculate objective function values for given solutions.
+
         Args:
              sols: List of solutions.
+
         Return:
             Solutions and their objective function values.
         """
@@ -379,7 +383,7 @@ class Nsgaii(Observable):
         """Calculates the objective values and returns them as a np.array.
         """
 
-        if self.optimize_by_area == True:
+        if self.optimize_by_area:
             obj_values = collections.namedtuple(
                 "ObjectiveValues", ("area", "sum_distance"))
             if optim_espe:
@@ -418,10 +422,12 @@ class Nsgaii(Observable):
     def form_recoil(self, current_solution, name=""):
         """
         Form recoil based on solution size.
+
         Args:
             current_solution: Solution which holds the information needed t
             form the recoil.
             name: Possible name for recoil element.
+
         Return:
              Recoil Element.
         """
@@ -605,6 +611,7 @@ class Nsgaii(Observable):
     def initialize_population(self):
         """
         Create a new starting population.
+
         Return:
             Created population with solutions and objective function values.
         """
@@ -628,13 +635,13 @@ class Nsgaii(Observable):
 
                     x_coords = get_xs(x_lower, x_upper, self.pop_size)
 
-                    self.__const_var_i.append(0)
-                    self.__const_var_i.append(4)
+                    self._const_var_i.append(0)
+                    self._const_var_i.append(4)
 
                     y_coords = get_ys(y_lower, y_upper, self.pop_size)
 
                     # Add y1 to constants
-                    self.__const_var_i.append(3)
+                    self._const_var_i.append(3)
 
                     # Sort x elements in ascending order
                     x_coords.sort(axis=1)
@@ -654,15 +661,15 @@ class Nsgaii(Observable):
                     x_coords = get_xs(x_lower, x_upper, self.pop_size, 2)
 
                     # Add x0 index to constant variables
-                    self.__const_var_i.append(0)
-                    self.__const_var_i.append(6)
+                    self._const_var_i.append(0)
+                    self._const_var_i.append(6)
 
                     y_coords = get_ys(y_lower, y_upper, self.pop_size,
                                       lower_limit_at_first=True)
 
                     # Add y0 and y2 to constants
-                    self.__const_var_i.append(1)
-                    self.__const_var_i.append(5)
+                    self._const_var_i.append(1)
+                    self._const_var_i.append(5)
 
                     # Sort x elements in ascending order
                     x_coords.sort(axis=1)
@@ -687,13 +694,13 @@ class Nsgaii(Observable):
                     x_coords = get_xs(x_lower, x_upper, self.pop_size, 3)
 
                     # Add x0 index to constant variables
-                    self.__const_var_i.append(0)
-                    self.__const_var_i.append(8)
+                    self._const_var_i.append(0)
+                    self._const_var_i.append(8)
 
                     y_coords = get_ys(y_lower, y_upper, self.pop_size, z=3)
 
                     # Add y3 to constants
-                    self.__const_var_i.append(7)
+                    self._const_var_i.append(7)
 
                     # Sort x elements in ascending order
                     x_coords.sort(axis=1)
@@ -717,15 +724,15 @@ class Nsgaii(Observable):
                     # (x0, y0, y4 and x5 constants)
                     x_coords = get_xs(x_lower, x_upper, self.pop_size, 4)
 
-                    self.__const_var_i.append(0)
-                    self.__const_var_i.append(10)
+                    self._const_var_i.append(0)
+                    self._const_var_i.append(10)
 
                     y_coords = get_ys(y_lower, y_upper, self.pop_size, z=3,
                                       lower_limit_at_first=True)
 
                     # Add y0 and y4 to constants
-                    self.__const_var_i.append(1)
-                    self.__const_var_i.append(9)
+                    self._const_var_i.append(1)
+                    self._const_var_i.append(9)
 
                     # Sort x elements in ascending order
                     x_coords.sort(axis=1)
@@ -808,10 +815,12 @@ class Nsgaii(Observable):
     def nd_sort(pop_obj, n, r_n=np.inf):
         """
         Sort population pop_obj according to non-domination.
+
         Args:
             pop_obj: Solutions (objective function values).
             n: Size of the current population to be sorted.
             r_n: How many elements fit inside the resulting population.
+
         Return:
             List with front numbers, corresponding to pop_obj indices, number of
             last front found.
@@ -878,9 +887,11 @@ class Nsgaii(Observable):
         """
         Select individuals to a new population based on crowded comparison
         operator.
+
         Args:
             population: Current intermediate population.
             pop_size: TODO
+
         Return:
             Next generation population.
         """
@@ -921,6 +932,7 @@ class Nsgaii(Observable):
         non-domination and crowding distance, creating offspring population
         by crossover and mutation, and selecting individuals to the new
         population.
+
         Args:
             starting_solutions: First solutions used in optimization. If
                 None, initialize new solutions.
@@ -931,7 +943,7 @@ class Nsgaii(Observable):
         self.on_next(self._get_message(
             OptimizationState.PREPARING, evaluations_left=self.evaluations))
         try:
-            self.__prepare_optimization(
+            self._prepare_optimization(
                 starting_solutions, cancellation_token, ion_division)
         except (OSError, ValueError, subprocess.SubprocessError) as e:
             self.on_error(self._get_message(
@@ -1081,8 +1093,10 @@ class Nsgaii(Observable):
         Generate offspring population using SBX and polynomial mutation for
         fluence, and simple binary crossover and binary
         mutation for recoil element points.
+
         Args:
             pop_sols: Solutions that are used to create offspring population.
+
         Return:
             Offspring size self.pop_size.
         """
@@ -1156,7 +1170,7 @@ class Nsgaii(Observable):
                     length = self.bit_length_x
                 else:
                     length = self.bit_length_y
-                if i in self.__const_var_i:
+                if i in self._const_var_i:
                     do_mutation[:, bit_index: bit_index + length] = False
                 bit_index += length
 
@@ -1193,7 +1207,7 @@ class Nsgaii(Observable):
                         b_i += self.bit_length_x
                         # Turn variable back into decimal
                         dec = round(int(str_bin, 2) / 100, 2)
-                        if h not in self.__const_var_i:
+                        if h not in self._const_var_i:
                             # Check of out of limits, not for constants
                             if dec < self.lower_limits[0]:
                                 dec = self.lower_limits[0]
@@ -1208,7 +1222,7 @@ class Nsgaii(Observable):
                         # Turn variable back into decimal
                         dec = round(int(str_bin, 2) / 10000, 4)
                         # Don't do anything to constants
-                        if h not in self.__const_var_i:
+                        if h not in self._const_var_i:
                             if dec < self.lower_limits[1]:
                                 dec = self.lower_limits[1]
                             if dec > self.upper_limits[1]:
@@ -1302,10 +1316,12 @@ def solution_to_binary(solution, bit_length_x, bit_length_y):
 def pick_final_solutions(objective_values, solutions, count=2):
     """Picks solutions from the given set of solutions based on the
     corresponding objective values.
+
     Args:
         objective_values: collections of objective values
         solutions: collections of solutions
         count: how many solutions to return (2 or 3)
+
     Returns:
         tuple of solutions. Either (first solution, last solution) or
         (first solution, median solution, last solution) depending on

@@ -169,7 +169,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         self.efficiency_label.setEnabled(self.use_efficiency)
 
     def _verbose(self):
-        if self.optimization_verbose_box.isChecked() == True:
+        if self.optimization_verbose_box.isChecked():
             return True
         else:
             return False
@@ -260,20 +260,17 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
 
         if self.current_mode == OptimizationType.RECOIL:
             params = self.recoil_widget.get_properties()
+            optimize_by_area = self.recoil_widget.optimize_by_area
         else:
             params = self.fluence_widget.get_properties()
+            optimize_by_area = self.fluence_widget.optimize_by_area
 
         # TODO move following code to the result widget
-        if self.current_mode == OptimizationType.RECOIL:
-            nsgaii = Nsgaii(
-                element_simulation=elem_sim, measurement=measurement, cut_file=cut,
-                ch=self.ch, **params, use_efficiency=self.use_efficiency, optimize_by_area=self.recoil_widget.optimize_by_area,
-                verbose=self.verbose)
-        else:
-            nsgaii = Nsgaii(
-                element_simulation=elem_sim, measurement=measurement, cut_file=cut,
-                ch=self.ch, **params, use_efficiency=self.use_efficiency, optimize_by_area=self.fluence_widget.optimize_by_area,
-                verbose=self.verbose)
+        nsgaii = Nsgaii(
+            element_simulation=elem_sim, measurement=measurement,
+            cut_file=cut, ch=self.ch, **params,
+            use_efficiency=self.use_efficiency,
+            optimize_by_area=optimize_by_area, verbose=self.verbose)
 
         # Optimization running thread
         ct = CancellationToken()

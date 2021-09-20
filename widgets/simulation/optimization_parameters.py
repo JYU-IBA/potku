@@ -111,6 +111,8 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
             kwargs: values to show in the widget
         """
         super().__init__()
+        self.optimize_by_area = True
+        self.radios = QtWidgets.QButtonGroup(self)
         uic.loadUi(ui_file, self)
 
         locale = QLocale.c()
@@ -133,10 +135,8 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
     def radio_buttons(self):
         """Radio buttons for optimization parameters Sum and Area
         """
-        self.optimize_by_area = True
-        self.radios = QtWidgets.QButtonGroup(self)
         self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
-        self.isChecked)
+            self.isChecked)
         self.radios.addButton(self.areaRadioButton)
         self.radios.addButton(self.sumRadioButton)
 
@@ -161,7 +161,7 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
     lower_limits = bnd.multi_bind(
         ("lowerXDoubleSpinBox", "lowerYDoubleSpinBox")
     )
-    
+
     # sol_size values are unique (5, 7, 9 or 11) so they can be used in
     # two-way binding
     sol_size = bnd.bind("recoilTypeComboBox", fget=sol_size_from_combobox,
@@ -187,6 +187,7 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
         self.lowerXDoubleSpinBox.setLocale(locale)
         self.upperYDoubleSpinBox.setLocale(locale)
         self.lowerYDoubleSpinBox.setLocale(locale)
+
 
 class OptimizationFluenceParameterWidget(OptimizationParameterWidget):
     """
