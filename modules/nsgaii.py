@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2019 Heta Rekilä, 2020 Juhani Sundell
+Copyright (C) 2019 Heta Rekilä, 2020 Juhani Sundell, 2021 Tuomas Pitkänen
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
@@ -18,7 +18,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Heta Rekilä \n Juhani Sundell"
+__author__ = "Heta Rekilä \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import collections
@@ -150,19 +150,51 @@ class Nsgaii(Observable):
         """Performs internal preparation before optimization begins.
         """
         self.element_simulation.optimization_recoils = []
-        # Calculate the energy spectrum that the optimized solutions are
-        # compared to.
+
         if self.measurement is None:
-            raise ValueError("Optimization could not be prepared, "
-                             "no measurement defined.")
+            raise ValueError(
+                "Optimization could not be prepared, no measurement defined.")
 
         self.element_simulation.optimized_fluence = None
 
+        self.prepare_measured_spectra()
+
+        self.combine_previous_erd_files()
+
+        # Modify measurement file to match the simulation file in regards to
+        # the x coordinates -> they have matching values for ease of distance
+        # counting
+        self.modify_measurement()
+
+        if initial_pop is None:
+            initial_pop = self.initialize_population()
+
+        if self.optimization_type is OptimizationType.RECOIL:
+            self.find_bit_variable_lengths()
+            # Empty the list of optimization recoils
+
+            # Form points from first solution. First solution of first
+            # population will always cover the whole x axis range between
+            # lower and upper values -> MCERD never needs to be run again
+            self.element_simulation.optimization_recoils = [
+                self.form_recoil(initial_pop[0])
+            ]
+
+        if not self._skip_simulation:
+            self.run_initial_simulation(cancellation_token, ion_division)
+
+        self.population = self.evaluate_solutions(initial_pop)
+
+    def prepare_measured_spectra(self):
+        """Calculate measured spectra and parse it.
+
+        Optimized solutions are compared to the measured spectra.
+        """
         EnergySpectrum.calculate_measured_spectra(
             self.measurement, [self.cut_file], self.channel_width,
             no_foil=True, use_efficiency=self.use_efficiency)
 
-        # TODO maybe just use he value returned by calc_spectrum?
+        # TODO maybe just use the value returned by calc_spectrum?
         # Add result files
         hist_file = Path(self.measurement.get_energy_spectra_dir(),
                          f"{self.cut_file.stem}.no_foil.hist")
@@ -170,8 +202,8 @@ class Nsgaii(Observable):
         parser = CSVParser((0, float), (1, float))
         self.measured_espe = list(parser.parse_file(hist_file, method="row"))
 
-        # Previous erd files are used as the starting point so combine them
-        # into a single file
+    def combine_previous_erd_files(self):
+        """Combine previous erd files to used as the starting point."""
         erd_file_name = fp.get_erd_file_name(
             self.element_simulation.get_main_recoil(), "combined",
             optim_mode=self.optimization_type)
@@ -180,88 +212,67 @@ class Nsgaii(Observable):
                          Path(self.element_simulation.directory,
                               erd_file_name))
 
-        # Modify measurement file to match the simulation file in regards to
-        # the x coordinates -> they have matching values for ease of distance
-        # counting
-        self.modify_measurement()
+    def run_initial_simulation(self, cancellation_token, ion_division):
+        """Run initial element simulation.
+        """
+        def stop_if_cancelled(
+                optim_ct: CancellationToken, mcerd_ct: CancellationToken):
+            optim_ct.stop_if_cancelled(mcerd_ct)
+            return mcerd_ct.is_cancellation_requested()
 
-        # Create initial population
-        if initial_pop is None:
-            initial_pop = self.initialize_population()
+        ct = CancellationToken()
+        observable = self.element_simulation.start(
+            self.number_of_processes, start_value=201,
+            optimization_type=self.optimization_type,
+            ct=ct, print_output=True, max_time=self.check_max,
+            ion_division=ion_division)
 
-        # Find bit variable lengths if necessary
-        if self.optimization_type is OptimizationType.RECOIL:
-            self.find_bit_variable_lengths()
-            # Empty the list of optimization recoils
+        if observable is not None:
+            self.on_next(self._get_message(
+                OptimizationState.SIMULATING,
+                evaluations_left=self.evaluations))
 
-            # Form points from first solution. First solution of first
-            # population will always cover the whole x axis range between
-            # lower and upper values -> mcerd never needs to be run again
-            self.element_simulation.optimization_recoils = [
-                self.form_recoil(initial_pop[0])
-            ]
+            ct_check = rx.timer(0, 0.2).pipe(
+                ops.take_while(lambda _: not stop_if_cancelled(
+                    cancellation_token, ct)),
+                ops.filter(lambda _: False),
+            )
+            # FIXME spectra_chk should only be performed when pre-simulation
+            #   has finished, otherwise there will be no new observed atoms
+            #   and the difference between the two spectra is 0
+            spectra_chk = rx.timer(self.check_min, self.check_time).pipe(
+                ops.merge(ct_check),
+                ops.map(lambda _: get_optim_espe(
+                    self.element_simulation, self.optimization_type)),
+                ops.scan(
+                    lambda prev_espe, next_espe: (prev_espe[1], next_espe),
+                    seed=[None, None]),
+                ops.map(lambda espes: calculate_change(
+                    *espes, self.element_simulation.channel_width)),
+                ops.take_while(
+                    lambda change: change > self.stop_percent and not
+                    ct.is_cancellation_requested()
+                ),
+                ops.do_action(
+                    on_completed=ct.request_cancellation)
+            )
+            merged = rx.merge(observable, spectra_chk).pipe(
+                ops.take_while(
+                    lambda x: not isinstance(x, dict) or x[
+                        MCERD.IS_RUNNING],
+                    inclusive=True)
+            )
+            # Simulation needs to finish before optimization can start
+            # so we run this synchronously.
+            # TODO use callback instead of running sync
+            merged.run()
+            # TODO should not have to call this manually
+            self.element_simulation._clean_up(ct)
 
-        if not self._skip_simulation:
-            def stop_if_cancelled(
-                    optim_ct: CancellationToken, mcerd_ct: CancellationToken):
-                optim_ct.stop_if_cancelled(mcerd_ct)
-                return mcerd_ct.is_cancellation_requested()
-
-            ct = CancellationToken()
-            observable = self.element_simulation.start(
-                self.number_of_processes, start_value=201,
-                optimization_type=self.optimization_type,
-                ct=ct, print_output=True, max_time=self.check_max,
-                ion_division=ion_division)
-
-            if observable is not None:
-                self.on_next(self._get_message(
-                    OptimizationState.SIMULATING,
-                    evaluations_left=self.evaluations))
-
-                ct_check = rx.timer(0, 0.2).pipe(
-                    ops.take_while(lambda _: not stop_if_cancelled(
-                        cancellation_token, ct)),
-                    ops.filter(lambda _: False),
-                )
-                # FIXME spectra_chk should only be performed when pre-simulation
-                #   has finished, otherwise there will be no new observed atoms
-                #   and the difference between the two spectra is 0
-                spectra_chk = rx.timer(self.check_min, self.check_time).pipe(
-                    ops.merge(ct_check),
-                    ops.map(lambda _: get_optim_espe(
-                        self.element_simulation, self.optimization_type)),
-                    ops.scan(
-                        lambda prev_espe, next_espe: (prev_espe[1], next_espe),
-                        seed=[None, None]),
-                    ops.map(lambda espes: calculate_change(
-                        *espes, self.element_simulation.channel_width)),
-                    ops.take_while(
-                        lambda change: change > self.stop_percent and not
-                        ct.is_cancellation_requested()
-                    ),
-                    ops.do_action(
-                        on_completed=ct.request_cancellation)
-                )
-                merged = rx.merge(observable, spectra_chk).pipe(
-                    ops.take_while(
-                        lambda x: not isinstance(x, dict) or x[
-                            MCERD.IS_RUNNING],
-                        inclusive=True)
-                )
-                # Simulation needs to finish before optimization can start
-                # so we run this synchronously.
-                # TODO use callback instead of running sync
-                merged.run()
-                # TODO should not have to call this manually
-                self.element_simulation._clean_up(ct)
-
-            else:
-                raise ValueError(
-                    "Could not start simulation. Check that simulation is not "
-                    "currently running.")
-
-        self.population = self.evaluate_solutions(initial_pop)
+        else:
+            raise ValueError(
+                "Could not start simulation. Check that simulation is not "
+                "currently running.")
 
     @staticmethod
     def _get_message(state, **kwargs):
@@ -362,7 +373,7 @@ class Nsgaii(Observable):
                                      ("solutions", "objective_values"))
         return pop(sols, objective_values)
 
-    def optimize_espe(self, optim_espe):
+    def _get_spectra_differences(self, optim_espe):
         # Make spectra the same size
         optim_espe, measured_espe = gf.uniform_espe_lists(
             optim_espe, self.measured_espe,
@@ -372,7 +383,8 @@ class Nsgaii(Observable):
         # spectra
         area = mf.calculate_area(optim_espe, measured_espe)
 
-        # Find the summed distance between thw points of these two
+        # TODO: Move to mf.calculate_sum(line1, line2)
+        # Find the summed distance between the points of these two
         # spectra
         sum_diff = sum(abs(opt_p[1] - mesu_p[1])
                        for opt_p, mesu_p in zip(optim_espe, measured_espe))
@@ -387,19 +399,20 @@ class Nsgaii(Observable):
             obj_values = collections.namedtuple(
                 "ObjectiveValues", ("area", "sum_distance"))
             if optim_espe:
-                area, sum_diff = self.optimize_espe(optim_espe)
+                area, sum_diff = self._get_spectra_differences(optim_espe)
                 return obj_values(area, sum_diff)
         else:
             obj_values = collections.namedtuple(
                 "ObjectiveValues", ("sum_distance", "area"))
             if optim_espe:
-                area, sum_diff = self.optimize_espe(optim_espe)
+                area, sum_diff = self._get_spectra_differences(optim_espe)
                 return obj_values(sum_diff, area)
         # If failed to create energy spectrum
         return obj_values(np.inf, np.inf)
 
     def find_bit_variable_lengths(self):
-        # Find needed size to hold x and y in binary
+        """Find the needed size to hold x and y in binary.
+        """
         size_of_x = (self.upper_limits[0] - self.lower_limits[0]) * 100
         size_bin_x = bin(int(size_of_x))
         try:
