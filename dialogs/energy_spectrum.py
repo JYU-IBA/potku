@@ -69,6 +69,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     bin_width = 0.025
 
     use_efficiency = bnd.bind("use_eff_checkbox")
+    sum_spectrum = bnd.bind("sum_spectrum_checkbox")
     status_msg = bnd.bind("label_status")
     measurement_cuts = bnd.bind("treeWidget")
     used_bin_width = bnd.bind("histogramTicksDoubleSpinBox")
@@ -127,7 +128,11 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         self.use_eff_checkbox.stateChanged.connect(
             lambda *_: self.label_efficiency_files.setEnabled(
                 self.use_efficiency))
+        self.use_eff_checkbox.stateChanged.connect(
+            lambda *_: self.label_efficiency_files.setEnabled(
+                self.sum_spectrum))
         self.use_efficiency = True
+        self.sum_spectrum = False
 
         locale = QLocale.c()
         self.histogramTicksDoubleSpinBox.setLocale(locale)
@@ -328,7 +333,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             #   down the execution path
             EnergySpectrum.calculate_measured_spectra(
                 mesu, [d["cut_file"] for d in lst], self.bin_width,
-                use_efficiency=self.use_efficiency, no_foil=True)
+                use_efficiency=self.use_efficiency, sum_spectrum=self.sum_spectrum, no_foil=True)
 
         # Add external files
         self.result_files.extend(used_externals)
@@ -361,7 +366,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             self.parent.energy_spectrum_widget = EnergySpectrumWidget(
                 self.parent, spectrum_type=self.spectrum_type,
                 use_cuts=selected_cuts, bin_width=width,
-                use_efficiency=self.use_efficiency,
+                use_efficiency=self.use_efficiency, sum_spectrum=self.sum_spectrum,
                 statusbar=self.statusbar, spectra_changed=spectra_changed)
 
             # Check that matplotlib attribute exists after creation of energy
@@ -461,7 +466,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
 
     def __init__(self, parent: BaseTab,
                  spectrum_type: str = MEASUREMENT,
-                 use_cuts=None, bin_width=0.025, use_efficiency=False,
+                 use_cuts=None, bin_width=0.025, use_efficiency=False, sum_spectrum=False,
                  save_file_int=0, statusbar=None, spectra_changed=None):
         """Inits widget.
         
@@ -506,7 +511,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 self.energy_spectrum_data = \
                     EnergySpectrum.calculate_measured_spectra(
                         self.measurement, use_cuts, bin_width,
-                        progress=sbh.reporter, use_efficiency=use_efficiency
+                        progress=sbh.reporter, use_efficiency=use_efficiency, sum_spectrum=sum_spectrum
                     )
 
                 # Check for RBS selections.

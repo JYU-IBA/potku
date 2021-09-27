@@ -33,6 +33,7 @@ __version__ = "2.0"
 
 import copy
 import os
+import re
 
 import modules.general_functions as gf
 import modules.math_functions as mf
@@ -506,8 +507,10 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                     color = self.__selection_colors[color_string]
                                
                 if element == self.sum_key:
-                    sum_spectra_elements = '.'.join(cut_file[1:])
-                    label = self.__set_label(isotope, element, rbs_string) + "$_{split: " + sum_spectra_elements + "}$"
+                    # sum_spectra_elements = '.'.join(cut_file[1:])
+                    # label = self.__set_label(isotope, element, rbs_string) + "$_{split: " +
+                    # sum_spectra_elements + "}$"
+                    label = self.__set_label(isotope, element, rbs_string)
 
                 elif len(cut_file) == index_of_last_dot:
                     label = self.__set_label(isotope, element, rbs_string)
@@ -521,7 +524,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 line, = self.axes.plot(x, y, color=color, label=label,
                                        linestyle=self.default_linestyle)
                 self.plots[key] = line
-
 
         else:  # Simulation energy spectrum
             if self.__ignore_elements:
@@ -548,7 +550,12 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                             element = Element.from_string(scatter_element_str)
                         else:
                             element = Element("")
-                        suffix = "*"
+                        if isotope_and_symbol == 'SUM':
+                            # regex = r"\bSUM[^hist]+[^.hist]"
+                            # suffix = re.findall(regex, file_name)[0]
+                            suffix = 'SUM'
+                        else:
+                            suffix = "*"
 
                     isotope = element.isotope
                     if isotope is None:
@@ -566,8 +573,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                         label = r"$^{" + str(isotope) + "}$" + symbol + suffix \
                             + " (exp)"
                     else:  # split
-                        label = r"$^{" + str(isotope) + "}$" + symbol + suffix \
-                            + "$_{split: " + rest_split[1] + "}$"" (exp)"
+                        if isotope_and_symbol == 'SUM':
+                            label = r"$^{" + str(isotope) + "}$" + symbol + suffix + " (exp)"
+                        else:
+                            label = r"$^{" + str(isotope) + "}$" + symbol + suffix \
+                                    + "$_{split: " + rest_split[1] + "}$"" (exp)"
                 elif file_name.endswith(".simu"):
                     for s in file_name:
                         if s != "-":
@@ -750,7 +760,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         if espe_file in self.plots:
             verbose = None
-            espe, _ = elem_sim.calculate_espe(rec_elem, ch=self.channel_width, verbose = verbose)
+            espe, _ = elem_sim.calculate_espe(rec_elem, ch=self.channel_width, verbose=verbose)
 
             data = get_axis_values(espe)
 

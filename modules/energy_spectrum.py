@@ -94,6 +94,7 @@ class EnergySpectrum:
             spectrum_width: float,
             progress: Optional[ProgressReporter] = None,
             use_efficiency: bool = False,
+            sum_spectrum: bool = False,
             no_foil: bool = False,
             verbose: bool = True) -> Dict[str, Espe]:
         """Calculates the measured energy spectra for the given .cut files.
@@ -106,6 +107,8 @@ class EnergySpectrum:
             progress: ProgressReporter object.
             use_efficiency: whether efficiency is taken into account when
                 spectra is calculated
+            sum_spectrum: whether sum spectrum is taken into account when
+                spectra is calculated
             no_foil: whether foil thickness is set to 0 when running tof_list
             verbose: whether tof_list's stderr is printed to console
 
@@ -116,16 +119,19 @@ class EnergySpectrum:
             measurement, cut_files, spectrum_width, progress=progress,
             no_foil=no_foil, verbose=verbose)
         return es.calculate_spectrum(
-            use_efficiency=use_efficiency, no_foil=no_foil)
+            use_efficiency=use_efficiency, sum_spectrum=sum_spectrum, no_foil=no_foil)
 
     def calculate_spectrum(
             self,
             use_efficiency: bool = False,
+            sum_spectrum: bool = False,
             no_foil: bool = False) -> Dict[str, Espe]:
         """Calculate energy spectrum data from cut files.
 
         Args:
             use_efficiency: whether efficiency is taken into account when
+                spectra is calculated
+            sum_spectrum: whether efficiency is taken into account when
                 spectra is calculated
             no_foil: whether foil thickness is set to 0 or original foil
                 thickness is used
@@ -135,7 +141,7 @@ class EnergySpectrum:
         """
         return EnergySpectrum._calculate_spectrum(
             self._tof_listed_files, self._spectrum_width, self._measurement,
-            self._directory_es, use_efficiency=use_efficiency, no_foil=no_foil)
+            self._directory_es, use_efficiency=use_efficiency, sum_spectrum=sum_spectrum, no_foil=no_foil)
 
     def _load_cuts(
             self,
@@ -292,6 +298,7 @@ class EnergySpectrum:
             measurement: Measurement,
             directory_es: Path,
             use_efficiency: bool = False,
+            sum_spectrum: bool = False,
             no_foil: bool = False) -> Dict[str, Espe]:
         """Calculate energy spectrum data from .tof_list files and writes the
         results to .hist files.
@@ -304,6 +311,8 @@ class EnergySpectrum:
             directory_es: directory
             use_efficiency: whether efficiency is taken into account when
                 spectra is calculated
+            sum_spectrum: whether efficiency is taken into account when
+            spectra is calculated
             no_foil: whether foil thickness was set to 0 or not. This also
                 affects the file name
 
@@ -336,7 +345,7 @@ class EnergySpectrum:
                 espe, dtype=[("float", float), ("int", int)])
             np.savetxt(filename, numpy_array, delimiter=" ", fmt="%5.5f %6d")
 
-        if len(espes) > 0:
+        if len(espes) > 0 and sum_spectrum is True:
             x_files = [[] for _ in range(len(espes))]
             y_files = [[] for _ in range(len(espes))]
 
