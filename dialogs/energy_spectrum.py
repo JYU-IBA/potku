@@ -42,6 +42,7 @@ from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 
 import dialogs.dialog_functions as df
+import modules.general_functions as gf
 import dialogs.file_dialogs as fdialogs
 import modules.cut_file as cut_file
 import widgets.binding as bnd
@@ -273,7 +274,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     def get_selected_measurements(self):
         """Returns a dictionary that contains selected measurements,
         cut files belonging to each measurement, and the corresponding
-        result file.
+        result file. If sum spectrum is enabled and there is at least
+        one measurement, returns the sum spectrum too.
         """
         mesus = self.tof_list_files
         used_measurements = {}
@@ -284,7 +286,42 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 "result_file": Path(
                     m.get_energy_spectra_dir(), f"{c.stem}.no_foil.hist")
             })
+
+        if self.sum_spectrum and len(mesus) > 0:
+            cuts = gf.find_files_by_extension(mesus[-1][0].parent, ".cut")[".cut"]
+            cuts.sort()
+            energy_spectra_dir = mesus[-1][1].get_energy_spectra_dir()
+            energy_spectra = gf.find_files_by_extension(energy_spectra_dir, ".hist")[".hist"]
+            energy_spectra.sort()
+
+            suffixes = []
+            result_file = ""
+            suffix = 2
+
+            for m in mesus:
+                suffixes.append(m[0].suffixes[0])
+            suffixes_max_len = len(suffixes) + suffix
+            matchers = suffixes
+            for spectrum in energy_spectra:
+                if len(spectrum.suffixes) == suffixes_max_len:
+                    if all(xs in spectrum.stem for xs in matchers):
+                        result_file = spectrum
+                        break
+                else:
+                    continue
+
+            if result_file == "":
+                return used_measurements
+
+            else:
+                used_measurements.setdefault(mesus[-1][1], []).append({
+                    "cut_file": None,
+                    "result_file": Path(
+                        mesus[-1][1].get_energy_spectra_dir(), f"{result_file.stem}.hist")
+                })
+
         return used_measurements
+
 
     def get_selected_simulations(self):
         """Returns a dictionary that contains selected simulations and list
@@ -334,6 +371,16 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             EnergySpectrum.calculate_measured_spectra(
                 mesu, [d["cut_file"] for d in lst], self.bin_width,
                 use_efficiency=self.use_efficiency, sum_spectrum=self.sum_spectrum, no_foil=True)
+
+        if self.sum_spectrum:
+            used_measurements = self.get_selected_measurements()
+            for mesu, lst in used_measurements.items():
+                self.result_files.extend(d["result_file"] for d in lst)
+                # TODO use the return values instead of reading the files further
+                #   down the execution path
+                EnergySpectrum.calculate_measured_spectra(
+                    mesu, [d["cut_file"] for d in lst], self.bin_width,
+                    use_efficiency=self.use_efficiency, sum_spectrum=self.sum_spectrum, no_foil=True)
 
         # Add external files
         self.result_files.extend(used_externals)
@@ -409,7 +456,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             "The external file needs to have the following format:\n\n"
             "energy count\nenergy count\nenergy count\n...\n\n"
             "to match the simulation and measurement energy spectra files.",
-            QtWidgets.QMessageBox.Ok,  QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
         file_path = fdialogs.open_file_dialog(
             self, self.element_simulation.request.directory,
             "Select a file to import", "")
