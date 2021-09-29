@@ -32,6 +32,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import os
+import re
 import shutil
 from pathlib import Path
 from typing import Optional
@@ -288,40 +289,42 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             })
 
         if self.sum_spectrum and len(mesus) > 0:
-            cuts = gf.find_files_by_extension(mesus[-1][0].parent, ".cut")[".cut"]
-            cuts.sort()
+            # cuts = gf.find_files_by_extension(mesus[-1][0].parent, ".cut")[".cut"]
+            # cuts.sort()
             energy_spectra_dir = mesus[-1][1].get_energy_spectra_dir()
             energy_spectra = gf.find_files_by_extension(energy_spectra_dir, ".hist")[".hist"]
             energy_spectra.sort()
 
             suffixes = []
             result_file = ""
-            suffix = 2
 
             for m in mesus:
-                suffixes.append(m[0].suffixes[0])
-            suffixes_max_len = len(suffixes) + suffix
-            matchers = suffixes
+                if 'RBS' in m[0].stem:
+                    match = re.match(r".+(.RBS.+)$", m[0].stem)
+                    end = match.group(1)
+                    suffixes.append(end)
+                else:
+                    suffixes.append(m[0].suffixes[0])
+            suffixes_max_len = len(suffixes)
             for spectrum in energy_spectra:
-                if len(spectrum.suffixes) == suffixes_max_len:
-                    if all(xs in spectrum.stem for xs in matchers):
+                same_suffixes = []
+                for suffix in suffixes:
+                    if suffix in spectrum.stem:
+                        same_suffixes.append(suffix)
+                if len(same_suffixes) == suffixes_max_len:
+                    if all(s in spectrum.stem for s in suffixes):
                         result_file = spectrum
-                        break
+                        used_measurements.setdefault(mesus[-1][1], []).append({
+                            "cut_file": None,
+                            "result_file": Path(
+                                mesus[-1][1].get_energy_spectra_dir(), f"{result_file.stem}.hist")
+                        })
+                        return used_measurements
                 else:
                     continue
-
             if result_file == "":
                 return used_measurements
-
-            else:
-                used_measurements.setdefault(mesus[-1][1], []).append({
-                    "cut_file": None,
-                    "result_file": Path(
-                        mesus[-1][1].get_energy_spectra_dir(), f"{result_file.stem}.hist")
-                })
-
         return used_measurements
-
 
     def get_selected_simulations(self):
         """Returns a dictionary that contains selected simulations and list

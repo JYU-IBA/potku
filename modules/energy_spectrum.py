@@ -364,7 +364,10 @@ class EnergySpectrum:
 
             sum_key = 'SUM'
             for value in espes:
-                sum_key += '.' + value.split('.')[0]
+                if 'RBS' in value:
+                    sum_key += '.' + value.split('.', 1)[-1]
+                else:
+                    sum_key += '.' + value.split('.')[0]
             espes[sum_key] = list(zip(x_files_flat, y_sum))
 
             path = os.path.join(
