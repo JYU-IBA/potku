@@ -26,6 +26,7 @@ import os
 import subprocess
 from pathlib import Path
 from timeit import default_timer as timer
+from typing import Tuple, List, Union
 
 import numpy as np
 
@@ -39,6 +40,14 @@ from .enums import OptimizationState
 from .enums import OptimizationType
 from .point import Point
 from .recoil_element import RecoilElement
+
+# Types
+Espe = List[Tuple[float, float]]
+Solution = List[float]
+# Population = List[Solution]  # Not used
+SolutionNp = np.ndarray  # Single solution
+PopulationNp = np.ndarray  # List of solutions
+ObjectiveValues = Tuple[float, float]
 
 
 class Nsgaii(opt.BaseOptimizer):
@@ -115,9 +124,9 @@ class Nsgaii(opt.BaseOptimizer):
 
         self.population = None
 
-    def _prepare_optimization(self, initial_pop=None,
-                              cancellation_token=None,
-                              ion_division=IonDivision.BOTH):
+    def _prepare_optimization(
+            self, initial_pop=None, cancellation_token=None,
+            ion_division: IonDivision = IonDivision.BOTH) -> None:
         """Performs internal preparation before optimization begins.
         """
         self.element_simulation.optimization_recoils = []
@@ -157,7 +166,9 @@ class Nsgaii(opt.BaseOptimizer):
         self.population = self.evaluate_solutions(initial_pop)
 
     @staticmethod
-    def crowding_distance(front_no, objective_values):
+    def crowding_distance(
+            front_no: List[float], objective_values: List[ObjectiveValues]) \
+            -> np.ndarray:
         """Calculate crowding distance for each solution in the population, by
         the Pareto front it belongs to.
 
@@ -206,7 +217,8 @@ class Nsgaii(opt.BaseOptimizer):
                     crowd_dis[ind_pop] = crowd_dis[ind_pop] + current_distance
         return crowd_dis
 
-    def evaluate_solutions(self, sols):
+    def evaluate_solutions(self, sols: List[Solution]) \
+            -> Tuple[PopulationNp, List[ObjectiveValues]]:
         """
         Calculate objective function values for given solutions.
 
@@ -246,7 +258,7 @@ class Nsgaii(opt.BaseOptimizer):
                                      ("solutions", "objective_values"))
         return pop(sols, objective_values)
 
-    def _get_spectra_differences(self, optim_espe):
+    def _get_spectra_differences(self, optim_espe: Espe) -> Tuple[float, float]:
         # Make spectra the same size
         optim_espe, measured_espe = gf.uniform_espe_lists(
             optim_espe, self.measured_espe,
@@ -264,7 +276,7 @@ class Nsgaii(opt.BaseOptimizer):
 
         return area, sum_diff
 
-    def get_objective_values(self, optim_espe):
+    def get_objective_values(self, optim_espe: Espe) -> Tuple[float, float]:
         """Calculates the objective values and returns them as a np.array.
         """
 
@@ -283,7 +295,7 @@ class Nsgaii(opt.BaseOptimizer):
         # If failed to create energy spectrum
         return obj_values(np.inf, np.inf)
 
-    def find_bit_variable_lengths(self):
+    def find_bit_variable_lengths(self) -> None:
         """Find the needed size to hold x and y in binary.
         """
         size_of_x = (self.upper_limits[0] - self.lower_limits[0]) * 100
@@ -305,9 +317,9 @@ class Nsgaii(opt.BaseOptimizer):
         self.bit_length_x = len_of_x
         self.bit_length_y = len_of_y
 
-    # TODO: Move to BaseOptimizer (deal with self.sol_size)
     # TODO: Reduce repetition
-    def form_recoil(self, current_solution, name=""):
+    def form_recoil(
+            self, current_solution: Solution, name: str = "") -> RecoilElement:
         """
         Form recoil based on solution size.
 
@@ -362,7 +374,7 @@ class Nsgaii(opt.BaseOptimizer):
             points.append(Point(point_4))
             points.append(Point(point_5))
             points.append(Point(point_6))
-        # For these two, the y coordinate between peaks should eb lower than
+        # For these two, the y coordinate between peaks should be lower than
         # the peaks' y coordinates -> make adjustment like in x
         elif self.sol_size == 9:  # 8-point two peak recoil, starts at the
             # surface
@@ -496,7 +508,7 @@ class Nsgaii(opt.BaseOptimizer):
 
         return recoil
 
-    def initialize_population(self):
+    def initialize_population(self) -> PopulationNp:
         """
         Create a new starting population.
 
@@ -673,7 +685,8 @@ class Nsgaii(opt.BaseOptimizer):
         return init_sols
 
     @staticmethod
-    def nd_sort(pop_obj, n, r_n=np.inf):
+    def nd_sort(pop_obj: List[ObjectiveValues], n: int, r_n: int = np.inf) \
+            -> Tuple[float, int]:
         """
         Sort population pop_obj according to non-domination.
 
@@ -744,7 +757,8 @@ class Nsgaii(opt.BaseOptimizer):
         return front_no, fronts
 
     @staticmethod
-    def new_population_selection(population, pop_size):
+    def new_population_selection(population: List[PopulationNp], pop_size: int)\
+            -> Tuple[List[PopulationNp], float, float]:
         """
         Select individuals to a new population based on crowded comparison
         operator.
@@ -785,9 +799,10 @@ class Nsgaii(opt.BaseOptimizer):
 
         return next_pop, front_no[index], crowd_dis[index]
 
-    def start_optimization(self, starting_solutions=None,
-                           cancellation_token=None,
-                           ion_division=IonDivision.BOTH):
+    def start_optimization(
+            self, starting_solutions: List[Solution] = None,
+            cancellation_token: CancellationToken = None,
+            ion_division: IonDivision = IonDivision.BOTH) -> None:
         """
         Start the optimization. This includes sorting based on
         non-domination and crowding distance, creating offspring population
@@ -934,12 +949,12 @@ class Nsgaii(opt.BaseOptimizer):
             OptimizationState.FINISHED,
             evaluations_done=self.evaluations - evaluations))
 
-    def clean_up(self, cancellation_token):
+    def clean_up(self, cancellation_token: CancellationToken) -> None:
         if cancellation_token is not None:
             cancellation_token.request_cancellation()
         self.delete_temp_files()
 
-    def delete_temp_files(self):
+    def delete_temp_files(self) -> None:
         # Remove unnecessary opt.recoil file
         for file in os.listdir(self.element_simulation.directory):
             # TODO better method for determining which files to delete
@@ -1156,7 +1171,8 @@ class Nsgaii(opt.BaseOptimizer):
         return np.array(offspring)
 
 
-def solution_to_binary(solution, bit_length_x, bit_length_y):
+def solution_to_binary(
+        solution: Solution, bit_length_x: int, bit_length_y: int) -> List[str]:
     """Returns a binary representation of a solution.
     """
     bin_sol = []
@@ -1174,7 +1190,8 @@ def solution_to_binary(solution, bit_length_x, bit_length_y):
     return bin_sol
 
 
-def pick_final_solutions(objective_values, solutions, count=2):
+def pick_final_solutions(objective_values, solutions, count=2)\
+        -> Union[Tuple[SolutionNp, SolutionNp], Tuple[SolutionNp, SolutionNp, SolutionNp]]:
     """Picks solutions from the given set of solutions based on the
     corresponding objective values.
 
@@ -1207,7 +1224,8 @@ def pick_final_solutions(objective_values, solutions, count=2):
     return first, last
 
 
-def get_xs(x_lower, x_upper, pop_size, z=None):
+def get_xs(x_lower: float, x_upper: float, pop_size: int, z: int = None) \
+        -> np.ndarray:
     """Returns x coordinates for all initial solutions.
     """
     if z is None:
@@ -1232,7 +1250,8 @@ def get_xs(x_lower, x_upper, pop_size, z=None):
     return np.append(x_coords, x_lasts, axis=1)
 
 
-def get_ys(y_lower, y_upper, pop_size, z=None, lower_limit_at_first=False):
+def get_ys(y_lower: float, y_upper: float, pop_size: int, z: int = None,
+           lower_limit_at_first: bool = False) -> np.ndarray:
     """Returns y coordinates for all initial solutions.
     """
     if z is None:
