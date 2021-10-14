@@ -239,6 +239,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
     def choose_optimization_method(self, button, checked):
         """Choose whether to use NSGA-II or linear optimization method."""
         if checked:
+            # TODO: Recognize the button without relying on constant text
             if button.text() == "NSGA-II (slow)":
                 self.current_method = OptimizationMethod.NSGAII
             else:
@@ -248,6 +249,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         """Choose whether to optimize recoils or fluence. Show correct widget.
         """
         if checked:
+            # TODO: Recognize the button without relying on constant tex
             if button.text() == "Recoil":
                 self.current_mode = OptimizationType.RECOIL
                 self.fluence_widget.hide()

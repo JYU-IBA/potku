@@ -118,7 +118,7 @@ class Nsgaii(opt.BaseOptimizer):
         self.dis_c = dis_c
         self.mut_p = mut_p
         self.dis_m = dis_m
-        self._const_var_i = []
+        self._const_var_i = []  # Indexes of constants
         self.bit_length_x = 0
         self.bit_length_y = 0
 
@@ -949,22 +949,7 @@ class Nsgaii(opt.BaseOptimizer):
             OptimizationState.FINISHED,
             evaluations_done=self.evaluations - evaluations))
 
-    def clean_up(self, cancellation_token: CancellationToken) -> None:
-        if cancellation_token is not None:
-            cancellation_token.request_cancellation()
-        self.delete_temp_files()
-
-    def delete_temp_files(self) -> None:
-        # Remove unnecessary opt.recoil file
-        for file in os.listdir(self.element_simulation.directory):
-            # TODO better method for determining which files to delete
-            if file.endswith("opt.recoil") or "optfl" in file:
-                try:
-                    os.remove(Path(self.element_simulation.directory, file))
-                except OSError:
-                    pass
-
-    def variation(self, pop_sols):
+    def variation(self, pop_sols: List[Solution]) -> PopulationNp:
         """
         Generate offspring population using SBX and polynomial mutation for
         fluence, and simple binary crossover and binary

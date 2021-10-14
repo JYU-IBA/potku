@@ -28,6 +28,7 @@ Optimization module contains functions used in NSGA2 algorithm
 __author__ = "Heta Rekilä \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
+import os
 import abc
 import math
 from pathlib import Path
@@ -121,7 +122,7 @@ class BaseOptimizer(abc.ABC, Observable):
         self.optimize_by_area = optimize_by_area
 
     @staticmethod
-    def _get_message(state: Any, **kwargs) -> dict:
+    def _get_message(state: OptimizationState, **kwargs) -> dict:
         """Returns a dictionary with the state of the optimization and
         other information.
         """
@@ -275,9 +276,20 @@ class BaseOptimizer(abc.ABC, Observable):
         """
         pass
 
-    @abc.abstractmethod
     def clean_up(self, cancellation_token: CancellationToken) -> None:
-        pass
+        if cancellation_token is not None:
+            cancellation_token.request_cancellation()
+        self._delete_temp_files()
+
+    def _delete_temp_files(self) -> None:
+        # Remove unnecessary opt.recoil file
+        for file in os.listdir(self.element_simulation.directory):
+            # TODO better method for determining which files to delete
+            if file.endswith("opt.recoil") or "optfl" in file:
+                try:
+                    os.remove(Path(self.element_simulation.directory, file))
+                except OSError:
+                    pass
 
 
 def get_optim_espe(elem_sim: ElementSimulation,
