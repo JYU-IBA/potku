@@ -33,7 +33,6 @@ __version__ = "2.0"
 
 import copy
 import os
-import re
 
 import modules.general_functions as gf
 import modules.math_functions as mf
@@ -45,6 +44,7 @@ from matplotlib import offsetbox
 from matplotlib.widgets import SpanSelector
 
 from modules.element import Element
+from modules.energy_spectrum import SumEnergySpectrum
 from modules.measurement import Measurement
 from modules.recoil_element import RecoilElement
 from modules.element_simulation import ElementSimulation
@@ -52,7 +52,6 @@ from modules.element_simulation import ElementSimulation
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QGuiApplication
 
-import random
 from scipy import integrate
 
 from widgets.matplotlib.base import MatplotlibWidget
@@ -66,9 +65,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
     def __init__(self, parent, histed_files, rbs_list, spectrum_type,
                  legend=True, spectra_changed=None, disconnect_previous=False,
-                 channel_width=None):
+                 channel_width=None, sum_spectrum=None):
         """Inits Energy Spectrum widget.
-
         Args:
             parent: EnergySpectrumWidget class object.
             histed_files: List of calculated energy spectrum files.
@@ -83,11 +81,22 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             channel_width: channel width used in spectra calculation
         """
         super().__init__(parent)
-        self.sum_key = 'SUM'
+        if sum_spectrum is None:
+            sum_spectrum = {"measurement": False, "simulation": False}
         self.parent = parent
         self.draw_legend = legend
         self.histed_files = copy.deepcopy(histed_files)
         self.spectrum_type = spectrum_type
+        self.sum_spectrum = sum_spectrum
+        if True in sum_spectrum.values():
+            if spectrum_type is 'simulation':
+                self.directory_es = next(iter(self.histed_files.keys())).parent
+                self.sum_spectrum_container = SumEnergySpectrum(self.histed_files, self.directory_es,
+                                                                self.sum_spectrum)
+            if spectrum_type is 'measurement':
+                self.directory_es = next(iter(self.parent.use_cuts)).parent
+                self.sum_spectrum_container = SumEnergySpectrum(self.histed_files, self.directory_es,
+                                                                self.sum_spectrum)
 
         # List for files to draw for simulation
         self.files_to_draw = histed_files
@@ -104,12 +113,12 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.canvas.manager.set_title("Energy Spectrum")
         self.axes.fmt_xdata = lambda x: "{0:1.2f}".format(x)
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
-        
+
         # Set default filename for saving figure
         bin_width = str(parent.bin_width).replace(".", "_")
         name = parent.parent.obj.name
         default_filename = f"Energy_spectra_binw_{bin_width}MeV_{name}"
-        self.canvas.get_default_filename = lambda: default_filename 
+        self.canvas.get_default_filename = lambda: default_filename
 
         self.mpl_toolbar.addSeparator()
         self.__button_toggle_log = QtWidgets.QToolButton(self)
@@ -189,7 +198,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
     def __calculate_selected_area(self, start, end):
         """
         Calculate the ratio between the two spectra areas.
-
         Return:
             ratio, area(?) or None, None
         """
@@ -418,11 +426,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                         break
         return recoils
 
-    def __set_label(self, isotope, element, rbs_string):
-        label = r"$^{" + str(isotope) + "}$" + element + rbs_string 
-        return label
-
-
     def on_draw(self):
         """Draw method for matplotlib.
         """
@@ -494,36 +497,22 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                                           dirtyinteger)
 
                 element_counts[color_string] = 1
-                index_of_last_dot = 3
-
-                if self.sum_key in color_string:
+                if color_string not in self.__selection_colors:
                     color = "red"
-
-                elif color_string not in self.__selection_colors:
-                    r = lambda: random.randint(0,255)
-                    color = '#%02X%02X%02X' % (r(),r(),r())
-
                 else:
                     color = self.__selection_colors[color_string]
-                               
-                if element == self.sum_key:
-                    # sum_spectra_elements = '.'.join(cut_file[1:])
-                    # label = self.__set_label(isotope, element, rbs_string) + "$_{split: " +
-                    # sum_spectra_elements + "}$"
-                    label = self.__set_label(isotope, element, rbs_string)
 
-                elif len(cut_file) == index_of_last_dot:
-                    label = self.__set_label(isotope, element, rbs_string)
-
-                elif len(cut_file) > index_of_last_dot:
-                    label = self.__set_label(isotope, element, rbs_string) + "$_{split: " + cut_file[3] + "}$"
-
+                if len(cut_file) == 3:
+                    label = r"$^{" + str(isotope) + "}$" + element + rbs_string
                 else:
-                    label = self.__set_label(isotope, element, rbs_string) + "$_{split: " + cut_file[2] + "}$"
-
+                    label = r"$^{" + str(isotope) + "}$" + element \
+                            + rbs_string + "$_{split: " + cut_file[2] + "}$"
                 line, = self.axes.plot(x, y, color=color, label=label,
                                        linestyle=self.default_linestyle)
                 self.plots[key] = line
+
+            if True in self.sum_spectrum.values():
+                self.plot_sum_spectrum()
 
         else:  # Simulation energy spectrum
             if self.__ignore_elements:
@@ -550,12 +539,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                             element = Element.from_string(scatter_element_str)
                         else:
                             element = Element("")
-                        if isotope_and_symbol == 'SUM':
-                            # regex = r"\bSUM[^hist]+[^.hist]"
-                            # suffix = re.findall(regex, file_name)[0]
-                            suffix = 'SUM'
-                        else:
-                            suffix = "*"
+                        suffix = "*"
 
                     isotope = element.isotope
                     if isotope is None:
@@ -571,13 +555,10 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
                     if len(rest_split) == 2:  # regular hist file
                         label = r"$^{" + str(isotope) + "}$" + symbol + suffix \
-                            + " (exp)"
+                                + " (exp)"
                     else:  # split
-                        if isotope_and_symbol == 'SUM':
-                            label = r"$^{" + str(isotope) + "}$" + symbol + suffix + " (exp)"
-                        else:
-                            label = r"$^{" + str(isotope) + "}$" + symbol + suffix \
-                                    + "$_{split: " + rest_split[1] + "}$"" (exp)"
+                        label = r"$^{" + str(isotope) + "}$" + symbol + suffix \
+                                + "$_{split: " + rest_split[1] + "}$"" (exp)"
                 elif file_name.endswith(".simu"):
                     for s in file_name:
                         if s != "-":
@@ -613,6 +594,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                            linestyle=self.default_linestyle)
                 self.plots[key] = line
 
+            if True in self.sum_spectrum.values():
+                self.plot_sum_spectrum()
+
         if self.draw_legend:
             if not self.__initiated_box:
                 self.fig.tight_layout(pad=0.5)
@@ -622,7 +606,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 self.__initiated_box = True
 
             handles, labels = self.axes.get_legend_handles_labels()
-            
             self.leg = self.axes.legend(handles,
                                         labels,
                                         loc=3,
@@ -656,11 +639,25 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         # Draw magic
         self.canvas.draw()
 
+    def plot_sum_spectrum(self):
+        if self.sum_spectrum["simulation"]:
+            x, y = zip(*self.sum_spectrum_container.sum_spectrums["simulation"])
+            line, = self.axes.plot(x, y, label='SIMULATION_SUM', linestyle=self.default_linestyle)
+            self.plots[self.sum_spectrum_container.sum_spectrum_paths["simulation"]] = line
+        if self.sum_spectrum["measurement"]:
+            x, y = zip(*self.sum_spectrum_container.sum_spectrums["measurement"])
+            line, = self.axes.plot(x, y, label='MEASUREMENT_SUM', linestyle=self.default_linestyle)
+            if "cuts" in str(self.sum_spectrum_container.sum_spectrum_paths["measurement"]).lower():
+                self.plots[self.sum_spectrum_container.sum_spectrum_paths["measurement"].stem] = line
+                # FIXME: Change the code in a way that it does not matter if the sum spectrum is selected
+                #  on the measurement or the simulation tab
+            else:
+                self.plots[self.sum_spectrum_container.sum_spectrum_paths["measurement"]] = line
+
     def remove_ignored_elements(self):
         """
         Find entries from self.histed_files that don't correspond to keys in
         self.__ignore_elements.
-
         Return:
             Dictionary with the entries and keys that are not ignored.
         """
@@ -694,6 +691,12 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             paths = []
             ignored_elements = []
             ignore_elements_for_dialog = []
+            if self.sum_spectrum["simulation"]:
+                self.histed_files[self.sum_spectrum_container.sum_spectrum_paths["simulation"]] = \
+                    self.sum_spectrum_container.sum_spectrums["simulation"]
+            if self.sum_spectrum["measurement"]:
+                self.histed_files[self.sum_spectrum_container.sum_spectrum_paths["measurement"]] = \
+                    self.sum_spectrum_container.sum_spectrums["measurement"]
             for key in self.histed_files:
                 paths.append(key)
                 file = os.path.split(key)[1]
@@ -719,7 +722,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         else:
             elements = [item[0] for item in sorted(self.histed_files.items(),
                                                    key=lambda x: self.__sortt(
-                                                    x[0]))]
+                                                       x[0]))]
+            if True in self.sum_spectrum.values():
+                elements.append(self.sum_spectrum_container.sum_spectrum_path.stem)
             dialog = GraphIgnoreElements(elements, self.__ignore_elements)
             self.__ignore_elements = set(dialog.ignored_elements)
 
@@ -727,7 +732,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
     def hide_plots(self, plots_to_hide):
         """Hides given plots from the graph.
-
         Args:
             plots_to_hide: collection of plot names that will be hidden.
         """
@@ -740,12 +744,10 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         self.canvas.draw()
         self.canvas.flush_events()
-        self.on_draw()
 
     def update_spectra(self, rec_elem: RecoilElement,
                        elem_sim: ElementSimulation):
         """Updates spectra line that belongs to given recoil element.
-
         Args:
             rec_elem: RecoilElement object
             elem_sim: ElementSimulation object that is used to calculate
@@ -759,8 +761,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         espe_file = Path(elem_sim.directory, f"{rec_elem.get_full_name()}.simu")
 
         if espe_file in self.plots:
-            verbose = None
-            espe, _ = elem_sim.calculate_espe(rec_elem, ch=self.channel_width, verbose=verbose)
+            espe, _ = elem_sim.calculate_espe(rec_elem, ch=self.channel_width)
 
             data = get_axis_values(espe)
 

@@ -32,7 +32,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import os
-import re
 import shutil
 from pathlib import Path
 from typing import Optional
@@ -40,10 +39,9 @@ from typing import Optional
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
-from PyQt5.QtCore import QLocale
+from PyQt5.QtCore import QLocale, pyqtSlot
 
 import dialogs.dialog_functions as df
-import modules.general_functions as gf
 import dialogs.file_dialogs as fdialogs
 import modules.cut_file as cut_file
 import widgets.binding as bnd
@@ -71,7 +69,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     bin_width = 0.025
 
     use_efficiency = bnd.bind("use_eff_checkbox")
-    sum_spectrum = bnd.bind("sum_spectrum_checkbox")
+    sum_spectrum_simulation = bnd.bind("sum_spectrum_checkbox_simulation")
+    sum_spectrum_measurement = bnd.bind("sum_spectrum_checkbox_measurement")
     status_msg = bnd.bind("label_status")
     measurement_cuts = bnd.bind("treeWidget")
     used_bin_width = bnd.bind("histogramTicksDoubleSpinBox")
@@ -88,7 +87,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                  statusbar: Optional[QtWidgets.QStatusBar] = None,
                  spectra_changed=None):
         """Inits energy spectrum dialog.
-        
+
         Args:
             parent: A TabWidget.
             spectrum_type: Whether spectrum is for measurement of simulation.
@@ -130,11 +129,19 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         self.use_eff_checkbox.stateChanged.connect(
             lambda *_: self.label_efficiency_files.setEnabled(
                 self.use_efficiency))
-        self.use_eff_checkbox.stateChanged.connect(
-            lambda *_: self.label_efficiency_files.setEnabled(
-                self.sum_spectrum))
+
+        self._toggle = True
+
+        self.sum_spectrum_checkbox_simulation.setEnabled(self._toggle)
+        self.sum_spectrum_checkbox_measurement.setEnabled(self._toggle)
+
+        # self.sum_spectrum_checkbox_simulation.setChecked(self._toggle)
+        # self.sum_spectrum_checkbox_measurement.setChecked(not self._toggle)
+        #
+        # self.sum_spectrum_checkbox_simulation.clicked.connect(self.toggle)
+        # self.sum_spectrum_checkbox_measurement.clicked.connect(self.toggle)
+
         self.use_efficiency = True
-        self.sum_spectrum = False
 
         locale = QLocale.c()
         self.histogramTicksDoubleSpinBox.setLocale(locale)
@@ -145,10 +152,17 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         self.external_tree_widget = QtWidgets.QTreeWidget()
 
         if self.spectrum_type == EnergySpectrumWidget.MEASUREMENT:
+            self.sum_spectrum_checkbox_simulation.setEnabled(False)
+            self.sum_spectrum_checkbox_simulation.setCheckable(False)
+            self.sum_spectrum_checkbox_measurement.stateChanged.connect(
+                lambda *_: self.label_efficiency_files.setEnabled(
+                    self.sum_spectrum_simulation))
             EnergySpectrumParamsDialog.bin_width = \
                 self.measurement.profile.channel_width
             self.pushButton_OK.clicked.connect(
-                lambda: self.__accept_params(spectra_changed=spectra_changed))
+                lambda: self.__accept_params(spectra_changed=spectra_changed,
+                                             sum_spectrum={'simulation': False,
+                                                           'measurement': self.sum_spectrum_measurement}))
 
             m_name = self.measurement.name
             if m_name not in EnergySpectrumParamsDialog.checked_cuts:
@@ -181,6 +195,15 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # FIXME .eff files not shown in sim mode
         self.__update_eff_files()
         self.exec_()
+
+    # TODO: Remove when it is possible to separate measurement and simulation sum spectrum from each other
+    @pyqtSlot()
+    def toggle(self):
+        """https://stackoverflow.com/questions/36281103/change-checkbox-state-to-not-checked-when-other-checkbox-is-checked-pyqt
+        """
+        self._toggle = not self._toggle
+        self.sum_spectrum_checkbox_simulation.setChecked(self._toggle)
+        self.sum_spectrum_checkbox_measurement.setChecked(not self._toggle)
 
     def showEvent(self, event):
         """Adjust size after dialog has been shown.
@@ -275,8 +298,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     def get_selected_measurements(self):
         """Returns a dictionary that contains selected measurements,
         cut files belonging to each measurement, and the corresponding
-        result file. If sum spectrum is enabled and there is at least
-        one measurement, returns the sum spectrum too.
+        result file.
         """
         mesus = self.tof_list_files
         used_measurements = {}
@@ -287,43 +309,6 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 "result_file": Path(
                     m.get_energy_spectra_dir(), f"{c.stem}.no_foil.hist")
             })
-
-        if self.sum_spectrum and len(mesus) > 0:
-            # cuts = gf.find_files_by_extension(mesus[-1][0].parent, ".cut")[".cut"]
-            # cuts.sort()
-            energy_spectra_dir = mesus[-1][1].get_energy_spectra_dir()
-            energy_spectra = gf.find_files_by_extension(energy_spectra_dir, ".hist")[".hist"]
-            energy_spectra.sort()
-
-            suffixes = []
-            result_file = ""
-
-            for m in mesus:
-                if 'RBS' in m[0].stem:
-                    match = re.match(r".+(.RBS.+)$", m[0].stem)
-                    end = match.group(1)
-                    suffixes.append(end)
-                else:
-                    suffixes.append(m[0].suffixes[0])
-            suffixes_max_len = len(suffixes)
-            for spectrum in energy_spectra:
-                same_suffixes = []
-                for suffix in suffixes:
-                    if suffix in spectrum.stem:
-                        same_suffixes.append(suffix)
-                if len(same_suffixes) == suffixes_max_len:
-                    if all(s in spectrum.stem for s in suffixes):
-                        result_file = spectrum
-                        used_measurements.setdefault(mesus[-1][1], []).append({
-                            "cut_file": None,
-                            "result_file": Path(
-                                mesus[-1][1].get_energy_spectra_dir(), f"{result_file.stem}.hist")
-                        })
-                        return used_measurements
-                else:
-                    continue
-            if result_file == "":
-                return used_measurements
         return used_measurements
 
     def get_selected_simulations(self):
@@ -373,17 +358,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             #   down the execution path
             EnergySpectrum.calculate_measured_spectra(
                 mesu, [d["cut_file"] for d in lst], self.bin_width,
-                use_efficiency=self.use_efficiency, sum_spectrum=self.sum_spectrum, no_foil=True)
-
-        if self.sum_spectrum:
-            used_measurements = self.get_selected_measurements()
-            for mesu, lst in used_measurements.items():
-                self.result_files.extend(d["result_file"] for d in lst)
-                # TODO use the return values instead of reading the files further
-                #   down the execution path
-                EnergySpectrum.calculate_measured_spectra(
-                    mesu, [d["cut_file"] for d in lst], self.bin_width,
-                    use_efficiency=self.use_efficiency, sum_spectrum=self.sum_spectrum, no_foil=True)
+                use_efficiency=self.use_efficiency, no_foil=True)
 
         # Add external files
         self.result_files.extend(used_externals)
@@ -398,10 +373,11 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         self.close()
 
     @gutils.disable_widget
-    def __accept_params(self, spectra_changed=None):
+    def __accept_params(self, spectra_changed=None, sum_spectrum=None):
         """Accept given parameters and cut files.
         """
         self.status_msg = ""
+        self.sum_spectrum = sum_spectrum
         width = self.used_bin_width
         m_name = self.measurement.name
         selected_cuts = self.measurement_cuts
@@ -416,8 +392,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             self.parent.energy_spectrum_widget = EnergySpectrumWidget(
                 self.parent, spectrum_type=self.spectrum_type,
                 use_cuts=selected_cuts, bin_width=width,
-                use_efficiency=self.use_efficiency, sum_spectrum=self.sum_spectrum,
-                statusbar=self.statusbar, spectra_changed=spectra_changed)
+                use_efficiency=self.use_efficiency,
+                statusbar=self.statusbar, spectra_changed=spectra_changed, sum_spectrum=self.sum_spectrum)
 
             # Check that matplotlib attribute exists after creation of energy
             # spectrum widget.
@@ -516,10 +492,10 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
 
     def __init__(self, parent: BaseTab,
                  spectrum_type: str = MEASUREMENT,
-                 use_cuts=None, bin_width=0.025, use_efficiency=False, sum_spectrum=False,
-                 save_file_int=0, statusbar=None, spectra_changed=None):
+                 use_cuts=None, bin_width=0.025, use_efficiency=False,
+                 save_file_int=0, statusbar=None, spectra_changed=None, sum_spectrum=None):
         """Inits widget.
-        
+
         Args:
             parent: A TabWidget.
             use_cuts: A string list representing Cut files.
@@ -544,6 +520,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.use_cuts = use_cuts
             self.bin_width = bin_width
             self.energy_spectrum_data = {}
+            self.sum_spectrum = sum_spectrum
             self.spectrum_type = spectrum_type
             rbs_list = {}
 
@@ -561,8 +538,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 self.energy_spectrum_data = \
                     EnergySpectrum.calculate_measured_spectra(
                         self.measurement, use_cuts, bin_width,
-                        progress=sbh.reporter, use_efficiency=use_efficiency, sum_spectrum=sum_spectrum
-                    )
+                        progress=sbh.reporter, use_efficiency=use_efficiency)
 
                 # Check for RBS selections.
                 rbs_list = cut_file.get_rbs_selections(self.use_cuts)
@@ -577,8 +553,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             # Graph in matplotlib widget and add to window
             self.matplotlib = MatplotlibEnergySpectrumWidget(
                 self, self.energy_spectrum_data, rbs_list, spectrum_type,
-                spectra_changed=spectra_changed, channel_width=bin_width
-            )
+                spectra_changed=spectra_changed, channel_width=bin_width, sum_spectrum=self.sum_spectrum)
         except (PermissionError, IsADirectoryError, FileNotFoundError) as e:
             # If the file path points to directory, this will either raise
             # PermissionError (Windows) or IsADirectoryError (Mac)
@@ -621,7 +596,6 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
 
     def save_to_file(self, measurement=True, update=False):
         """Save object information to file.
-
         Args:
             measurement: Whether energy spectrum belong to measurement or
                          simulation.

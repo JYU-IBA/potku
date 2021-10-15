@@ -31,16 +31,13 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import os
+import pathlib
 import platform
+import re
 import subprocess
-from pathlib import Path
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Sequence
-from typing import Tuple
 
-import numpy as np
+from pathlib import Path
+from typing import Dict, Union, List, Optional, Sequence, Tuple
 
 from . import general_functions as gf
 from . import subprocess_utils as sutils
@@ -50,6 +47,8 @@ from .measurement import Measurement
 from .observing import ProgressReporter
 from .parsing import ToFListParser
 from .ui_log_handlers import Logger
+
+import numpy as np
 
 TofListData = List[Tuple[float, float, float, int, float, str, float, int]]
 
@@ -119,12 +118,11 @@ class EnergySpectrum:
             measurement, cut_files, spectrum_width, progress=progress,
             no_foil=no_foil, verbose=verbose)
         return es.calculate_spectrum(
-            use_efficiency=use_efficiency, sum_spectrum=sum_spectrum, no_foil=no_foil)
+            use_efficiency=use_efficiency, no_foil=no_foil)
 
     def calculate_spectrum(
             self,
             use_efficiency: bool = False,
-            sum_spectrum: bool = False,
             no_foil: bool = False) -> Dict[str, Espe]:
         """Calculate energy spectrum data from cut files.
 
@@ -141,7 +139,7 @@ class EnergySpectrum:
         """
         return EnergySpectrum._calculate_spectrum(
             self._tof_listed_files, self._spectrum_width, self._measurement,
-            self._directory_es, use_efficiency=use_efficiency, sum_spectrum=sum_spectrum, no_foil=no_foil)
+            self._directory_es, use_efficiency=use_efficiency, no_foil=no_foil)
 
     def _load_cuts(
             self,
@@ -298,7 +296,6 @@ class EnergySpectrum:
             measurement: Measurement,
             directory_es: Path,
             use_efficiency: bool = False,
-            sum_spectrum: bool = False,
             no_foil: bool = False) -> Dict[str, Espe]:
         """Calculate energy spectrum data from .tof_list files and writes the
         results to .hist files.
@@ -311,8 +308,6 @@ class EnergySpectrum:
             directory_es: directory
             use_efficiency: whether efficiency is taken into account when
                 spectra is calculated
-            sum_spectrum: whether efficiency is taken into account when
-            spectra is calculated
             no_foil: whether foil thickness was set to 0 or not. This also
                 affects the file name
 
@@ -344,37 +339,126 @@ class EnergySpectrum:
             numpy_array = np.array(
                 espe, dtype=[("float", float), ("int", int)])
             np.savetxt(filename, numpy_array, delimiter=" ", fmt="%5.5f %6d")
-
-        if len(espes) > 0 and sum_spectrum is True:
-            x_files = [[] for _ in range(len(espes))]
-            y_files = [[] for _ in range(len(espes))]
-
-            for key in keys:
-                for espe_tuple in espes[key]:
-                    x_files[keys.index(key)].append(espe_tuple[0])
-                    y_files[keys.index(key)].append(espe_tuple[1])
-
-            x_files_flat = [item for sublist in x_files for item in sublist]
-            x_files_flat = np.unique(x_files_flat)
-            # Adds sum spectra
-            y_sum = []
-            for i in range(len(keys)):
-                y_sum.append(np.interp(x_files_flat, x_files[i], y_files[i]))
-            y_sum = np.sum(y_sum, axis=0)
-
-            sum_key = 'SUM'
-            for value in espes:
-                if 'RBS' in value:
-                    sum_key += '.' + value.split('.', 1)[-1]
-                else:
-                    sum_key += '.' + value.split('.')[0]
-            espes[sum_key] = list(zip(x_files_flat, y_sum))
-
-            path = os.path.join(
-                directory_es, measurement.name + '.' + sum_key + '.hist')
-
-            numpy_array = np.array(
-                espes[sum_key], dtype=[("float", float), ("int", int)])
-            np.savetxt(path, numpy_array, delimiter=" ", fmt="%5.5f %6d")
-
         return espes
+
+
+# TODO: Inherit from dict and add _calculate_sum_spectrum to modification
+#       operations?
+class SumEnergySpectrum:
+    """Container class for a sum of energy spectra."""
+    def __init__(self, spectra: Dict[str, Espe] = None, directory_es: Optional[Path] = "",
+                 spectrum_type: Dict[str, bool] = None) -> None:
+        self.sum_spectrums: Dict[str, List] = {"simulation": Optional[List], "measurement": Optional[List]}
+        self.sum_spectrum_path: Optional[Path] = None
+        self.sum_spectrum_paths: Dict[str, Path] = {"simulation": Optional[Path], "measurement": Optional[Path]}
+        self._detailed_sum_spectrum_key: Optional[bool] = None
+        self._directory_es: Optional[Path] = directory_es
+        self._spectrum_type: Dict[str, bool] = spectrum_type
+        self._spectra: Dict[str, Espe] = {}
+        self._simulation_spectra: Dict[str, Espe] = {}
+        self._measurement_spectra: Dict[str, Espe] = {}
+        self._sum_key = "SUM"
+        if spectra:
+            self.add_or_update_spectra(spectra)
+
+    @property
+    def spectra(self) -> Dict[str, Espe]:
+        """Get tracked spectra."""
+        # Read-only, use other methods to edit spectra
+        return self._spectra
+
+    @property
+    def directory_es(self) -> Optional[Path]:
+        """Get energy spectrum path."""
+        # Read-only, use other methods to edit the path
+        return self._directory_es
+
+    @property
+    def spectrum_type(self) ->Dict[str, bool]:
+        """Get energy spectrum type."""
+        # Read-only, use other methods to edit the type
+        return self._spectrum_type
+
+    @property
+    def detailed_sum_spectrum_key(self) -> Optional[bool]:
+        """Get detailed sum spectrum key"""
+        # Read-only, use other methods to edit the boolean value
+        return True
+
+    def _calculate_sum_spectrum(self) -> None:
+        spectras = [self._simulation_spectra, self._measurement_spectra]
+        spectrum_index = 0
+        for s in spectras:
+            if not s:
+                spectrum_index += 1
+            else:
+                amount_of_elements = len(s)
+                xs = []
+                ys = []
+                y_sum = []
+                for i, spectrum in enumerate(s.values()):
+                    xs.append([0.0] * len(spectrum))
+                    ys.append([0.0] * len(spectrum))
+                    for j, pair in enumerate(spectrum):
+                        xs[i][j] += pair[0]
+                        ys[i][j] += pair[1]
+                xs_flat = [item for sublist in xs for item in sublist]
+                xs_flat = np.unique(xs_flat)
+                for i in range(amount_of_elements):
+                    y_sum.append(np.interp(xs_flat, xs[i], ys[i]))
+                y_sum = np.sum(y_sum, axis=0)
+                self.sum_spectrum = [tuple(pair) for pair in zip(xs_flat, y_sum)]
+                if spectrum_index is 0:
+                    self.sum_spectrums["simulation"] = self.sum_spectrum
+                else:
+                    self.sum_spectrums["measurement"] = self.sum_spectrum
+                self.sum_spectrum_to_file(s, spectrum_index)
+                spectrum_index += 1
+                self._sum_key = 'SUM'
+
+    def sum_spectrum_to_file(self, spectra_type: Dict[str, List[Tuple]] = None, spectrum_index: Optional[int] = None) -> None:
+        # raise NotImplementedError  # TODO: remove when done
+        # TODO: Build the path (add self.directory_es to __init__?),
+        #       differentiate between "simulation" and "measured" in file name.
+        spectra_keys = list(spectra_type.keys())
+        if self.detailed_sum_spectrum_key:
+            if spectrum_index is not 0:
+                for key in spectra_keys:
+                    if type(key) is str:
+                        self._sum_key += "." + re.match(r"^\w*(?=\.|\-)", key)[0]
+                    else:
+                        self._sum_key += key.suffixes[0]
+            else:
+                for key in spectra_keys:
+                    self._sum_key += "." + re.match(r"^\w*(?=\.|\-)", key.stem)[0]
+        # TODO: This is copied from EnergySpectrum._calculate_spectrum,
+        #       turn it into a separate function like this:
+        #       def espe_to_file(filename, espe_array): ...
+        sum_spectrum_np_array = np.array(self.sum_spectrum, dtype=[("float", float), ("int", int)])
+        self.get_spectrum_path(spectrum_index)
+        np.savetxt(self.sum_spectrum_path, sum_spectrum_np_array, delimiter=" ", fmt="%5.5f %6d")
+
+    def get_spectrum_path(self, spectrum_index: Optional[int] = None):
+        sum_prefix = {0: "simulation", 1: "measurement"}
+        self.sum_spectrum_path = pathlib.Path(
+            self.directory_es) / f"{sum_prefix[spectrum_index].upper()}_{self._sum_key}.hist"
+        self.sum_spectrum_paths[sum_prefix[spectrum_index]] = self.sum_spectrum_path
+
+    def add_or_update_spectra(self, spectra: Dict[str, Espe]) -> None:
+        """Add or update specified spectra in the sum spectrum."""
+        for directory, points in spectra.items():
+            # FIXME: If there is a better way to separate simulation and measurement files
+            if "simulation" in str(directory).lower() and self._spectrum_type["simulation"]:
+                self._simulation_spectra[directory] = points
+            elif "measurement" in str(directory).lower() and self._spectrum_type["measurement"]:
+                self._measurement_spectra[directory] = points
+            else:
+                self._measurement_spectra[directory] = points
+        self._calculate_sum_spectrum()
+
+    def delete_spectra(self, spectra: Union[Sequence[str], Dict[str, Espe]]) \
+            -> None:
+        """Delete specified spectra from the sum spectrum."""
+        for name in spectra:
+            del self._spectra[name]
+        self._calculate_sum_spectrum()
