@@ -41,6 +41,7 @@ import widgets.gui_utils as gutils
 from modules.concurrency import CancellationToken
 from modules.element_simulation import ElementSimulation
 from modules.enums import OptimizationType, OptimizationMethod
+from modules.linear_optimization import LinearOptimization
 from modules.nsgaii import Nsgaii
 from modules.simulation import Simulation
 from widgets.binding import PropertySavingWidget
@@ -284,23 +285,31 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             optimize_by_area = self.fluence_widget.optimize_by_area
 
         # TODO move following code to the result widget
-        nsgaii = Nsgaii(
-            element_simulation=elem_sim, measurement=measurement,
-            cut_file=cut, ch=self.ch, **params,
-            use_efficiency=self.use_efficiency,
-            optimize_by_area=optimize_by_area, verbose=self.verbose)
+        if self.current_method == OptimizationMethod.NSGAII:
+            optimizer = Nsgaii(
+                element_simulation=elem_sim, measurement=measurement,
+                cut_file=cut, ch=self.ch, **params,
+                use_efficiency=self.use_efficiency,
+                optimize_by_area=optimize_by_area, verbose=self.verbose)
+        else:
+            optimizer = LinearOptimization(
+                element_simulation=elem_sim, measurement=measurement,
+                cut_file=cut, ch=self.ch, **params,
+                use_efficiency=self.use_efficiency,
+                optimize_by_area=optimize_by_area, verbose=self.verbose)
 
         # Optimization running thread
         ct = CancellationToken()
         optimization_thread = threading.Thread(
-            target=nsgaii.start_optimization, kwargs={"cancellation_token": ct})
+            target=optimizer.start_optimization,
+            kwargs={"cancellation_token": ct})
 
         # Create necessary results widget
         result_widget = self.tab.add_optimization_results_widget(
             elem_sim, cut.name, self.current_mode, ct=ct)
 
         elem_sim.optimization_widget = result_widget
-        nsgaii.subscribe(result_widget)
+        optimizer.subscribe(result_widget)
 
         optimization_thread.daemon = True
         optimization_thread.start()
