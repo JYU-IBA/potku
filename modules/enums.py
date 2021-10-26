@@ -229,3 +229,23 @@ class DepthProfileUnit(str, Enum):
 
     def __str__(self):
         return self.value
+
+
+@enum.unique
+class SumSpectrumType(str, Enum):
+    """Type of sum spectrum."""
+    MEASURED = "measured"
+    SIMULATED = "simulated"
+
+    def __str__(self):
+        return self.value
+
+
+@enum.unique
+class SpectrumType(str, Enum):
+    """Type of spectrum."""
+    MEASUREMENT = "measurement"
+    SIMULATION = "simulation"
+
+    def __str__(self):
+        return self.value

@@ -87,7 +87,7 @@
           <bool>true</bool>
          </property>
          <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Determines whether efficiencies are taken into account when plotting measured spectra.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Generates the sum spectrum based on simulated energy spectra&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="text">
           <string>Sum spectrum (simulation)</string>
@@ -100,7 +100,7 @@
        <item>
         <widget class="QCheckBox" name="sum_spectrum_checkbox_measurement">
          <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Determines whether efficiencies are taken into account when plotting measured spectra.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Generates the sum spectrum based on measured energy spectra&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="text">
           <string>Sum spectrum (measurement)</string>
