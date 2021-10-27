@@ -149,9 +149,13 @@ class LinearOptimization(opt.BaseOptimizer):
         if self.optimize_by_area:
             return mf.calculate_area(optim_espe, measured_espe)
 
-        # Difference between spectra
-        return sum(abs(opt_p[1] - mesu_p[1])
-                   for opt_p, mesu_p in zip(optim_espe, measured_espe))
+        # Find the mean squared error between simulated and measured
+        # energy spectra y values
+        diff = [(opt_p[1] - mesu_p[1])**2
+                for opt_p, mesu_p in zip(optim_espe, measured_espe)]
+        sum_diff = sum(diff) / len(diff)
+
+        return sum_diff
 
     def form_recoil(self, current_solution, name="") -> RecoilElement:
         points = []

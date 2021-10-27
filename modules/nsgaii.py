@@ -111,7 +111,7 @@ class Nsgaii(opt.BaseOptimizer):
 
         self.evaluations = gen * pop_size
         self.pop_size = pop_size
-        self.sol_size = sol_size
+        self.sol_size = sol_size  # TODO: Move to BaseOptimizer?
 
         # Crossover and mutation parameters
         self.cross_p = cross_p
@@ -268,11 +268,11 @@ class Nsgaii(opt.BaseOptimizer):
         # spectra
         area = mf.calculate_area(optim_espe, measured_espe)
 
-        # TODO: Move to mf.calculate_sum(line1, line2)
-        # Find the summed distance between the points of these two
-        # spectra
-        sum_diff = sum(abs(opt_p[1] - mesu_p[1])
-                       for opt_p, mesu_p in zip(optim_espe, measured_espe))
+        # Find the mean squared error between simulated and measured
+        # energy spectra y values
+        diff = [(opt_p[1] - mesu_p[1])**2
+                for opt_p, mesu_p in zip(optim_espe, measured_espe)]
+        sum_diff = sum(diff) / len(diff)
 
         return area, sum_diff
 
