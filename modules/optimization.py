@@ -62,7 +62,7 @@ class BaseOptimizer(abc.ABC, Observable):
                  number_of_processes=1, stop_percent=0.3, check_time=20,
                  ch=0.025, measurement=None, cut_file=None, check_max=900,
                  check_min=0, skip_simulation=False, use_efficiency=False,
-                 verbose=False, optimize_by_area=True) -> None:
+                 verbose=False, optimize_by_area=False) -> None:
         """Initialize a BaseOptimizer.
 
         Args:

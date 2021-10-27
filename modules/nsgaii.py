@@ -67,7 +67,7 @@ class Nsgaii(opt.BaseOptimizer):
                  stop_percent=0.3, check_time=20, ch=0.025,
                  measurement=None, cut_file=None, dis_c=20,
                  dis_m=20, check_max=900, check_min=0, skip_simulation=False,
-                 use_efficiency=False, optimize_by_area=True, verbose=False):
+                 use_efficiency=False, optimize_by_area=False, verbose=False):
 
         """
         Initialize the NSGA-II algorithm with needed parameters and start

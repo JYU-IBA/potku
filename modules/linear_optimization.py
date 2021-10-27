@@ -62,7 +62,7 @@ class LinearOptimization(opt.BaseOptimizer):
                  number_of_processes=1, stop_percent=0.3, check_time=20,
                  ch=0.025, measurement=None, cut_file=None, check_max=900,
                  check_min=0, skip_simulation=False, use_efficiency=False,
-                 optimize_by_area=True, verbose=False,
+                 optimize_by_area=False, verbose=False,
                  **kwargs):  # TODO: Remove kwargs when this is fully integrated
         opt.BaseOptimizer.__init__(
             self,

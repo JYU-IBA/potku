@@ -265,15 +265,15 @@
               <property name="text">
                <string>Area</string>
               </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
              </widget>
             </item>
             <item>
              <widget class="QRadioButton" name="sumRadioButton">
               <property name="text">
                <string>Sum</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
               </property>
              </widget>
             </item>

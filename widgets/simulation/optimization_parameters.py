@@ -111,7 +111,7 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
             kwargs: values to show in the widget
         """
         super().__init__()
-        self.optimize_by_area = True
+        self.optimize_by_area = False
         self.radios = QtWidgets.QButtonGroup(self)
         uic.loadUi(ui_file, self)
 
@@ -132,6 +132,8 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
         """
         self.simGroupBox.setEnabled(not self.skip_simulation)
 
+    # TODO: Make this work the same way as the rest of the radio buttons
+    #  in Potku
     def radio_buttons(self):
         """Radio buttons for optimization parameters Sum and Area
         """
