@@ -79,21 +79,33 @@ class Element(MCERDParameterContainer):
             sequence = m.group("sequence")
 
             if isotope and amount and sequence:
-                return cls(symbol, int(isotope), float(amount), sequence=int(sequence))
+                return cls(symbol,
+                           isotope=int(isotope),
+                           amount=float(amount),
+                           sequence=int(sequence))
             elif isotope and amount:
-                return cls(symbol, int(isotope), float(amount))
+                return cls(symbol=symbol,
+                           isotope=int(isotope),
+                           amount=float(amount))
             elif isotope and sequence:
-                return cls(symbol, int(isotope), sequence=int(sequence))
+                return cls(symbol=symbol,
+                           isotope=int(isotope),
+                           sequence=int(sequence))
             elif amount and sequence:
-                return cls(symbol, float(amount), sequence=int(sequence))
+                return cls(symbol=symbol,
+                           amount=float(amount),
+                           sequence=int(sequence))
             elif isotope:
-                return cls(symbol, int(isotope))
+                return cls(symbol=symbol,
+                           isotope=int(isotope))
             elif amount:
-                return cls(symbol, None, float(amount))
+                return cls(symbol=symbol,
+                           amount=float(amount))
             elif sequence:
-                return cls(symbol, sequence=int(sequence))
+                return cls(symbol=symbol,
+                           sequence=int(sequence))
             else:
-                return cls(symbol)
+                return cls(symbol=symbol)
         else:
             # FIXME crashes here. Steps:
             #           - open sample request from JYU web site
@@ -111,14 +123,12 @@ class Element(MCERDParameterContainer):
             Returns element, isotope and amount in string format.
         """
         if self.isotope and self.amount:
-            return "{0}{1}{2}".format(int(round(self.isotope)), self.symbol,
-                                      self.amount)
-        if self.isotope:  # TODO unnecessary int?
+            return "{0}{1} {2}".format(int(round(self.isotope)), self.symbol,
+                                       self.amount)
+        if self.isotope:
             return "{0}{1}".format(int(round(self.isotope)), self.symbol)
         if self.amount:
-            return "{0}{1}".format(self.symbol, self.amount)
-        if self.sequence:
-            return "{0}{1}".format(self.symbol, self.sequence)
+            return "{0} {1}".format(self.symbol, self.amount)
         return self.symbol
 
     def __eq__(self, other):
@@ -157,10 +167,10 @@ class Element(MCERDParameterContainer):
                 return m1 > m2
 
         # Elements that have no isotopes come before elements that do
-        if self.isotope is None and other.isotope is not None:
+        if self.sequence is None and other.sequence is not None:
             return True
 
-        if self.isotope is not None and other.isotope is None:
+        if self.sequence is not None and other.sequence is None:
             return False
 
         return str(self) < str(other)

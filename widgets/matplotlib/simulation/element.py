@@ -88,11 +88,11 @@ class ElementWidget(QtWidgets.QWidget):
         if element.isotope:
             isotope_superscript = general.digits_to_superscript(
                 str(element.isotope))
-            button_text = isotope_superscript + " " + element.symbol
+            button_text = f"{isotope_superscript}" + " " + f"{element.symbol}"
         elif element.sequence:
-            button_text = element.symbol + '#' + str(element.sequence)
+            button_text = f"{element.symbol}#{element.sequence}"
         else:
-            button_text = element.symbol
+            button_text = f"{element.symbol}"
 
         self.radio_button.setText(button_text)
 
