@@ -46,7 +46,7 @@ from dialogs.graph_ignore_elements import GraphIgnoreElements
 from modules.element import Element
 from modules.element_simulation import ElementSimulation
 from modules.energy_spectrum import SumEnergySpectrum
-from modules.enums import SumSpectrumType, SpectrumType
+from modules.enums import SumSpectrumType, SpectrumTab
 from modules.measurement import Measurement
 from modules.recoil_element import RecoilElement
 from widgets.matplotlib.base import MatplotlibWidget
@@ -715,7 +715,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
     def __ignore_elements_from_graph(self):
         """Ignore elements from elements ratio calculation.
         """
-        if self.spectrum_type == SpectrumType.SIMULATION:
+        if self.spectrum_type == SpectrumTab.SIMULATION:
             if self.simulated_sum_spectrum:
                 elements_to_ignore = IgnoreElements(
                     simulation_energy_files_to_draw=self.simulation_energy_files_to_draw,
@@ -733,7 +733,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.__ignore_elements = \
                 elements_to_ignore.ignore_simulation_elements()
 
-        elif self.spectrum_type == SpectrumType.MEASUREMENT:
+        elif self.spectrum_type == SpectrumTab.MEASUREMENT:
             if self.measured_sum_spectrum:
                 elements_to_ignore = IgnoreElements(
                     simulation_energy_files_to_draw=None,

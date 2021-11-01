@@ -50,7 +50,7 @@ import widgets.gui_utils as gutils
 from modules.base import Espe
 from modules.element_simulation import ElementSimulation
 from modules.energy_spectrum import EnergySpectrum
-from modules.enums import OptimizationType, SpectrumType
+from modules.enums import OptimizationType, SpectrumTab
 from modules.get_espe import GetEspe
 from modules.measurement import Measurement
 from modules.simulation import Simulation
