@@ -550,6 +550,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 rbs_list = cut_file.get_rbs_selections(self.use_cuts)
 
                 self.measurement_energy = SumEnergySpectrumFiles(self.energy_spectrum_data)
+                sum_spectra_directory = self.measurement.get_energy_spectra_dir()
             else:
                 self.simulation = self.parent.obj
                 self.save_file_int = save_file_int
@@ -565,6 +566,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                     self.simulation_energy_spectrum_dictionary
                 self.measurement_energy = \
                     self.measurement_energy_spectrum_dictionary
+                sum_spectra_directory = self.simulation.directory
 
             # Graph in matplotlib widget and add to window
             self.matplotlib = MatplotlibEnergySpectrumWidget(
@@ -574,8 +576,9 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 spectrum_type=spectrum_type,
                 simulated_sum_spectrum_is_selected=self.simulated_sum_spectrum_is_selected,
                 measured_sum_spectrum_is_selected=self.measured_sum_spectrum_is_selected,
+                sum_spectra_directory=sum_spectra_directory,
                 spectra_changed=spectra_changed,
-                channel_width=bin_width,)
+                channel_width=bin_width)
         except (PermissionError, IsADirectoryError, FileNotFoundError) as e:
             # If the file path points to directory, this will either raise
             # PermissionError (Windows) or IsADirectoryError (Mac)

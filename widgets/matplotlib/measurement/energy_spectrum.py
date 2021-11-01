@@ -62,7 +62,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                  rbs_list=None, spectrum_type=None, legend=True,
                  spectra_changed=None, disconnect_previous=False,
                  channel_width=None, simulated_sum_spectrum_is_selected=False,
-                 measured_sum_spectrum_is_selected=False):
+                 measured_sum_spectrum_is_selected=False,
+                 sum_spectra_directory=None):
         """Inits Energy Spectrum widget.
         Args:
             parent: EnergySpectrumWidget class object.
@@ -79,6 +80,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 previously connected to the spectra_changed signal will be
                 disconnected
             channel_width: channel width used in spectra calculation
+            simulated_sum_spectrum_is_selected: whether simulated sum
+                spectrum is enabled
+            measured_sum_spectrum_is_selected: whether measured sum
+                spectrum is enabled
+            sum_spectra_directory: output directory for sum spectra
         """
         super().__init__(parent)
 
@@ -96,33 +102,28 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.simulated_sum_spectrum = SumEnergySpectrum()
 
         if self.spectrum_type == SpectrumTab.SIMULATION:
-            # SIMULATION SIMULATION
+            # Simulated sum spectrum in Simulation tab
             if self.simulated_sum_spectrum_is_selected and \
                     self.simulation_energy:
-                energy_spectra_directory = next(
-                    iter(self.simulation_energy.keys())).parent
                 self.simulated_sum_spectrum = SumEnergySpectrum(
                     self.simulation_energy,
-                    energy_spectra_directory, SumSpectrumType.SIMULATED)
-            # SIMULATION MEASUREMENT
+                    sum_spectra_directory, SumSpectrumType.SIMULATED)
+            # Measured sum spectrum in Simulation tab
             if self.measured_sum_spectrum_is_selected and \
                     self.measurement_energy:
                 # When a sum spectrum is generated for a simulation, both the
                 # simulated and the measured sum spectra should be saved in the
                 # simulation's folder.
-                energy_spectra_directory = next(
-                    iter(self.measurement_energy.keys())).parent
                 self.measured_sum_spectrum = SumEnergySpectrum(
                     self.measurement_energy,
-                    energy_spectra_directory, SumSpectrumType.MEASURED)
-        # MEASUREMENT MEASUREMENT
+                    sum_spectra_directory, SumSpectrumType.MEASURED)
+        # Measured sum spectrum in Measurement
         if (self.spectrum_type == SpectrumTab.MEASUREMENT
                 and self.measured_sum_spectrum_is_selected
                 and self.measurement_energy):
-            energy_spectra_directory = next(iter(self.parent.use_cuts)).parent
             self.measured_sum_spectrum = SumEnergySpectrum(
                 self.measurement_energy.spectrum_files,
-                energy_spectra_directory, SumSpectrumType.MEASURED)
+                sum_spectra_directory, SumSpectrumType.MEASURED)
 
         # List for files to draw for simulation
         self.simulation_energy_files_to_draw = \
