@@ -338,11 +338,12 @@ class EnergySpectrum:
 class SumEnergySpectrum:
     """Container class for a sum of energy spectra."""
 
-    def __init__(self, spectra: Dict[str, Espe] = None, directory_es: Optional[Path] = "",
-                 spectra_type: Optional[str] = "") -> None:
+    def __init__(self, spectra: Dict[str, Espe] = None,
+                 directory_es: Path = "",
+                 spectra_type: SumSpectrumType = "") -> None:
         self.sum_spectrum_path: Optional[Path] = None
         self.sum_spectrum: Optional[np.ndarray] = None
-        self._directory_es: Optional[Path] = directory_es
+        self._directory_es: Path = directory_es
         self._spectrum_type = spectra_type
         self._spectra: Dict[str, Espe] = {}
         self._sum_key = "SUM"
@@ -364,27 +365,27 @@ class SumEnergySpectrum:
         """Calculates the sum spectrum"""
         xs = []
         ys = []
-        ys_interpolated = []
         for i, spectrum in enumerate(self._spectra.values()):
             xs.append(np.zeros(len(spectrum)))
             ys.append(np.zeros(len(spectrum)))
             for j, pair in enumerate(spectrum):
                 xs[i][j] += pair[0]
                 ys[i][j] += pair[1]
-        xs_flat = [item for sublist in xs for item in sublist]
+        xs_flat = np.unique([item for sublist in xs for item in sublist])
+        ys_interpolated = []
         for point, _ in enumerate(self._spectra.values()):
-            ys_interpolated.append(np.interp(np.unique(xs_flat), xs[point], ys[point]))
+            if xs_flat.size == 0 or xs[point].size == 0 or ys[point].size == 0:
+                continue
+            ys_interpolated.append(np.interp(xs_flat, xs[point], ys[point]))
         y_sum_flat = np.sum(ys_interpolated, axis=0)
-        self.sum_spectrum = [
-            tuple(pair) for pair in zip(np.unique(xs_flat), y_sum_flat)
-        ]
+        self.sum_spectrum = [tuple(pair) for pair in zip(xs_flat, y_sum_flat)]
         self.sum_spectrum_to_file()
 
     def sum_spectrum_to_file(self) -> None:
         """Writes the sum spectrum to a file"""
         element = None
-        for key in self.spectra.keys():
-            if type(key) is not pathlib.WindowsPath:
+        for key in self.spectra:
+            if not isinstance(key, pathlib.Path):
                 if "." or "-" in key:
                     element = key.split(".")[0]
                     self._sum_key += "." + element
@@ -397,19 +398,17 @@ class SumEnergySpectrum:
             else:
                 raise ValueError(f"Unknown element_name format '{element}'")
 
-        sum_spectrum_np_array = np.array(self.sum_spectrum, dtype=[("float", float), ("int", int)])
+        sum_spectrum_np_array = np.array(self.sum_spectrum,
+                                         dtype=[("float", float), ("int", int)])
         self.sum_spectrum_path = pathlib.Path(
             self._directory_es) / f"{str.upper(self._spectrum_type)}_{self._sum_key}.hist"
-        np.savetxt(self.sum_spectrum_path, sum_spectrum_np_array, delimiter=" ", fmt="%5.5f %6d")
+        np.savetxt(self.sum_spectrum_path, sum_spectrum_np_array,
+                   delimiter=" ", fmt="%5.5f %6d")
 
     def add_or_update_spectra(self, spectra: Dict[str, Espe]) -> None:
         """Add or update specified spectra in the sum spectrum."""
         for directory, points in spectra.items():
-            if self._spectrum_type == SumSpectrumType.MEASURED and "measurement" in str(directory).lower() or \
-                    self._spectrum_type == SumSpectrumType.SIMULATED and "simulation" in str(directory).lower():
-                self._spectra[directory] = points
-            if type(directory) is not pathlib.WindowsPath:
-                self._spectra[directory] = points
+            self._spectra[directory] = points
         self._calculate_sum_spectrum()
 
     def delete_spectra(self, spectra: Union[Sequence[str], Dict[str, Espe]]) \

@@ -59,13 +59,17 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
     default_linestyle = "-"
 
     def __init__(self, parent, simulation_energy=None, measurement_energy=None,
-                 rbs_list=None, spectrum_type=None, legend=True, spectra_changed=None, disconnect_previous=False,
-                 channel_width=None, show_simulated_sum_spectra=False, show_measured_sum_spectra=False):
+                 rbs_list=None, spectrum_type=None, legend=True,
+                 spectra_changed=None, disconnect_previous=False,
+                 channel_width=None, simulated_sum_spectrum_is_selected=False,
+                 measured_sum_spectrum_is_selected=False):
         """Inits Energy Spectrum widget.
         Args:
             parent: EnergySpectrumWidget class object.
-            simulation_energy: A list of calculated simulation energy spectrum files.
-            measurement_energy: A list of calculated measurement energy spectrum files.
+            simulation_energy: A list of calculated simulation energy spectrum
+            files.
+            measurement_energy: A list of calculated measurement energy spectrum
+             files.
             rbs_list: A dictionary of RBS selection elements containing
                 scatter elements.
             legend: Boolean representing whether to draw legend or not.
@@ -83,33 +87,48 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.simulation_energy = simulation_energy
         self.measurement_energy = measurement_energy
         self.spectrum_type = spectrum_type
-        self.show_simulated_sum_spectra = show_simulated_sum_spectra
-        self.show_measured_sum_spectra = show_measured_sum_spectra
-        if self.spectrum_type == SpectrumType.SIMULATION:
-            if self.show_simulated_sum_spectra and len(self.simulation_energy.spectrum_files) > 0:
-                energy_spectra_directory = next(iter(self.simulation_energy.spectrum_files.keys())).parent
-                self.simulated_sum_spectrum = SumEnergySpectrum(self.simulation_energy.spectrum_files,
-                                                                energy_spectra_directory,
-                                                                SumSpectrumType.SIMULATED)
-            if self.show_measured_sum_spectra and len(self.measurement_energy.spectrum_files) > 0:
-                energy_spectra_directory = next(iter(self.measurement_energy.spectrum_files.keys())).parent
-                self.measured_sum_spectrum = SumEnergySpectrum(self.measurement_energy.spectrum_files,
-                                                               energy_spectra_directory,
-                                                               SumSpectrumType.MEASURED)
-            else:
-                self.measured_sum_spectrum = None
-        else:
-            self.simulated_sum_spectrum = None
-        if self.spectrum_type == SpectrumType.MEASUREMENT and \
-                self.show_measured_sum_spectra and len(self.measurement_energy.spectrum_files) > 0:
+        self.simulated_sum_spectrum_is_selected = \
+            simulated_sum_spectrum_is_selected
+        self.measured_sum_spectrum_is_selected = \
+            measured_sum_spectrum_is_selected
+
+        self.measured_sum_spectrum = None
+        self.simulated_sum_spectrum = None
+
+        if self.spectrum_type == SpectrumTab.SIMULATION:
+            """SIMULATION SIMULATION"""
+            if self.simulated_sum_spectrum_is_selected and \
+                    self.simulation_energy:
+                energy_spectra_directory = next(
+                    iter(self.simulation_energy.keys())).parent
+                self.simulated_sum_spectrum = SumEnergySpectrum(
+                    self.simulation_energy,
+                    energy_spectra_directory, SumSpectrumType.SIMULATED)
+            """SIMULATION MEASUREMENT"""
+            if self.measured_sum_spectrum_is_selected and \
+                    self.measurement_energy:
+                # When a sum spectrum is generated for a simulation, both the
+                # simulated and the measured sum spectra should be saved in the
+                # simulation's folder.
+                energy_spectra_directory = next(
+                    iter(self.simulation_energy.keys())).parent
+                self.measured_sum_spectrum = SumEnergySpectrum(
+                    self.measurement_energy,
+                    energy_spectra_directory, SumSpectrumType.MEASURED)
+        """MEASUREMENT MEASUREMENT"""
+        if (self.spectrum_type == SpectrumTab.MEASUREMENT
+                and self.measured_sum_spectrum_is_selected
+                and self.measurement_energy):
             energy_spectra_directory = next(iter(self.parent.use_cuts)).parent
-            self.measured_sum_spectrum = SumEnergySpectrum(self.measurement_energy.spectrum_files,
-                                                           energy_spectra_directory,
-                                                           SumSpectrumType.MEASURED)
+            self.measured_sum_spectrum = SumEnergySpectrum(
+                self.measurement_energy,
+                energy_spectra_directory, SumSpectrumType.MEASURED)
 
         # List for files to draw for simulation
-        self.simulation_energy_files_to_draw = self.simulation_energy.spectrum_files
-        self.measurement_energy_files_to_draw = self.measurement_energy.spectrum_files
+        self.simulation_energy_files_to_draw = \
+            self.simulation_energy
+        self.measurement_energy_files_to_draw = \
+            self.measurement_energy
 
         self.__rbs_list = rbs_list
         self.__icon_manager = parent.icon_manager
@@ -323,12 +342,14 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         # Limit files_to_draw to only two
 
-        if self.show_simulated_sum_spectra:
-            simulation_drawn_lines = self.__draw_line(self.simulation_energy_files_to_draw)
+        if self.simulated_sum_spectrum_is_selected:
+            simulation_drawn_lines = self.__draw_line(
+                self.simulation_energy_files_to_draw)
             if len(simulation_drawn_lines) != 2:
                 self.__check_draw_lines()
-        if self.show_measured_sum_spectra:
-            measurement_drawn_lines = self.__draw_line(self.meausrement_energy_files_to_draw)
+        if self.measured_sum_spectrum_is_selected:
+            measurement_drawn_lines = self.__draw_line(
+                self.meausrement_energy_files_to_draw)
             if len(measurement_drawn_lines) != 2:
                 self.__check_draw_lines()
         low_x = round(xmin, 3)
@@ -336,11 +357,13 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.lines_of_area = []
 
         # Find the min and max of the files
-        if self.show_simulated_sum_spectra:
-            low_x, high_x = self.__find_max_and_min(simulation_drawn_lines, low_x, high_x)
+        if self.simulated_sum_spectrum_is_selected:
+            low_x, high_x = self.__find_max_and_min(simulation_drawn_lines,
+                                                    low_x, high_x)
 
-        if self.show_measured_sum_spectra:
-            low_x, high_x = self.__find_max_and_min(measurement_drawn_lines, low_x, high_x)
+        if self.measured_sum_spectrum_is_selected:
+            low_x, high_x = self.__find_max_and_min(measurement_drawn_lines,
+                                                    low_x, high_x)
 
         ylim = self.axes.get_ylim()
         try:
@@ -434,8 +457,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         recoils = []
         for elem_sim in self.parent.parent.obj.element_simulations:
             for recoil in elem_sim.recoil_elements:
-                for used_file in self.simulation_energy.spectrum_files and \
-                                 self.measurement_energy.spectrum_files:
+                for used_file in {**self.simulation_energy,
+                                  **self.measurement_energy}:
                     used_file_name = os.path.split(used_file)[1]
                     if used_file_name == recoil.prefix + "-" + recoil.name + \
                             ".simu":
@@ -459,48 +482,66 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         # TODO refactor the draw function so that measurement and simulation
         #      do not use so many lines of different code
         if isinstance(self.parent.parent.obj, Measurement):
-            if self.show_measured_sum_spectra:
-                ignore_measurement_elements = IgnoreMeasurementElements(self.measured_sum_spectrum.sum_spectrum_key,
-                                                                        self.measured_sum_spectrum.sum_spectrum,
-                                                                        self.measurement_energy.spectrum_files,
-                                                                        self.__ignore_elements, self.__rbs_list,
-                                                                        self.__selection_colors)
-                ignore_measurement_elements.ignore_keys_and_points(x_min, self.axes, self.plots, self.default_linestyle)
+            if self.measured_sum_spectrum_is_selected:
+                ignore_measurement_elements = IgnoreMeasurementElements(
+                    self.measured_sum_spectrum.sum_spectrum_key,
+                    self.measured_sum_spectrum.sum_spectrum,
+                    self.measurement_energy,
+                    self.__ignore_elements, self.__rbs_list,
+                    self.__selection_colors)
+                ignore_measurement_elements.iterate_keys_and_plot_them(
+                    x_min, self.axes, self.plots, self.default_linestyle)
 
             else:
-                ignore_measurement_elements = IgnoreMeasurementElements(None,
-                                                                        None,
-                                                                        self.measurement_energy.spectrum_files,
-                                                                        self.__ignore_elements, self.__rbs_list,
-                                                                        self.__selection_colors)
-                ignore_measurement_elements.ignore_keys_and_points(x_min, self.axes, self.plots, self.default_linestyle)
-            if self.show_measured_sum_spectra:
+                ignore_measurement_elements = IgnoreMeasurementElements(
+                    None, None, self.measurement_energy,
+                    self.__ignore_elements, self.__rbs_list,
+                    self.__selection_colors)
+                ignore_measurement_elements.iterate_keys_and_plot_them(
+                    x_min, self.axes, self.plots, self.default_linestyle)
+            if self.measured_sum_spectrum_is_selected:
                 self.plot_measured_sum_spectrum()
         else:
             if self.__ignore_elements:
-                self.simulation_energy_files_to_draw = self.remove_ignored_elements()
-                self.measurement_energy_files_to_draw = self.remove_ignored_elements()
+                self.simulation_energy_files_to_draw = \
+                    self.remove_ignored_elements()
+                self.measurement_energy_files_to_draw = \
+                    self.remove_ignored_elements()
             else:
-                self.simulation_energy_files_to_draw = self.simulation_energy.spectrum_files
-                self.measurement_energy_files_to_draw = self.measurement_energy.spectrum_files
+                self.simulation_energy_files_to_draw = \
+                    self.simulation_energy
+                self.measurement_energy_files_to_draw = \
+                    self.measurement_energy
 
-            if self.spectrum_type == SpectrumType.SIMULATION:
-                if self.show_simulated_sum_spectra and len(self.simulation_energy.spectrum_files) > 0:
-                    self.plot_energy_files(self.simulation_energy_files_to_draw, x_min)
+            if self.spectrum_type == SpectrumTab.SIMULATION:
+                if self.simulated_sum_spectrum_is_selected and len(
+                        self.simulation_energy) \
+                        > 0:
+                    self.plot_energy_files(self.simulation_energy_files_to_draw,
+                                           x_min)
                     self.plot_simulated_sum_spectrum()
-                if self.show_measured_sum_spectra and len(self.measurement_energy.spectrum_files) > 0:
-                    self.plot_energy_files(self.measurement_energy_files_to_draw, x_min)
+                if self.measured_sum_spectrum_is_selected and len(
+                        self.measurement_energy) \
+                        > 0:
+                    self.plot_energy_files(
+                        self.measurement_energy_files_to_draw, x_min)
                     self.plot_measured_sum_spectrum()
                 else:
-                    self.plot_energy_files(self.simulation_energy_files_to_draw, x_min)
-                    self.plot_energy_files(self.measurement_energy_files_to_draw, x_min)
+                    self.plot_energy_files(self.simulation_energy_files_to_draw,
+                                           x_min)
+                    self.plot_energy_files(
+                        self.measurement_energy_files_to_draw, x_min)
 
-            if self.spectrum_type == SpectrumType.MEASUREMENT:
-                if self.show_measured_sum_spectra and len(self.measurement_energy.spectrum_files) > 0:
-                    self.plot_energy_files(self.measurement_energy_files_to_draw, x_min)
+            if self.spectrum_type == SpectrumTab.MEASUREMENT:
+                if self.measured_sum_spectrum_is_selected and len(
+                        self.measurement_energy) \
+                        > 0:
+                    self.plot_energy_files(
+                        self.measurement_energy_files_to_draw, x_min)
                     self.plot_measured_sum_spectrum()
                 else:
-                    self.plot_energy_files(self.measurement_energy_files_to_draw, x_min)
+                    self.plot_energy_files(
+                        self.measurement_energy_files_to_draw, x_min)
 
         if self.draw_legend:
             if not self.__initiated_box:
@@ -621,20 +662,25 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.plots[key] = line
 
     def plot_simulated_sum_spectrum(self):
-        if self.show_simulated_sum_spectra and self.simulated_sum_spectrum.sum_spectrum:
+        if self.simulated_sum_spectrum_is_selected and \
+                self.simulated_sum_spectrum.sum_spectrum:
             x, y = zip(*self.simulated_sum_spectrum.sum_spectrum)
-            line, = self.axes.plot(x, y, label='SIMULATION_SUM', linestyle=self.default_linestyle)
+            line, = self.axes.plot(x, y, label='SIMULATION_SUM',
+                                   linestyle=self.default_linestyle)
             self.plots[self.simulated_sum_spectrum.sum_spectrum_path] = line
 
     def plot_measured_sum_spectrum(self):
-        if self.spectrum_type == SpectrumType.SIMULATION:
-            if self.show_measured_sum_spectra and self.measured_sum_spectrum.sum_spectrum:
+        if self.spectrum_type == SpectrumTab.SIMULATION:
+            if self.measured_sum_spectrum_is_selected and \
+                    self.measured_sum_spectrum.sum_spectrum:
                 x, y = zip(*self.measured_sum_spectrum.sum_spectrum)
-                line, = self.axes.plot(x, y, label='MEASUREMENT_SUM', linestyle=self.default_linestyle)
+                line, = self.axes.plot(x, y, label='MEASUREMENT_SUM',
+                                       linestyle=self.default_linestyle)
                 self.plots[self.measured_sum_spectrum.sum_spectrum_path] = line
         else:
             x, y = zip(*self.measured_sum_spectrum.sum_spectrum)
-            line, = self.axes.plot(x, y, label='MEASUREMENT_SUM', linestyle=self.default_linestyle)
+            line, = self.axes.plot(x, y, label='MEASUREMENT_SUM',
+                                   linestyle=self.default_linestyle)
             self.plots[self.measured_sum_spectrum.sum_spectrum_key] = line
 
     def remove_ignored_elements(self):
@@ -671,40 +717,44 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         """
         if self.spectrum_type == SpectrumType.SIMULATION:
             if self.simulated_sum_spectrum:
-                self.elements_to_ignore = IgnoreElements(
+                elements_to_ignore = IgnoreElements(
                     simulation_energy_files_to_draw=self.simulation_energy_files_to_draw,
                     measurement_energy_files_to_draw=self.measurement_energy_files_to_draw,
                     simulated_sum_spectrum_path=self.simulated_sum_spectrum.sum_spectrum_path,
                     measured_sum_spectrum_path=self.measured_sum_spectrum.sum_spectrum_path,
                     ignored_set=self.__ignore_elements)
             else:
-                self.elements_to_ignore = IgnoreElements(
+                elements_to_ignore = IgnoreElements(
                     simulation_energy_files_to_draw=self.simulation_energy_files_to_draw,
                     measurement_energy_files_to_draw=self.measurement_energy_files_to_draw,
                     simulated_sum_spectrum_path=None,
                     measured_sum_spectrum_path=None,
                     ignored_set=self.__ignore_elements)
-            self.__ignore_elements = self.elements_to_ignore.ignore_simulation_elements()
+            self.__ignore_elements = \
+                elements_to_ignore.ignore_simulation_elements()
 
         elif self.spectrum_type == SpectrumType.MEASUREMENT:
             if self.measured_sum_spectrum:
-                self.elements_to_ignore = IgnoreElements(
+                elements_to_ignore = IgnoreElements(
                     simulation_energy_files_to_draw=None,
                     measurement_energy_files_to_draw=self.measurement_energy_files_to_draw,
                     simulated_sum_spectrum_path=None,
                     measured_sum_spectrum_path=self.measured_sum_spectrum.sum_spectrum_path,
                     ignored_set=self.__ignore_elements)
-                self.__ignore_elements = self.elements_to_ignore.ignore_measurement_elements(
-                    self.measured_sum_spectrum.sum_spectrum_key, self.measurement_energy_files_to_draw)
+                self.__ignore_elements = \
+                    elements_to_ignore.ignore_measurement_elements(
+                        self.measured_sum_spectrum.sum_spectrum_key,
+                        self.measurement_energy_files_to_draw)
             else:
-                self.elements_to_ignore = IgnoreElements(
+                elements_to_ignore = IgnoreElements(
                     simulation_energy_files_to_draw=self.simulation_energy_files_to_draw,
                     measurement_energy_files_to_draw=self.measurement_energy_files_to_draw,
                     simulated_sum_spectrum_path=None,
                     measured_sum_spectrum_path=None,
                     ignored_set=self.__ignore_elements)
-                self.__ignore_elements = self.elements_to_ignore.ignore_measurement_elements(
-                    None, self.measurement_energy_files_to_draw)
+                self.__ignore_elements = \
+                    elements_to_ignore.ignore_measurement_elements(
+                        None, self.measurement_energy_files_to_draw)
         self.hide_plots(self.__ignore_elements)
 
     def hide_plots(self, plots_to_hide):
@@ -763,40 +813,75 @@ def fix_minimum(lst, minimum):
 
 
 class IgnoreElements:
-    def __init__(self, simulation_energy_files_to_draw: Dict[Path, Tuple] = None,
+    def __init__(self,
+                 simulation_energy_files_to_draw: Dict[Path, Tuple] = None,
                  measurement_energy_files_to_draw: Dict[Path, Tuple] = None,
                  simulated_sum_spectrum_path: Optional[Path] = None,
                  measured_sum_spectrum_path: Optional[Path] = None,
                  ignored_set: Optional[set] = None):
+
+        """
+        Initializes the class for ignoring elements.
+
+        Args:
+         simulation_energy_files_to_draw: Simulation energy files to be drawn
+         measurement_energy_files_to_draw: Dict[Path, Tuple] = Measurement
+         energy files to be drawn
+         simulated_sum_spectrum_path: Optional[Path] = The path for a simulated
+         sum spectrum files
+         measured_sum_spectrum_path: Optional[Path] = The path for a measured
+         sum spectrum files
+         ignored_set: Optional[set] = None): Ignored elements from the GUI
+        """
 
         self._elements: Optional[List] = []
         self._paths: Optional[List] = []
         self._ignored_elements: Optional[List] = []
         self._ignore_elements_for_dialog: Optional[List] = []
 
-        self._simulated_sum_spectrum_path: Optional[Path] = simulated_sum_spectrum_path
-        self._measured_sum_spectrum_path: Optional[Path] = measured_sum_spectrum_path
-        self._simulation_energy_files_to_draw: Dict[Path, Tuple] = simulation_energy_files_to_draw
-        self._measurement_energy_files_to_draw: Dict[Path, Tuple] = measurement_energy_files_to_draw
+        # Locations and energy files for the simulated and the measured spectrum
+        self._simulated_sum_spectrum_path: Optional[Path] = \
+            simulated_sum_spectrum_path
+        self._measured_sum_spectrum_path: Optional[Path] = \
+            measured_sum_spectrum_path
+        self._simulation_energy_files_to_draw: Dict[Path, Tuple] = \
+            simulation_energy_files_to_draw
+        self._measurement_energy_files_to_draw: Dict[Path, Tuple] = \
+            measurement_energy_files_to_draw
         self._ignored_set: Optional[set] = ignored_set
 
-    def ignore_simulation_elements(self):
+    def ignore_simulation_elements(self) -> Optional[set]:
+        """Choose elements that will be shown / hidden on the GUI.
+        Returns the set of elements that will be hidden on the GUI"""
         simulation_paths = []
         measurement_paths = []
         if self._simulation_energy_files_to_draw:
+            """SIMULATION SIMULATION"""
             if self._simulated_sum_spectrum_path:
-                self.elements_to_be_ignored(simulation_paths, self._simulation_energy_files_to_draw,
-                                            self._simulated_sum_spectrum_path)
+                self.elements_to_be_ignored(
+                    simulation_paths,
+                    self._simulation_energy_files_to_draw,
+                    self._simulated_sum_spectrum_path)
             else:
-                self.elements_to_be_ignored(simulation_paths, self._simulation_energy_files_to_draw)
+                """SIMULATION MEASUREMENT"""
+                self.elements_to_be_ignored(
+                    simulation_paths,
+                    self._simulation_energy_files_to_draw)
         if self._measurement_energy_files_to_draw:
+            """MEASUREMENT MEASUREMENT"""
             if self._measured_sum_spectrum_path:
-                self.elements_to_be_ignored(measurement_paths, self._measurement_energy_files_to_draw,
-                                            self._measured_sum_spectrum_path)
+                self.elements_to_be_ignored(
+                    measurement_paths,
+                    self._measurement_energy_files_to_draw,
+                    self._measured_sum_spectrum_path)
             else:
-                self.elements_to_be_ignored(measurement_paths, self._measurement_energy_files_to_draw)
+                """OTHER CASES"""
+                self.elements_to_be_ignored(
+                    measurement_paths,
+                    self._measurement_energy_files_to_draw)
 
-        dialog = GraphIgnoreElements(self._elements, self._ignore_elements_for_dialog)
+        dialog = GraphIgnoreElements(self._elements,
+                                     self._ignore_elements_for_dialog)
 
         if self._simulation_energy_files_to_draw:
             self.add_ignored_elements(dialog, simulation_paths)
@@ -806,6 +891,12 @@ class IgnoreElements:
         return set(self._ignored_elements)
 
     def add_ignored_elements(self, dialog, paths):
+        """Add paths of ignored elements to the list.
+
+        Args:
+            dialog: GUI
+            paths: Empty path list
+        """
         if len(paths) == 0:
             return
         for elem in dialog.ignored_elements:
@@ -820,6 +911,17 @@ class IgnoreElements:
     def elements_to_be_ignored(self, paths: List[Path] = None,
                                energy_spectrum_paths: Dict[Path, Tuple] = None,
                                sum_spectrum_path: Optional[Path] = None):
+        """Iterate element paths and add element keys to the list. Choose
+        element that will be hidden on the GUI and add them to the
+        list.
+
+        Args:
+            paths: Empty path list
+            energy_spectrum_paths: The simulation or the measurement energy
+            spectrum paths
+            sum_spectrum_path: The sum spectrum path
+        """
+
         for path in energy_spectrum_paths.keys():
             paths.append(path)
         if sum_spectrum_path:
@@ -836,14 +938,25 @@ class IgnoreElements:
                 self._ignore_elements_for_dialog.append(element)
             self._elements.append(element)
 
-    def ignore_measurement_elements(self, measured_sum_spectrum_key, measurement_elements_path):
+    def ignore_measurement_elements(self, measured_sum_spectrum_key,
+                                    measurement_elements_path):
+        """Iterate measurement's element paths and add element keys to the
+        list. Choose elements that will be hidden on the GUI and add
+        them to the list.
+
+        Args:
+            measured_sum_spectrum_key: The measured sum spectrum key
+            measurement_elements_path: Measurement files path
+        """
+
         keys = []
         for key in measurement_elements_path.keys():
             if "." or "-" in key:
                 keys.append(key.split(".")[0])
         if measured_sum_spectrum_key:
             keys.append(measured_sum_spectrum_key)
-        self._elements = [k for k in sorted(keys, key=lambda x: sort_elements(x))]
+        self._elements = [k for k in
+                          sorted(keys, key=lambda x: element_sort_key(x))]
         dialog = GraphIgnoreElements(self._elements, self._ignored_set)
         return set(dialog.ignored_elements)
 
@@ -852,7 +965,20 @@ class IgnoreMeasurementElements:
     def __init__(self, sum_spectrum_key: Optional[str] = None,
                  sum_spectrum: Dict[List, Tuple] = None,
                  spectrum_files: Optional[object] = None,
-                 ignored_set: Optional[set] = None, rbs_list: Optional[List] = None, selection_colors=None) -> None:
+                 ignored_set: Optional[set] = None,
+                 rbs_list: Optional[List] = None,
+                 selection_colors=None) -> None:
+        """
+        Initializes the class that iterates element keys and shows them
+        on the GUI.
+        Args:
+            sum_spectrum_key = The sum spectrum key
+            sum_spectrum = The sum spectrum energy files for the GUI
+            spectrum_files = Other spectrum files
+            ignored_set = Elements that are hidden on the GUI
+            rbs_list = Separates beam scatters from other recoil files
+            selection_colors = Graph colors on the GUI
+        """
 
         self.sum_spectrum_key = sum_spectrum_key
         self.sum_spectrum = sum_spectrum
@@ -862,11 +988,21 @@ class IgnoreMeasurementElements:
         self.selection_colors = selection_colors
         self.sum_spectrum_dictionary = {
             self.sum_spectrum_key: sum_spectrum}
-        self.measurement_keys_and_points = {**self.spectrum_files, **self.sum_spectrum_dictionary}
+        self.measurement_keys_and_points = \
+            {**self.spectrum_files, **self.sum_spectrum_dictionary}
         self.element_counts: Optional[Dict] = {}
-        # keys = [item[0] for item in sorted(measurement_keys_and_points, key=lambda x: sort_elements(x[0]))]
 
-    def ignore_keys_and_points(self, x_min, axes, plots, default_linestyle):
+    # FIXME: Simplify me :)
+    def iterate_keys_and_plot_them(self, x_min, axes, plots, default_linestyle):
+        """Iterate element keys and plot them on the GUI.
+
+        Args:
+            x_min: The current minimum x-value
+            axes: Axes that will on the GUI
+            plots: Plots the will be on the GUI
+            default_linestyle: Default line style that will be on the GUI
+
+        """
         for key, points in self.measurement_keys_and_points.items():
             if key is None or key is self.sum_spectrum_key:
                 continue
@@ -929,11 +1065,12 @@ class IgnoreMeasurementElements:
             else:
                 label = r"$^{" + str(isotope) + "}$" + element \
                         + rbs_string + "$_{split: " + key + "}$"
-            line, = axes.plot(x, y, color=color, label=label, linestyle=default_linestyle)
+            line, = axes.plot(x, y, color=color, label=label,
+                              linestyle=default_linestyle)
             plots[key] = line
 
 
-def sort_elements(key):
+def element_sort_key(key):
     # TODO sort by RBS selection
     # TODO provide elements as parameters, do not initialize them here.
     #   Better yet, use CutFile objects here.

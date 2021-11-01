@@ -214,8 +214,10 @@ class ElementWidget(QtWidgets.QWidget):
                 bin_width=dialog.bin_width,
                 spectrum_type=EnergySpectrumWidget.SIMULATION,
                 spectra_changed=spectra_changed,
-                show_simulated_sum_spectra=dialog.show_simulation_sum_spectrum,
-                show_measured_sum_spectra=dialog.show_measurement_sum_spectrum)
+                simulated_sum_spectrum_is_selected=
+                dialog.simulated_sum_spectrum_is_selected,
+                measured_sum_spectrum_is_selected=
+                dialog.measured_sum_spectrum_is_selected)
 
             # Check all energy spectrum widgets, if one has the same
             # elements, delete it
