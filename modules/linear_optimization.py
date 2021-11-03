@@ -324,12 +324,37 @@ class LinearOptimization(opt.BaseOptimizer):
             (y_lb, y_ub)
         ]
 
+        # TODO: namedtuple
         return x_bounds, y_bounds
 
     def _fit_simulation_peaks(self, solution, bounds):
-        for i, peak in enumerate(solution.peaks):
-            # TODO: search peak centers -> widths -> heights
-            pass
+        initial_solution = copy.deepcopy(solution)
+        initial_objective_value = self.evaluate_solution(solution)
+
+        # for i, peak in enumerate(solution.peaks):
+        #     # TODO: search peak centers -> widths -> heights
+        #     pass
+
+        peak = solution.peaks[1]
+
+        initial_x = peak.center.get_x()
+        initial_y = peak.center.get_y()
+
+        peak.set_y(1.0)
+        objective_values = {}
+        linear_space = np.linspace(
+            peak.prev_point.get_x(), peak.next_point.get_x(), 7)[1:-1]
+        for x in linear_space:
+            peak.set_x(x)
+            objective_values[x] = self.evaluate_solution(solution)
+
+        best_x = min(objective_values, key=objective_values.get)
+
+        peak.set_x(initial_x)
+        peak.set_y(initial_y)
+
+        print(objective_values)
+        print(f"Best x: {best_x}, best value: {objective_values[best_x]}")
 
         raise NotImplementedError
 
@@ -341,7 +366,8 @@ class LinearOptimization(opt.BaseOptimizer):
         raise NotImplementedError
 
     def _optimize(self):
-        solution = copy.deepcopy(self.solution)
+        points = copy.deepcopy(self.solution.points)
+        solution = SolutionPeak8_2(points)
         bounds = self._get_bounds()
 
         self._fit_simulation_peaks(solution, bounds)
@@ -401,16 +427,24 @@ PeakType = List[Point]
 ValleyType = List[Point]
 
 
-# TODO: Use Peak and Valley?
+# TODO: Combine Valley with Peak (move_left_valley, move_right_valley)?
+# TODO: Parametric representation (width, center_point, prev_point/next_point)?
 class Peak:
     def __init__(
-            self, lh: Point, rh: Point, ll: Point = None, rl: Point = None):
+            self, lh: Point, rh: Point, ll: Point = None, rl: Point = None,
+            prev_point: Point = None, next_point: Point = None):
         # left/right low/high
         self.ll: Optional[Point] = ll
         self.lh: Point = lh
         self.rh: Point = rh
         self.rl: Optional[Point] = rl
 
+        # TODO: Check these for limits,
+        #       maybe add a list of boundaries too (create BoundedPoint class?)
+        self.prev_point = prev_point
+        self.next_point = next_point
+
+    # TODO: Is this useful?
     @property
     def center(self) -> Point:
         x = (self.lh.get_x() + self.rh.get_x()) / 2
@@ -419,20 +453,57 @@ class Peak:
 
     @property
     def points(self) -> List[Point]:
-        return [self.ll, self.lh, self.rh, self.rl]
+        return [self.prev_point, self.ll, self.lh,
+                self.rh, self.rl, self.next_point]
 
-    def move(self, x_move=0.0, y_move=0.0) -> None:
-        if x_move:
-            if self.ll:
-                self.ll.set_x(self.ll.get_x() + x_move)
-                self.lh.set_x(self.lh.get_x() + x_move)
-            if self.rl:
-                self.rl.set_x(self.rl.get_x() + x_move)
-                self.rh.set_x(self.rh.get_x() + x_move)
+    # TODO: Use this and move the points' x in order based on amount's sign
+    #       (negative: left to right, positive: right to left)
+    #       (prevents overlapping)
+    @staticmethod
+    def _move_point(point, x=0.0, y=0.0,
+                    prev_point=None, next_point=None) -> bool:
+        clipped = False
 
-        if y_move:
-            self.lh.set_y(self.lh.get_y() + y_move)
-            self.rh.set_y(self.rh.get_y() + y_move)
+        if x != 0.0:
+            new_x = point.get_x() + x
+            clipped_x = np.clip(
+                new_x, a_min=prev_point.get_x(), a_max=next_point.get_x())
+            if new_x != clipped_x:
+                clipped = True
+
+            point.set_x(clipped_x)
+
+        if y != 0.0:
+            new_y = point.get_y() + y
+            clipped_y = np.clip(
+                new_y, a_min=prev_point.get_y(), a_max=next_point.get_y())
+            if new_y != clipped_y:
+                clipped = True
+
+            point.set_y(clipped_y)
+
+        return clipped
+
+    def move_x(self, amount: float) -> None:
+        if amount >= 0.0:
+            if self.prev_point and self.ll:
+                self.ll.set_x(self.ll.get_x() + amount)
+                self.lh.set_x(self.lh.get_x() + amount)
+            if self.next_point and self.rl:
+                self.rh.set_x(self.rh.get_x() + amount)
+                self.rl.set_x(self.rl.get_x() + amount)
+
+    def move_y(self, amount: float) -> None:
+        self.lh.set_y(self.lh.get_y() + amount)
+        self.rh.set_y(self.rh.get_y() + amount)
+
+    def set_x(self, x: float) -> None:
+        amount = x - self.center.get_x()
+        self.move_x(amount)
+
+    def set_y(self, y: float) -> None:
+        amount = y - self.center.get_y()
+        self.move_y(amount)
 
     def scale(self) -> None:
         raise NotImplementedError
@@ -440,12 +511,14 @@ class Peak:
 
 class Valley:
     def __init__(
-            self, ll: Point, rl: Point, lh: Point = None, rh: Point = None):
-        # left/right low/high
-        self.lh: Optional[Point] = lh
+            self, ll: Point, rl: Point,
+            prev_point: Point = None, next_point: Point = None):
+        # left/right low
         self.ll: Point = ll
         self.rl: Point = rl
-        self.rh: Optional[Point] = rh
+
+        self.prev_point = prev_point
+        self.next_point = next_point
 
     @property
     def center(self) -> Point:
@@ -455,21 +528,27 @@ class Valley:
 
     @property
     def points(self) -> List[Point]:
-        return [self.lh, self.ll, self.rl, self.rh]
+        return [self.prev_point, self.ll, self.rl, self.next_point]
 
-    def move(self, y_move=0.0) -> None:
-        if y_move:
-            self.ll.set_y(self.ll.get_y() + y_move)
-            self.rl.set_y(self.rl.get_y() + y_move)
+    def move_y(self, amount: float) -> None:
+        if amount:
+            self.ll.set_y(self.ll.get_y() + amount)
+            self.rl.set_y(self.rl.get_y() + amount)
+
+    def set_y(self, y: float) -> None:
+        amount = y - self.center.get_y()
+        self.move_y(amount)
 
     def scale(self) -> None:
         raise NotImplementedError
 
 
 class BaseSolution2:
-    def __init__(self):
-        # TODO: How to create this?
-        raise NotImplementedError
+    def __init__(self, points: List[Point], peaks: List[Peak],
+                 valleys: List[Valley]):
+        self.points = points
+        self.peaks = peaks
+        self.valleys = valleys
 
 
 # TODO: ABC?
@@ -601,28 +680,12 @@ class SolutionBox4(BaseSolution):
         valleys = [slice(2, 4)]
         super().__init__(4, peaks, valleys, points)
 
-    # @property
-    # def peaks(self):
-    #     return [self.points[0:3]]
-    #
-    # @property
-    # def valleys(self):
-    #     return [self.points[2:4]]
-
 
 class SolutionBox6(BaseSolution):
     def __init__(self, points: Optional[List[Point]] = None):
         peaks = [slice(1, 5)]
         valleys = [slice(0, 2), slice(4, 6)]
         super().__init__(6, peaks, valleys, points)
-
-    # @property
-    # def peaks(self):
-    #     return [self.points[1:5]]
-    #
-    # @property
-    # def valleys(self):
-    #     return [self.points[0:2], self.points[4:6]]
 
 
 class SolutionPeak8(BaseSolution):
@@ -631,13 +694,22 @@ class SolutionPeak8(BaseSolution):
         valleys = [slice(2, 4), slice(6, 8)]
         super().__init__(8, peaks, valleys, points)
 
-    # @property
-    # def peaks(self):
-    #     return [self.points[0:3], self.points[3:7]]
 
-    # @property
-    # def valleys(self):
-    #     return [self.points[2:4], self.points[6:8]]
+class SolutionPeak8_2(BaseSolution2):
+    def __init__(self, points: List[Point]):
+        peak1 = Peak(ll=None, lh=points[0], rh=points[1], rl=points[2],
+                     prev_point=None, next_point=points[3])
+        valley1 = Valley(ll=points[2], rl=points[3],
+                         prev_point=points[1], next_point=points[4])
+        peak2 = Peak(ll=points[3], lh=points[4], rh=points[5], rl=points[6],
+                     prev_point=points[2], next_point=points[7])
+        valley2 = Valley(ll=points[6], rl=points[7],
+                         prev_point=points[5], next_point=None)
+
+        peaks = [peak1, peak2]
+        valleys = [valley1, valley2]
+
+        super().__init__(points, peaks, valleys)
 
 
 class SolutionPeak10(BaseSolution):
@@ -645,11 +717,3 @@ class SolutionPeak10(BaseSolution):
         peaks = [slice(1, 5), slice(5, 9)]
         valleys = [slice(0, 2), slice(4, 6), slice(8, 10)]
         super().__init__(10, peaks, valleys, points)
-
-    # @property
-    # def peaks(self):
-    #     return [self.points[1:5], self.points[5:9]]
-    #
-    # @property
-    # def valleys(self):
-    #     return [self.points[0:2], self.points[4:6], self.points[8:10]]
