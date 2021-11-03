@@ -32,7 +32,7 @@ from typing import Tuple, List, Optional
 
 import numpy as np
 import scipy as sp
-from scipy import optimize
+from scipy import optimize, signal
 
 from . import file_paths as fp
 from . import general_functions as gf
@@ -187,8 +187,6 @@ class LinearOptimization(opt.BaseOptimizer):
 
         return recoil
 
-        # raise NotImplementedError
-
     def initialize_solution(self):
         if self.optimization_type is OptimizationType.RECOIL:
             if len(self.upper_limits) < 2:
@@ -278,22 +276,6 @@ class LinearOptimization(opt.BaseOptimizer):
 
         return objective_value
 
-    @staticmethod
-    def _optimize_func(points, *args) -> float:
-        # Function for scipy.optimize.minimize
-
-        # optimize.minimize doesn't support calling objects' methods directly
-        self = args[0]
-
-        # Function:
-        # fun(x, *args) -> float
-        # where x is an 1-D array with shape (n,) and args is a tuple of the
-        # fixed parameters needed to completely specify the function.
-
-        objective_value = self.evaluate_solution(points)
-
-        return objective_value
-
     def _get_bounds(self):
         # TODO: Select by type, use real values
         x_ub = 120.0
@@ -327,51 +309,29 @@ class LinearOptimization(opt.BaseOptimizer):
         # TODO: namedtuple
         return x_bounds, y_bounds
 
-    def _fit_simulation_peaks(self, solution, bounds):
-        initial_solution = copy.deepcopy(solution)
-        initial_objective_value = self.evaluate_solution(solution)
+    def _fit_simulation(self, bounds):
+        # TODO: Multi-thread
+        xs = np.linspace(0.0, 120.0, 121)[:-1]
+        width = xs[1] - xs[0]
 
-        # for i, peak in enumerate(solution.peaks):
-        #     # TODO: search peak centers -> widths -> heights
-        #     pass
-
-        peak = solution.peaks[1]
-
-        initial_x = peak.center.get_x()
-        initial_y = peak.center.get_y()
-
-        peak.set_y(1.0)
-        objective_values = {}
-        linear_space = np.linspace(
-            peak.prev_point.get_x(), peak.next_point.get_x(), 7)[1:-1]
-        for x in linear_space:
-            peak.set_x(x)
-            objective_values[x] = self.evaluate_solution(solution)
-
-        best_x = min(objective_values, key=objective_values.get)
-
-        peak.set_x(initial_x)
-        peak.set_y(initial_y)
+        objective_values = np.zeros(xs.size)
+        for i, x in enumerate(xs):
+            solution = get_solution6(x, x + width)
+            objective_values[i] = self.evaluate_solution(solution)
 
         print(objective_values)
-        print(f"Best x: {best_x}, best value: {objective_values[best_x]}")
 
-        raise NotImplementedError
-
-    def _fit_simulation_valleys(self, solution, bounds):
-        for i, valley in enumerate(solution.valleys):
-            # TODO: search valley heights
-            pass
+        # TODO: Find continous low error areas (widths)
+        #       Find heights
 
         raise NotImplementedError
 
     def _optimize(self):
         points = copy.deepcopy(self.solution.points)
-        solution = SolutionPeak8_2(points)
         bounds = self._get_bounds()
 
-        self._fit_simulation_peaks(solution, bounds)
-        self._fit_simulation_valleys(solution, bounds)
+        # TODO: Multiple solutions
+        solution = self._fit_simulation(bounds)
 
         return solution
 
@@ -423,10 +383,7 @@ class LinearOptimization(opt.BaseOptimizer):
             evaluations_done="Unknown"))  # TODO: Proper value
 
 
-PeakType = List[Point]
-ValleyType = List[Point]
-
-
+# TODO: Probably needlessly complicated now, just move points up/down in pairs
 # TODO: Combine Valley with Peak (move_left_valley, move_right_valley)?
 # TODO: Parametric representation (width, center_point, prev_point/next_point)?
 class Peak:
@@ -543,7 +500,7 @@ class Valley:
         raise NotImplementedError
 
 
-class BaseSolution2:
+class BaseSolution:
     def __init__(self, points: List[Point], peaks: List[Peak],
                  valleys: List[Valley]):
         self.points = points
@@ -551,151 +508,30 @@ class BaseSolution2:
         self.valleys = valleys
 
 
-# TODO: ABC?
-# TODO: Save boundaries?
-class BaseSolution:
-    """Base class for optimization solutions."""
-    def __init__(self, size: int, peak_slices: List[slice],
-                 valley_slices: List[slice],
-                 points: List[Point] = None):
-        self._SIZE = size
-        self._PEAK_SLICES = peak_slices
-        self._VALLEY_SLICES = valley_slices
-
-        self.points = points
-
-        if not self.points:
-            self.points = [Point(0.0, 0.0001) for _ in range(self._SIZE)]
-
-        if len(self.points) != self._SIZE:
-            raise ValueError(
-                f"Length of points must be {self._SIZE}, was {len(self.points)}")
-
-    # TODO: Add methods for manipulating peaks/valleys?
-    #       E.g. change width, height, move left/right
-
-    @property
-    def peaks(self) -> List[PeakType]:
-        return [self.points[s] for s in self._PEAK_SLICES]
-
-    # TODO: Is this useful for performance?
-    # def get_peak(self, peak_number: int) -> PeakType:
-    #     return self.points[slice(*self._PEAK_SLICES[peak_number])]
-
-    def move_peak(self, peak_number: int,
-                  x_move=0.0, y_move=0.0) -> None:
-        # Original:
-        # peak = self.peaks[peak_number]
-        #
-        # if x_move:
-        #     for point in peak:
-        #         point.set_x(point.get_x() + x_move)
-        #
-        # if y_move:
-        #     for point in peak:
-        #         # TODO: Leave valleys untouched
-        #         point.set_y(point.get_y() + y_move)
-
-        # TODO: Calculate ends and corners once, or maybe just input
-        #  them manually
-
-        peak_slice = self._PEAK_SLICES[peak_number]
-        ends = {0, self._SIZE}
-        x_indexes = [i for i in range(peak_slice.start, peak_slice.stop)
-                     if i not in ends]
-
-        corners = set()
-        # TODO: What about just adding (slice.start) and (slice.end - 1)?
-        for valley_slice in self._VALLEY_SLICES:
-            if valley_slice.start == 0:
-                corners.add(1)
-            else:
-                corners.add(valley_slice.start)
-
-            if valley_slice.stop == self._SIZE:
-                pass
-            else:
-                corners.add(valley_slice.stop - 1)
-
-        y_indexes = [i for i in range(peak_slice.start, peak_slice.stop)
-                     if i not in corners]
-
-        # TODO: Check boundaries (x, y)
-        #  and continuity (x values must be in order)
-
-        if x_move:
-            for i in x_indexes:
-                point = self.points[i]
-                point.set_x(point.get_x() + x_move)
-
-        if y_move:
-            for i in y_indexes:
-                point = self.points[i]
-                point.set_y(point.get_y() + y_move)
-
-    # TODO: Is this useful?
-    def scale_peak(self, peak_number: int, x_scale=1.0, y_scale=1.0) -> None:
-        peak = self.peaks[peak_number]
-
-        if x_scale != 1.0:
-            for point in peak:
-                raise NotImplementedError
-
-        if y_scale != 1.0:
-            for point in peak:
-                # TODO: Leave valleys untouched
-                raise NotImplementedError
-
-        raise NotImplementedError
-
-    @property
-    def valleys(self):
-        return [self.points[s] for s in self._VALLEY_SLICES]
-
-    def move_valley(self, valley_number: int,
-                    # x_move=0.0,
-                    y_move=0.0) -> None:
-        valley = self.valleys[valley_number]
-
-        # TODO: Check boundaries (x, y)
-        #  and continuity (x values must be in order)
-
-        # if x_move:
-        #     for point in valley:
-        #         point.set_x(point.get_x() + x_move)
-
-        # TODO: Only move valleys that are between peaks?
-
-        if y_move:
-            for point in valley:
-                point.set_y(point.get_y() + y_move)
-
-    # def scale_valley(self, valley_number: int, x_scale=0.0, y_scale=0.0) -> None:
-    #     raise NotImplementedError
-
-
 class SolutionBox4(BaseSolution):
-    def __init__(self, points: Optional[List[Point]] = None):
-        peaks = [slice(0, 3)]
-        valleys = [slice(2, 4)]
-        super().__init__(4, peaks, valleys, points)
+    def __init__(self, points: List[Point]):
+        raise NotImplementedError
+        # peaks = [slice(0, 3)]
+        # valleys = [slice(2, 4)]
+        # super().__init__(4, peaks, valleys, points)
 
 
 class SolutionBox6(BaseSolution):
-    def __init__(self, points: Optional[List[Point]] = None):
-        peaks = [slice(1, 5)]
-        valleys = [slice(0, 2), slice(4, 6)]
-        super().__init__(6, peaks, valleys, points)
+    def __init__(self, points):
+        valley1 = Valley(ll=points[0], rl=points[2],
+                         prev_point=None, next_point=points[2])
+        peak1 = Peak(ll=points[1], lh=points[2], rh=points[3], rl=points[4],
+                     prev_point=points[0], next_point=points[5])
+        valley2 = Valley(ll=points[4], rl=points[5],
+                         prev_point=points[3], next_point=None)
+
+        peaks = [peak1]
+        valleys = [valley1, valley2]
+
+        super().__init__(points, peaks, valleys)
 
 
 class SolutionPeak8(BaseSolution):
-    def __init__(self, points: Optional[List[Point]] = None):
-        peaks = [slice(0, 3), slice(3, 7)]
-        valleys = [slice(2, 4), slice(6, 8)]
-        super().__init__(8, peaks, valleys, points)
-
-
-class SolutionPeak8_2(BaseSolution2):
     def __init__(self, points: List[Point]):
         peak1 = Peak(ll=None, lh=points[0], rh=points[1], rl=points[2],
                      prev_point=None, next_point=points[3])
@@ -713,7 +549,29 @@ class SolutionPeak8_2(BaseSolution2):
 
 
 class SolutionPeak10(BaseSolution):
-    def __init__(self, points: Optional[List[Point]] = None):
-        peaks = [slice(1, 5), slice(5, 9)]
-        valleys = [slice(0, 2), slice(4, 6), slice(8, 10)]
-        super().__init__(10, peaks, valleys, points)
+    def __init__(self, points: List[Point]):
+        raise NotImplementedError
+        # peaks = [slice(1, 5), slice(5, 9)]
+        # valleys = [slice(0, 2), slice(4, 6), slice(8, 10)]
+        # super().__init__(10, peaks, valleys, points)
+
+
+def get_solution6(x1: float, x2: float) -> SolutionBox6:
+    """Returns a SolutionBox6 with max values from x1 to x2"""
+    # TODO: Get these from somewhere
+    min_x = 0.0
+    max_x = 120.0
+    min_y = 0.0001
+    max_y = 1.0
+
+    points = [
+        Point(min_x, min_y),
+        Point(x1, min_y),
+        Point(x1 + 0.01, max_y),
+        Point(x2 - 0.001, max_y),
+        Point(x2, min_y),
+        Point(max_x, min_y),
+    ]
+    solution = SolutionBox6(points)
+
+    return solution
