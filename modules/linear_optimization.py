@@ -23,10 +23,12 @@ along with this program (file named 'LICENCE').
 __author__ = "Tuomas Pitkänen"
 __version__ = "2.0"
 
+import abc
+import copy
 import subprocess
 from pathlib import Path
 from timeit import default_timer as timer
-from typing import Tuple
+from typing import Tuple, List, Optional
 
 import numpy as np
 import scipy as sp
@@ -88,7 +90,20 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.sol_size = sol_size
 
+        self.measured_peaks = []
         self.solution = None
+
+    def _find_measured_peaks(self):
+        # TODO: Find measured peaks
+        #  - amount depends on sol_size (1 or 2)
+        #  - convert measured MeV to simulated nm
+        #  - save width too?
+
+        # TODO: Maybe ask the user:
+        #  - click on the spectrum or
+        #  - input coordinates (x, maybe y)
+
+        self.measured_peaks = [5.00, 70.00]
 
     def _prepare_optimization(self, initial_solution=None,
                               cancellation_token=None,
@@ -106,6 +121,8 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.prepare_measured_spectra()
 
+        # TODO: Smoothen the measured spectrum
+
         # TODO: Is this needed?
         self.combine_previous_erd_files()
 
@@ -113,6 +130,8 @@ class LinearOptimization(opt.BaseOptimizer):
         # the x coordinates -> they have matching values for ease of distance
         # counting
         self.modify_measurement()
+
+        self._find_measured_peaks()
 
         if initial_solution is None:
             initial_solution = self.initialize_solution()
@@ -158,20 +177,12 @@ class LinearOptimization(opt.BaseOptimizer):
         return sum_diff
 
     def form_recoil(self, current_solution, name="") -> RecoilElement:
-        points = []
-
-        # TODO: implement properly: check sol_size and order points
-
-        size = current_solution.size // 2
-        for i in range(size):
-            point = Point(current_solution[i], current_solution[i + size])
-            points.append(point)
-
         if not name:
             name = "opt"
 
         recoil = RecoilElement(
-            self.element_simulation.get_main_recoil().element, points,
+            self.element_simulation.get_main_recoil().element,
+            current_solution.points,
             color="red", name=name)
 
         return recoil
@@ -204,10 +215,30 @@ class LinearOptimization(opt.BaseOptimizer):
                         f"Unsupported sol_size {self.sol_size} for recoil type {self.rec_type}")
             elif self.rec_type == "two-peak":  # Two-peak recoil
                 if self.sol_size == 9:  # First peak at the surface
-                    x_coords = np.array(
-                        [0.0, 30.0, 30.01, 59.99, 60.0, 89.99, 90.0, 120.0])
-                    y_coords = np.array(
-                        [0.5, 0.5, 0.0001, 0.0001, 0.5, 0.5, 0.0001, 0.0001])
+                    # coords = [
+                    #     (0.0, 0.5),
+                    #     (30.0, 0.5),
+                    #     (30.01, 0.0001),
+                    #     (59.99, 0.0001),
+                    #     (60.0, 0.5),
+                    #     (89.99, 0.5),
+                    #     (90.0, 0.0001),
+                    #     (120.0, 0.0001)
+                    # ]
+
+                    coords = [
+                        (0.0, 0.0001),
+                        (30.0, 0.0001),
+                        (30.01, 0.0001),
+                        (59.99, 0.0001),
+                        (60.0, 0.0001),
+                        (89.99, 0.0001),
+                        (90.0, 0.0001),
+                        (120.0, 0.0001)
+                    ]
+
+                    points = [Point(xy) for xy in coords]
+                    solution = SolutionPeak8(points)
                 elif self.sol_size == 11:  # First peak not at the surface
                     raise NotImplementedError
                 else:
@@ -216,9 +247,6 @@ class LinearOptimization(opt.BaseOptimizer):
             else:
                 raise ValueError(
                     f"Unknown recoil type {self.rec_type}")
-
-            # TODO: Should x and y be combined or separate?
-            solution = np.append(x_coords, y_coords)
 
         elif self.optimization_type is OptimizationType.FLUENCE:
             raise NotImplementedError
@@ -266,38 +294,6 @@ class LinearOptimization(opt.BaseOptimizer):
 
         return objective_value
 
-    @staticmethod
-    def _check_optimize_end(points, state: optimize.OptimizeResult) -> bool:
-        """Checks if optimization can be ended.
-
-        Args:
-            points: current optimized points
-            state: current optimization state, with same fields as the result
-
-        Returns:
-            True if optimization can be ended, False otherwise
-        """
-        # TODO: remove
-        # print(points)
-        print(state.x)
-        print(state.fun, state.jac)
-        print(state.nfev, state.njev)
-        print()
-
-        # https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html
-        # x: solution
-        # success: done/not
-        # status: termination status
-        # message: termination cause
-        # fun, jac, hess: values of objective function, Jacobian, Hessian
-        # hess_inv: inverse of Hessian, if available
-        # nfev, njev, nhev: number of evaluations
-        # nit: number of iterations
-        # maxcv: maximum constraint violation
-
-        # TODO: Better check
-        return state.fun < 12.0
-
     def _get_bounds(self):
         # TODO: Select by type, use real values
         x_ub = 120.0
@@ -306,7 +302,7 @@ class LinearOptimization(opt.BaseOptimizer):
         y_ub = 1.0000
         y_lb = 0.0001
 
-        x_limits = [
+        x_bounds = [
             (0.0, 0.0),
             (x_lb, x_ub),
             (x_lb, x_ub),
@@ -317,7 +313,7 @@ class LinearOptimization(opt.BaseOptimizer):
             (120.0, 120.0)
         ]
 
-        y_limits = [
+        y_bounds = [
             (y_lb, y_ub),
             (y_lb, y_ub),
             (y_lb, y_ub),
@@ -328,41 +324,30 @@ class LinearOptimization(opt.BaseOptimizer):
             (y_lb, y_ub)
         ]
 
-        lower_bounds = [x[0] for x in x_limits] + [y[0] for y in y_limits]
-        upper_bounds = [x[1] for x in x_limits] + [y[1] for y in y_limits]
+        return x_bounds, y_bounds
 
-        return lower_bounds, upper_bounds
+    def _fit_simulation_peaks(self, solution, bounds):
+        for i, peak in enumerate(solution.peaks):
+            # TODO: search peak centers -> widths -> heights
+            pass
+
+        raise NotImplementedError
+
+    def _fit_simulation_valleys(self, solution, bounds):
+        for i, valley in enumerate(solution.valleys):
+            # TODO: search valley heights
+            pass
+
+        raise NotImplementedError
 
     def _optimize(self):
-        # https://docs.scipy.org/doc/scipy/tutorial/optimize.html#constrained-minimization-of-multivariate-scalar-functions-minimize
+        solution = copy.deepcopy(self.solution)
+        bounds = self._get_bounds()
 
-        func = self._optimize_func
-        initial = self.solution
-        args = (self,)
-        method = "trust-constr"  # trust-constr, SLSQP, COBYLA
+        self._fit_simulation_peaks(solution, bounds)
+        self._fit_simulation_valleys(solution, bounds)
 
-        lower_bounds, upper_bounds = self._get_bounds()
-        bounds = optimize.Bounds(lower_bounds, upper_bounds)
-        callback = self._check_optimize_end
-        options = {
-            "gtol": 0.0,  # 1e-16,  # Default: 1e-8
-            "xtol": 0.0   # 1e-16   # Default: 1e-8
-        }
-
-        # TODO: Would this work better with bigger initial values?
-        result = optimize.minimize(
-            func, initial, args=args, method=method, bounds=bounds,
-            callback=callback,  # TODO: tol(erance) instead of callback?
-            options=options)
-
-        # TODO: remove
-        print(result)
-        print(result.x)
-
-        return result.x
-
-        # TODO: Or this?
-        # https://docs.scipy.org/doc/scipy/tutorial/optimize.html#global-optimization
+        return solution
 
     # TODO: Are starting_solutions and ion_division needed?
     def start_optimization(self, starting_solutions=None,
@@ -411,8 +396,260 @@ class LinearOptimization(opt.BaseOptimizer):
             OptimizationState.FINISHED,
             evaluations_done="Unknown"))  # TODO: Proper value
 
-    # TODO: use this or a custom solver for scipy
-    def variation(self, solution: np.ndarray) -> np.ndarray:
-        # TODO: vary more than one solution at once
-        # TODO: "learn" from previous solutions
+
+PeakType = List[Point]
+ValleyType = List[Point]
+
+
+# TODO: Use Peak and Valley?
+class Peak:
+    def __init__(
+            self, lh: Point, rh: Point, ll: Point = None, rl: Point = None):
+        # left/right low/high
+        self.ll: Optional[Point] = ll
+        self.lh: Point = lh
+        self.rh: Point = rh
+        self.rl: Optional[Point] = rl
+
+    @property
+    def center(self) -> Point:
+        x = (self.lh.get_x() + self.rh.get_x()) / 2
+        y = (self.lh.get_y() + self.rh.get_y()) / 2
+        return Point(x, y)
+
+    @property
+    def points(self) -> List[Point]:
+        return [self.ll, self.lh, self.rh, self.rl]
+
+    def move(self, x_move=0.0, y_move=0.0) -> None:
+        if x_move:
+            if self.ll:
+                self.ll.set_x(self.ll.get_x() + x_move)
+                self.lh.set_x(self.lh.get_x() + x_move)
+            if self.rl:
+                self.rl.set_x(self.rl.get_x() + x_move)
+                self.rh.set_x(self.rh.get_x() + x_move)
+
+        if y_move:
+            self.lh.set_y(self.lh.get_y() + y_move)
+            self.rh.set_y(self.rh.get_y() + y_move)
+
+    def scale(self) -> None:
         raise NotImplementedError
+
+
+class Valley:
+    def __init__(
+            self, ll: Point, rl: Point, lh: Point = None, rh: Point = None):
+        # left/right low/high
+        self.lh: Optional[Point] = lh
+        self.ll: Point = ll
+        self.rl: Point = rl
+        self.rh: Optional[Point] = rh
+
+    @property
+    def center(self) -> Point:
+        x = (self.ll.get_x() + self.rl.get_x()) / 2
+        y = (self.ll.get_y() + self.rl.get_y()) / 2
+        return Point(x, y)
+
+    @property
+    def points(self) -> List[Point]:
+        return [self.lh, self.ll, self.rl, self.rh]
+
+    def move(self, y_move=0.0) -> None:
+        if y_move:
+            self.ll.set_y(self.ll.get_y() + y_move)
+            self.rl.set_y(self.rl.get_y() + y_move)
+
+    def scale(self) -> None:
+        raise NotImplementedError
+
+
+class BaseSolution2:
+    def __init__(self):
+        # TODO: How to create this?
+        raise NotImplementedError
+
+
+# TODO: ABC?
+# TODO: Save boundaries?
+class BaseSolution:
+    """Base class for optimization solutions."""
+    def __init__(self, size: int, peak_slices: List[slice],
+                 valley_slices: List[slice],
+                 points: List[Point] = None):
+        self._SIZE = size
+        self._PEAK_SLICES = peak_slices
+        self._VALLEY_SLICES = valley_slices
+
+        self.points = points
+
+        if not self.points:
+            self.points = [Point(0.0, 0.0001) for _ in range(self._SIZE)]
+
+        if len(self.points) != self._SIZE:
+            raise ValueError(
+                f"Length of points must be {self._SIZE}, was {len(self.points)}")
+
+    # TODO: Add methods for manipulating peaks/valleys?
+    #       E.g. change width, height, move left/right
+
+    @property
+    def peaks(self) -> List[PeakType]:
+        return [self.points[s] for s in self._PEAK_SLICES]
+
+    # TODO: Is this useful for performance?
+    # def get_peak(self, peak_number: int) -> PeakType:
+    #     return self.points[slice(*self._PEAK_SLICES[peak_number])]
+
+    def move_peak(self, peak_number: int,
+                  x_move=0.0, y_move=0.0) -> None:
+        # Original:
+        # peak = self.peaks[peak_number]
+        #
+        # if x_move:
+        #     for point in peak:
+        #         point.set_x(point.get_x() + x_move)
+        #
+        # if y_move:
+        #     for point in peak:
+        #         # TODO: Leave valleys untouched
+        #         point.set_y(point.get_y() + y_move)
+
+        # TODO: Calculate ends and corners once, or maybe just input
+        #  them manually
+
+        peak_slice = self._PEAK_SLICES[peak_number]
+        ends = {0, self._SIZE}
+        x_indexes = [i for i in range(peak_slice.start, peak_slice.stop)
+                     if i not in ends]
+
+        corners = set()
+        # TODO: What about just adding (slice.start) and (slice.end - 1)?
+        for valley_slice in self._VALLEY_SLICES:
+            if valley_slice.start == 0:
+                corners.add(1)
+            else:
+                corners.add(valley_slice.start)
+
+            if valley_slice.stop == self._SIZE:
+                pass
+            else:
+                corners.add(valley_slice.stop - 1)
+
+        y_indexes = [i for i in range(peak_slice.start, peak_slice.stop)
+                     if i not in corners]
+
+        # TODO: Check boundaries (x, y)
+        #  and continuity (x values must be in order)
+
+        if x_move:
+            for i in x_indexes:
+                point = self.points[i]
+                point.set_x(point.get_x() + x_move)
+
+        if y_move:
+            for i in y_indexes:
+                point = self.points[i]
+                point.set_y(point.get_y() + y_move)
+
+    # TODO: Is this useful?
+    def scale_peak(self, peak_number: int, x_scale=1.0, y_scale=1.0) -> None:
+        peak = self.peaks[peak_number]
+
+        if x_scale != 1.0:
+            for point in peak:
+                raise NotImplementedError
+
+        if y_scale != 1.0:
+            for point in peak:
+                # TODO: Leave valleys untouched
+                raise NotImplementedError
+
+        raise NotImplementedError
+
+    @property
+    def valleys(self):
+        return [self.points[s] for s in self._VALLEY_SLICES]
+
+    def move_valley(self, valley_number: int,
+                    # x_move=0.0,
+                    y_move=0.0) -> None:
+        valley = self.valleys[valley_number]
+
+        # TODO: Check boundaries (x, y)
+        #  and continuity (x values must be in order)
+
+        # if x_move:
+        #     for point in valley:
+        #         point.set_x(point.get_x() + x_move)
+
+        # TODO: Only move valleys that are between peaks?
+
+        if y_move:
+            for point in valley:
+                point.set_y(point.get_y() + y_move)
+
+    # def scale_valley(self, valley_number: int, x_scale=0.0, y_scale=0.0) -> None:
+    #     raise NotImplementedError
+
+
+class SolutionBox4(BaseSolution):
+    def __init__(self, points: Optional[List[Point]] = None):
+        peaks = [slice(0, 3)]
+        valleys = [slice(2, 4)]
+        super().__init__(4, peaks, valleys, points)
+
+    # @property
+    # def peaks(self):
+    #     return [self.points[0:3]]
+    #
+    # @property
+    # def valleys(self):
+    #     return [self.points[2:4]]
+
+
+class SolutionBox6(BaseSolution):
+    def __init__(self, points: Optional[List[Point]] = None):
+        peaks = [slice(1, 5)]
+        valleys = [slice(0, 2), slice(4, 6)]
+        super().__init__(6, peaks, valleys, points)
+
+    # @property
+    # def peaks(self):
+    #     return [self.points[1:5]]
+    #
+    # @property
+    # def valleys(self):
+    #     return [self.points[0:2], self.points[4:6]]
+
+
+class SolutionPeak8(BaseSolution):
+    def __init__(self, points: Optional[List[Point]] = None):
+        peaks = [slice(0, 3), slice(3, 7)]
+        valleys = [slice(2, 4), slice(6, 8)]
+        super().__init__(8, peaks, valleys, points)
+
+    # @property
+    # def peaks(self):
+    #     return [self.points[0:3], self.points[3:7]]
+
+    # @property
+    # def valleys(self):
+    #     return [self.points[2:4], self.points[6:8]]
+
+
+class SolutionPeak10(BaseSolution):
+    def __init__(self, points: Optional[List[Point]] = None):
+        peaks = [slice(1, 5), slice(5, 9)]
+        valleys = [slice(0, 2), slice(4, 6), slice(8, 10)]
+        super().__init__(10, peaks, valleys, points)
+
+    # @property
+    # def peaks(self):
+    #     return [self.points[1:5], self.points[5:9]]
+    #
+    # @property
+    # def valleys(self):
+    #     return [self.points[0:2], self.points[4:6], self.points[8:10]]
