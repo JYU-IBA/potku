@@ -655,18 +655,3 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 fh.write("{0}".format(self.bin_width))
         except OSError:
             pass
-
-
-class SumEnergySpectrumFiles:
-    def __init__(self, energy_spectrum_files: [str, Espe] = None) -> None:
-        self._energy_spectrum_files: Dict[str, Espe] = energy_spectrum_files
-
-    @property
-    def spectrum_files(self) -> Dict[str, Espe]:
-        """
-        Show
-        """
-        # Read-only, use other methods to edit spectrum_files
-        return self._energy_spectrum_files
-
-
