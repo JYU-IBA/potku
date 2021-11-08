@@ -31,6 +31,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Juhani Sundell"
 __version__ = "2.0"
 
+import copy
 import os
 import shutil
 from pathlib import Path
@@ -518,9 +519,9 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 use_cuts = []
             self.use_cuts = use_cuts
             self.bin_width = bin_width
+            self.simulation_energy = []
+            self.measurement_energy = []
             self.energy_spectrum_data = {}
-            self.measurement_energy = SumEnergySpectrumFiles()
-            self.simulation_energy = SumEnergySpectrumFiles()
             self.simulation_energy_spectrum_dictionary = {}
             self.measurement_energy_spectrum_dictionary = {}
             self.simulated_sum_spectrum_is_selected = \
@@ -549,7 +550,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 # Check for RBS selections.
                 rbs_list = cut_file.get_rbs_selections(self.use_cuts)
 
-                self.measurement_energy = SumEnergySpectrumFiles(self.energy_spectrum_data)
+                self.measurement_energy = self.energy_spectrum_data
                 sum_spectra_directory = self.measurement.get_energy_spectra_dir()
             else:
                 self.simulation = self.parent.obj
@@ -568,6 +569,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                     self.measurement_energy_spectrum_dictionary
                 sum_spectra_directory = self.simulation.directory
 
+            self.simulation_energy = copy.deepcopy(self.simulation_energy)
+            self.measurement_energy = copy.deepcopy(self.measurement_energy)
             # Graph in matplotlib widget and add to window
             self.matplotlib = MatplotlibEnergySpectrumWidget(
                 self, simulation_energy=self.simulation_energy,

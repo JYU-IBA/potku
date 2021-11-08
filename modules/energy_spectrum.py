@@ -383,6 +383,9 @@ class SumEnergySpectrum:
 
     def sum_spectrum_to_file(self) -> None:
         """Writes the sum spectrum to a file"""
+        if self.sum_spectrum_path is not None:
+            # Remove previous sum spectrum file
+            self.sum_spectrum_path.unlink(missing_ok=True)
         element = None
         for key in self.spectra:
             if not isinstance(key, pathlib.Path):
