@@ -573,12 +573,12 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             widget_measurement_energy = copy.deepcopy(self.measurement_energy)
             # Graph in matplotlib widget and add to window
             self.matplotlib = MatplotlibEnergySpectrumWidget(
-                self, simulation_energy=self.simulation_energy,
-                measurement_energy=self.measurement_energy,
+                self, simulation_energy=widget_simulation_energy,
+                measurement_energy=widget_measurement_energy,
                 rbs_list=rbs_list,
                 spectrum_type=spectrum_type,
-                simulated_sum_spectrum_is_selected=widget_simulation_energy,
-                measured_sum_spectrum_is_selected=widget_measurement_energy,
+                simulated_sum_spectrum_is_selected=simulated_sum_spectrum_is_selected,
+                measured_sum_spectrum_is_selected=measured_sum_spectrum_is_selected,
                 sum_spectra_directory=sum_spectra_directory,
                 spectra_changed=spectra_changed,
                 channel_width=bin_width)
