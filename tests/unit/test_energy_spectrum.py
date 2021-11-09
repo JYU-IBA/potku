@@ -33,7 +33,8 @@ import numpy as np
 
 from pathlib import Path
 
-from modules.energy_spectrum import EnergySpectrum
+from modules.energy_spectrum import EnergySpectrum, SumEnergySpectrum
+from modules.enums import SumSpectrumType
 from modules.parsing import ToFListParser
 
 parser = ToFListParser()
@@ -45,7 +46,7 @@ class TestCalculateMeasuredSpectra(unittest.TestCase):
             tmp_dir = Path(tmp_dir)
             mesu = mo.get_measurement(
                 path=tmp_dir / "mesu.info", save_on_creation=True)
-            es = self.run_spectra_calculation(
+            es = run_spectra_calculation(
                 mesu, tmp_dir, spectrum_width=0.2)
             self.assertEqual(self.expected_02, es)
 
@@ -54,7 +55,7 @@ class TestCalculateMeasuredSpectra(unittest.TestCase):
             tmp_dir = Path(tmp_dir)
             mesu = mo.get_measurement(
                 path=tmp_dir / "mesu.info", save_on_creation=True)
-            es = self.run_spectra_calculation(
+            es = run_spectra_calculation(
                 mesu, tmp_dir, spectrum_width=0.5)
             self.assertEqual(self.expected_05, es)
 
@@ -63,7 +64,7 @@ class TestCalculateMeasuredSpectra(unittest.TestCase):
             tmp_dir = Path(tmp_dir)
             mesu = mo.get_measurement(
                 path=tmp_dir / "mesu.info", save_on_creation=True)
-            self.run_spectra_calculation(
+            run_spectra_calculation(
                 mesu, tmp_dir, spectrum_width=0.5)
 
             expected = sorted([
@@ -77,7 +78,7 @@ class TestCalculateMeasuredSpectra(unittest.TestCase):
             tmp_dir = Path(tmp_dir)
             mesu = mo.get_measurement(
                 path=tmp_dir / "mesu.info", save_on_creation=True)
-            self.run_spectra_calculation(
+            run_spectra_calculation(
                 mesu, tmp_dir, spectrum_width=0.5)
 
             tof_file = mesu.get_energy_spectra_dir() / "cuts.1H.ERD.0.tof_list"
@@ -98,23 +99,6 @@ class TestCalculateMeasuredSpectra(unittest.TestCase):
                 expected[:1] + expected[3:],
                 actual[:1] + actual[3:]
             )
-
-    @staticmethod
-    def run_spectra_calculation(mesu, tmp_dir: Path, **kwargs):
-        """Helper for running spectra calculations"""
-        det = mesu.get_detector_or_default()
-        det.update_directories(tmp_dir / "Detector")
-        resource_dir = utils.get_resource_dir()
-        cuts = [
-            resource_dir / "cuts.1H.ERD.0.cut",
-            resource_dir / "cuts.1H.ERD.1.cut",
-            resource_dir / "cuts.35Cl.RBS_Mn.0.cut",
-            resource_dir / "cuts.7Li.0.0.0.cut",
-        ]
-        es = EnergySpectrum.calculate_measured_spectra(
-            mesu, cuts, **kwargs, verbose=False
-        )
-        return es
 
     @property
     def expected_02(self):
@@ -269,6 +253,111 @@ class TestGetTofListFileName(unittest.TestCase):
             directory / "cuts.1H.ERD.0.no_foil.tof_list",
             EnergySpectrum.get_tof_list_file_name(directory, cut_file, no_foil)
         )
+
+
+class TestSumSpectra(unittest.TestCase):
+
+    def test_sum_spectrum(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            expected = [
+                (-0.75, 0.0),
+                (-0.25, 0.0),
+                (0.25, 7.0),
+                (0.75, 11.0),
+                (1.25, 0.0),
+                (1.75, 2.0),
+                (2.25, 8.0),
+                (2.75, 3.0),
+                (3.25, 6.0),
+                (3.75, 0.0)
+            ]
+
+            expected2 = [
+                (-0.75, 0.0),
+                (-0.25, 0.0),
+                (0.25, 7.0),
+                (0.75, 1.0),
+                (1.25, 0.0),
+                (1.75, 2.0),
+                (2.25, 8.0),
+                (2.75, 3.0),
+                (3.25, 6.0),
+                (3.75, 0.0)
+            ]
+
+            tmp_dir = Path(tmp_dir)
+            mesu = mo.get_measurement(
+                path=tmp_dir / "mesu.info", save_on_creation=True)
+            es = run_spectra_calculation(
+                mesu, tmp_dir, spectrum_width=0.5)
+            sum_spectrum = SumEnergySpectrum(
+                es, mesu.get_energy_spectra_dir(), SumSpectrumType.MEASURED)
+
+            self.assertEqual(sum_spectrum.spectra, es)
+            self.assertEqual(sum_spectrum.sum_spectrum, expected)
+
+            removed_spectrum = {
+                "1H.ERD.0": es["1H.ERD.0"]
+            }
+            sum_spectrum.delete_spectra(removed_spectrum)
+            self.assertEqual(sum_spectrum.sum_spectrum, expected2)
+
+        return
+
+    # TODO:
+    #  Test add_or_update_spectra,
+    #  test empty sum_spectrum,
+    #  check sum spectrum file contents
+
+    # TODO: Use this to test sum spectrum file contents
+    @property
+    def expected_sum_spectrum_file_content(self):
+        return [
+            "-0.75000      0",
+            "-0.25000      0",
+            "0.25000      7",
+            "0.75000     11",
+            "1.25000      0",
+            "1.75000      2",
+            "2.25000      8",
+            "2.75000      3",
+            "3.25000      6",
+            "3.75000      0"
+        ]
+
+    @property
+    def get_energy_spectra(self):
+        return {
+            '1H.ERD.0': [
+                (-0.25, 0), (0.25, 0.0), (0.75, 10.0), (1.25, 0)
+            ],
+            '1H.ERD.1': [
+                (-0.75, 0), (-0.25, 0.0), (0.25, 7.0), (0.75, 1.0), (1.25, 0)
+            ],
+            '35Cl.RBS_Mn.0': [
+                (1.75, 0), (2.25, 0.0), (2.75, 3.0), (3.25, 6.0), (3.75, 0)
+            ],
+            '7Li.0.0.0': [
+                (0.75, 0), (1.25, 0.0), (1.75, 2.0), (2.25, 8.0), (2.75, 0)
+            ]
+        }
+
+
+def run_spectra_calculation(mesu, tmp_dir: Path, **kwargs):
+    """Helper for running spectra calculations"""
+    det = mesu.get_detector_or_default()
+    det.update_directories(tmp_dir / "Detector")
+    resource_dir = utils.get_resource_dir()
+    cuts = [
+        resource_dir / "cuts.1H.ERD.0.cut",
+        resource_dir / "cuts.1H.ERD.1.cut",
+        resource_dir / "cuts.35Cl.RBS_Mn.0.cut",
+        resource_dir / "cuts.7Li.0.0.0.cut",
+    ]
+    es = EnergySpectrum.calculate_measured_spectra(
+        mesu, cuts, **kwargs, verbose=False
+    )
+    return es
 
 
 if __name__ == '__main__':
