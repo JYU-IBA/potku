@@ -43,6 +43,7 @@ from scipy import integrate
 
 import modules.math_functions as mf
 from dialogs.graph_ignore_elements import GraphIgnoreElements
+from modules.base import Espe
 from modules.element import Element
 from modules.element_simulation import ElementSimulation
 from modules.energy_spectrum import SumEnergySpectrum
@@ -770,6 +771,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
     def hide_plots(self, plots_to_hide):
         """Hides given plots from the graph.
+
         Args:
             plots_to_hide: collection of plot names that will be hidden.
         """
@@ -785,11 +787,12 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
     def update_spectra(self, rec_elem: RecoilElement,
                        elem_sim: ElementSimulation):
-        """Updates spectra line that belongs to given recoil element.
+        """Update a spectra that belongs to given recoil element.
+
         Args:
             rec_elem: RecoilElement object
-            elem_sim: ElementSimulation object that is used to calculate
-                the spectrum
+            elem_sim: ElementSimulation object that is used to calculate the
+            spectrum
         """
         # TODO change plot range if necessary
 
@@ -800,13 +803,36 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         if espe_file in self.plots:
             espe, _ = elem_sim.calculate_espe(rec_elem, ch=self.channel_width)
-
             data = get_axis_values(espe)
-
             self.plots[espe_file].set_data(data)
-
+            espe_file_dict = {Path(espe_file): espe}
+            self._update_sum_spectra(espe_file_dict)
             self.canvas.draw()
             self.canvas.flush_events()
+
+    def _update_sum_spectra(self, espe_file: Dict[str, Espe]) -> None:
+        """Calculate the sum spectrum again and simultaneously updates graph
+        on the GUI
+
+        Args:
+            espe_file: Energy spectrum dictionary that will be updated on the
+            GUI
+        """
+        if self.simulated_sum_spectrum_is_selected:
+            self.simulated_sum_spectrum.add_or_update_spectra(espe_file)
+
+            data = get_axis_values(self.simulated_sum_spectrum.sum_spectrum)
+            self.plots[
+                self.simulated_sum_spectrum.sum_spectrum_path].set_data(
+                data)
+
+        if self.measured_sum_spectrum_is_selected:
+            self.measured_sum_spectrum.add_or_update_spectra(espe_file)
+
+            data = get_axis_values(self.measured_sum_spectrum.sum_spectrum)
+            self.plots[
+                self.measured_sum_spectrum.sum_spectrum_path].set_data(
+                data)
 
 
 def get_axis_values(data):
