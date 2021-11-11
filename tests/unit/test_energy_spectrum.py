@@ -257,14 +257,12 @@ class TestGetTofListFileName(unittest.TestCase):
 
 class TestSumSpectra(unittest.TestCase):
 
-    def create_sum_and_energy_spectrum(self, tmp_dir):
+    def create_measurement_and_energy_spectrum(self, tmp_dir):
         tmp_dir = Path(tmp_dir)
         mesu = mo.get_measurement(
             path=tmp_dir / "mesu.info", save_on_creation=True)
         es = self.get_energy_spectra
-        sum_spectrum = SumEnergySpectrum(
-            es, mesu.directory, SumSpectrumType.MEASURED)
-        return sum_spectrum, es, mesu
+        return mesu, es
 
     @property
     def created_sum_spectrum(self):
@@ -296,21 +294,22 @@ class TestSumSpectra(unittest.TestCase):
 
     @property
     def sum_spectrum_with_added_spectra(self):
-        return [(-0.95, 0.0),
-                (-0.75, 0.0),
-                (-0.45, 0.0),
-                (-0.25, 1.5555555555555556),
-                (0.25, 12.444444444444443),
-                (0.45, 15.6),
-                (0.75, 14.399999999999999),
-                (0.95, 7.600000000000001),
-                (1.25, 0.3999999999999999),
-                (1.45, 0.7999999999999998),
-                (1.75, 2.0),
-                (2.25, 8.0),
-                (2.75, 3.0),
-                (3.25, 6.0),
-                (3.75, 0.0)]
+        return [
+            (-0.95, 0.0),
+            (-0.75, 0.0),
+            (-0.45, 0.0),
+            (-0.25, 1.5555555555555556),
+            (0.25, 12.444444444444443),
+            (0.45, 15.6),
+            (0.75, 14.399999999999999),
+            (0.95, 7.600000000000001),
+            (1.25, 0.3999999999999999),
+            (1.45, 0.7999999999999998),
+            (1.75, 2.0),
+            (2.25, 8.0),
+            (2.75, 3.0),
+            (3.25, 6.0),
+            (3.75, 0.0)]
 
     @property
     def new_spectra(self):
@@ -320,7 +319,6 @@ class TestSumSpectra(unittest.TestCase):
 
     @property
     def expected_sum_spectrum_file_content(self):
-
         return [
             '-0.75000      0',
             '-0.25000      0',
@@ -353,8 +351,9 @@ class TestSumSpectra(unittest.TestCase):
 
     def test_sum_spectrum_creation(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
-
-            sum_spectrum, es, _ = self.create_sum_and_energy_spectrum(tmp_dir)
+            mesu, es = self.create_measurement_and_energy_spectrum(tmp_dir)
+            sum_spectrum = SumEnergySpectrum(
+                es, mesu.directory, SumSpectrumType.MEASURED)
 
             # Check if a created sum spectrum is correct
             self.assertEqual(sum_spectrum.spectra, es)
@@ -364,7 +363,11 @@ class TestSumSpectra(unittest.TestCase):
 
     def test_sum_spectrum_removal(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
-            sum_spectrum, es, _ = self.create_sum_and_energy_spectrum(tmp_dir)
+            mesu, es = self.create_measurement_and_energy_spectrum(
+                tmp_dir)
+
+            sum_spectrum = SumEnergySpectrum(
+                es, mesu.directory, SumSpectrumType.MEASURED)
 
             removed_spectrum = {
                 "1H.ERD.0": es["1H.ERD.0"]
@@ -378,7 +381,10 @@ class TestSumSpectra(unittest.TestCase):
 
     def test_sum_spectra_addition(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
-            sum_spectrum, es, _ = self.create_sum_and_energy_spectrum(tmp_dir)
+            mesu, es = self.create_measurement_and_energy_spectrum(tmp_dir)
+
+            sum_spectrum = SumEnergySpectrum(
+                es, mesu.directory, SumSpectrumType.MEASURED)
 
             sum_spectrum.add_or_update_spectra(self.new_spectra)
 
@@ -389,8 +395,10 @@ class TestSumSpectra(unittest.TestCase):
 
     def test_empty_sum_spectrum(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
-            sum_spectrum, es, mesu = self.create_sum_and_energy_spectrum(
-                tmp_dir)
+            mesu, es = self.create_measurement_and_energy_spectrum(tmp_dir)
+
+            sum_spectrum = SumEnergySpectrum(
+                es, mesu.directory, SumSpectrumType.MEASURED)
 
             empty_spectrum = SumEnergySpectrum(None,
                                                mesu.get_energy_spectra_dir(),
@@ -402,8 +410,10 @@ class TestSumSpectra(unittest.TestCase):
 
     def test_spectrum_file_contents(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
-            sum_spectrum, es, _ = self.create_sum_and_energy_spectrum(
-                tmp_dir)
+            mesu, es = self.create_measurement_and_energy_spectrum(tmp_dir)
+
+            sum_spectrum = SumEnergySpectrum(
+                es, mesu.directory, SumSpectrumType.MEASURED)
 
             expected = self.expected_sum_spectrum_file_content
 
