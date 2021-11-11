@@ -319,7 +319,16 @@ class LinearOptimization(opt.BaseOptimizer):
             solution = get_solution6(x, x + width)
             objective_values[i] = self.evaluate_solution(solution)
 
-        print(objective_values)
+        peak_i, peak_values = signal.find_peaks(-objective_values, width=5)
+        # TODO: Check if peak_i.size matches solution peak count
+
+        peaks = []
+        for i in range(peak_i.size):
+            left_i = peak_values["left_ips"][i]
+            right_i = peak_values["right_ips"][i]
+            peaks.append((left_i, right_i))
+            # solution = get_solution6(left_i, right_i)
+            # self.evaluate_solution(solution)
 
         # TODO: Find continous low error areas (widths)
         #       Find heights
