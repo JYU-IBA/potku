@@ -35,6 +35,7 @@ from dialogs.measurement.element_losses import ElementLossesDialog
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.measurement.calibration import CalibrationDialog
 from dialogs.simulation.optimization import OptimizationDialog
+from modules.enums import SpectrumTab
 
 
 class TestDialogInitialization(unittest.TestCase):
@@ -69,7 +70,7 @@ class TestDialogInitialization(unittest.TestCase):
     @patch("PyQt5.QtWidgets.QDialog.exec_")
     def test_espe_params(self, mock_exec):
         esp = EnergySpectrumParamsDialog(
-            Mock(), "measurement", measurement=mo.get_measurement())
+            Mock(), SpectrumTab.MEASUREMENT, measurement=mo.get_measurement())
         esp.close()
 
         # ValueError is raised if spectrum type is wrong
@@ -80,7 +81,7 @@ class TestDialogInitialization(unittest.TestCase):
         self.assertRaises(
             AttributeError,
             lambda: EnergySpectrumParamsDialog(
-                Mock(), "simulation", simulation=mo.get_simulation(),
+                Mock(), SpectrumTab.SIMULATION, simulation=mo.get_simulation(),
                 element_simulation=mo.get_element_simulation(),
                 recoil_widget=Mock()))
 
@@ -90,7 +91,7 @@ class TestDialogInitialization(unittest.TestCase):
         elem_sim = sim.add_element_simulation(
             mo.get_recoil_element(), save_on_creation=False)
         esp = EnergySpectrumParamsDialog(
-            Mock(), "simulation", simulation=sim, element_simulation=elem_sim,
+            Mock(), SpectrumTab.SIMULATION, simulation=sim, element_simulation=elem_sim,
             recoil_widget=Mock())
         esp.close()
 
