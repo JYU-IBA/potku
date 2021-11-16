@@ -82,6 +82,9 @@ class GlobalSettings:
     # concentration
     MIN_CONC_LIMIT = 1e-6
     _DEFAULT_CONC_LIMIT = 1e-4
+    
+    # Hard-coded initial default value for reference density
+    DEFAULT_REF_DENSITY = 4.982e22
 
     def __init__(self, config_dir=None, save_on_creation=True):
         """Inits GlobalSettings class.
@@ -536,6 +539,17 @@ class GlobalSettings:
         """
         self._config[self._SIMULATION]["min_concentration"] = str(
             max(value, GlobalSettings.MIN_CONC_LIMIT))
+
+    @handle_exceptions(return_value=DEFAULT_REF_DENSITY)
+    def get_default_reference_density(self) -> float:
+        """Returns the default reference density
+        """
+        return self._config.getfloat(self._SIMULATION, "default_density")
+
+    def set_default_reference_density(self, value: float):
+        """Sets the default reference density
+        """
+        self._config[self._SIMULATION]["default_density"] = str(value)
 
     @staticmethod
     def get_default_colors():

@@ -39,6 +39,7 @@ import widgets.gui_utils as gutils
 from pathlib import Path
 
 from widgets.base_tab import BaseTab
+from widgets.scientific_spinbox import ScientificSpinBox
 from modules.global_settings import GlobalSettings
 from modules.enums import IonDivision
 from modules.enums import CrossSection
@@ -75,7 +76,8 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
     sim_ions = bnd.bind("sim_spinbox")
     ion_division = bnd.bind("ion_division_radios")
     min_concentration = bnd.bind("min_conc_spinbox")
-
+    default_density = bnd.bind("scientific_spinbox")
+    
     coinc_count = bnd.bind("line_coinc_count")
     
     cross_section = bnd.bind("cross_section_radios")
@@ -88,9 +90,11 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         """Constructor for the program
         """
         super().__init__()
+        
+        self.settings = settings
+        
         uic.loadUi(gutils.get_ui_dir() / "ui_global_settings.ui", self)
 
-        self.settings = settings
         self.__added_timings = {}  # Placeholder for timings
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
@@ -176,6 +180,16 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.min_conc_spinbox.setMinimum(GlobalSettings.MIN_CONC_LIMIT)
         self.min_concentration = self.settings.get_minimum_concentration()
         
+        reference_density_value = self.settings.get_default_reference_density()
+        self.scientific_spinbox = ScientificSpinBox(
+            value=reference_density_value, minimum=0.01, maximum=9.99e26) 
+        
+        self.formLayout_3.insertRow(
+            4,
+            QtWidgets.QLabel(r"Reference density [at./cm<sup>3</sup>]:"),
+            self.scientific_spinbox)        
+        
+        
         # Set used paths to LineEdits
         self.lineEdit_ini.setText(str(self.settings.get_config_file()))
         self.lineEdit_Request.setText(str(self.settings.get_request_directory_last_open()))
@@ -235,6 +249,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.settings.set_min_simulation_ions(self.sim_ions)
         self.settings.set_ion_division(self.ion_division)
         self.settings.set_minimum_concentration(self.min_concentration)
+        self.settings.set_default_reference_density(self.default_density)
 
         gutils.set_potku_setting(
             BaseTab.SAVE_WINDOW_GEOM_KEY, self.save_window_geometries)
