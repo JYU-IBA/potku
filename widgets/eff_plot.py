@@ -36,25 +36,23 @@ from widgets.matplotlib.eff_plot import \
     MatplotlibEfficiencyWidget
 
 
-class EfficiencyDialog(QtWidgets.QDialog):
-    """Efficiency dialog which is opened on top of detector settings.
+class EfficiencyDialog(QtWidgets.QWidget):
+    """Efficiency widget which is opened on top of detector settings.
     """
 
     def __init__(self, efficiency_files, parent_widget=None):
         """Inits widget.
-        
+
         Args:
             parent: A TabWidget.
             efficiency_files: Paths to .eff files
         """
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_eff_plot.ui", self)
-
         self.parent_widget = parent_widget
         self.efficiency_files = efficiency_files
         self.matplotlib = MatplotlibEfficiencyWidget(self,
                                                      self.efficiency_files)
-        self.exec_()
 
     def delete(self):
         """Delete variables and do clean up.
