@@ -494,6 +494,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             lambda: self.add_element_with_dialog(**kwargs))
         self.parent.removePushButton.clicked.connect(
             self.remove_current_element)
+        self.parent.removeallPushButton.clicked.connect(
+            self.remove_all_elements)
 
         self.radios = QtWidgets.QButtonGroup(self)
         self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
@@ -1317,13 +1319,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if recoil_to_delete in self.individual_intervals:
             self.individual_intervals.pop(recoil_to_delete).remove()
 
-    def remove_current_element(self):
+    def remove_current_element(self, ignore_dialog=False, ignore_selection=False):
         """Remove current element simulation.
+        
+        Args:
+             ignore_dialog: A boolean determining if confirmation dialogs are skipped
+             ignore_selection: A boolean ignoring radio button selections
         """
         if self.current_element_simulation is None:
-            return
-        if not self.main_recoil_selected():
-            return
+            return    
+        if not ignore_selection:
+            if not self.main_recoil_selected():
+                return
 
         # Check if current element simulation is running
         if self.current_element_simulation.is_optimization_running() or \
@@ -1331,21 +1338,22 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             add = "\nAlso its simulation will be stopped."
         else:
             add = ""
-        # TODO use the function from dialog_functions in here
-        reply = QtWidgets.QMessageBox.question(
-            self.parent, "Confirmation",
-            "If you delete selected element simulation, all possible recoils "
-            f"connected to it will be also deleted.{add} "
-            f"This also applies to possible optimization.\n\n"
-            "Are you sure you want to delete selected element simulation?",
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-            QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-        if reply == QtWidgets.QMessageBox.No or reply == \
-                QtWidgets.QMessageBox.Cancel:
-            return  # If clicked Yes, then continue normally
-        element_simulation = self.element_manager \
-            .get_element_simulation_with_radio_button(
-                self.radios.checkedButton())
+            
+        # TODO use the function from dialog_functions in here        
+        if not ignore_dialog: 
+            reply = QtWidgets.QMessageBox.question(
+                self.parent, "Confirmation",
+                "If you delete selected element simulation, all possible recoils "
+                f"connected to it will be also deleted.{add} "
+                f"This also applies to possible optimization.\n\n"
+                "Are you sure you want to delete selected element simulation?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                return  # If clicked Yes, then continue normally
+
+        element_simulation = self.current_element_simulation
 
         # Stop simulation if running
         if add:
@@ -1386,10 +1394,48 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.parent.elementInfoWidget.hide()
         self.update_plot()
 
+    def remove_all_elements(self, export_dialog=False):
+        """Removes all element simulations
+        """
+        # Confirmation dialog
+        if not export_dialog:
+            reply = QtWidgets.QMessageBox.question(
+                self.parent, "Confirmation",
+                "If you delete all element simulations, all possible recoils "
+                f"connected to them will be deleted. "
+                f"Their simulations will be stopped. "
+                f"This also applies to possible optimizations.\n\n"
+                "Are you sure you want to delete all element simulations?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+        # Confirmation dialog when exporting elements
+        else:
+            reply = QtWidgets.QMessageBox.question(
+                self.parent, "Confirmation",
+                "Replace all existing element simulations? "
+                f"\n\nAll existing element simulations and all possible recoils "
+                f"connected to them will be deleted. "
+                f"Their simulations will be stopped. "
+                f"This also applies to possible optimizations.",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)        
+            
+        if reply == QtWidgets.QMessageBox.No or reply == \
+                QtWidgets.QMessageBox.Cancel:
+            return  # If clicked Yes, then continue normally
+            
+        element_simulations = self.element_manager.element_simulations
+        while len(element_simulations) >= 1:
+            for element_simulation in element_simulations:
+                self.current_element_simulation = element_simulations[0]
+                self.remove_current_element(ignore_dialog=True, ignore_selection=True)
+
     def export_elements(self, **kwargs):
         """Export elements from target layers into element simulations if they
         do not already exist.
         """
+        if len(self.element_manager.element_simulations) >= 1:
+            self.remove_all_elements(export_dialog=True)
         for layer in self.target.layers:
             for element in layer.elements:
                 if not self.element_manager.has_element(element):
