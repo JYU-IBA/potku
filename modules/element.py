@@ -166,11 +166,25 @@ class Element(MCERDParameterContainer):
                 # one is bigger
                 return m1 > m2
 
+        # Elements that have no symbol come before elements that do
+        if self.symbol is None and other.symbol is not None:
+            return True
+
+        if self.sequence is not None and other.sequence is None:
+            return False
+
         # Elements that have no isotopes come before elements that do
         if self.sequence is None and other.sequence is not None:
             return True
 
         if self.sequence is not None and other.sequence is None:
+            return False
+
+        # Elements that have no sequence number come before elements that do
+        if self.isotope is None and other.isotope is not None:
+            return True
+
+        if self.isotope is not None and other.isotope is None:
             return False
 
         return str(self) < str(other)
