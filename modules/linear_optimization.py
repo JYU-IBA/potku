@@ -31,13 +31,15 @@ from timeit import default_timer as timer
 from typing import Tuple, List, Optional
 
 import numpy as np
-import scipy as sp
-from scipy import optimize, signal
+from scipy import signal
+from scipy.interpolate import interpolate
+from scipy.ndimage import filters
 
 from . import file_paths as fp
 from . import general_functions as gf
 from . import math_functions as mf
 from . import optimization as opt
+from .base import Espe
 from .element_simulation import ElementSimulation
 from .energy_spectrum import EnergySpectrum
 from .enums import OptimizationState, IonDivision
@@ -90,20 +92,166 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.sol_size = sol_size
 
-        self.measured_peaks = []
+        self.measured_espe_x = None
+        self.measured_espe_y = None
+
+        self.mev_to_nm_params = None
+        self._mev_to_nm_function = None
+
+        self.measured_peaks_mev = None
+        self.measured_peaks_nm = None
+
         self.solution = None
 
-    def _find_measured_peaks(self):
-        # TODO: Find measured peaks
-        #  - amount depends on sol_size (1 or 2)
-        #  - convert measured MeV to simulated nm
-        #  - save width too?
+    def _split_measured_espe(self) -> None:
+        """Split measured espe to numpy arrays."""
+        x, y = zip(*self.measured_espe)
+        self.measured_espe_x = np.array(x)
+        self.measured_espe_y = np.array(y)
 
-        # TODO: Maybe ask the user:
-        #  - click on the spectrum or
-        #  - input coordinates (x, maybe y)
+    def _generate_mev_to_nm_function(
+            self, peak_count: int = 12, peak_width: float = 3.0,
+            min_prominence_factor: float = 0.1) -> None:
+        """Generate an interpolation function for `_convert_mev_to_nm`.
 
-        self.measured_peaks = [5.00, 70.00]
+        Simulates peaks at different points (in nm) to determine the function
+        parameters (based on MeV). Stops once peaks are not prominent enough or
+        maximum peak count is reached.
+
+        Args:
+            peak_count: number of peaks to simulate
+            peak_width: widths for peaks
+            min_prominence_factor: minimum fraction of average peak
+                prominences to include peak in results
+        """
+        mev_range = self.measured_espe_x.min(), self.measured_espe_x.max()
+
+        nm_range = (self.lower_limits[0], self.upper_limits[0] - peak_width)
+        nm_points = np.linspace(*nm_range, peak_count)
+
+        nm_step = nm_points[1] - nm_points[0]
+        if peak_width > nm_step:
+            raise ValueError(
+                f"peak_width {peak_width} is wider than nm_step {nm_step}")
+
+        smoothing_width = round(self.measured_espe_x.shape[0] / 30)
+
+        mevs = []
+        prominences = []
+        for i, nm in enumerate(nm_points):  # TODO: multi-thread this
+            solution = get_solution6(
+                nm, nm + peak_width, self.lower_limits, self.upper_limits)
+            espe = self._run_solution(solution)
+            espe_x, espe_y = zip(*espe)
+
+            peak_i, peak_info = signal.find_peaks(espe_y, width=smoothing_width)
+
+            # Find the largest peak prominence
+            prominence_i = peak_info["prominences"].argmax()
+            prominence = peak_info["prominences"][prominence_i]
+            if prominences:
+                prominence_threshold = (sum(prominences) / len(prominences)
+                                        * min_prominence_factor)
+                if prominence < prominence_threshold:
+                    break
+
+            prominences.append(prominence)
+            mevs.append(espe_x[peak_i[prominence_i]])
+
+        if len(mevs) <= 1:
+            raise ValueError("Could not generate a nm-to-MeV function."
+                             " Not enough significant data points.")
+
+        mevs = np.array(mevs)
+        prominences = np.array(prominences)
+        # Pick matching points, centered
+        nms = nm_points[:mevs.shape[0]] + peak_width / 2
+
+        # TODO: Params are probably not needed after creating the function
+        self.mev_to_nm_params = {
+            "nm": nms,
+            "mev": mevs,
+            "prominences": prominences,
+            "peak_width": peak_width
+        }
+        self._mev_to_nm_function = interpolate.interp1d(
+            mevs, nms, fill_value="extrapolate", assume_sorted=True)
+
+    def _convert_mev_to_nm(self, mev: float) -> float:
+        """Interpolate/extrapolate a depth from MeV to nm.
+
+        Run `_generate_mev_to_nm_table` before using.
+
+        Args:
+            mev: value to convert (in MeV)
+
+        Returns:
+            Converted value (in nm)
+        """
+        if self._mev_to_nm_function is None:
+            # TODO: Better error type
+            raise ValueError("Generate the MeV-to-nm conversion function first")
+
+        return float(self._mev_to_nm_function(mev))
+
+    def _find_measured_peaks(self, peak_count: int) -> None:
+        """Determine measured energy spectrum's peaks,
+        both in MeV (real) and nm (interpolated).
+
+        Args:
+            peak_count: Amount of peaks to find
+        """
+        # TODO: resize width until `peak_count` peaks are found
+        width = round(self.measured_espe_y.shape[0] / 30)
+        indexes, info = signal.find_peaks(self.measured_espe_y, width=width)
+
+        most_prominent_indexes = (-info["prominences"]).argsort()[:peak_count]
+        most_prominent_indexes.sort()  # Keep peaks in their original order
+        if most_prominent_indexes.shape[0] < peak_count:
+            raise NotImplementedError(
+                "Too few measured peaks detected using default values."
+                " Retrying not implemented.")
+
+        peaks_mev = []
+        for i in most_prominent_indexes:
+            left_i = round(info["left_ips"][i])
+            center_i = indexes[i]
+            right_i = round(info["right_ips"][i])
+
+            peak = tuple(self.measured_espe_x[[left_i, center_i, right_i]])
+            peaks_mev.append(peak)
+        self.measured_peaks_mev = peaks_mev
+
+        peaks_nm = []
+        # Reverse nm peaks to keep them in ascending order
+        for peak in peaks_mev[::-1]:
+            converted = tuple(
+                reversed([self._convert_mev_to_nm(mev) for mev in peak]))
+
+            left_correction = self.lower_limits[0] - converted[0]
+            exceeds_left = left_correction > 0.0
+
+            right_correction = self.upper_limits[0] - converted[-1]
+            exceeds_right = right_correction < 0.0
+
+            corrected = None
+            if exceeds_left and exceeds_right:
+                # TODO: does it make sense to clip left and right?
+                raise NotImplementedError("Detected peak exceeded both limits.")
+            elif exceeds_left:
+                corrected = tuple(nm + left_correction for nm in converted)
+                if corrected[-1] > self.upper_limits[0]:
+                    # TODO: clip right?
+                    raise NotImplementedError
+            elif exceeds_right:
+                corrected = tuple(nm + right_correction for nm in converted)
+                if corrected[0] < self.lower_limits[0]:
+                    # TODO: clip left?
+                    raise NotImplementedError
+
+            peaks_nm.append(corrected if corrected else converted)
+
+        self.measured_peaks_nm = peaks_nm
 
     def _prepare_optimization(self, initial_solution=None,
                               cancellation_token=None,
@@ -130,8 +278,12 @@ class LinearOptimization(opt.BaseOptimizer):
         # the x coordinates -> they have matching values for ease of distance
         # counting
         self.modify_measurement()
+        self._split_measured_espe()
 
-        self._find_measured_peaks()
+        self._generate_mev_to_nm_function()
+
+        # TODO: Get peak count from solution shape
+        self._find_measured_peaks(2)
 
         if initial_solution is None:
             initial_solution = self.initialize_solution()
@@ -189,20 +341,11 @@ class LinearOptimization(opt.BaseOptimizer):
 
     def initialize_solution(self):
         if self.optimization_type is OptimizationType.RECOIL:
-            if len(self.upper_limits) < 2:
-                x_upper = 1.0
-                y_upper = 1.0
-            else:
-                x_upper = self.upper_limits[0]
-                y_upper = self.upper_limits[1]
-            if len(self.lower_limits) < 2:
-                x_lower = 0.0
-                y_lower = 0.0
-            else:
-                x_lower = self.lower_limits[0]
-                y_lower = self.lower_limits[1]
-
+            x_min, y_min = self.lower_limits
+            x_max, y_max = self.upper_limits
+            gap = 0.01  # TODO: Save this as a constant
             # TODO: Copy elif's and else's from Nsgaii
+            # TODO: Create inverse solutions too (swap peak & valley heights)?
             if self.rec_type == "box":
                 if self.sol_size == 5:  # 4-point recoil
                     raise NotImplementedError
@@ -213,29 +356,19 @@ class LinearOptimization(opt.BaseOptimizer):
                         f"Unsupported sol_size {self.sol_size} for recoil type {self.rec_type}")
             elif self.rec_type == "two-peak":  # Two-peak recoil
                 if self.sol_size == 9:  # First peak at the surface
-                    # coords = [
-                    #     (0.0, 0.5),
-                    #     (30.0, 0.5),
-                    #     (30.01, 0.0001),
-                    #     (59.99, 0.0001),
-                    #     (60.0, 0.5),
-                    #     (89.99, 0.5),
-                    #     (90.0, 0.0001),
-                    #     (120.0, 0.0001)
-                    # ]
+                    peak0 = self.measured_peaks_nm[0]
+                    peak1 = self.measured_peaks_nm[1]
 
-                    coords = [
-                        (0.0, 0.0001),
-                        (30.0, 0.0001),
-                        (30.01, 0.0001),
-                        (59.99, 0.0001),
-                        (60.0, 0.0001),
-                        (89.99, 0.0001),
-                        (90.0, 0.0001),
-                        (120.0, 0.0001)
+                    points = [
+                        Point(x_min,            y_max),
+                        Point(peak0[-1],        y_max),
+                        Point(peak0[-1] + gap,  y_min),
+                        Point(peak1[0] - gap,   y_min),
+                        Point(peak1[0],         y_max),
+                        Point(peak1[-1],        y_max),
+                        Point(peak1[-1] + gap,  y_min),
+                        Point(x_max,            y_min)
                     ]
-
-                    points = [Point(xy) for xy in coords]
                     solution = SolutionPeak8(points)
                 elif self.sol_size == 11:  # First peak not at the surface
                     raise NotImplementedError
@@ -255,7 +388,7 @@ class LinearOptimization(opt.BaseOptimizer):
 
         return solution
 
-    def evaluate_solution(self, solution) -> float:
+    def _run_solution(self, solution) -> Espe:
         if self.optimization_type is OptimizationType.RECOIL:
             self.element_simulation.optimization_recoils = [
                 self.form_recoil(solution)
@@ -267,6 +400,18 @@ class LinearOptimization(opt.BaseOptimizer):
                 optimization_type=self.optimization_type,
                 ch=self.channel_width,
                 write_to_file=False)
+        elif self.optimization_type is OptimizationType.FLUENCE:
+            raise NotImplementedError
+        else:
+            raise ValueError(
+                f"Unknown optimization type {self.optimization_type}")
+
+        return espe
+
+    def evaluate_solution(self, solution) -> float:
+        espe = self._run_solution(solution)
+
+        if self.optimization_type is OptimizationType.RECOIL:
             objective_value = self._get_spectra_difference(espe)
         elif self.optimization_type is OptimizationType.FLUENCE:
             raise NotImplementedError
@@ -276,6 +421,7 @@ class LinearOptimization(opt.BaseOptimizer):
 
         return objective_value
 
+    # TODO: Is this needed?
     def _get_bounds(self):
         # TODO: Select by type, use real values
         x_ub = 120.0
@@ -310,47 +456,24 @@ class LinearOptimization(opt.BaseOptimizer):
         return x_bounds, y_bounds
 
     def _fit_simulation(self, bounds):
-        # TODO: Multi-thread
-        xs = np.linspace(0.0, 120.0, 121)[:-1]
-        width = xs[1] - xs[0]
-
-        objective_values = np.zeros(xs.size)
-        for i, x in enumerate(xs):
-            solution = get_solution6(x, x + width)
-            objective_values[i] = self.evaluate_solution(solution)
-
-        peak_i, peak_values = signal.find_peaks(-objective_values, width=5)
-        # TODO: Check if peak_i.size matches solution peak count
-
-        peaks = []
-        for i in range(peak_i.size):
-            left_i = peak_values["left_ips"][i]
-            right_i = peak_values["right_ips"][i]
-            peaks.append((left_i, right_i))
-            # solution = get_solution6(left_i, right_i)
-            # self.evaluate_solution(solution)
-
-        # TODO: Find continous low error areas (widths)
-        #       Find heights
-
+        # TODO: Compare to measured and move points in pairs accordingly
         raise NotImplementedError
 
     def _optimize(self):
         points = copy.deepcopy(self.solution.points)
         bounds = self._get_bounds()
 
-        # TODO: Multiple solutions
-        solution = self._fit_simulation(bounds)
+        optimized = self._fit_simulation(bounds)
 
-        return solution
+        return optimized
 
     # TODO: Are starting_solutions and ion_division needed?
     def start_optimization(self, starting_solutions=None,
                            cancellation_token=None,
                            ion_division=IonDivision.BOTH):
-        # TODO: Maybe?
-        # self.on_next(self._get_message(
-        #     OptimizationState.PREPARING, evaluatiations_left=self.evaluations))
+        # TODO: Messages aren't visible, probably because they
+        #  don't carry information about evaluations
+        self.on_next(self._get_message(OptimizationState.PREPARING))
 
         try:
             self._prepare_optimization(
@@ -364,12 +487,10 @@ class LinearOptimization(opt.BaseOptimizer):
 
         pass
 
-        start_time = timer()
+        self.on_next(self._get_message(OptimizationState.RUNNING))
 
-        # self.on_next(self._get_message(
-        #     OptimizationState.RUNNING, evaluations_left=self.evaluations))
-
-        result = self._optimize()
+        result = self.solution  # TODO: Replace with _optimize
+        # result = self._optimize() # TODO
 
         if self.optimization_type is OptimizationType.RECOIL:
             first_sol = self.solution
@@ -387,9 +508,7 @@ class LinearOptimization(opt.BaseOptimizer):
         self.clean_up(cancellation_token)
         self.element_simulation.optimization_results_to_file(self.cut_file)
 
-        self.on_completed(self._get_message(
-            OptimizationState.FINISHED,
-            evaluations_done="Unknown"))  # TODO: Proper value
+        self.on_completed(self._get_message(OptimizationState.FINISHED))
 
 
 # TODO: Probably needlessly complicated now, just move points up/down in pairs
@@ -527,7 +646,7 @@ class SolutionBox4(BaseSolution):
 
 class SolutionBox6(BaseSolution):
     def __init__(self, points):
-        valley1 = Valley(ll=points[0], rl=points[2],
+        valley1 = Valley(ll=points[0], rl=points[1],
                          prev_point=None, next_point=points[2])
         peak1 = Peak(ll=points[1], lh=points[2], rh=points[3], rl=points[4],
                      prev_point=points[0], next_point=points[5])
@@ -565,21 +684,21 @@ class SolutionPeak10(BaseSolution):
         # super().__init__(10, peaks, valleys, points)
 
 
-def get_solution6(x1: float, x2: float) -> SolutionBox6:
-    """Returns a SolutionBox6 with max values from x1 to x2"""
-    # TODO: Get these from somewhere
-    min_x = 0.0
-    max_x = 120.0
-    min_y = 0.0001
-    max_y = 1.0
+
+def get_solution6(
+        x1: float, x2: float, lower_limits, upper_limits) -> SolutionBox6:
+    """Return a SolutionBox6 with max values from x1 to x2"""
+    min_x, min_y = lower_limits
+    max_x, max_y = upper_limits
+    gap = 0.01
 
     points = [
-        Point(min_x, min_y),
-        Point(x1, min_y),
-        Point(x1 + 0.01, max_y),
-        Point(x2 - 0.001, max_y),
-        Point(x2, min_y),
-        Point(max_x, min_y),
+        Point(min_x,      min_y),
+        Point(x1,         min_y),
+        Point(x1 + gap,  max_y),
+        Point(x2 - gap,  max_y),
+        Point(x2,         min_y),
+        Point(max_x,      min_y),
     ]
     solution = SolutionBox6(points)
 
