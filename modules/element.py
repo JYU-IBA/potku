@@ -170,7 +170,7 @@ class Element(MCERDParameterContainer):
         if self.symbol is None and other.symbol is not None:
             return True
 
-        if self.sequence is not None and other.sequence is None:
+        if self.symbol is not None and other.symbol is None:
             return False
 
         # Elements that have no isotopes come before elements that do
