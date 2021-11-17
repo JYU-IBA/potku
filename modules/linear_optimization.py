@@ -101,6 +101,12 @@ class LinearOptimization(opt.BaseOptimizer):
         self.measured_peaks_mev = None
         self.measured_peaks_nm = None
 
+        self.peak_count = None
+        if self.rec_type == "box":
+            self.peak_count = 1
+        elif self.rec_type == "two-peak":
+            self.peak_count = 2
+
         self.solution = None
 
     def _split_measured_espe(self) -> None:
@@ -281,9 +287,7 @@ class LinearOptimization(opt.BaseOptimizer):
         self._split_measured_espe()
 
         self._generate_mev_to_nm_function()
-
-        # TODO: Get peak count from solution shape
-        self._find_measured_peaks(2)
+        self._find_measured_peaks(self.peak_count)
 
         if initial_solution is None:
             initial_solution = self.initialize_solution()
@@ -344,13 +348,30 @@ class LinearOptimization(opt.BaseOptimizer):
             x_min, y_min = self.lower_limits
             x_max, y_max = self.upper_limits
             gap = 0.01  # TODO: Save this as a constant
-            # TODO: Copy elif's and else's from Nsgaii
             # TODO: Create inverse solutions too (swap peak & valley heights)?
             if self.rec_type == "box":
                 if self.sol_size == 5:  # 4-point recoil
-                    raise NotImplementedError
+                    peak0 = self.measured_peaks_nm[0]
+
+                    points = [
+                        Point(x_min,            y_max),
+                        Point(peak0[-1],        y_max),
+                        Point(peak0[-1] + gap,  y_min),
+                        Point(x_max,            y_min)
+                    ]
+                    solution = SolutionBox4(points)
                 elif self.sol_size == 7:  # 6-point recoil
-                    raise NotImplementedError
+                    peak0 = self.measured_peaks_nm[0]
+
+                    points = [
+                        Point(x_min,            y_min),
+                        Point(peak0[0] - gap,   y_min),
+                        Point(peak0[0],         y_max),
+                        Point(peak0[-1],        y_max),
+                        Point(peak0[-1] + gap,  y_min),
+                        Point(x_max,            y_min)
+                    ]
+                    solution = SolutionBox6(points)
                 else:
                     raise ValueError(
                         f"Unsupported sol_size {self.sol_size} for recoil type {self.rec_type}")
@@ -371,7 +392,22 @@ class LinearOptimization(opt.BaseOptimizer):
                     ]
                     solution = SolutionPeak8(points)
                 elif self.sol_size == 11:  # First peak not at the surface
-                    raise NotImplementedError
+                    peak0 = self.measured_peaks_nm[0]
+                    peak1 = self.measured_peaks_nm[1]
+
+                    points = [
+                        Point(x_min,            y_min),
+                        Point(peak0[0] - gap,   y_min),
+                        Point(peak0[0],         y_max),
+                        Point(peak0[-1],        y_max),
+                        Point(peak0[-1] + gap,  y_min),
+                        Point(peak1[0] - gap,   y_min),
+                        Point(peak1[0],         y_max),
+                        Point(peak1[-1],        y_max),
+                        Point(peak1[-1] + gap,  y_min),
+                        Point(x_max,            y_min)
+                    ]
+                    solution = SolutionPeak10(points)
                 else:
                     raise ValueError(
                         f"Unsupported sol_size {self.sol_size} for recoil type {self.rec_type}")
@@ -629,6 +665,7 @@ class Valley:
 
 
 class BaseSolution:
+    """Base class for solutions."""
     def __init__(self, points: List[Point], peaks: List[Peak],
                  valleys: List[Valley]):
         self.points = points
@@ -637,14 +674,21 @@ class BaseSolution:
 
 
 class SolutionBox4(BaseSolution):
+    """Box that starts at surface."""
     def __init__(self, points: List[Point]):
-        raise NotImplementedError
-        # peaks = [slice(0, 3)]
-        # valleys = [slice(2, 4)]
-        # super().__init__(4, peaks, valleys, points)
+        peak1 = Peak(ll=None, lh=points[0], rh=points[1], rl=points[2],
+                     prev_point=None, next_point=points[3])
+        valley1 = Valley(ll=points[2], rl=points[3],
+                         prev_point=points[1], next_point=None)
+
+        peaks = [peak1]
+        valleys = [valley1]
+
+        super().__init__(points, peaks, valleys)
 
 
 class SolutionBox6(BaseSolution):
+    """Box that doesn't start at surface."""
     def __init__(self, points):
         valley1 = Valley(ll=points[0], rl=points[1],
                          prev_point=None, next_point=points[2])
@@ -660,6 +704,7 @@ class SolutionBox6(BaseSolution):
 
 
 class SolutionPeak8(BaseSolution):
+    """Twin-peak that starts at surface."""
     def __init__(self, points: List[Point]):
         peak1 = Peak(ll=None, lh=points[0], rh=points[1], rl=points[2],
                      prev_point=None, next_point=points[3])
@@ -677,12 +722,23 @@ class SolutionPeak8(BaseSolution):
 
 
 class SolutionPeak10(BaseSolution):
+    """Twin-peak that doesn't start at the surface."""
     def __init__(self, points: List[Point]):
-        raise NotImplementedError
-        # peaks = [slice(1, 5), slice(5, 9)]
-        # valleys = [slice(0, 2), slice(4, 6), slice(8, 10)]
-        # super().__init__(10, peaks, valleys, points)
+        valley1 = Valley(ll=points[0], rl=points[1],
+                         prev_point=None, next_point=points[2])
+        peak1 = Peak(ll=points[1], lh=points[2], rh=points[3], rl=points[4],
+                     prev_point=points[0], next_point=points[5])
+        valley2 = Valley(ll=points[4], rl=points[5],
+                         prev_point=points[3], next_point=points[6])
+        peak2 = Peak(ll=points[4], lh=points[5], rh=points[6], rl=points[7],
+                     prev_point=points[3], next_point=points[8])
+        valley3 = Valley(ll=points[8], rl=points[9],
+                         prev_point=points[7], next_point=None)
 
+        peaks = [peak1, peak2]
+        valleys = [valley1, valley2, valley3]
+
+        super().__init__(points, peaks, valleys)
 
 
 def get_solution6(
