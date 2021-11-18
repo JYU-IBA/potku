@@ -35,7 +35,7 @@ import copy
 import os
 import shutil
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -48,7 +48,6 @@ import modules.cut_file as cut_file
 import widgets.binding as bnd
 import widgets.gui_utils as gutils
 
-from modules.base import Espe
 from modules.element_simulation import ElementSimulation
 from modules.energy_spectrum import EnergySpectrum
 from modules.enums import OptimizationType, SpectrumTab
@@ -151,9 +150,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         if self.spectrum_type == EnergySpectrumWidget.MEASUREMENT:
             self.sum_spectrum_checkbox_simulation.setEnabled(False)
             self.sum_spectrum_checkbox_simulation.setCheckable(False)
-            self.sum_spectrum_checkbox_measurement.stateChanged.connect(
-                lambda *_: self.label_efficiency_files.setEnabled(
-                    self.simulated_sum_spectrum_is_selected))
+            self.sum_spectrum_checkbox_measurement.setChecked(True)
             EnergySpectrumParamsDialog.bin_width = \
                 self.measurement.profile.channel_width
             self.pushButton_OK.clicked.connect(
