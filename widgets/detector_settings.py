@@ -29,6 +29,8 @@ __version__ = "2.0"
 import copy
 import math
 import platform
+from pathlib import Path
+from typing import List, Set
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -497,22 +499,32 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             for f in self.efficiency_files
         }
 
-        # Checks which cut files are used in the current request and adds
-        # them into the list
+        # Check which cut files are used in the current request and add them
+        # into the list
         cuts_list = []
-        for key, value in self.request.samples.measurements.measurements \
-                .items():
+        for key, value in \
+                self.request.samples.measurements.measurements.items():
             c, _ = value.get_cut_files()
             cuts_list.append(c)
 
-        for eff_file in selected_eff_files:  # Iterates all selected eff-files
+        for eff_file_path in selected_eff_files:
             current_eff_file = Detector.get_used_efficiency_file_name(
-                eff_file)
+                eff_file_path)
             if current_eff_file not in current_eff_files:
                 try:
-                    self.__check_chosen_elements(cuts_list, current_eff_file,
-                                                 current_eff_files,
-                                                 eff_file)
+                    user_cancels = \
+                        self.__check_if_selected_elements_have_cut_files(
+                            cuts_list, current_eff_file, current_eff_files,
+                            eff_file_path)
+                    if user_cancels:  # Move to the next element
+                        break
+                    else:
+                        self.efficiency_files = self.obj.get_efficiency_files()
+                        # Store the folder where an eff-file was previously
+                        # fetched
+                        gutils.set_potku_setting(
+                            DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
+                            str(eff_file_path.parent))
                 except OSError as e:
                     QtWidgets.QMessageBox.critical(
                         self, "Error",
@@ -525,42 +537,50 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
                     f"{current_eff_file.stem}.\n",
                     QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
-        self.efficiency_files = self.obj.get_efficiency_files()
-        # Store the folder where we previously fetched an eff-file
-        gutils.set_potku_setting(DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
-                                 str(eff_file.parent))
+    def __check_if_selected_elements_have_cut_files(self, cuts_list: List,
+                                                    current_eff_file: Path,
+                                                    current_eff_files: Set,
+                                                    eff_file_path: Path):
+        """
+        Check if the selected element on the GUI has cut files.
 
-    def __check_chosen_elements(self, cuts_list, current_eff_file,
-                                current_eff_files, eff_file):
-        found_eff_files = []
-        for cut in cuts_list:  # Checks if the selected element
-            # has a cut file
+        Args:
+            cuts_list: List of cut files
+            current_eff_file: Selected efficiency file
+            current_eff_files: Already selected efficiency files
+            eff_file_path: Selected efficiency file's path
+
+        Return:
+            False if there are not cut files and the user confirms the
+            selection.
+            True if if there are not cut files and the user cancels the
+            selection.
+        """
+
+        eff_files_elements = []
+        for cut in cuts_list:
             for c in cut:
                 cut_element_str = c.name.split(".")[1]
-                # Writes down if a corresponding element is found
                 if cut_element_str in current_eff_file.stem:
-                    found_eff_files.append(cut_element_str)
-        for file in found_eff_files:
-            if current_eff_file.stem not in file:  # Gives a warning
-                # if a cut file is not found
+                    eff_files_elements.append(cut_element_str)
+        for file in eff_files_elements:
+            if current_eff_file.stem not in file:
                 reply = QtWidgets.QMessageBox.warning(
                     self, "Warning",
-                    f"All measurements do not have a "
-                    f"cut file for the element "
-                    f"{eff_file.stem}.\nDo you want to "
-                    f"continue?",
+                    f"Selected element {eff_file_path.stem} "
+                    f"do not have a cut file\n"
+                    f"Do you want to continue?",
                     QtWidgets.QMessageBox.Ok,
                     QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No:
-                    return
+                if reply == QtWidgets.QMessageBox.Cancel:
+                    return True
                 elif reply == QtWidgets.QMessageBox.Ok:
-                    self.obj.add_efficiency_file(eff_file)
+                    self.obj.add_efficiency_file(eff_file_path)
                     current_eff_files.add(current_eff_file)
-                    break
+                    return False
             else:
-                self.obj.add_efficiency_file(eff_file)
+                self.obj.add_efficiency_file(eff_file_path)
                 current_eff_files.add(current_eff_file)
-                break
 
     def __remove_efficiency(self):
         """Removes efficiency files from detector's efficiency directory and
@@ -591,7 +611,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         """
         self.eff_folder = gutils.get_potku_setting(
             DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
-            self.request.default_folder) 
+            self.request.default_folder)
         self.efficiency_files = self.obj.get_efficiency_files()
         self.efficiency_files_list = []
         for file in self.efficiency_files:
