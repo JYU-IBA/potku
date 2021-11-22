@@ -388,20 +388,21 @@ class SumEnergySpectrum:
                     and self.sum_spectrum_path.exists()):
                 # Remove previous sum spectrum file
                 self.sum_spectrum_path.unlink()
-        element = None
-        for key in self.spectra:
-            if not isinstance(key, pathlib.Path):
-                if "." or "-" in key:
-                    element = key.split(".")[0]
+        if self.sum_spectrum_key == 'SUM':  # If it's already initialized
+            element = None
+            for key in self.spectra:
+                if not isinstance(key, pathlib.Path):
+                    if "." or "-" in key:
+                        element = key.split(".")[0]
+                        self._sum_key += "." + element
+                elif "." in key.stem:
+                    element = key.stem.split(".")[1]
                     self._sum_key += "." + element
-            elif "." in key.stem:
-                element = key.stem.split(".")[1]
-                self._sum_key += "." + element
-            elif "-" in key.stem:
-                element = key.stem.split("-")[0]
-                self._sum_key += "." + element
-            else:
-                raise ValueError(f"Unknown element_name format '{element}'")
+                elif "-" in key.stem:
+                    element = key.stem.split("-")[0]
+                    self._sum_key += "." + element
+                else:
+                    raise ValueError(f"Unknown element_name format '{element}'")
 
         sum_spectrum_np_array = np.array(self.sum_spectrum,
                                          dtype=[("float", float), ("int", int)])
