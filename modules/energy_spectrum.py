@@ -417,11 +417,6 @@ class SumEnergySpectrum:
             self._spectra[directory] = points
         self._calculate_sum_spectrum()
 
-    def update_spectra(self, spectra: Dict[Path, Espe]) -> None:
-        for directory, points in spectra.items():
-            self._spectra[directory] = points
-        self._calculate_sum_spectrum()
-
     def delete_spectra(self, spectra: Union[Sequence[Path], Dict[Path, Espe]]) \
             -> None:
         """Delete a specified spectra from the sum spectrum."""
