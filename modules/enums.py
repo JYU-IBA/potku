@@ -229,3 +229,9 @@ class DepthProfileUnit(str, Enum):
 
     def __str__(self):
         return self.value
+
+
+@enum.unique
+class DefaultReferenceDensity(float, Enum):
+    REFERENCE_DENSITY = 4.98e22
+    PROFILE_REFERENCE_DENSITY = 3.0

@@ -32,6 +32,7 @@ import random
 
 import tests.mock_objects as mo
 import modules.file_paths as fp
+from modules.enums import DefaultReferenceDensity
 
 from modules.recoil_element import RecoilElement
 from modules.point import Point
@@ -52,7 +53,7 @@ class TestRecoilElement(unittest.TestCase):
             description="foo",
             name="bar",
             rec_type="rec",
-            reference_density=3,
+            reference_density=DefaultReferenceDensity.PROFILE_REFERENCE_DENSITY,
             channel_width=self.ch_width,
             modification_time=self.timestamp
         )

@@ -36,6 +36,7 @@ from . import subprocess_utils as sutils
 from .base import Espe
 from .beam import Beam
 from .detector import Detector
+from .enums import DefaultReferenceDensity
 from .parsing import CSVParser
 from .target import Target
 
@@ -51,7 +52,7 @@ class GetEspe:
     def __init__(self, beam_ion: str, energy: float, theta: float,
                  tangle: float, toflen: float, solid: float,
                  recoil_file: Path, erd_file: Path,
-                 reference_density: float = 4.98e22,
+                 reference_density: float = DefaultReferenceDensity.REFERENCE_DENSITY,
                  ch: float = 0.025, fluence: float = 5.00e+11,
                  timeres: float = 250.0):
         """Initializes the GetEspe class.
