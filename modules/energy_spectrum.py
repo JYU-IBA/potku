@@ -338,20 +338,20 @@ class EnergySpectrum:
 class SumEnergySpectrum:
     """Container class for a sum of energy spectra."""
 
-    def __init__(self, spectra: Dict[str, Espe] = None,
+    def __init__(self, spectra: Dict[Path, Espe] = None,
                  directory_es: Path = "",
                  spectra_type: SumSpectrumType = "") -> None:
         self.sum_spectrum_path: Optional[Path] = None
         self.sum_spectrum: Optional[np.ndarray] = None
         self._directory_es: Path = directory_es
         self._spectrum_type = spectra_type
-        self._spectra: Dict[str, Espe] = {}
+        self._spectra: Dict[Path, Espe] = {}
         self._sum_key = "SUM"
         if spectra:
             self.add_or_update_spectra(spectra)
 
     @property
-    def spectra(self) -> Dict[str, Espe]:
+    def spectra(self) -> Dict[Path, Espe]:
         """Get a tracked spectra."""
         # Read-only, use other methods to edit spectra
         return self._spectra
@@ -411,17 +411,20 @@ class SumEnergySpectrum:
         np.savetxt(self.sum_spectrum_path, sum_spectrum_np_array,
                    delimiter=" ", fmt="%5.5f %6d")
 
-    def add_or_update_spectra(self, spectra: Dict[str, Espe]) -> None:
+    def add_or_update_spectra(self, spectra: Dict[Path, Espe]) -> None:
         """Add or update specified spectra in the sum spectrum."""
         for directory, points in spectra.items():
             self._spectra[directory] = points
         self._calculate_sum_spectrum()
 
-    def delete_spectra(self, spectra: Union[Sequence[str], Dict[str, Espe]]) \
+    def update_spectra(self, spectra: Dict[Path, Espe]) -> None:
+        for directory, points in spectra.items():
+            self._spectra[directory] = points
+        self._calculate_sum_spectrum()
+
+    def delete_spectra(self, spectra: Union[Sequence[Path], Dict[Path, Espe]]) \
             -> None:
         """Delete a specified spectra from the sum spectrum."""
         for name in spectra:
             del self._spectra[name]
         self._calculate_sum_spectrum()
-
-

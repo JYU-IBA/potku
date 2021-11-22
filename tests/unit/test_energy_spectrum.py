@@ -315,6 +315,8 @@ class TestSumSpectra(unittest.TestCase):
             ]
         }
 
+    # TODO: Replace string keys with Paths
+
     def test_sum_spectrum_creation(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             mesu, es = self.create_measurement_and_energy_spectrum(tmp_dir)
