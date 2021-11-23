@@ -563,24 +563,46 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
                 cut_element_str = c.name.split(".")[1]
                 if cut_element_str in current_eff_file.stem:
                     eff_files_elements.append(cut_element_str)
-        for file in eff_files_elements:
-            if current_eff_file.stem not in file:
-                reply = QtWidgets.QMessageBox.warning(
-                    self, "Warning",
-                    f"Selected element {eff_file_path.stem} "
-                    f"do not have a cut file\n"
-                    f"Do you want to continue?",
-                    QtWidgets.QMessageBox.Ok,
-                    QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.Cancel:
-                    return True
-                elif reply == QtWidgets.QMessageBox.Ok:
-                    self.obj.add_efficiency_file(eff_file_path)
-                    current_eff_files.add(current_eff_file)
-                    return False
-            else:
-                self.obj.add_efficiency_file(eff_file_path)
-                current_eff_files.add(current_eff_file)
+        if len(eff_files_elements) is 0:
+            reply = QtWidgets.QMessageBox.warning(
+                self, "Warning",
+                f"Selected element {eff_file_path.stem} "
+                f"does not have a cut file.\n"
+                f"Do you want to continue?",
+                QtWidgets.QMessageBox.Ok,
+                QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.Cancel:
+                return True
+            elif reply == QtWidgets.QMessageBox.Ok:
+                self.add_to_current_eff_files(eff_file_path,
+                                              current_eff_file,
+                                              current_eff_files)
+        self.add_to_current_eff_files(eff_file_path,
+                                      current_eff_file,
+                                      current_eff_files)
+
+    def add_to_current_eff_files(self, eff_file_path: Path,
+                                 current_eff_file: Path,
+                                 current_eff_files: Set):
+        """
+        Add the current efficiency file to the current efficiency files list.
+
+        Args:
+            eff_file_path: Selected efficiency file's path
+            current_eff_file: Selected efficiency file
+            current_eff_files: Already selected efficiency files
+
+        Return:
+            False because:
+                1) there are not cut files and the user confirms the
+                selection or
+                2) it is a basic efficiency file addition with the element
+                that has cut files
+        """
+
+        self.obj.add_efficiency_file(eff_file_path)
+        current_eff_files.add(current_eff_file)
+        return False
 
     def __remove_efficiency(self):
         """Removes efficiency files from detector's efficiency directory and
