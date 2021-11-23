@@ -656,3 +656,25 @@ def find_next(iterable: Iterable[T], cond: Callable[[T], bool]) -> T:
         return next(i for i in iterable if cond(i))
     except StopIteration:
         raise ValueError("Value not found in iterable.")
+
+
+def check_if_sum_spectrum_is_selected(directory):
+    """
+    Check if the sum spectrum is selected on the GUI.
+
+    Args:
+        directory: Directory that is iterated
+
+    Return:
+        True if there is at least one file (path) that contains "SUM" string.
+        False if there is not.
+
+    """
+    measured_sum = False
+    simulated_sum = False
+    for filepath in os.listdir(directory):
+        if "MEASURED_SUM" in filepath:
+            measured_sum = True
+        if "SIMULATED_SUM" in filepath:
+            simulated_sum = True
+    return measured_sum, simulated_sum
