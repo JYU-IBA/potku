@@ -563,7 +563,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
                 cut_element_str = c.name.split(".")[1]
                 if cut_element_str in current_eff_file.stem:
                     eff_files_elements.append(cut_element_str)
-        if len(eff_files_elements) is 0:
+        if len(eff_files_elements) == 0:
             reply = QtWidgets.QMessageBox.warning(
                 self, "Warning",
                 f"Selected element {eff_file_path.stem} "
