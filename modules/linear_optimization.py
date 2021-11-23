@@ -26,6 +26,7 @@ __version__ = "2.0"
 import abc
 import copy
 import subprocess
+from collections import namedtuple
 from pathlib import Path
 from timeit import default_timer as timer
 from typing import Tuple, List, Optional
@@ -45,14 +46,11 @@ from .energy_spectrum import EnergySpectrum
 from .enums import OptimizationState, IonDivision
 from .enums import OptimizationType
 from .parsing import CSVParser
-
-
-# TODO:
-#  - documentation
-#  - unit tests
-#  - type annotations
 from .point import Point
 from .recoil_element import RecoilElement
+
+
+PeakInfo = namedtuple("PeakInfo", ("peaks", "info", "prominent_peaks_i"))
 
 
 class LinearOptimization(opt.BaseOptimizer):
@@ -98,8 +96,9 @@ class LinearOptimization(opt.BaseOptimizer):
         self.mev_to_nm_params = None
         self._mev_to_nm_function = None
 
-        self.measured_peaks_mev = None
-        self.measured_peaks_nm = None
+        self.measured_peak_info: Optional[PeakInfo] = None
+        self.measured_peaks_mev: Optional[List[Tuple[float]]] = None
+        self.measured_peaks_nm: Optional[List[Tuple[float]]] = None
 
         self.peak_count = None
         if self.rec_type == "box":
@@ -108,12 +107,6 @@ class LinearOptimization(opt.BaseOptimizer):
             self.peak_count = 2
 
         self.solution = None
-
-    def _split_measured_espe(self) -> None:
-        """Split measured espe to numpy arrays."""
-        x, y = zip(*self.measured_espe)
-        self.measured_espe_x = np.array(x)
-        self.measured_espe_y = np.array(y)
 
     def _generate_mev_to_nm_function(
             self, peak_count: int = 12, peak_width: float = 3.0,
@@ -144,17 +137,17 @@ class LinearOptimization(opt.BaseOptimizer):
 
         mevs = []
         prominences = []
-        for i, nm in enumerate(nm_points):  # TODO: multi-thread this
+        for nm in nm_points:  # TODO: multi-thread this
             solution = get_solution6(
                 nm, nm + peak_width, self.lower_limits, self.upper_limits)
             espe = self._run_solution(solution)
-            espe_x, espe_y = zip(*espe)
+            espe_x, espe_y = split_espe(espe)
 
-            peak_i, peak_info = signal.find_peaks(espe_y, width=smoothing_width)
+            peak_info = self._get_peak_info(espe_y, 1, peak_width=smoothing_width)
 
             # Find the largest peak prominence
-            prominence_i = peak_info["prominences"].argmax()
-            prominence = peak_info["prominences"][prominence_i]
+            prominence_i = peak_info.info["prominences"].argmax()
+            prominence = peak_info.info["prominences"][prominence_i]
             if prominences:
                 prominence_threshold = (sum(prominences) / len(prominences)
                                         * min_prominence_factor)
@@ -162,7 +155,7 @@ class LinearOptimization(opt.BaseOptimizer):
                     break
 
             prominences.append(prominence)
-            mevs.append(espe_x[peak_i[prominence_i]])
+            mevs.append(espe_x[peak_info.peaks[prominence_i]])
 
         if len(mevs) <= 1:
             raise ValueError("Could not generate a nm-to-MeV function."
@@ -200,39 +193,74 @@ class LinearOptimization(opt.BaseOptimizer):
 
         return float(self._mev_to_nm_function(mev))
 
-    def _find_measured_peaks(self, peak_count: int) -> None:
-        """Determine measured energy spectrum's peaks,
-        both in MeV (real) and nm (interpolated).
+    def _get_peak_info(self, y: np.ndarray,
+                       peak_count: int,
+                       peak_width: int = None,
+                       retry_count: int = 0) -> PeakInfo:
+        """Get information about Espe peaks.
 
         Args:
-            peak_count: Amount of peaks to find
+            y: Espe y values
+            peak_count: amount of peaks to find
+            peak_width: width of peak (number of data points)
+            retry_count: amount of tries to retry if incorrect number
+                of peaks were found
+
+        Returns:
+            Information about peaks
         """
-        # TODO: resize width until `peak_count` peaks are found
-        width = round(self.measured_espe_y.shape[0] / 30)
-        indexes, info = signal.find_peaks(self.measured_espe_y, width=width)
+        if peak_width is None:
+            peak_width = round(y.shape[0] / 30)
+
+        indexes, info = signal.find_peaks(y, width=peak_width)
 
         most_prominent_indexes = (-info["prominences"]).argsort()[:peak_count]
         most_prominent_indexes.sort()  # Keep peaks in their original order
+        # TODO: resize width until `self.peak_count` peaks are found
+        #   or `retry_count` is reached
         if most_prominent_indexes.shape[0] < peak_count:
             raise NotImplementedError(
                 "Too few measured peaks detected using default values."
                 " Retrying not implemented.")
 
+        return PeakInfo(indexes, info, most_prominent_indexes)
+
+    def _get_mev_peaks(self, x: np.ndarray, peak_info: PeakInfo) -> List[Tuple[float]]:
+        """Get Espe's MeV peak x locations based on `peak_info`
+
+        Args:
+            x: Espe x values
+            peak_info: peak information
+
+        Returns:
+            List of peaks (points: left, center, right)
+        """
         peaks_mev = []
-        for i in most_prominent_indexes:
-            left_i = round(info["left_ips"][i])
-            center_i = indexes[i]
-            right_i = round(info["right_ips"][i])
+        for i in peak_info.prominent_peaks_i:
+            left_i = round(peak_info.info["left_ips"][i])
+            center_i = peak_info.peaks[i]
+            right_i = round(peak_info.info["right_ips"][i])
 
-            peak = tuple(self.measured_espe_x[[left_i, center_i, right_i]])
+            peak = tuple(x[[left_i, center_i, right_i]])
             peaks_mev.append(peak)
-        self.measured_peaks_mev = peaks_mev
 
+        return peaks_mev
+
+    def _convert_peaks_to_nm(self, mev_peaks: List[Tuple[float]]) -> List[Tuple[float]]:
+        """Convert peak x values from MeV to nm.
+
+        If peaks would exceed limits, they are corrected.
+
+        Args:
+            mev_peaks: peaks to convert (in MeV)
+
+        Returns:
+            Peaks converted to nm (points: left, center, right)
+        """
         peaks_nm = []
         # Reverse nm peaks to keep them in ascending order
-        for peak in peaks_mev[::-1]:
-            converted = tuple(
-                reversed([self._convert_mev_to_nm(mev) for mev in peak]))
+        for peak in mev_peaks[::-1]:
+            converted = tuple(reversed([self._convert_mev_to_nm(mev) for mev in peak]))
 
             left_correction = self.lower_limits[0] - converted[0]
             exceeds_left = left_correction > 0.0
@@ -257,7 +285,20 @@ class LinearOptimization(opt.BaseOptimizer):
 
             peaks_nm.append(corrected if corrected else converted)
 
-        self.measured_peaks_nm = peaks_nm
+        return peaks_nm
+
+    def _find_measured_peaks(self) -> None:
+        """Determine measured energy spectrum's peaks,
+        both in MeV (real) and nm (interpolated).
+        """
+        self.measured_peak_info = self._get_peak_info(
+            self.measured_espe_y, self.peak_count)
+
+        self.measured_peaks_mev = self._get_mev_peaks(
+            self.measured_espe_x, self.measured_peak_info)
+
+        self.measured_peaks_nm = self._convert_peaks_to_nm(
+            self.measured_peaks_mev)
 
     def _prepare_optimization(self, initial_solution=None,
                               cancellation_token=None,
@@ -284,10 +325,10 @@ class LinearOptimization(opt.BaseOptimizer):
         # the x coordinates -> they have matching values for ease of distance
         # counting
         self.modify_measurement()
-        self._split_measured_espe()
+        self.measured_espe_x, self.measured_espe_y = split_espe(self.measured_espe)
 
         self._generate_mev_to_nm_function()
-        self._find_measured_peaks(self.peak_count)
+        self._find_measured_peaks()
 
         if initial_solution is None:
             initial_solution = self.initialize_solution()
@@ -491,15 +532,26 @@ class LinearOptimization(opt.BaseOptimizer):
         # TODO: namedtuple
         return x_bounds, y_bounds
 
-    def _fit_simulation(self, bounds):
-        # TODO: Compare to measured and move points in pairs accordingly
+    def _fit_simulation(self, solution, bounds):
+        # Compare current solution peaks to measured, adjust
+        espe = self._run_solution(solution)
+        espe_x, espe_y = split_espe(espe)
+
+        peak_info = self._get_peak_info(espe_y, self.peak_count)
+        peaks_mev = self._get_mev_peaks(espe_x, peak_info)
+
+        # TODO: Compare to measured
+
+        # TODO
+
+
         raise NotImplementedError
 
     def _optimize(self):
-        points = copy.deepcopy(self.solution.points)
+        solution = copy.deepcopy(self.solution)
         bounds = self._get_bounds()
 
-        optimized = self._fit_simulation(bounds)
+        optimized = self._fit_simulation(solution, bounds)
 
         return optimized
 
@@ -526,7 +578,7 @@ class LinearOptimization(opt.BaseOptimizer):
         self.on_next(self._get_message(OptimizationState.RUNNING))
 
         result = self.solution  # TODO: Replace with _optimize
-        # result = self._optimize() # TODO
+        # result = self._optimize()
 
         if self.optimization_type is OptimizationType.RECOIL:
             first_sol = self.solution
@@ -664,6 +716,16 @@ class Valley:
         raise NotImplementedError
 
 
+# TODO: Generalize:
+
+class GeneralSolution:
+    def __init__(self, points: List[Point], peak_first: bool):
+        self.points = points
+        self.peak_first = peak_first  # or starts_at_surface
+        self.x_pairs = ...
+        self.y_pairs = ...
+
+
 class BaseSolution:
     """Base class for solutions."""
     def __init__(self, points: List[Point], peaks: List[Peak],
@@ -759,3 +821,11 @@ def get_solution6(
     solution = SolutionBox6(points)
 
     return solution
+
+
+def split_espe(espe: Espe) -> Tuple[np.ndarray, np.ndarray]:
+    """Unpack Espe to x and y NumPy arrays."""
+    x, y = zip(*espe)
+    x = np.array(x)
+    y = np.array(y)
+    return x, y
