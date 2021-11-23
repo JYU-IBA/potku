@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 Created on 12.4.2018
 Updated on 17.12.2018
@@ -30,6 +29,8 @@ __version__ = "2.0"
 import copy
 import math
 import platform
+from pathlib import Path
+from typing import List, Set
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -37,21 +38,18 @@ from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 
 import dialogs.file_dialogs as fdialogs
+import modules.general_functions as gf
 import widgets.binding as bnd
 import widgets.gui_utils as gutils
 import widgets.input_validation as iv
-import modules.general_functions as gf
-
-from pathlib import Path
-
 from dialogs.measurement.calibration import CalibrationDialog
 from dialogs.simulation.foil import FoilDialog
 from modules.detector import Detector
 from modules.enums import DetectorType
 from modules.foil import CircularFoil
 from modules.request import Request
-from widgets.foil import FoilWidget
 from widgets.eff_plot import EfficiencyDialog
+from widgets.foil import FoilWidget
 from widgets.scientific_spinbox import ScientificSpinBox
 
 
@@ -491,25 +489,42 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         eff_folder = gutils.get_potku_setting(
             DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
             self.request.default_folder)
-
-        new_eff_files = fdialogs.open_files_dialog(
+        selected_eff_files = fdialogs.open_files_dialog(
             self, eff_folder, "Select efficiency files",
             "Efficiency File (*.eff)")
-        if not new_eff_files:
+        if not selected_eff_files:
             return
-
-        used_eff_files = {
+        current_eff_files = {
             Detector.get_used_efficiency_file_name(f)
             for f in self.efficiency_files
         }
 
-        for eff_file in new_eff_files:
-            used_eff_file = Detector.get_used_efficiency_file_name(eff_file)
+        # Check which cut files are used in the current request and add them
+        # into the list
+        cuts_list = []
+        for key, value in \
+                self.request.samples.measurements.measurements.items():
+            c, _ = value.get_cut_files()
+            cuts_list.append(c)
 
-            if used_eff_file not in used_eff_files:
+        for eff_file_path in selected_eff_files:
+            current_eff_file = Detector.get_used_efficiency_file_name(
+                eff_file_path)
+            if current_eff_file not in current_eff_files:
                 try:
-                    self.obj.add_efficiency_file(eff_file)
-                    used_eff_files.add(used_eff_file)
+                    user_cancels = \
+                        self.__check_if_selected_elements_have_cut_files(
+                            cuts_list, current_eff_file, current_eff_files,
+                            eff_file_path)
+                    if user_cancels:  # Move to the next element
+                        break
+                    else:
+                        self.efficiency_files = self.obj.get_efficiency_files()
+                        # Store the folder where an eff-file was previously
+                        # fetched
+                        gutils.set_potku_setting(
+                            DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
+                            str(eff_file_path.parent))
                 except OSError as e:
                     QtWidgets.QMessageBox.critical(
                         self, "Error",
@@ -519,14 +534,75 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
                 QtWidgets.QMessageBox.critical(
                     self, "Error",
                     f"There already is an efficiency file for element "
-                    f"{used_eff_file.stem}.\n",
+                    f"{current_eff_file.stem}.\n",
                     QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
-        self.efficiency_files = self.obj.get_efficiency_files()
-        # Store the folder where we previously fetched an eff-file
-        gutils.set_potku_setting(
-            DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
-            str(eff_file.parent))
+    def __check_if_selected_elements_have_cut_files(self, cuts_list: List,
+                                                    current_eff_file: Path,
+                                                    current_eff_files: Set,
+                                                    eff_file_path: Path):
+        """
+        Check if the selected element on the GUI has cut files.
+
+        Args:
+            cuts_list: List of cut files
+            current_eff_file: Selected efficiency file
+            current_eff_files: Already selected efficiency files
+            eff_file_path: Selected efficiency file's path
+
+        Return:
+            False if there are not cut files and the user confirms the
+            selection.
+            True if if there are not cut files and the user cancels the
+            selection.
+        """
+
+        eff_files_elements = []
+        for cut in cuts_list:
+            for c in cut:
+                cut_element_str = c.name.split(".")[1]
+                if cut_element_str in current_eff_file.stem:
+                    eff_files_elements.append(cut_element_str)
+        if len(eff_files_elements) == 0:
+            reply = QtWidgets.QMessageBox.warning(
+                self, "Warning",
+                f"Selected element {eff_file_path.stem} "
+                f"does not have a cut file.\n"
+                f"Do you want to continue?",
+                QtWidgets.QMessageBox.Ok,
+                QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.Cancel:
+                return True
+            elif reply == QtWidgets.QMessageBox.Ok:
+                self.add_to_current_eff_files(eff_file_path,
+                                              current_eff_file,
+                                              current_eff_files)
+        self.add_to_current_eff_files(eff_file_path,
+                                      current_eff_file,
+                                      current_eff_files)
+
+    def add_to_current_eff_files(self, eff_file_path: Path,
+                                 current_eff_file: Path,
+                                 current_eff_files: Set):
+        """
+        Add the current efficiency file to the current efficiency files list.
+
+        Args:
+            eff_file_path: Selected efficiency file's path
+            current_eff_file: Selected efficiency file
+            current_eff_files: Already selected efficiency files
+
+        Return:
+            False because:
+                1) there are not cut files and the user confirms the
+                selection or
+                2) it is a basic efficiency file addition with the element
+                that has cut files
+        """
+
+        self.obj.add_efficiency_file(eff_file_path)
+        current_eff_files.add(current_eff_file)
+        return False
 
     def __remove_efficiency(self):
         """Removes efficiency files from detector's efficiency directory and
@@ -550,21 +626,20 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
 
             self.efficiency_files = self.obj.get_efficiency_files()
             self._enable_remove_btn()
-            
+
     def __plot_efficiency(self):
         """
         Open efficiency plot widget
         """
         self.eff_folder = gutils.get_potku_setting(
             DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
-            self.request.default_folder) 
+            self.request.default_folder)
         self.efficiency_files = self.obj.get_efficiency_files()
-        self.efficiency_files_list = []    
-        i=0
+        self.efficiency_files_list = []
         for file in self.efficiency_files:
-            file_name = gf.get_root_dir() / self.eff_folder / str(self.efficiency_files[i])
+            file_name = gf.get_root_dir() / self.eff_folder / str(
+                self.efficiency_files[self.efficiency_files.index(file)])
             self.efficiency_files_list.append(file_name)
-            i+=1
         EfficiencyDialog(self.efficiency_files_list, self)
 
     def __open_calibration_dialog(self):
