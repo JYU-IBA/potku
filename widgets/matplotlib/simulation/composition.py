@@ -27,6 +27,8 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
+from typing import List
+
 import matplotlib
 import os
 import widgets
@@ -155,6 +157,9 @@ class _CompositionWidget(MatplotlibWidget):
         self.__layer_selector.set_visible(False)
         self.__layer_selector = None
         self.__selected_layer = None
+
+        self.__update_reference_density(self.layers)
+
         # Update layer start depths
         self.update_start_depths()
 
@@ -222,6 +227,31 @@ class _CompositionWidget(MatplotlibWidget):
         self.axes.add_patch(layer_patch)
 
         self.canvas.draw_idle()
+
+    def __update_reference_density(self, layers: List):
+
+        reference_density = 0.0
+        layer_reference_density = 0.0
+        reference_density_limit = 10.0
+        masses = []
+        g_mass = 0.0
+
+        for layer in layers:
+            if reference_density_limit - layer.start_depth > 0:
+                for element in layer.elements:
+                    mass = element.get_mass()
+                    masses.append(mass * element.amount)
+                    for mass in masses:
+                        g_mass += (gf.convert_amu_to_kg(mass) * 1000)
+                    layer_density = layer.density
+                    layer_reference_density += (layer_density / g_mass)
+                reference_density = layer_reference_density * (
+                        layer.thickness / reference_density_limit)
+
+        self.parent.referenceDensityLabel.setText(
+            f"Reference density: "
+            f"{reference_density:1.2e} "
+            f"at./cm\xb3")
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -301,7 +331,6 @@ class _CompositionWidget(MatplotlibWidget):
         self.__icon_manager.set_icon(action_delete_layer, "del.png")
         action_delete_layer.setEnabled(False)
         self.mpl_toolbar.addAction(action_delete_layer)
-
         self.__layer_actions.append(action_delete_layer)
 
     def __add_layer(self, position=-1):
@@ -353,6 +382,8 @@ class _CompositionWidget(MatplotlibWidget):
             self.update_start_depths()
             self.__selected_layer = dialog.layer
             self.__update_figure(zoom_to_bottom=True)
+
+        self.__update_reference_density(self.layers)
 
         if type(self.parent) is widgets.simulation.target.TargetWidget:
             self.parent.recoilRadioButton.setEnabled(True)
@@ -463,6 +494,7 @@ class TargetCompositionWidget(_CompositionWidget):
     layers to the user. Using this widget user can also modify the layers of the
     target.
     """
+
     def __init__(self, parent, target, icon_manager, simulation):
         """Initializes a TargetCompositionWidget object.
 
