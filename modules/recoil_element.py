@@ -46,8 +46,8 @@ from .base import MCERDParameterContainer
 from .element import Element
 from .point import Point
 from .parsing import CSVParser
+from .profile import REFERENCE_DENSITY
 
-from modules.global_settings import GlobalSettings
 
 class RecoilElement(MCERDParameterContainer, Serializable):
     """An element that has a list of points and a widget. The points are kept
@@ -56,7 +56,8 @@ class RecoilElement(MCERDParameterContainer, Serializable):
     def __init__(self, element: Element, points: List[Point], color="red",
                  name="Default", rec_type="rec",
                  description="These are default recoil settings.",
-                 reference_density=None, modification_time=None,
+                 reference_density=REFERENCE_DENSITY,
+                 modification_time=None,
                  channel_width=None):
         """Inits recoil element.
 
@@ -75,12 +76,8 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         self.prefix = element.get_prefix()
         self.description = description
         self.type = rec_type
-        
-        if reference_density is None:
-            self.reference_density = GlobalSettings().get_default_reference_density()
-        else:
-            self.reference_density = reference_density
-            
+
+        self.reference_density = reference_density
         self.channel_width = channel_width
 
         # TODO might want to use some sort of sorted collection instead of a

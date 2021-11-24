@@ -34,6 +34,7 @@ import modules.general_functions as gf
 
 from modules.get_espe import GetEspe
 from pathlib import Path
+
 from tests.utils import PlatformSwitcher
 
 resource_dir = utils.get_resource_dir()

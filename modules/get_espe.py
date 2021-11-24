@@ -37,9 +37,9 @@ from .base import Espe
 from .beam import Beam
 from .detector import Detector
 from .parsing import CSVParser
+from .profile import REFERENCE_DENSITY
 from .target import Target
 
-from modules.global_settings import GlobalSettings
 
 class GetEspe:
     """Class for handling calling the external program get_espe to generate
@@ -52,7 +52,7 @@ class GetEspe:
     def __init__(self, beam_ion: str, energy: float, theta: float,
                  tangle: float, toflen: float, solid: float,
                  recoil_file: Path, erd_file: Path,
-                 reference_density: Optional[float] = None,
+                 reference_density: float = REFERENCE_DENSITY,
                  ch: float = 0.025, fluence: float = 5.00e+11,
                  timeres: float = 250.0):
         """Initializes the GetEspe class.
@@ -79,12 +79,7 @@ class GetEspe:
         self.channel_width = ch
         self.fluence = fluence
         self.timeres = timeres
-        
-        if reference_density is None:
-            self.density = GlobalSettings().get_default_reference_density()
-        else:
-            self.density = reference_density
-        
+        self.density = reference_density
         self.solid = solid
         self.recoil_file = recoil_file
         self.erd_file = erd_file

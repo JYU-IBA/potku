@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 Juhani Sundell, 2021 Joonas Koponen and Tuomas Pitkänen
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -226,26 +226,6 @@ class DepthProfileUnit(str, Enum):
     """
     ATOMS_PER_SQUARE_CM = "1e15 at./cm²"
     NM = "nm"
-
-    def __str__(self):
-        return self.value
-
-
-@enum.unique
-class SumSpectrumType(str, Enum):
-    """Type of sum spectrum."""
-    MEASURED = "measured"
-    SIMULATED = "simulated"
-
-    def __str__(self):
-        return self.value
-
-
-@enum.unique
-class SpectrumTab(str, Enum):
-    """Type of spectrum."""
-    MEASUREMENT = "measurement"
-    SIMULATION = "simulation"
 
     def __str__(self):
         return self.value

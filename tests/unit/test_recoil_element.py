@@ -52,7 +52,7 @@ class TestRecoilElement(unittest.TestCase):
             description="foo",
             name="bar",
             rec_type="rec",
-            reference_density=3,
+            reference_density=3.0,
             channel_width=self.ch_width,
             modification_time=self.timestamp
         )
