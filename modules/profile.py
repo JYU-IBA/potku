@@ -34,12 +34,16 @@ from pathlib import Path
 from typing import Set, Optional
 
 from .base import AdjustableSettings, Serializable
-from .enums import DefaultReferenceDensity
 from .ui_log_handlers import Logger
 
 
 # TODO: Create unit tests / copy unit tests from measurement
 # TODO: Give a class name that is not already in use?
+
+REFERENCE_DENSITY = 4.98e22
+PROFILE_REFERENCE_DENSITY = 3.0
+
+
 class Profile(AdjustableSettings, Serializable):
     """Profile class for measurement profile data."""
 
@@ -52,7 +56,7 @@ class Profile(AdjustableSettings, Serializable):
 
     def __init__(self, name="Default", description="",
                  modification_time=None,
-                 reference_density=DefaultReferenceDensity.PROFILE_REFERENCE_DENSITY,
+                 reference_density=PROFILE_REFERENCE_DENSITY,
                  number_of_depth_steps=150, depth_step_for_stopping=10,
                  depth_step_for_output=10, depth_for_concentration_from=200,
                  depth_for_concentration_to=400, channel_width=0.025,

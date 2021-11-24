@@ -31,10 +31,10 @@ import tests.utils as utils
 import time
 
 import modules.general_functions as gf
-from modules.enums import DefaultReferenceDensity
 
 from modules.get_espe import GetEspe
 from pathlib import Path
+
 from tests.utils import PlatformSwitcher
 
 resource_dir = utils.get_resource_dir()
@@ -99,7 +99,7 @@ class TestGetEspeRun(unittest.TestCase):
             "solid": self.detector.calculate_solid(),
             "recoil_file": _RECOIL_FILE,
             "erd_file": _ERD_FILE,
-            "reference_density": DefaultReferenceDensity.REFERENCE_DENSITY,
+            "reference_density": 4.98e22,
             "ch": 0.025,
             "fluence": 5.00e+11,
             "timeres": self.detector.timeres,

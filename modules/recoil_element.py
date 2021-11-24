@@ -44,9 +44,9 @@ from . import math_functions as mf
 from .base import Serializable
 from .base import MCERDParameterContainer
 from .element import Element
-from .enums import DefaultReferenceDensity
 from .point import Point
 from .parsing import CSVParser
+from .profile import REFERENCE_DENSITY
 
 
 class RecoilElement(MCERDParameterContainer, Serializable):
@@ -56,7 +56,7 @@ class RecoilElement(MCERDParameterContainer, Serializable):
     def __init__(self, element: Element, points: List[Point], color="red",
                  name="Default", rec_type="rec",
                  description="These are default recoil settings.",
-                 reference_density=DefaultReferenceDensity.REFERENCE_DENSITY,
+                 reference_density=REFERENCE_DENSITY,
                  modification_time=None,
                  channel_width=None):
         """Inits recoil element.
