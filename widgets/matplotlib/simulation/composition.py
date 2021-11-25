@@ -34,6 +34,8 @@ import os
 import widgets
 
 import dialogs.dialog_functions as df
+import modules.general_functions as gf
+
 
 from widgets.matplotlib import mpl_utils
 from pathlib import Path
