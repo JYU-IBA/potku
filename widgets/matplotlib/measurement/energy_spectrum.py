@@ -528,7 +528,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                     self.plot_energy_files(
                         self.measurement_energy_files_to_draw, x_min)
                     self.plot_measured_sum_spectrum()
-                else:
+                if not self.simulated_sum_spectrum_is_selected and \
+                        not self.measured_sum_spectrum_is_selected:
                     self.plot_energy_files(self.simulation_energy_files_to_draw,
                                            x_min)
                     self.plot_energy_files(
