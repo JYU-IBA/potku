@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, 2021 Joonas Koponen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,14 +25,13 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
-             "Sinikka Siironen \n Juhani Sundell"
+             "Sinikka Siironen \n Juhani Sundell \n Joonas Koponen"
 __version__ = "2.0"
 
 import time
 
 import widgets.binding as bnd
 import widgets.input_validation as iv
-import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
 
 from modules.element_simulation import ElementSimulation
@@ -40,7 +39,6 @@ from modules.recoil_element import RecoilElement
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
-from PyQt5.QtGui import QColor
 
 from widgets.scientific_spinbox import ScientificSpinBox
 
@@ -55,25 +53,17 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
     description = bnd.bind("descriptionLineEdit")
     reference_density = bnd.bind("scientific_spinbox")
 
-    @property
-    def color(self):
-        return self.tmp_color.name()
-
-    def __init__(self, recoil_element: RecoilElement, colormap,
+    def __init__(self, recoil_element: RecoilElement,
                  element_simulation: ElementSimulation):
         """Inits a recoil info dialog.
 
         Args:
             recoil_element: A RecoilElement object.
-            colormap: Colormap for elements.
             element_simulation: Element simulation that has the recoil element.
         """
         super().__init__()
         self.recoil_element = recoil_element
         self.element_simulation = element_simulation
-
-        self.tmp_color = QColor(self.recoil_element.color)
-        self.colormap = colormap
 
         value = self.recoil_element.reference_density
         self.scientific_spinbox = ScientificSpinBox(
@@ -83,7 +73,6 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
 
         self.okPushButton.clicked.connect(self.__accept_settings)
         self.cancelPushButton.clicked.connect(self.close)
-        self.colorPushButton.clicked.connect(self.__change_color)
 
         self.fields_are_valid = True
         iv.set_input_field_red(self.nameLineEdit)
@@ -109,8 +98,6 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
                 f"{self.recoil_element.element.get_prefix()}"
 
         self.infoGroupBox.setTitle(title)
-
-        self.__set_color_button_color(self.recoil_element.element.symbol)
 
         self.exec_()
 
@@ -173,36 +160,6 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
 
         self.isOk = True
         self.close()
-
-    def __change_color(self):
-        """
-        Change the color of the recoil element.
-        """
-        dialog = QtWidgets.QColorDialog(self)
-        color = dialog.getColor(self.tmp_color)
-        if color.isValid():
-            self.tmp_color = color
-            self.__change_color_button_color(self.recoil_element.element.symbol)
-
-    def __change_color_button_color(self, element: str):
-        """
-        Change color button's color.
-
-        Args:
-            element: String representing element name.
-        """
-        df.set_btn_color(
-            self.colorPushButton, self.tmp_color, self.colormap, element)
-
-    def __set_color_button_color(self, element):
-        """Set default color of element to color button.
-
-        Args:
-            element: String representing element.
-        """
-        self.colorPushButton.setEnabled(True)
-        self.tmp_color = QColor(self.recoil_element.color)
-        self.__change_color_button_color(element)
 
     def __validate(self):
         """

@@ -8,7 +8,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, 2021 Joonas Koponen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,13 +25,14 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
-             "Sinikka Siironen \n Juhani Sundell"
+             "Sinikka Siironen \n Juhani Sundell \n Joonas Koponen"
 __version__ = "2.0"
 
 import matplotlib
 
 import modules.general_functions as gf
 import dialogs.dialog_functions as df
+from dialogs.simulation.recoil_change_color import RecoilChangeColor
 
 from widgets.matplotlib import mpl_utils
 from pathlib import Path
@@ -800,8 +801,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """Open recoil element info.
         """
         dialog = RecoilInfoDialog(
-            self.current_recoil_element, self.colormap,
-            self.current_element_simulation)
+            self.current_recoil_element, self.current_element_simulation)
         if dialog.isOk:
             new_values = dialog.get_properties()
             try:
@@ -821,7 +821,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                         self.current_element_simulation,
                         self.current_recoil_element)
                 self.update_recoil_element_info_labels()
-                self.update_colors()
             except KeyError:
                 error_box = QtWidgets.QMessageBox()
                 error_box.setIcon(QtWidgets.QMessageBox.Warning)
@@ -830,6 +829,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     "All recoil element information could not be saved.")
                 error_box.setWindowTitle("Error")
                 error_box.exec()
+
+    def change_element_color(self):
+        dialog = RecoilChangeColor(
+            self.current_recoil_element, self.colormap,
+            self.current_element_simulation)
+        if dialog.isOk:
+            self.update_colors()
 
     def save_mcsimu_rec_profile(self, directory: Path, progress=None):
         """Save information to .mcsimu and .profile files.
@@ -2480,7 +2486,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.canvas.draw_idle()
 
         return area
-
 
     def on_rectangle_select(self, eclick, erelease):
         """Select multiple points.

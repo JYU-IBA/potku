@@ -8,7 +8,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2021 Joonas Koponen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Joonas Koponen"
 __version__ = "2.0"
 
 import copy
@@ -48,6 +48,8 @@ from PyQt5 import QtWidgets
 
 from widgets.simulation.circle import Circle
 from widgets.simulation.recoil_element import RecoilElementWidget
+
+BUTTON_MAX_WIDTH = 25
 
 
 class ElementWidget(QtWidgets.QWidget):
@@ -87,7 +89,12 @@ class ElementWidget(QtWidgets.QWidget):
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setContentsMargins(0, 0, 0, 0)
 
+        buttons = []
+        instance_buttons = []
+
         self.radio_button = QtWidgets.QRadioButton()
+
+        instance_buttons.append(self.radio_button)
 
         if element.isotope:
             isotope_superscript = general.digits_to_superscript(
@@ -100,46 +107,49 @@ class ElementWidget(QtWidgets.QWidget):
 
         # Circle for showing the recoil color
         self.circle = Circle(color)
+        instance_buttons.append(self.circle)
 
+        change_element_color = QtWidgets.QPushButton()
         draw_spectrum_button = QtWidgets.QPushButton()
-        draw_spectrum_button.setIcon(icon_manager.get_icon(
-            "energy_spectrum_icon.svg"))
-        draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                           QtWidgets.QSizePolicy.Fixed)
-
-        draw_spectrum_button.clicked.connect(lambda: self.plot_spectrum(
-            spectra_changed=spectra_changed))
-        draw_spectrum_button.setToolTip("Draw energy spectra")
-
         settings_button = QtWidgets.QPushButton()
-        settings_button.setIcon(icon_manager.get_icon("gear.svg"))
-        settings_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                      QtWidgets.QSizePolicy.Fixed)
-        settings_button.clicked.connect(
-            lambda: self.open_element_simulation_settings(
-                settings_updated=settings_updated))
-        settings_button.setToolTip("Edit element simulation settings")
-
         add_recoil_button = QtWidgets.QPushButton()
-        add_recoil_button.setIcon(icon_manager.get_icon("edit_add.svg"))
-        add_recoil_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                        QtWidgets.QSizePolicy.Fixed)
-        add_recoil_button.clicked.connect(lambda: self.add_new_recoil(
-            spectra_changed=spectra_changed,
-            recoil_name_changed=recoil_name_changed))
-        add_recoil_button.setToolTip("Add a new recoil to element")
+
+        buttons.append(change_element_color)
+        buttons.append(draw_spectrum_button)
+        buttons.append(settings_button)
+        buttons.append(add_recoil_button)
+
+        icons = ["measuring_unit_settings.svg", "energy_spectrum_icon.svg",
+                 "gear.svg", "edit_add.svg"]
+        tool_tips = ["Change the element color", "Draw energy spectra",
+                     "Edit element simulation settings",
+                     "Add a new recoil to element"]
+        method_calls = [parent.change_element_color,
+                        lambda: self.plot_spectrum(
+                            spectra_changed=spectra_changed),
+                        lambda: self.open_element_simulation_settings(
+                            settings_updated=settings_updated),
+                        lambda: self.add_new_recoil(
+                            spectra_changed=spectra_changed,
+                            recoil_name_changed=recoil_name_changed)
+                        ]
+        i = 0
+        while i < len(buttons):
+            buttons[i].setIcon(icon_manager.get_icon(icons[i]))
+            buttons[i].setSizePolicy(
+                QtWidgets.QSizePolicy.Fixed,
+                QtWidgets.QSizePolicy.Fixed)
+            buttons[i].clicked.connect(method_calls[i])
+            buttons[i].setToolTip(tool_tips[i])
+            i += 1
 
         if platform.system() == "Darwin":
             horizontal_layout.setContentsMargins(0, 0, 12, 0)
-            draw_spectrum_button.setMaximumWidth(30)
-            settings_button.setMaximumWidth(30)
-            add_recoil_button.setMaximumWidth(30)
 
-        horizontal_layout.addWidget(self.radio_button)
-        horizontal_layout.addWidget(self.circle)
-        horizontal_layout.addWidget(draw_spectrum_button)
-        horizontal_layout.addWidget(settings_button)
-        horizontal_layout.addWidget(add_recoil_button)
+        all_buttons = [*instance_buttons, *buttons]
+        for button in all_buttons:
+            button.setMaximumWidth(BUTTON_MAX_WIDTH)
+            horizontal_layout.addWidget(button)
 
         self.setLayout(horizontal_layout)
 
@@ -214,10 +224,8 @@ class ElementWidget(QtWidgets.QWidget):
                 bin_width=dialog.bin_width,
                 spectrum_type=EnergySpectrumWidget.SIMULATION,
                 spectra_changed=spectra_changed,
-                simulated_sum_spectrum_is_selected=
-                dialog.simulated_sum_spectrum_is_selected,
-                measured_sum_spectrum_is_selected=
-                dialog.measured_sum_spectrum_is_selected)
+                simulated_sum_spectrum_is_selected=dialog.simulated_sum_spectrum_is_selected,
+                measured_sum_spectrum_is_selected=dialog.measured_sum_spectrum_is_selected)
 
             # Check all energy spectrum widgets, if one has the same
             # elements, delete it
