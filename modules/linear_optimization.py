@@ -55,9 +55,8 @@ PeakInfo = namedtuple("PeakInfo", ("peaks", "info", "prominent_peaks_i"))
 
 class LinearOptimization(opt.BaseOptimizer):
     """Class that handles linear optimization for Optimize Recoils or
-    Fluence."""
-    pass
-
+    Fluence.
+    """
     def __init__(self, element_simulation: ElementSimulation = None,
                  sol_size=5, upper_limits=None, lower_limits=None,
                  optimization_type=OptimizationType.RECOIL, recoil_type="box",
@@ -212,7 +211,7 @@ class LinearOptimization(opt.BaseOptimizer):
         if peak_width is None:
             peak_width = round(y.shape[0] / 30)
 
-        indexes, info = signal.find_peaks(y, width=peak_width)
+        indexes, info = signal.find_peaks(y, height=0.0, width=peak_width)
 
         most_prominent_indexes = (-info["prominences"]).argsort()[:peak_count]
         most_prominent_indexes.sort()  # Keep peaks in their original order
@@ -532,20 +531,57 @@ class LinearOptimization(opt.BaseOptimizer):
         # TODO: namedtuple
         return x_bounds, y_bounds
 
-    def _fit_simulation(self, solution, bounds):
+    def _fit_simulation(self, solution: "BaseSolution", bounds):
         # Compare current solution peaks to measured, adjust
         espe = self._run_solution(solution)
         espe_x, espe_y = split_espe(espe)
 
-        peak_info = self._get_peak_info(espe_y, self.peak_count)
-        peaks_mev = self._get_mev_peaks(espe_x, peak_info)
+        # TODO: create a method for resizing espes. This is similar to
+        #   BaseOptimizer.modify_measurement() but not the same.
+        simu_longer_left = espe_x[0] <= self.measured_espe_x[0]
+        simu_longer_right = espe_x[-1] >= self.measured_espe_x[-1]
 
-        # TODO: Compare to measured
+        if simu_longer_left:
+            simu_left_i = find_closest_index(self.measured_espe_x[0], espe_x)
+            mesu_left_i = 0
+        else:
+            simu_left_i = 0
+            mesu_left_i = find_closest_index(espe_x[0], self.measured_espe_x)
 
-        # TODO
+        if simu_longer_right:
+            simu_right_i = find_closest_index(self.measured_espe_x[-1], espe_x) + 1
+            mesu_right_i = self.measured_espe_x.shape[0]
+        else:
+            simu_right_i = espe_x.shape[0]
+            mesu_right_i = find_closest_index(espe_x[-1], self.measured_espe_x) + 1
 
+        simu_len = simu_right_i - simu_left_i
+        mesu_len = mesu_right_i - mesu_left_i
 
-        raise NotImplementedError
+        if simu_len != mesu_len:
+            pass  # TODO
+
+        espe_cut_x = espe_x[simu_left_i:simu_right_i]
+        espe_cut_y = espe_y[simu_left_i:simu_right_i]
+
+        peak_info = self._get_peak_info(espe_cut_y, self.peak_count)
+        peaks_mev = self._get_mev_peaks(espe_cut_x, peak_info)  # Unused
+
+        height_corrections = ((self.measured_peak_info.info["peak_heights"]
+                              - peak_info.info["peak_heights"])
+                             / peak_info.info["peak_heights"] + 1)
+
+        for i, peak in enumerate(solution.peaks[::-1]):
+            # TODO: Check max height
+            peak.scale(height_corrections[i])
+
+        # TODO: Check widths
+
+        # TODO: Check valleys
+
+        # TODO: Iterate
+
+        return solution
 
     def _optimize(self):
         solution = copy.deepcopy(self.solution)
@@ -555,7 +591,7 @@ class LinearOptimization(opt.BaseOptimizer):
 
         return optimized
 
-    # TODO: Are starting_solutions and ion_division needed?
+    # TODO: Change starting_solutions to starting_solution
     def start_optimization(self, starting_solutions=None,
                            cancellation_token=None,
                            ion_division=IonDivision.BOTH):
@@ -577,8 +613,8 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.on_next(self._get_message(OptimizationState.RUNNING))
 
-        result = self.solution  # TODO: Replace with _optimize
-        # result = self._optimize()
+        # result = self.solution  # TODO: Replace with _optimize
+        result = self._optimize()
 
         if self.optimization_type is OptimizationType.RECOIL:
             first_sol = self.solution
@@ -678,8 +714,9 @@ class Peak:
         amount = y - self.center.get_y()
         self.move_y(amount)
 
-    def scale(self) -> None:
-        raise NotImplementedError
+    def scale(self, factor: float) -> None:
+        self.lh.set_y(self.lh.get_y() * factor)
+        self.rh.set_y(self.rh.get_y() * factor)
 
 
 class Valley:
@@ -829,3 +866,10 @@ def split_espe(espe: Espe) -> Tuple[np.ndarray, np.ndarray]:
     x = np.array(x)
     y = np.array(y)
     return x, y
+
+
+def find_closest_index(value: float, array: np.ndarray) -> int:
+    """Find the index of a value that is the closest to the given value in the
+    array.
+    """
+    return np.abs(value - array).argmin()
