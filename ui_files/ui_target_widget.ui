@@ -119,22 +119,9 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QLabel" name="targetNameLabel">
+         <widget class="QLabel" name="targetReferenceDensityLabel">
           <property name="text">
-           <string>Name:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="editTargetInfoButton">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string/>
+           <string>Reference density:</string>
           </property>
          </widget>
         </item>

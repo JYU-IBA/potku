@@ -503,7 +503,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.choose_element)
 
         self.parent.editPushButton.clicked.connect(
-            self.open_reference_density_dialog)
+            self.open_recoil_element_info)
 
         self.edit_lock_push_button = self.parent.editLockPushButton
         self.edit_lock_push_button.clicked.connect(self.unlock_or_lock_edit)
@@ -797,7 +797,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         )
         self.tab.add_widget(percentage_widget)
 
-    def open_reference_density_dialog(self):
+    def open_recoil_element_info(self):
         """Open recoil element info.
         """
         dialog = ReferenceDensityDialog(
@@ -1211,10 +1211,17 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         self.parent.nameLabel.setText(
             f"Name: {self.current_recoil_element.name}")
+
+        density = self.current_recoil_element.reference_density
+        updated_reference_density = f" Reference density:" \
+                                    f" {density:1.2e} at./cm\xb3 "
+
+        # The target tab
+        self.parent.targetReferenceDensityLabel.setText(
+            updated_reference_density)
+        # The recoil atom distribution tab
         self.parent.referenceDensityLabel.setText(
-            f"Reference density: "
-            f"{self.current_recoil_element.reference_density:1.2e} at./cm\xb3"
-        )
+            updated_reference_density)
 
     def recoil_element_info_on_switch(self):
         """Show recoil element info on switch.

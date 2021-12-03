@@ -89,15 +89,16 @@ class TargetWidget(QtWidgets.QWidget):
         self.target = target
         self.statusbar = statusbar
 
+        self.recoil_distribution_widget = RecoilAtomDistributionWidget(
+            self, self.simulation, self.target, tab, icon_manager, settings,
+            statusbar=self.statusbar, **kwargs)
+
         self.target_widget = TargetCompositionWidget(
             self, self.target, icon_manager, self.simulation)
 
         if progress is not None:
             progress.report(50)
 
-        self.recoil_distribution_widget = RecoilAtomDistributionWidget(
-            self, self.simulation, self.target, tab, icon_manager, settings,
-            statusbar=self.statusbar, **kwargs)
         self.results_accepted.connect(
             self.recoil_distribution_widget.update_element_simulation.emit)
         self.spectra_changed = self.recoil_distribution_widget. \
@@ -111,11 +112,6 @@ class TargetWidget(QtWidgets.QWidget):
         self.recoilListWidget.hide()
         self.editLockPushButton.hide()
         self.elementInfoWidget.hide()
-
-        icon_manager.set_icon(self.editTargetInfoButton, "edit.svg")
-        self.editTargetInfoButton.setIconSize(QtCore.QSize(14, 14))
-        self.editTargetInfoButton.setToolTip(
-            "Edit name and description of the target")
 
         if platform.system() == "Darwin":
             self.percentButton.setText("Calculate\npercents")

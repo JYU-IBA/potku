@@ -480,9 +480,11 @@ class TargetCompositionWidget(_CompositionWidget):
         self.simulation = simulation
         self.canvas.manager.set_title("Target composition")
 
-        self.parent.targetNameLabel.setText(f"Name: {target.name}")
+        self.parent.targetReferenceDensityLabel.setText(
+            f"Reference density: "
+            f"{self.parent.recoil_distribution_widget.current_recoil_element.reference_density:1.2e} at./cm\xb3")
+        # self.parent.targetNameLabel.setText(f"Name: {target.name}")
 
-        self.parent.editTargetInfoButton.clicked.connect(self.edit_target_info)
         self.layers_changed.connect(self._save_target)
 
     def edit_target_info(self):
@@ -497,7 +499,10 @@ class TargetCompositionWidget(_CompositionWidget):
             os.remove(old_target)
             self.target.name = dialog.name
             self.target.description = dialog.description
-            self.parent.targetNameLabel.setText(self.target.name)
+            self.parent.targetReferenceDensityLabel.setText(
+                f"Reference density: "
+                f"{self.parent.recoil_distribution_widget.current_recoil_element.reference_density:1.2e} at./cm\xb3")
+            # self.parent.targetNameLabel.setText(self.target.name)
             self._save_target()
 
     def _save_target(self):
