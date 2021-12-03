@@ -28,10 +28,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen \n Juhani Sundell \n Joonas Koponen"
 __version__ = "2.0"
 
-import time
-
 import widgets.binding as bnd
-import widgets.input_validation as iv
 import widgets.gui_utils as gutils
 
 from modules.element_simulation import ElementSimulation
@@ -43,15 +40,26 @@ from PyQt5 import uic
 from widgets.scientific_spinbox import ScientificSpinBox
 
 
-class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
-                       metaclass=gutils.QtABCMeta):
+class ReferenceDensityDialog(QtWidgets.QDialog,
+                             bnd.PropertyBindingWidget,
+                             metaclass=gutils.QtABCMeta):
     """Dialog for editing the name, description and reference density
     of a recoil element.
     """
     # TODO possibly track name changes
-    name = bnd.bind("nameLineEdit")
-    description = bnd.bind("descriptionLineEdit")
     reference_density = bnd.bind("scientific_spinbox")
+
+    @property
+    def name(self):
+        return self.recoil_element.name
+
+    @property
+    def description(self):
+        return self.recoil_element.description
+
+    @property
+    def color(self):
+        return self.recoil_element.color
 
     def __init__(self, recoil_element: RecoilElement,
                  element_simulation: ElementSimulation):
@@ -69,30 +77,20 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         self.scientific_spinbox = ScientificSpinBox(
             value=value, minimum=0.01, maximum=9.99e23)
 
-        uic.loadUi(gutils.get_ui_dir() / "ui_recoil_info_dialog.ui", self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_reference_density_dialog.ui", self)
 
         self.okPushButton.clicked.connect(self.__accept_settings)
         self.cancelPushButton.clicked.connect(self.close)
 
         self.fields_are_valid = True
-        iv.set_input_field_red(self.nameLineEdit)
-        self.nameLineEdit.textChanged.connect(
-            lambda: iv.check_text(self.nameLineEdit, qwidget=self))
-        self.nameLineEdit.textEdited.connect(self.__validate)
 
-        self.name = recoil_element.name
-        self.description = recoil_element.description
         self.formLayout.insertRow(
             4,
             QtWidgets.QLabel(r"Reference density [at./cm<sup>3</sup>]:"),
             self.scientific_spinbox)
         self.formLayout.removeRow(self.widget)
 
-        self.description = recoil_element.description
         self.isOk = False
-
-        self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
-            self.recoil_element.modification_time)))
 
         title = f"Recoil element: " \
                 f"{self.recoil_element.element.get_prefix()}"
@@ -126,17 +124,6 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
                 QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             return
 
-        if self.name != self.recoil_element.name:
-            # Check that the new name is not already in use
-            if self.name in (r.name for r in    # has_recoil
-                             self.element_simulation.recoil_elements):
-                QtWidgets.QMessageBox.critical(
-                    self, "Warning",
-                    "Name of the recoil element is already in use. Please use "
-                    "a different name",
-                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-                return
-
         # If current recoil is used in a running simulation
         if self.recoil_element is \
                 self.element_simulation.get_main_recoil():
@@ -160,13 +147,3 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
 
         self.isOk = True
         self.close()
-
-    def __validate(self):
-        """
-        Validate the recoil name.
-        """
-        text = self.name
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = iv.validate_text_input(text, regex)
-
-        self.name = valid_text

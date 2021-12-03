@@ -32,7 +32,7 @@ import matplotlib
 
 import modules.general_functions as gf
 import dialogs.dialog_functions as df
-from dialogs.simulation.recoil_change_color import RecoilChangeColor
+from dialogs.simulation.recoil_info_dialog import RecoilInfoDialog
 
 from widgets.matplotlib import mpl_utils
 from pathlib import Path
@@ -44,7 +44,7 @@ from typing import List
 from dialogs.simulation.multiply_area import MultiplyAreaDialog
 from dialogs.simulation.recoil_element_selection import \
     RecoilElementSelectionDialog
-from dialogs.simulation.recoil_info_dialog import RecoilInfoDialog
+from dialogs.simulation.reference_density_dialog import ReferenceDensityDialog
 
 from matplotlib import offsetbox
 from matplotlib.widgets import RectangleSelector
@@ -503,7 +503,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.choose_element)
 
         self.parent.editPushButton.clicked.connect(
-            self.open_recoil_element_info)
+            self.open_reference_density_dialog)
 
         self.edit_lock_push_button = self.parent.editLockPushButton
         self.edit_lock_push_button.clicked.connect(self.unlock_or_lock_edit)
@@ -797,10 +797,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         )
         self.tab.add_widget(percentage_widget)
 
-    def open_recoil_element_info(self):
+    def open_reference_density_dialog(self):
         """Open recoil element info.
         """
-        dialog = RecoilInfoDialog(
+        dialog = ReferenceDensityDialog(
             self.current_recoil_element, self.current_element_simulation)
         if dialog.isOk:
             new_values = dialog.get_properties()
@@ -830,12 +830,39 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 error_box.setWindowTitle("Error")
                 error_box.exec()
 
-    def change_element_color(self):
-        dialog = RecoilChangeColor(
+    def change_recoil_element_info(self):
+        dialog = RecoilInfoDialog(
             self.current_recoil_element, self.colormap,
             self.current_element_simulation)
         if dialog.isOk:
-            self.update_colors()
+            new_values = dialog.get_properties()
+            try:
+                old_recoil_name = self.current_recoil_element.name
+                self.current_element_simulation.update_recoil_element(
+                    self.current_recoil_element,
+                    new_values)
+                # If name has changed
+                if old_recoil_name != self.current_recoil_element.name:
+                    # Delete energy spectra that use recoil
+                    df.delete_recoil_espe(
+                        self.tab,
+                        f"{self.current_recoil_element.prefix}-"
+                        f"{old_recoil_name}")
+
+                    self.recoil_name_changed.emit(
+                        self.current_element_simulation,
+                        self.current_recoil_element)
+                self.update_recoil_element_info_labels()
+                self.update_colors()
+
+            except KeyError:
+                error_box = QtWidgets.QMessageBox()
+                error_box.setIcon(QtWidgets.QMessageBox.Warning)
+                error_box.addButton(QtWidgets.QMessageBox.Ok)
+                error_box.setText(
+                    "All recoil element information could not be saved.")
+                error_box.setWindowTitle("Error")
+                error_box.exec()
 
     def save_mcsimu_rec_profile(self, directory: Path, progress=None):
         """Save information to .mcsimu and .profile files.

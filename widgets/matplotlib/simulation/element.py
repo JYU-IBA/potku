@@ -109,22 +109,24 @@ class ElementWidget(QtWidgets.QWidget):
         self.circle = Circle(color)
         instance_buttons.append(self.circle)
 
-        change_element_color = QtWidgets.QPushButton()
+        change_recoil_element_info = QtWidgets.QPushButton()
         draw_spectrum_button = QtWidgets.QPushButton()
         settings_button = QtWidgets.QPushButton()
         add_recoil_button = QtWidgets.QPushButton()
 
-        buttons.append(change_element_color)
+        buttons.append(change_recoil_element_info)
         buttons.append(draw_spectrum_button)
         buttons.append(settings_button)
         buttons.append(add_recoil_button)
 
-        icons = ["measuring_unit_settings.svg", "energy_spectrum_icon.svg",
+        icons = ["measuring_unit_settings.svg",
+                 "energy_spectrum_icon.svg",
                  "gear.svg", "edit_add.svg"]
-        tool_tips = ["Change the element color", "Draw energy spectra",
+        tool_tips = ["Change the color of the element",
+                     "Draw energy spectra",
                      "Edit element simulation settings",
                      "Add a new recoil to element"]
-        method_calls = [parent.change_element_color,
+        method_calls = [parent.change_recoil_element_info,
                         lambda: self.plot_spectrum(
                             spectra_changed=spectra_changed),
                         lambda: self.open_element_simulation_settings(
