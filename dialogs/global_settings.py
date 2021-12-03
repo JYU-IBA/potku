@@ -112,7 +112,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.OKButton.clicked.connect(self.__accept_changes)
         self.cancelButton.clicked.connect(self.close)
         buttons = self.findChild(QtWidgets.QButtonGroup, "elementButtons")
-        buttons.buttonClicked.connect(self.__change_element_color)
+        buttons.buttonClicked.connect(self.__change_recoil_element_info)
 
         self.min_conc_spinbox.setLocale(QtCore.QLocale.c())
 
@@ -269,7 +269,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         if folder:
             self.requestPathLineEdit.setText(folder)
 
-    def __change_element_color(self, button):
+    def __change_recoil_element_info(self, button):
         """Change color of element button.
         
         Args:
