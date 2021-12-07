@@ -50,7 +50,7 @@ from dialogs.measurement.settings import MeasurementSettingsDialog
 
 from modules.element import Element
 from modules.enums import DepthProfileUnit
-from modules.general_functions import check_if_sum_spectrum_is_selected
+from modules.general_functions import check_if_sum_in_directory_name
 from modules.measurement import Measurement
 
 from widgets.base_tab import BaseTab
@@ -338,7 +338,7 @@ class MeasurementTabWidget(BaseTab):
             EnergySpectrumParamsDialog.bin_width = width
             EnergySpectrumParamsDialog.checked_cuts[m_name] = set(use_cuts)
             is_measured_sum_spectrum_selected, _ = \
-                check_if_sum_spectrum_is_selected(directory)
+                check_if_sum_in_directory_name(directory)
             self.energy_spectrum_widget = EnergySpectrumWidget(
                 self, spectrum_type=EnergySpectrumWidget.MEASUREMENT,
                 measured_sum_spectrum_is_selected=is_measured_sum_spectrum_selected,
