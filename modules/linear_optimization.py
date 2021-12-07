@@ -98,6 +98,11 @@ class LinearOptimization(opt.BaseOptimizer):
         self.measured_peak_info: Optional[PeakInfo] = None
         self.measured_peaks_mev: Optional[List[Tuple[float]]] = None
         self.measured_peaks_nm: Optional[List[Tuple[float]]] = None
+        self.measured_valley_intervals: Optional[List[slice]] = None
+        self.measured_valley_heights: Optional[List[Tuple[float]]] = None
+
+        # TODO: Ask user
+        self.is_skewed = False
 
         self.peak_count = None
         if self.rec_type == "box":
@@ -299,6 +304,81 @@ class LinearOptimization(opt.BaseOptimizer):
         self.measured_peaks_nm = self._convert_peaks_to_nm(
             self.measured_peaks_mev)
 
+    def _get_valley_intervals(self, y, peak_info: PeakInfo,
+                              include_start: bool = False,
+                              include_end: bool = False) -> List[slice]:
+        """Get valley intervals (indexes) between peaks and/or start and end.
+
+        Args:
+            y: y coordinates
+            peak_info: peak information
+            include_start:
+            include_end:
+
+        Returns:
+            Valley indexes as slices
+        """
+        left_ips = np.rint(peak_info.info["left_ips"]).astype(np.int64)
+        right_ips = np.rint(peak_info.info["right_ips"]).astype(np.int64)
+
+        intervals = []
+
+        if include_start:
+            lower = 0
+            upper = left_ips[0]
+            intervals.append(slice(lower, upper))
+
+        for i in range(len(left_ips) - 1):
+            lower = right_ips[i]
+            upper = left_ips[i + 1]
+            intervals.append(slice(lower, upper))
+
+        if include_end:
+            lower = right_ips[-1]
+            upper = int(y.shape[0])
+            intervals.append(slice(lower, upper))
+
+        return intervals
+
+    def _get_valley_heights(self, y: np.ndarray, intervals: List[slice]) -> List[Tuple[float]]:
+        """Get valley heights in intervals.
+
+        Height is based on medians.
+
+        Args:
+            y: y coordinates
+            intervals: valley ranges
+
+        Returns:
+            Valley heights as pairs.
+        """
+        heights = []
+
+        if not self.is_skewed:
+            for interval in intervals:
+                height = float(np.median(y[interval]))
+                heights.append((height, height))
+        else:
+            for interval in intervals:
+                # Ignore outermost pieces because they are likely affected by
+                # peaks
+                pieces = np.array_split(y[interval], 4)[1:3]
+
+                piece_heights = tuple(float(np.median(piece)) for piece in pieces)
+                heights.append(piece_heights)
+
+        return heights
+
+    def _find_measured_valleys(self):
+        # TODO: Get include_start and include_end from solution shape.
+        #   Also get is_skewed.
+        self.measured_valley_intervals = self._get_valley_intervals(
+            self.measured_espe_y, self.measured_peak_info,
+            include_start=True, include_end=False)
+
+        self.measured_valley_heights = self._get_valley_heights(
+            self.measured_espe_y, self.measured_valley_intervals)
+
     def _prepare_optimization(self, initial_solution=None,
                               cancellation_token=None,
                               ion_division=IonDivision.BOTH):
@@ -328,6 +408,7 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self._generate_mev_to_nm_function()
         self._find_measured_peaks()
+        self._find_measured_valleys()
 
         if initial_solution is None:
             initial_solution = self.initialize_solution()
