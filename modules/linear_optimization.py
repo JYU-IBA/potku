@@ -98,6 +98,7 @@ class LinearOptimization(opt.BaseOptimizer):
         self.measured_peak_info: Optional[PeakInfo] = None
         self.measured_peaks_mev: Optional[List[Tuple[float]]] = None
         self.measured_peaks_nm: Optional[List[Tuple[float]]] = None
+        self.measured_max_height: Optional[float] = None
         self.measured_valley_intervals: Optional[List[slice]] = None
         self.measured_valley_heights: Optional[List[Tuple[float]]] = None
 
@@ -304,6 +305,9 @@ class LinearOptimization(opt.BaseOptimizer):
         self.measured_peaks_nm = self._convert_peaks_to_nm(
             self.measured_peaks_mev)
 
+        # Percentile reduces the impact of outliers
+        self.measured_max_height = np.percentile(self.measured_espe_y, 98)
+
     def _get_valley_intervals(self, y, peak_info: PeakInfo,
                               include_start: bool = False,
                               include_end: bool = False) -> List[slice]:
@@ -371,7 +375,6 @@ class LinearOptimization(opt.BaseOptimizer):
 
     def _find_measured_valleys(self):
         # TODO: Get include_start and include_end from solution shape.
-        #   Also get is_skewed.
         self.measured_valley_intervals = self._get_valley_intervals(
             self.measured_espe_y, self.measured_peak_info,
             include_start=True, include_end=False)
@@ -648,6 +651,9 @@ class LinearOptimization(opt.BaseOptimizer):
         peak_info = self._get_peak_info(espe_cut_y, self.peak_count)
         peaks_mev = self._get_mev_peaks(espe_cut_x, peak_info)  # Unused
 
+        # FIXME: doesn't work if there are "false positive" peaks at the start
+        #   or between real peaks
+        # TODO: Use self.measured_max_height?
         height_corrections = ((self.measured_peak_info.info["peak_heights"]
                               - peak_info.info["peak_heights"])
                              / peak_info.info["peak_heights"] + 1)
@@ -656,9 +662,24 @@ class LinearOptimization(opt.BaseOptimizer):
             # TODO: Check max height
             peak.scale(height_corrections[i])
 
-        # TODO: Check widths
+        valley_intervals = self._get_valley_intervals(
+            espe_cut_y, peak_info, include_start=True, include_end=False)
+        valley_heights = self._get_valley_heights(
+            espe_cut_y, valley_intervals)
 
-        # TODO: Check valleys
+        for i, valley in enumerate(solution.valleys[::-1]):
+            differences = np.array(self.measured_valley_heights[i]) - np.array(valley_heights[i])
+            corrections = differences / self.measured_max_height
+            # TODO: Check max height
+            if not self.is_skewed:
+                valley.move_y(corrections[0])
+            else:
+                # Reversed order because of the Mev -> nm difference
+                valley.rl.set_y(valley.rl.get_y() + corrections[0])
+                valley.ll.set_y(valley.ll.get_y() + corrections[-1])
+
+        # TODO: Check widths
+        width_corrections = None
 
         # TODO: Iterate
 
