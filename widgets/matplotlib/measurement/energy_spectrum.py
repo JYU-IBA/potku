@@ -154,8 +154,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.mpl_toolbar.addSeparator()
 
         self.__change_recoil_element_info = QtWidgets.QToolButton(self)
-        self.__change_recoil_element_info.clicked.connect(
-            self.parent.parent.simulation_target.recoil_distribution_widget.change_recoil_element_info)
+        # FIXME: Does not work on the measurement tab
+        # self.__change_recoil_element_info.clicked.connect(
+        #     self.parent.parent.simulation_target.recoil_distribution_widget.change_recoil_element_info)
         self.__change_recoil_element_info.setCheckable(True)
         self.__change_recoil_element_info.setToolTip(
             "Change the color of the element")
