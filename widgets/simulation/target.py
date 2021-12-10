@@ -93,11 +93,11 @@ class TargetWidget(QtWidgets.QWidget):
             self, self.simulation, self.target, tab, icon_manager, settings,
             statusbar=self.statusbar, **kwargs)
 
-        self.target_widget = TargetCompositionWidget(
-            self, self.target, icon_manager, self.simulation)
-
         if progress is not None:
             progress.report(50)
+
+        self.target_widget = TargetCompositionWidget(
+            self, self.target, icon_manager, self.simulation)
 
         self.results_accepted.connect(
             self.recoil_distribution_widget.update_element_simulation.emit)
@@ -126,7 +126,7 @@ class TargetWidget(QtWidgets.QWidget):
             self.recoilRadioButton.setEnabled(False)
 
         self.targetRadioButton.setChecked(True)
-        self.stackedWidget.setCurrentIndex(0)
+        self.stackedWidget.setCurrentIndex(1)
 
         self.saveButton.clicked.connect(self._save_target_and_recoils)
 
@@ -156,7 +156,7 @@ class TargetWidget(QtWidgets.QWidget):
         """
         self.recoil_distribution_widget.original_x_limits = \
             self.recoil_distribution_widget.axes.get_xlim()
-        self.stackedWidget.setCurrentIndex(0)
+        self.stackedWidget.setCurrentIndex(1)
         self.recoilListWidget.hide()
         self.editLockPushButton.hide()
         self.exportElementsButton.show()
@@ -168,7 +168,7 @@ class TargetWidget(QtWidgets.QWidget):
         """
         Switch to recoil atom distribution view.
         """
-        self.stackedWidget.setCurrentIndex(1)
+        self.stackedWidget.setCurrentIndex(0)
         self.recoil_distribution_widget.update_layer_borders()
         self.exportElementsButton.hide()
         self.recoilListWidget.show()
