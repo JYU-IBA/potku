@@ -7,7 +7,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, 2021 Joonas Koponen and Tuomas Pitkänen
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
@@ -20,7 +20,8 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen \n Juhani Sundell"
+             "Sinikka Siironen \n Juhani Sundell \n Joonas Koponen \n Tuomas " \
+             "Pitkänen "
 __version__ = "2.0"
 
 import glob
@@ -41,6 +42,7 @@ from .target import Target
 
 from modules.global_settings import GlobalSettings
 
+
 class GetEspe:
     """Class for handling calling the external program get_espe to generate
     energy spectra coordinates.
@@ -52,7 +54,7 @@ class GetEspe:
     def __init__(self, beam_ion: str, energy: float, theta: float,
                  tangle: float, toflen: float, solid: float,
                  recoil_file: Path, erd_file: Path,
-                 reference_density: Optional[float] = None,
+                 reference_density: float = None,
                  ch: float = 0.025, fluence: float = 5.00e+11,
                  timeres: float = 250.0):
         """Initializes the GetEspe class.
@@ -79,7 +81,7 @@ class GetEspe:
         self.channel_width = ch
         self.fluence = fluence
         self.timeres = timeres
-        
+
         if reference_density is None:
             self.density = GlobalSettings().get_default_reference_density()
         else:

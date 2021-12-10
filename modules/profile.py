@@ -36,6 +36,9 @@ from typing import Set, Optional
 from .base import AdjustableSettings, Serializable
 from .ui_log_handlers import Logger
 
+REFERENCE_DENSITY = 4.98e22
+PROFILE_REFERENCE_DENSITY = 3.0
+
 
 # TODO: Create unit tests / copy unit tests from measurement
 # TODO: Give a class name that is not already in use?
@@ -50,7 +53,7 @@ class Profile(AdjustableSettings, Serializable):
                 "channel_width", "number_of_splits", "normalization"
 
     def __init__(self, name="Default", description="",
-                 modification_time=None, reference_density=3.0,
+                 modification_time=None, reference_density=PROFILE_REFERENCE_DENSITY,
                  number_of_depth_steps=150, depth_step_for_stopping=10,
                  depth_step_for_output=10, depth_for_concentration_from=200,
                  depth_for_concentration_to=400, channel_width=0.025,
