@@ -463,6 +463,7 @@ class TargetCompositionWidget(_CompositionWidget):
     layers to the user. Using this widget user can also modify the layers of the
     target.
     """
+
     def __init__(self, parent, target, icon_manager, simulation):
         """Initializes a TargetCompositionWidget object.
 
@@ -480,9 +481,17 @@ class TargetCompositionWidget(_CompositionWidget):
         self.simulation = simulation
         self.canvas.manager.set_title("Target composition")
 
-        self.parent.targetReferenceDensityLabel.setText(
-            f"Reference density: "
-            f"{self.parent.recoil_distribution_widget.current_recoil_element.reference_density:1.2e} at./cm\xb3")
+        if self.parent.recoil_distribution_widget.current_recoil_element is \
+                None:
+            self.parent.targetReferenceDensityLabel.setText(
+                f"Reference density: "
+                f"{self.simulation.request.global_settings.DEFAULT_REF_DENSITY:1.2e} at./cm\xb3")
+
+        else:
+            self.parent.targetReferenceDensityLabel.setText(
+                f"Reference density: "
+                f"{self.parent.recoil_distribution_widget.current_recoil_element.reference_density:1.2e} at./cm\xb3")
+
         # self.parent.targetNameLabel.setText(f"Name: {target.name}")
 
         self.layers_changed.connect(self._save_target)
