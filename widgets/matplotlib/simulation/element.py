@@ -116,7 +116,7 @@ class ElementWidget(QtWidgets.QWidget):
                                            QtWidgets.QSizePolicy.Fixed)
 
         change_recoil_element_info.clicked.connect(parent.change_recoil_element_info)
-        change_recoil_element_info.setToolTip("Add a new recoil to element")
+        change_recoil_element_info.setToolTip("Modify the recoil element info")
 
         draw_spectrum_button = QtWidgets.QPushButton()
         draw_spectrum_button.setIcon(icon_manager.get_icon(
