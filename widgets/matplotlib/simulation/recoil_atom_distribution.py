@@ -175,7 +175,7 @@ class ElementManager:
             Created ElementSimulation
         """
         # TODO check that element does not exist
-        
+
         # There is no y_2 if there is only one layer
         y_2 = None
         # Set first point
@@ -183,47 +183,47 @@ class ElementManager:
         first_layer = self.parent.target.layers[0]
         if element in first_layer.elements:
             ys = [element.amount]
-        else: 
+        else:
             ys = [self.parent.get_minimum_concentration()]
-        
+
         # Make two points for each change between layers
         layer_index = 0
         for layer in self.parent.target.layers:
             # Set x-coordinates for the both points
-            x_1 = layer.start_depth + layer.thickness 
+            x_1 = layer.start_depth + layer.thickness
             xs.append(x_1)
             x_2 = x_1 + self.parent.x_res
             xs.append(x_2)
-            
+
             # Set y-coordinate for the first point
             for current_element in layer.elements:
-                if (current_element.symbol == element.symbol and 
+                if (current_element.symbol == element.symbol and
                         current_element.isotope == element.isotope):
                     y_1 = current_element.amount
                     break
                 else:
                     y_1 = self.parent.get_minimum_concentration()
-                    
+
             ys.append(y_1)
 
             # Set y-coordinate for the second point if not in the last layer
             if layer_index + 1 < len(self.parent.target.layers):
-                next_layer = self.parent.target.layers[layer_index+1]
+                next_layer = self.parent.target.layers[layer_index + 1]
                 current_symbol = element.symbol
                 current_isotope = element.isotope
-                
+
                 for next_element in next_layer.elements:
                     if (next_element.symbol == current_symbol and
                             next_element.isotope == current_isotope):
                         y_2 = next_element.amount
                         break
                     else:
-                        y_2 = self.parent.get_minimum_concentration()  
-            
+                        y_2 = self.parent.get_minimum_concentration()
+
             if y_2 is not None:
                 ys.append(y_2)
             layer_index += 1
-            
+
         # Removes last point from the list
         if y_2 is not None:
             ys.pop()
@@ -234,7 +234,7 @@ class ElementManager:
         for xy in xys:
             points.append(Point(xy))
 
-        rec_type = self.simulation.request.default_element_simulation\
+        rec_type = self.simulation.request.default_element_simulation \
             .simulation_type.get_recoil_type()
 
         recoil_element = RecoilElement(
@@ -661,7 +661,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         distribution.
         """
         return self.clicked_point is \
-            self.current_recoil_element.get_first_point()
+               self.current_recoil_element.get_first_point()
 
     def first_point_in_selection(self) -> bool:
         """Checks whether the first point of the distribution is in current
@@ -675,7 +675,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         distribution.
         """
         return self.clicked_point is \
-            self.current_recoil_element.get_last_point()
+               self.current_recoil_element.get_last_point()
 
     def last_point_in_selection(self) -> bool:
         """Checks whether the last point of the distribution is in current
@@ -729,7 +729,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.canvas, self.axes,
                     xs=self.current_recoil_element.get_range(),
                     colors=("orange", "green"), flush=False
-            )
+                )
 
     def set_individual_intervals_visible(self, b: bool):
         for interval in self.individual_intervals.values():
@@ -803,8 +803,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         dialog = ReferenceDensityDialog(
             self.current_recoil_element, self.current_element_simulation)
         if dialog.isOk:
-            new_values = dialog.get_properties()
             try:
+                new_values = dialog.get_properties()
                 old_recoil_name = self.current_recoil_element.name
                 self.current_element_simulation.update_recoil_element(
                     self.current_recoil_element,
@@ -821,14 +821,16 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                         self.current_element_simulation,
                         self.current_recoil_element)
                 self.update_recoil_element_info_labels()
-            except KeyError:
-                error_box = QtWidgets.QMessageBox()
-                error_box.setIcon(QtWidgets.QMessageBox.Warning)
-                error_box.addButton(QtWidgets.QMessageBox.Ok)
-                error_box.setText(
-                    "All recoil element information could not be saved.")
-                error_box.setWindowTitle("Error")
-                error_box.exec()
+            except KeyError as e:
+                print(str(e))
+                QtWidgets.QMessageBox.critical(
+                    self,
+                    "Error",
+                    "All recoil element "
+                    "information could not be saved.",
+                    QtWidgets.QMessageBox.Ok,
+                    QtWidgets.QMessageBox.Ok)
+                return
 
     def change_recoil_element_info(self):
         dialog = RecoilInfoDialog(
@@ -855,14 +857,16 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.update_recoil_element_info_labels()
                 self.update_colors()
 
-            except KeyError:
-                error_box = QtWidgets.QMessageBox()
-                error_box.setIcon(QtWidgets.QMessageBox.Warning)
-                error_box.addButton(QtWidgets.QMessageBox.Ok)
-                error_box.setText(
-                    "All recoil element information could not be saved.")
-                error_box.setWindowTitle("Error")
-                error_box.exec()
+            except KeyError as e:
+                print(str(e))
+                QtWidgets.QMessageBox.critical(
+                    self,
+                    "Error",
+                    "All recoil element "
+                    "information could not be saved.",
+                    QtWidgets.QMessageBox.Ok,
+                    QtWidgets.QMessageBox.Ok)
+                return
 
     def save_mcsimu_rec_profile(self, directory: Path, progress=None):
         """Save information to .mcsimu and .profile files.
@@ -898,7 +902,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             # TODO use the function in dialog functions
             # Check if current element simulation is running
             add = None
-            if self.current_element_simulation.is_simulation_running() and not\
+            if self.current_element_simulation.is_simulation_running() and not \
                     self.current_element_simulation.is_optimization_running():
                 add = "Are you sure you want to unlock full edit for this" \
                       " running element simulation?\nIt will be stopped and " \
@@ -1101,13 +1105,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if self.get_current_main_recoil().zero_intervals_on_x != \
                 self.current_recoil_element.zero_intervals_on_x:
             for interval2 in self.current_recoil_element.zero_intervals_on_x:
-                if interval2 not in self.get_current_main_recoil().\
-                                zero_intervals_on_x:
+                if interval2 not in self.get_current_main_recoil(). \
+                        zero_intervals_on_x:
                     for point2 in self.current_recoil_element.get_points():
                         p_x = point2.get_x()
                         if interval2[0] <= p_x <= interval2[1]:
                             is_inside = False
-                            for interval3 in self.get_current_main_recoil().\
+                            for interval3 in self.get_current_main_recoil(). \
                                     zero_intervals_on_x:
                                 if interval3[0] <= p_x <= interval3[1]:
                                     is_inside = True
@@ -1263,7 +1267,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             try:
                 element_simulation = \
                     self.element_manager.add_new_element_simulation(
-                        element, color, spectra_changed=self.recoil_dist_changed,
+                        element, color,
+                        spectra_changed=self.recoil_dist_changed,
                         recoil_name_changed=self.recoil_name_changed, **kwargs)
             except ValueError as e:
                 QtWidgets.QMessageBox.critical(
@@ -1359,7 +1364,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if recoil_to_delete in self.individual_intervals:
             self.individual_intervals.pop(recoil_to_delete).remove()
 
-    def remove_current_element(self, ignore_dialog=False, ignore_selection=False):
+    def remove_current_element(self, ignore_dialog=False,
+                               ignore_selection=False):
         """Remove current element simulation.
         
         Args:
@@ -1367,7 +1373,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
              ignore_selection: A boolean ignoring radio button selections
         """
         if self.current_element_simulation is None:
-            return    
+            return
         if not ignore_selection:
             if not self.main_recoil_selected():
                 return
@@ -1378,9 +1384,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             add = "\nAlso its simulation will be stopped."
         else:
             add = ""
-            
+
         # TODO use the function from dialog_functions in here        
-        if not ignore_dialog: 
+        if not ignore_dialog:
             reply = QtWidgets.QMessageBox.question(
                 self.parent, "Confirmation",
                 "If you delete selected element simulation, all possible recoils "
@@ -1458,17 +1464,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 f"Their simulations will be stopped. "
                 f"This also applies to possible optimizations.",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)        
-            
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+
         if reply == QtWidgets.QMessageBox.No or reply == \
                 QtWidgets.QMessageBox.Cancel:
             return  # If clicked Yes, then continue normally
-            
+
         element_simulations = self.element_manager.element_simulations
         while len(element_simulations) >= 1:
             for element_simulation in element_simulations:
                 self.current_element_simulation = element_simulations[0]
-                self.remove_current_element(ignore_dialog=True, ignore_selection=True)
+                self.remove_current_element(ignore_dialog=True,
+                                            ignore_selection=True)
 
     def export_elements(self, **kwargs):
         """Export elements from target layers into element simulations if they
@@ -1864,7 +1871,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if not multiply:
                 if not self.full_edit_on or \
                         self.current_element_simulation.get_main_recoil() != \
-                            recoil:
+                        recoil:
                     # Check if point is added between two zeros
                     if right_neighbor.get_y() == 0.0 and \
                             left_neighbor.get_y() == 0.0:
