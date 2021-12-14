@@ -398,8 +398,6 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.prepare_measured_spectra()
 
-        # TODO: Smoothen the measured spectrum
-
         # TODO: Is this needed?
         self.combine_previous_erd_files()
 
@@ -419,9 +417,9 @@ class LinearOptimization(opt.BaseOptimizer):
         if self.optimization_type is OptimizationType.RECOIL:
             # Empty the list of optimization recoils
 
-            # Form points from first solution. First solution of first
-            # population will always cover the whole x axis range between
-            # lower and upper values -> MCERD never needs to be run again
+            # Form points from initial solution. The solution covers the
+            # whole x axis range between lower and upper values -> MCERD
+            # never needs to be run again
             self.element_simulation.optimization_recoils = [
                 self.form_recoil(initial_solution)
             ]
