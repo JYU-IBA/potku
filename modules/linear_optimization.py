@@ -615,41 +615,68 @@ class LinearOptimization(opt.BaseOptimizer):
         # TODO: namedtuple
         return x_bounds, y_bounds
 
-    def _fit_simulation(self, solution: "BaseSolution", bounds):
-        # Compare current solution peaks to measured, adjust
-        espe = self._run_solution(solution)
-        espe_x, espe_y = split_espe(espe)
+    # TODO: Unify with BaseOptimizer.modify_measurement?
+    def _resize_simulated_espe(
+            self, espe_x, espe_y, step_decimals=4) -> Tuple[np.ndarray, np.ndarray]:
+        """Pad and/or slice simulated espe so that it has the same x axis
+         values as the measured espe.
 
-        # TODO: create a method for resizing espes. This is similar to
-        #   BaseOptimizer.modify_measurement() but not the same.
+         x is padded with even steps, y is padded with zeros.
+
+         This method is similar to BaseOptimizer.modify_measurement but
+         it modifies simulated espe, possibly extends the range of x values
+         and uses a different algorithm.
+
+        Args:
+            espe_x: simulated espe x
+            espe_y: simulated espe y
+            step_decimals: maximum number of decimals in the computed step size
+
+        Returns:
+            Resized espe x and y. x values may be slightly off because
+            numpy.linspace
+
+        """
         simu_longer_left = espe_x[0] <= self.measured_espe_x[0]
         simu_longer_right = espe_x[-1] >= self.measured_espe_x[-1]
 
+        step = round(espe_x[1] - espe_x[0], step_decimals)
+
+        left_start = self.measured_espe_x[0]
+        left_end = espe_x[0]
         if simu_longer_left:
-            simu_left_i = find_closest_index(self.measured_espe_x[0], espe_x)
-            mesu_left_i = 0
+            left_pad = 0  # Don't pad left
+            left_i = find_closest_index(self.measured_espe_x[0], espe_x)
         else:
-            simu_left_i = 0
-            mesu_left_i = find_closest_index(espe_x[0], self.measured_espe_x)
+            left_pad = round((left_end - left_start) / step)
+            left_i = None  # Don't slice left
 
+        right_start = espe_x[-1]
+        right_end = self.measured_espe_x[-1]
         if simu_longer_right:
-            simu_right_i = find_closest_index(self.measured_espe_x[-1], espe_x) + 1
-            mesu_right_i = self.measured_espe_x.shape[0]
+            right_pad = 0  # Don't pad right
+            right_i = find_closest_index(self.measured_espe_x[-1], espe_x) + 1
         else:
-            simu_right_i = espe_x.shape[0]
-            mesu_right_i = find_closest_index(espe_x[-1], self.measured_espe_x) + 1
+            right_pad = round((right_end - right_start) / step)
+            right_i = None  # Don't slice right
 
-        simu_len = simu_right_i - simu_left_i
-        mesu_len = mesu_right_i - mesu_left_i
+        pad_width = (left_pad, right_pad)
 
-        if simu_len != mesu_len:
-            pass  # TODO
+        resized_x = np.pad(espe_x[left_i:right_i], pad_width, "linear_ramp",
+                           end_values=(left_start, right_end))
+        resized_y = np.pad(espe_y[left_i:right_i], pad_width, "constant",
+                           constant_values=0)
 
-        espe_cut_x = espe_x[simu_left_i:simu_right_i]
-        espe_cut_y = espe_y[simu_left_i:simu_right_i]
+        return resized_x, resized_y
 
-        peak_info = self._get_peak_info(espe_cut_y, self.peak_count)
-        peaks_mev = self._get_mev_peaks(espe_cut_x, peak_info)  # Unused
+    def _fit_simulation(self, solution: "BaseSolution", bounds):
+        espe = self._run_solution(solution)
+        espe_x, espe_y = split_espe(espe)
+
+        resized_espe_x, resized_espe_y = self._resize_simulated_espe(espe_x, espe_y)
+
+        peak_info = self._get_peak_info(resized_espe_y, self.peak_count)
+        peaks_mev = self._get_mev_peaks(resized_espe_x, peak_info)  # Unused
 
         # FIXME: doesn't work if there are "false positive" peaks at the start
         #   or between real peaks
@@ -663,9 +690,9 @@ class LinearOptimization(opt.BaseOptimizer):
             peak.scale(height_corrections[i])
 
         valley_intervals = self._get_valley_intervals(
-            espe_cut_y, peak_info, include_start=True, include_end=False)
+            resized_espe_y, peak_info, include_start=True, include_end=False)
         valley_heights = self._get_valley_heights(
-            espe_cut_y, valley_intervals)
+            resized_espe_y, valley_intervals)
 
         for i, valley in enumerate(solution.valleys[::-1]):
             differences = np.array(self.measured_valley_heights[i]) - np.array(valley_heights[i])
