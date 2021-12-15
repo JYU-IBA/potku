@@ -89,13 +89,7 @@ class ElementWidget(QtWidgets.QWidget):
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setContentsMargins(0, 0, 0, 0)
 
-        # FIXME: REMOVE THESE - UNNECESSARY
-        buttons = []
-        instance_buttons = []
-
         self.radio_button = QtWidgets.QRadioButton()
-
-        instance_buttons.append(self.radio_button)
 
         if element.isotope:
             isotope_superscript = general.digits_to_superscript(
@@ -108,7 +102,6 @@ class ElementWidget(QtWidgets.QWidget):
 
         # Circle for showing the recoil color
         self.circle = Circle(color)
-        instance_buttons.append(self.circle)
 
         self.change_recoil_element_info = QtWidgets.QPushButton()
         self.change_recoil_element_info.setIcon(icon_manager.get_icon(
