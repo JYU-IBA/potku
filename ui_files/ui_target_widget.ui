@@ -74,13 +74,6 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QLabel" name="nameLabel">
-          <property name="text">
-           <string>Name:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
          <widget class="QLabel" name="referenceDensityLabel">
           <property name="text">
            <string>Reference density:</string>
@@ -88,7 +81,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="editPushButton">
+         <widget class="QPushButton" name="editPushButtonRecoil">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -122,6 +115,19 @@
          <widget class="QLabel" name="targetReferenceDensityLabel">
           <property name="text">
            <string>Reference density:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="editPushButtonTarget">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string/>
           </property>
          </widget>
         </item>
@@ -212,6 +218,13 @@
          <number>0</number>
         </property>
         <item>
+         <widget class="QLabel" name="nameLabel">
+          <property name="text">
+           <string>Name:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QScrollArea" name="recoilScrollArea">
           <property name="widgetResizable">
            <bool>true</bool>
@@ -222,7 +235,7 @@
              <x>0</x>
              <y>0</y>
              <width>198</width>
-             <height>402</height>
+             <height>383</height>
             </rect>
            </property>
           </widget>

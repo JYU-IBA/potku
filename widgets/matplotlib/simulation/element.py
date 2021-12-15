@@ -89,6 +89,7 @@ class ElementWidget(QtWidgets.QWidget):
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setContentsMargins(0, 0, 0, 0)
 
+        # FIXME: REMOVE THESE - UNNECESSARY
         buttons = []
         instance_buttons = []
 
@@ -109,57 +110,59 @@ class ElementWidget(QtWidgets.QWidget):
         self.circle = Circle(color)
         instance_buttons.append(self.circle)
 
-        change_recoil_element_info = QtWidgets.QPushButton()
-        change_recoil_element_info.setIcon(icon_manager.get_icon(
+        self.change_recoil_element_info = QtWidgets.QPushButton()
+        self.change_recoil_element_info.setIcon(icon_manager.get_icon(
             "measuring_unit_settings.svg"))
-        change_recoil_element_info.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                           QtWidgets.QSizePolicy.Fixed)
+        self.change_recoil_element_info.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
 
-        change_recoil_element_info.clicked.connect(parent.change_recoil_element_info)
-        change_recoil_element_info.setToolTip("Modify the recoil element info")
+        self.change_recoil_element_info.clicked.connect(
+            parent.change_recoil_element_info)
+        self.change_recoil_element_info.setToolTip("Modify the recoil element "
+                                                   "info")
 
-        draw_spectrum_button = QtWidgets.QPushButton()
-        draw_spectrum_button.setIcon(icon_manager.get_icon(
+        self.draw_spectrum_button = QtWidgets.QPushButton()
+        self.draw_spectrum_button.setIcon(icon_manager.get_icon(
             "energy_spectrum_icon.svg"))
-        draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                           QtWidgets.QSizePolicy.Fixed)
+        self.draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                                QtWidgets.QSizePolicy.Fixed)
 
-        draw_spectrum_button.clicked.connect(lambda: self.plot_spectrum(
+        self.draw_spectrum_button.clicked.connect(lambda: self.plot_spectrum(
             spectra_changed=spectra_changed))
-        draw_spectrum_button.setToolTip("Draw energy spectra")
+        self.draw_spectrum_button.setToolTip("Draw energy spectra")
 
-        settings_button = QtWidgets.QPushButton()
-        settings_button.setIcon(icon_manager.get_icon("gear.svg"))
-        settings_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                      QtWidgets.QSizePolicy.Fixed)
-        settings_button.clicked.connect(
+        self.settings_button = QtWidgets.QPushButton()
+        self.settings_button.setIcon(icon_manager.get_icon("gear.svg"))
+        self.settings_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                           QtWidgets.QSizePolicy.Fixed)
+        self.settings_button.clicked.connect(
             lambda: self.open_element_simulation_settings(
                 settings_updated=settings_updated))
-        settings_button.setToolTip("Edit element simulation settings")
+        self.settings_button.setToolTip("Edit element simulation settings")
 
-        add_recoil_button = QtWidgets.QPushButton()
-        add_recoil_button.setIcon(icon_manager.get_icon("edit_add.svg"))
-        add_recoil_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                        QtWidgets.QSizePolicy.Fixed)
-        add_recoil_button.clicked.connect(lambda: self.add_new_recoil(
+        self.add_recoil_button = QtWidgets.QPushButton()
+        self.add_recoil_button.setIcon(icon_manager.get_icon("edit_add.svg"))
+        self.add_recoil_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                             QtWidgets.QSizePolicy.Fixed)
+        self.add_recoil_button.clicked.connect(lambda: self.add_new_recoil(
             spectra_changed=spectra_changed,
             recoil_name_changed=recoil_name_changed))
-        add_recoil_button.setToolTip("Add a new recoil to element")
+        self.add_recoil_button.setToolTip("Add a new recoil to element")
 
         if platform.system() == "Darwin":
             horizontal_layout.setContentsMargins(0, 0, 12, 0)
 
-        change_recoil_element_info.setMaximumWidth(BUTTON_MAX_WIDTH)
-        draw_spectrum_button.setMaximumWidth(BUTTON_MAX_WIDTH)
-        settings_button.setMaximumWidth(BUTTON_MAX_WIDTH)
-        add_recoil_button.setMaximumWidth(BUTTON_MAX_WIDTH)
+        self.change_recoil_element_info.setMaximumWidth(BUTTON_MAX_WIDTH)
+        self.draw_spectrum_button.setMaximumWidth(BUTTON_MAX_WIDTH)
+        self.settings_button.setMaximumWidth(BUTTON_MAX_WIDTH)
+        self.add_recoil_button.setMaximumWidth(BUTTON_MAX_WIDTH)
 
         horizontal_layout.addWidget(self.radio_button)
         horizontal_layout.addWidget(self.circle)
-        horizontal_layout.addWidget(change_recoil_element_info)
-        horizontal_layout.addWidget(draw_spectrum_button)
-        horizontal_layout.addWidget(settings_button)
-        horizontal_layout.addWidget(add_recoil_button)
+        horizontal_layout.addWidget(self.change_recoil_element_info)
+        horizontal_layout.addWidget(self.draw_spectrum_button)
+        horizontal_layout.addWidget(self.settings_button)
+        horizontal_layout.addWidget(self.add_recoil_button)
 
         self.setLayout(horizontal_layout)
 

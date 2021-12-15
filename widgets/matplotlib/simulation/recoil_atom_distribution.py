@@ -33,6 +33,7 @@ import matplotlib
 import modules.general_functions as gf
 import dialogs.dialog_functions as df
 from dialogs.simulation.recoil_info_dialog import RecoilInfoDialog
+from dialogs.simulation.reference_density_dialog import ReferenceDensityDialog
 
 from widgets.matplotlib import mpl_utils
 from pathlib import Path
@@ -44,7 +45,6 @@ from typing import List
 from dialogs.simulation.multiply_area import MultiplyAreaDialog
 from dialogs.simulation.recoil_element_selection import \
     RecoilElementSelectionDialog
-from dialogs.simulation.reference_density_dialog import ReferenceDensityDialog
 
 from matplotlib import offsetbox
 from matplotlib.widgets import RectangleSelector
@@ -389,6 +389,26 @@ class ElementManager:
             radio_buttons.append(recoil_element.widgets[0].radio_button)
         return radio_buttons
 
+    def disable_push_buttons(self, current_element):
+        for element_simulation in self.element_simulations:
+            if element_simulation == current_element:
+                for recoil_element in element_simulation.recoil_elements:
+                    self.change_button_state(recoil_element, True)
+            else:
+                for recoil_element in element_simulation.recoil_elements:
+                    self.change_button_state(recoil_element, False)
+
+    @staticmethod
+    def change_button_state(recoil_element: RecoilElement, state: bool):
+        recoil_element.widgets[
+            0].change_recoil_element_info.setEnabled(
+            state)
+        recoil_element.widgets[0].draw_spectrum_button.setEnabled(
+            state)
+        recoil_element.widgets[0].settings_button.setEnabled(state)
+        recoil_element.widgets[0].add_recoil_button.setEnabled(
+            state)
+
     def has_element(self, element: Element) -> bool:
         """Checks whether any ElementSimulation has an element that matches
         the given argument.
@@ -501,9 +521,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.radios = QtWidgets.QButtonGroup(self)
         self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
             self.choose_element)
-
-        self.parent.editPushButton.clicked.connect(
-            self.open_recoil_element_info)
 
         self.edit_lock_push_button = self.parent.editLockPushButton
         self.edit_lock_push_button.clicked.connect(self.unlock_or_lock_edit)
@@ -797,41 +814,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         )
         self.tab.add_widget(percentage_widget)
 
-    def open_recoil_element_info(self):
-        """Open recoil element info.
-        """
-        dialog = ReferenceDensityDialog(
-            self.current_recoil_element, self.current_element_simulation)
-        if dialog.isOk:
-            try:
-                new_values = dialog.get_properties()
-                old_recoil_name = self.current_recoil_element.name
-                self.current_element_simulation.update_recoil_element(
-                    self.current_recoil_element,
-                    new_values)
-                # If name has changed
-                if old_recoil_name != self.current_recoil_element.name:
-                    # Delete energy spectra that use recoil
-                    df.delete_recoil_espe(
-                        self.tab,
-                        f"{self.current_recoil_element.prefix}-"
-                        f"{old_recoil_name}")
-
-                    self.recoil_name_changed.emit(
-                        self.current_element_simulation,
-                        self.current_recoil_element)
-                self.update_recoil_element_info_labels()
-            except KeyError as e:
-                print(str(e))
-                QtWidgets.QMessageBox.critical(
-                    self,
-                    "Error",
-                    "All recoil element "
-                    "information could not be saved.",
-                    QtWidgets.QMessageBox.Ok,
-                    QtWidgets.QMessageBox.Ok)
-                return
-
     def change_recoil_element_info(self):
         dialog = RecoilInfoDialog(
             self.current_recoil_element, self.colormap,
@@ -857,6 +839,41 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.update_recoil_element_info_labels()
                 self.update_colors()
 
+            except KeyError as e:
+                print(str(e))
+                QtWidgets.QMessageBox.critical(
+                    self,
+                    "Error",
+                    "All recoil element "
+                    "information could not be saved.",
+                    QtWidgets.QMessageBox.Ok,
+                    QtWidgets.QMessageBox.Ok)
+                return
+
+    def open_recoil_element_info(self):
+        """Open recoil element info.
+        """
+        dialog = ReferenceDensityDialog(
+            self.current_recoil_element, self.current_element_simulation)
+        if dialog.isOk:
+            try:
+                new_values = dialog.get_properties()
+                old_recoil_name = self.current_recoil_element.name
+                self.current_element_simulation.update_recoil_element(
+                    self.current_recoil_element,
+                    new_values)
+                # If name has changed
+                if old_recoil_name != self.current_recoil_element.name:
+                    # Delete energy spectra that use recoil
+                    df.delete_recoil_espe(
+                        self.tab,
+                        f"{self.current_recoil_element.prefix}-"
+                        f"{old_recoil_name}")
+
+                    self.recoil_name_changed.emit(
+                        self.current_element_simulation,
+                        self.current_recoil_element)
+                self.update_recoil_element_info_labels()
             except KeyError as e:
                 print(str(e))
                 QtWidgets.QMessageBox.critical(
@@ -964,6 +981,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.other_recoils.append(self.current_recoil_element)
         current_element_simulation = self.element_manager \
             .get_element_simulation_with_radio_button(button)
+        self.element_manager.disable_push_buttons(current_element_simulation)
         self.current_element_simulation = current_element_simulation
         self.current_recoil_element = \
             self.element_manager.get_recoil_element_with_radio_button(

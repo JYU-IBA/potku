@@ -8,7 +8,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2021 Joonas Koponen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen"
+             "\n Sinikka Siironen \n Joonas Koponen"
 __version__ = "2.0"
 
 import platform
@@ -104,11 +104,20 @@ class TargetWidget(QtWidgets.QWidget):
         self.spectra_changed = self.recoil_distribution_widget. \
             recoil_dist_changed
 
-        icon_manager.set_icon(self.editPushButton, "edit.svg")
-        self.editPushButton.setIconSize(QtCore.QSize(14, 14))
-        self.editPushButton.setToolTip(
-            "Edit name, description and reference density "
-            "of this recoil element")
+        icon_manager.set_icon(self.editPushButtonTarget, "edit.svg")
+        self.editPushButtonTarget.clicked.connect(
+            self.recoil_distribution_widget.open_recoil_element_info)
+        self.editPushButtonTarget.setIconSize(QtCore.QSize(14, 14))
+        self.editPushButtonTarget.setToolTip(
+            "Edit the reference density this target composition")
+
+        icon_manager.set_icon(self.editPushButtonRecoil, "edit.svg")
+        self.editPushButtonRecoil.clicked.connect(
+            self.recoil_distribution_widget.open_recoil_element_info)
+        self.editPushButtonRecoil.setIconSize(QtCore.QSize(14, 14))
+        self.editPushButtonRecoil.setToolTip(
+            "Edit the reference density this target composition")
+
         self.recoilListWidget.hide()
         self.editLockPushButton.hide()
         self.elementInfoWidget.hide()
