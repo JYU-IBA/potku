@@ -70,16 +70,20 @@ class ReferenceDensityDialog(QtWidgets.QDialog,
             element_simulation: Element simulation that has the recoil element.
         """
         super().__init__()
+
+        uic.loadUi(gutils.get_ui_dir() / "ui_reference_density_dialog.ui", self)
+
         self.recoil_element = recoil_element
         self.element_simulation = element_simulation
 
         value = self.recoil_element.reference_density
         self.scientific_spinbox = ScientificSpinBox(
             value=value, minimum=0.01, maximum=9.99e23)
+        self.scientific_spinbox.setDisabled(True)
 
-        uic.loadUi(gutils.get_ui_dir() / "ui_reference_density_dialog.ui", self)
+        self.userSelectionCheckBox.stateChanged.connect(self._state_changed)
 
-        self.okPushButton.clicked.connect(self.__accept_settings)
+        self.okPushButton.clicked.connect(self._accept_settings)
         self.cancelPushButton.clicked.connect(self.close)
 
         self.fields_are_valid = True
@@ -99,7 +103,13 @@ class ReferenceDensityDialog(QtWidgets.QDialog,
 
         self.exec_()
 
-    def __density_valid(self):
+    def _state_changed(self):
+        if self.userSelectionCheckBox.isChecked():
+            self.scientific_spinbox.setDisabled(False)
+        else:
+            self.scientific_spinbox.setDisabled(True)
+
+    def _density_valid(self):
         """
         Check if density value is valid and in limits.
 
@@ -112,11 +122,11 @@ class ReferenceDensityDialog(QtWidgets.QDialog,
         except TypeError:
             return False
 
-    def __accept_settings(self):
+    def _accept_settings(self):
         """Function for accepting the current settings and closing the dialog
         window.
         """
-        if not self.fields_are_valid or not self.__density_valid():
+        if not self.fields_are_valid or not self._density_valid():
             QtWidgets.QMessageBox.critical(
                 self, "Warning",
                 "Some of the setting values are invalid.\n"
