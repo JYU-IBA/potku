@@ -50,7 +50,7 @@ from .point import Point
 from .recoil_element import RecoilElement
 
 
-PeakInfo = namedtuple("PeakInfo", ("peaks", "info", "prominent_peaks_i"))
+PeakInfo = namedtuple("PeakInfo", ("peaks", "info"))
 
 
 class LinearOptimization(opt.BaseOptimizer):
@@ -92,7 +92,6 @@ class LinearOptimization(opt.BaseOptimizer):
         self.measured_espe_x = None
         self.measured_espe_y = None
 
-        self.mev_to_nm_params = None
         self._mev_to_nm_function = None
 
         self.measured_peak_info: Optional[PeakInfo] = None
@@ -148,11 +147,13 @@ class LinearOptimization(opt.BaseOptimizer):
             espe = self._run_solution(solution)
             espe_x, espe_y = split_espe(espe)
 
-            peak_info = self._get_peak_info(espe_y, 1, peak_width=smoothing_width)
+            try:
+                peak_info = self._get_peak_info(
+                    espe_y, 1, peak_width=smoothing_width, retry_count=0)
+            except ValueError:
+                break
 
-            # Find the largest peak prominence
-            prominence_i = peak_info.info["prominences"].argmax()
-            prominence = peak_info.info["prominences"][prominence_i]
+            prominence = peak_info.info["prominences"][0]
             if prominences:
                 prominence_threshold = (sum(prominences) / len(prominences)
                                         * min_prominence_factor)
@@ -160,24 +161,16 @@ class LinearOptimization(opt.BaseOptimizer):
                     break
 
             prominences.append(prominence)
-            mevs.append(espe_x[peak_info.peaks[prominence_i]])
+            mevs.append(espe_x[peak_info.peaks[0]])
 
         if len(mevs) <= 1:
             raise ValueError("Could not generate a nm-to-MeV function."
                              " Not enough significant data points.")
 
         mevs = np.array(mevs)
-        prominences = np.array(prominences)
         # Pick matching points, centered
         nms = nm_points[:mevs.shape[0]] + peak_width / 2
 
-        # TODO: Params are probably not needed after creating the function
-        self.mev_to_nm_params = {
-            "nm": nms,
-            "mev": mevs,
-            "prominences": prominences,
-            "peak_width": peak_width
-        }
         self._mev_to_nm_function = interpolate.interp1d(
             mevs, nms, fill_value="extrapolate", assume_sorted=True)
 
@@ -201,15 +194,18 @@ class LinearOptimization(opt.BaseOptimizer):
     def _get_peak_info(self, y: np.ndarray,
                        peak_count: int,
                        peak_width: int = None,
-                       retry_count: int = 0) -> PeakInfo:
+                       retry_count: int = 10) -> PeakInfo:
         """Get information about Espe peaks.
 
         Args:
             y: Espe y values
             peak_count: amount of peaks to find
-            peak_width: width of peak (number of data points)
-            retry_count: amount of tries to retry if incorrect number
+            peak_width: minimum width of peaks (in data points)
+            retry_count: amount of tries to retry if an incorrect amount
                 of peaks were found
+
+        Raises:
+            ValueError: if not enough peaks could be found
 
         Returns:
             Information about peaks
@@ -217,18 +213,46 @@ class LinearOptimization(opt.BaseOptimizer):
         if peak_width is None:
             peak_width = round(y.shape[0] / 30)
 
-        indexes, info = signal.find_peaks(y, height=0.0, width=peak_width)
+        found = None
+        # TODO: Change threshold instead?
+        next_height = 1.0
+        low = None
+        high = None
+
+        for _ in range(retry_count + 1):  # First round is not a retry
+            indexes, info = signal.find_peaks(y, height=next_height, width=peak_width)
+            length = indexes.shape[0]
+
+            if length > peak_count:
+                low = next_height
+                next_height = low * 4 if high is None else (low + high) / 2
+                found = indexes, info
+            elif length < peak_count:
+                high = next_height
+                next_height = high / 4 if low is None else (low + high) / 2
+            else:
+                found = indexes, info
+                break
+
+        if found is None:
+            raise ValueError(f"None or too few peaks found")
+
+        indexes, info = found
+
+        if indexes.shape[0] == peak_count:
+            return PeakInfo(indexes, info)
+
+        # Remove extra peaks
 
         most_prominent_indexes = (-info["prominences"]).argsort()[:peak_count]
         most_prominent_indexes.sort()  # Keep peaks in their original order
-        # TODO: resize width until `self.peak_count` peaks are found
-        #   or `retry_count` is reached
-        if most_prominent_indexes.shape[0] < peak_count:
-            raise NotImplementedError(
-                "Too few measured peaks detected using default values."
-                " Retrying not implemented.")
 
-        return PeakInfo(indexes, info, most_prominent_indexes)
+        new_info = {}
+        for key, value in info.items():
+            new_info[key] = value[most_prominent_indexes]
+        new_indexes = indexes[most_prominent_indexes]
+
+        return PeakInfo(new_indexes, new_info)
 
     def _get_mev_peaks(self, x: np.ndarray, peak_info: PeakInfo) -> List[Tuple[float]]:
         """Get Espe's MeV peak x locations based on `peak_info`
@@ -241,7 +265,7 @@ class LinearOptimization(opt.BaseOptimizer):
             List of peaks (points: left, center, right)
         """
         peaks_mev = []
-        for i in peak_info.prominent_peaks_i:
+        for i, _ in enumerate(peak_info.peaks):
             left_i = round(peak_info.info["left_ips"][i])
             center_i = peak_info.peaks[i]
             right_i = round(peak_info.info["right_ips"][i])
@@ -339,7 +363,7 @@ class LinearOptimization(opt.BaseOptimizer):
 
         if include_end:
             lower = right_ips[-1]
-            upper = int(y.shape[0])
+            upper = None
             intervals.append(slice(lower, upper))
 
         return intervals
@@ -360,12 +384,14 @@ class LinearOptimization(opt.BaseOptimizer):
 
         if not self.is_skewed:
             for interval in intervals:
+                # TODO: Ignore outermost pieces like in the other branch
                 height = float(np.median(y[interval]))
                 heights.append((height, height))
         else:
             for interval in intervals:
                 # Ignore outermost pieces because they are likely affected by
                 # peaks
+                # FIXME: This won't work if the interval is too small
                 pieces = np.array_split(y[interval], 4)[1:3]
 
                 piece_heights = tuple(float(np.median(piece)) for piece in pieces)
@@ -676,8 +702,6 @@ class LinearOptimization(opt.BaseOptimizer):
         peak_info = self._get_peak_info(resized_espe_y, self.peak_count)
         peaks_mev = self._get_mev_peaks(resized_espe_x, peak_info)  # Unused
 
-        # FIXME: doesn't work if there are "false positive" peaks at the start
-        #   or between real peaks
         # TODO: Use self.measured_max_height?
         height_corrections = ((self.measured_peak_info.info["peak_heights"]
                               - peak_info.info["peak_heights"])
