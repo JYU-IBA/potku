@@ -171,6 +171,12 @@ class LinearOptimization(opt.BaseOptimizer):
         # Pick matching points, centered
         nms = nm_points[:mevs.shape[0]] + peak_width / 2
 
+        mevs_diff = np.diff(mevs)
+        if not np.all(mevs_diff <= 0):
+            # TODO: Remove non-monotonous parts from start and end.
+            #   Note that mevs_diff.shape[0] == mevs.shape[0] - 1
+            raise ValueError("Simulated MeV values were non-monotonous.")
+
         self._mev_to_nm_function = interpolate.interp1d(
             mevs, nms, fill_value="extrapolate", assume_sorted=True)
 
