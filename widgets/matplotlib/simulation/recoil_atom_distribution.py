@@ -855,6 +855,21 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         dialog = ReferenceDensityDialog(
             self.current_recoil_element, self.current_element_simulation)
+
+        if dialog.userSelectionCheckBox.isChecked():
+            self.parent.targetUserSelectionLabel.setText(
+                "Using the user selection")
+            self.parent.targetUserSelectionLabel.setStyleSheet(
+                "background-color: yellow")
+            self.parent.recoilUserSelectionLabel.setText(
+                "Using the user selection")
+            self.parent.recoilUserSelectionLabel.setStyleSheet(
+                "background-color: yellow")
+        else:
+            self.parent.targetUserSelectionLabel.setText("")
+
+            self.parent.recoilUserSelectionLabel.setText("")
+
         if dialog.isOk:
             try:
                 new_values = dialog.get_properties()

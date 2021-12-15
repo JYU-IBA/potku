@@ -93,6 +93,13 @@
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QLabel" name="recoilUserSelectionLabel">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </item>
@@ -126,6 +133,13 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="targetUserSelectionLabel">
           <property name="text">
            <string/>
           </property>
