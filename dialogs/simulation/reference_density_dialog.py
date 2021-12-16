@@ -80,6 +80,13 @@ class ReferenceDensityDialog(QtWidgets.QDialog,
         self.scientific_spinbox = ScientificSpinBox(
             value=value, minimum=0.01, maximum=9.99e23)
 
+        if self.recoil_element.manual_reference_density_checked:
+            self.scientific_spinbox.setDisabled(False)
+            self.userSelectionCheckBox.setChecked(True)
+        else:
+            self.scientific_spinbox.setDisabled(True)
+            self.userSelectionCheckBox.setChecked(False)
+
         self.userSelectionCheckBox.stateChanged.connect(self._state_changed)
 
         self.okPushButton.clicked.connect(self._accept_settings)

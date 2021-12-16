@@ -49,6 +49,7 @@ from .parsing import CSVParser
 
 from modules.global_settings import GlobalSettings
 
+
 class RecoilElement(MCERDParameterContainer, Serializable):
     """An element that has a list of points and a widget. The points are kept
     in ascending order by their x coordinate.
@@ -80,6 +81,8 @@ class RecoilElement(MCERDParameterContainer, Serializable):
             self.reference_density = GlobalSettings().get_default_reference_density()
         else:
             self.reference_density = reference_density
+
+        self.manual_reference_density_checked = False
             
         self.channel_width = channel_width
 

@@ -853,21 +853,26 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def open_recoil_element_info(self):
         """Open recoil element info.
         """
+
         dialog = ReferenceDensityDialog(
             self.current_recoil_element, self.current_element_simulation)
 
         if dialog.userSelectionCheckBox.isChecked():
+
+            self.current_recoil_element.manual_reference_density_checked = True
+
             self.parent.targetUserSelectionLabel.setText(
-                "Using the user selection")
+                "Using user-defined reference density")
             self.parent.targetUserSelectionLabel.setStyleSheet(
                 "background-color: yellow")
+
             self.parent.recoilUserSelectionLabel.setText(
-                "Using the user selection")
+                "Using user-defined reference density")
             self.parent.recoilUserSelectionLabel.setStyleSheet(
                 "background-color: yellow")
         else:
+            self.current_recoil_element.manual_reference_density_checked = False
             self.parent.targetUserSelectionLabel.setText("")
-
             self.parent.recoilUserSelectionLabel.setText("")
 
         if dialog.isOk:
