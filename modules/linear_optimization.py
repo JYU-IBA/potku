@@ -704,18 +704,18 @@ class LinearOptimization(opt.BaseOptimizer):
         espe_x, espe_y = split_espe(espe)
 
         resized_espe_x, resized_espe_y = self._resize_simulated_espe(espe_x, espe_y)
-
         peak_info = self._get_peak_info(resized_espe_y, self.peak_count)
-        peaks_mev = self._get_mev_peaks(resized_espe_x, peak_info)  # Unused
 
-        # TODO: Use self.measured_max_height?
+        # Scale peak heights
+
         height_corrections = ((self.measured_peak_info.info["peak_heights"]
                               - peak_info.info["peak_heights"])
                              / peak_info.info["peak_heights"] + 1)
 
         for i, peak in enumerate(solution.peaks[::-1]):
-            # TODO: Check max height
-            peak.scale(height_corrections[i])
+            peak.scale_height(height_corrections[i])
+
+        # Scale valley heights
 
         valley_intervals = self._get_valley_intervals(
             resized_espe_y, peak_info, include_start=True, include_end=False)
@@ -733,10 +733,17 @@ class LinearOptimization(opt.BaseOptimizer):
                 valley.rl.set_y(valley.rl.get_y() + corrections[0])
                 valley.ll.set_y(valley.ll.get_y() + corrections[-1])
 
-        # TODO: Check widths
-        width_corrections = None
+        # Widen and lower peaks if necessary to stay under the max y value
+        # TODO: Skewed top
+        max_y = self.upper_limits[1]
+        for i, peak in enumerate(solution.peaks):
+            normalized_height = peak.center.get_y() / max_y
+            if normalized_height > 1.0:
+                peak.scale_width(normalized_height)
+                peak.scale_height(1 / normalized_height)
 
-        # TODO: Iterate
+        # TODO: Check that solution has x values in ascending order and
+        #   that they don't exceed limits
 
         return solution
 
@@ -810,7 +817,6 @@ class Peak:
         self.prev_point = prev_point
         self.next_point = next_point
 
-    # TODO: Is this useful?
     @property
     def center(self) -> Point:
         x = (self.lh.get_x() + self.rh.get_x()) / 2
@@ -850,28 +856,58 @@ class Peak:
 
         return clipped
 
-    def move_x(self, amount: float) -> None:
-        if amount >= 0.0:
-            if self.prev_point and self.ll:
-                self.ll.set_x(self.ll.get_x() + amount)
-                self.lh.set_x(self.lh.get_x() + amount)
-            if self.next_point and self.rl:
-                self.rh.set_x(self.rh.get_x() + amount)
-                self.rl.set_x(self.rl.get_x() + amount)
+    # TODO: check limits?
+    # TODO: remove checks from move_left_x and move_right_x, and check manually?
+
+    def move_left_x(self, amount: float) -> None:
+        if self.prev_point and self.ll:
+            self.ll.set_x(self.ll.get_x() + amount)
+            self.lh.set_x(self.lh.get_x() + amount)
+
+    def move_right_x(self, amount: float) -> None:
+        if self.next_point and self.rl:
+            self.rh.set_x(self.rh.get_x() + amount)
+            self.rl.set_x(self.rl.get_x() + amount)
 
     def move_y(self, amount: float) -> None:
         self.lh.set_y(self.lh.get_y() + amount)
         self.rh.set_y(self.rh.get_y() + amount)
 
-    def set_x(self, x: float) -> None:
-        amount = x - self.center.get_x()
-        self.move_x(amount)
+    def scale_width(self, factor: float, scale_gap: bool = False) -> None:
+        """Scale peak's width (x values)
 
-    def set_y(self, y: float) -> None:
-        amount = y - self.center.get_y()
-        self.move_y(amount)
+        Args:
+            factor: scaling factor
+            scale_gap: whether to scale the gap between low and high points
+                (True) or keep it constant (False)
+        """
+        center = self.center.get_x()
+        ll = self.ll.get_x()
+        lh = self.lh.get_x()
+        rh = self.rh.get_x()
+        rl = self.rl.get_x()
 
-    def scale(self, factor: float) -> None:
+        left_width = lh - center
+        left_gap = ll - lh
+        right_width = rh - center
+        right_gap = rl - rh
+
+        lh_new = center + left_width * factor
+        ll_new = lh_new + left_gap if not scale_gap else lh_new + left_gap * factor
+        rh_new = center + right_width * factor
+        rl_new = rh_new + right_gap if not scale_gap else rh_new + right_gap * factor
+
+        self.ll.set_x(ll_new)
+        self.lh.set_x(lh_new)
+        self.rh.set_x(rh_new)
+        self.rl.set_x(rl_new)
+
+    def scale_height(self, factor: float) -> None:
+        """Scale peak's height (y values)
+
+        Args:
+            factor: scaling factor
+        """
         self.lh.set_y(self.lh.get_y() * factor)
         self.rh.set_y(self.rh.get_y() * factor)
 
