@@ -751,9 +751,11 @@ class LinearOptimization(opt.BaseOptimizer):
         solution = copy.deepcopy(self.solution)
         bounds = self._get_bounds()
 
-        optimized = self._fit_simulation(solution, bounds)
+        optimized1 = self._fit_simulation(solution, bounds)
+        optimized_copy = copy.deepcopy(optimized1)
+        optimized2 = self._fit_simulation(optimized_copy, bounds)
 
-        return optimized
+        return optimized1, optimized2
 
     # TODO: Change starting_solutions to starting_solution
     def start_optimization(self, starting_solutions=None,
@@ -777,13 +779,11 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.on_next(self._get_message(OptimizationState.RUNNING))
 
-        # result = self.solution  # TODO: Replace with _optimize
-        result = self._optimize()
-
+        result1, result2 = self._optimize()
         if self.optimization_type is OptimizationType.RECOIL:
             first_sol = self.solution
-            med_sol = self.solution  # TODO: Add something sensible here
-            last_sol = result
+            med_sol = result1
+            last_sol = result2
 
             self.element_simulation.optimization_recoils = [
                 self.form_recoil(first_sol, "optfirst"),
