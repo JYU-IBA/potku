@@ -102,11 +102,6 @@ class ReferenceDensityDialog(QtWidgets.QDialog,
 
         self.isOk = False
 
-        title = f"Recoil element: " \
-                f"{self.recoil_element.element.get_prefix()}"
-
-        self.infoGroupBox.setTitle(title)
-
         self.exec_()
 
     def _state_changed(self):

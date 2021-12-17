@@ -26,7 +26,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Recoil element info</string>
+   <string>Reference density</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="sizeConstraint">
@@ -37,7 +37,7 @@
      <item>
       <widget class="QGroupBox" name="infoGroupBox">
        <property name="title">
-        <string>Recoil element</string>
+        <string/>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_7">
         <property name="sizeConstraint">
