@@ -61,7 +61,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
     MEASURED_SUM_SPECTRUM_LINE_STYLE = "dashed"
     SIMULATED_SUM_SPECTRUM_LINE_STYLE = "dotted"
     SUM_SPECTRUM_LINE_WIDTH = 2
-    Z_ORDER = 100
+    SIMULATED_SUM_SPECTRUM_Z_ORDER = -1
+    MEASURED_SUM_SPECTRUM_Z_ORDER = -2
 
     def __init__(self, parent, simulation_energy=None, measurement_energy=None,
                  rbs_list=None, spectrum_type=None, legend=True,
@@ -674,7 +675,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             line, = self.axes.plot(x, y, label='SIMULATION_SUM',
                                    linestyle=self.SIMULATED_SUM_SPECTRUM_LINE_STYLE,
                                    linewidth=self.SUM_SPECTRUM_LINE_WIDTH,
-                                   zorder=self.Z_ORDER)
+                                   zorder=self.SIMULATED_SUM_SPECTRUM_Z_ORDER)
             self.plots[self.simulated_sum_spectrum.sum_spectrum_path] = line
 
     def plot_measured_sum_spectrum(self):
@@ -685,14 +686,14 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 line, = self.axes.plot(x, y, label='MEASUREMENT_SUM',
                                        linestyle=self.MEASURED_SUM_SPECTRUM_LINE_STYLE,
                                        linewidth=self.SUM_SPECTRUM_LINE_WIDTH,
-                                       zorder=self.Z_ORDER)
+                                       zorder=self.MEASURED_SUM_SPECTRUM_Z_ORDER)
                 self.plots[self.measured_sum_spectrum.sum_spectrum_path] = line
         else:
             x, y = zip(*self.measured_sum_spectrum.sum_spectrum)
             line, = self.axes.plot(x, y, label='MEASUREMENT_SUM',
                                    linestyle=self.MEASURED_SUM_SPECTRUM_LINE_STYLE,
                                    linewidth=self.SUM_SPECTRUM_LINE_WIDTH,
-                                   zorder=self.Z_ORDER)
+                                   zorder=self.self.MEASURED_SUM_SPECTRUM_Z_ORDER)
             self.plots[self.measured_sum_spectrum.sum_spectrum_key] = line
 
     def remove_ignored_elements(self):
