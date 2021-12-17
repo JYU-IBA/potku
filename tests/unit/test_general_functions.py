@@ -31,11 +31,14 @@ import modules.comparison as comp
 import random
 import time
 import tests.utils as utils
+import tests.mock_objects as mo
 
 from pathlib import Path
 
 from modules import general_functions as gf
 from modules.element import Element
+from modules.general_functions import ReferenceDensity
+from modules.layer import Layer
 
 _DIR_PATH = Path(
     utils.get_sample_data_dir(), "Ecaart-11-mini", "Tof-E_65-mini", "cuts"
@@ -98,9 +101,9 @@ class TestMatchingFunctions(unittest.TestCase):
             3: 4,
             5: 6
         }, {
-            1: 11,      # these values wont be found because
-            3: 12,      # the dict has the same keys as the
-            5: 13       # first dict
+            1: 11,  # these values wont be found because
+            3: 12,  # the dict has the same keys as the
+            5: 13  # first dict
         }, {
             7: 8,
             9: None
@@ -523,3 +526,35 @@ class TestDigitsToSuperscript(unittest.TestCase):
         actual = gf.digits_to_superscript(original)
         expected = "¹²³⁴⁵⁶⁷⁸⁹⁰"
         self.assertEqual(expected, actual)
+
+
+class TestUpdatingReferenceDensity(unittest.TestCase):
+
+    # TODO: More tests
+    def test_update_reference_density(self):
+
+        target = mo.Target(layers=[
+            Layer("Si", [
+                Element.from_string("Si 1.0")
+            ], 10.0, 2.3290, start_depth=0.0)
+        ])
+
+        # target = mo.Target(layers=[
+        #     Layer("layer1", [
+        #         Element.from_string("Li 1.0")
+        #     ], 0.01, 0.01, start_depth=0.0),
+        #     Layer("layer2", [
+        #         Element.from_string("Li 0.048"),
+        #         Element.from_string("O 0.649"),
+        #         Element.from_string("Mn 0.303")
+        #     ], 90.0, 4.0, start_depth=0.01),
+        #     Layer("subtrate", [
+        #         Element.from_string("Si 1.0")
+        #     ], 1000.0, 2.32, start_depth=90.01)
+        # ])
+
+        reference_density = ReferenceDensity(target.layers)
+        reference_density.update_reference_density()
+
+        self.assertEqual(reference_density.reference_density,
+                         4.9897601328705675e+22)

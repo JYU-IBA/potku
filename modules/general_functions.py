@@ -146,6 +146,7 @@ def remove_matching_files(directory: Path, exts: Optional[Set[str]] = None,
             be deleted.
         filter_func: additional filter function applied to the file name.
     """
+
     # TODO change the filter function so that it takes the Path as an argument,
     #   not just file name.
     def _filter_func(fp: Path):
@@ -656,3 +657,51 @@ def find_next(iterable: Iterable[T], cond: Callable[[T], bool]) -> T:
         return next(i for i in iterable if cond(i))
     except StopIteration:
         raise ValueError("Value not found in iterable.")
+
+# FIXME: Find better placement
+class ReferenceDensity:
+    def __init__(self, layers: List = None):
+        self.layers = layers
+        self.reference_density = 0.0
+        self.layer_reference_density = 0.0
+        self.reference_density_limit = 10.0
+        self.reference_density_meter = 10.0
+        self.masses: List = []
+        self.g_mass = 0.0
+
+    def update_reference_density(self):
+        for layer in self.layers:
+            self.masses = []
+            # If there is only one layer
+            if len(self.layers) == 1:
+                self.calculate_reference_density(layer)
+
+            # If the layer's width is smaller than 10 nm
+            elif self.reference_density_limit - layer.thickness >= 0:
+                self.reference_density_meter = self.reference_density_meter - \
+                                          layer.thickness
+                self.calculate_reference_density(layer)
+
+            # If the layer is the last one before 10nm limit
+            elif layer.thickness > self.reference_density_limit:
+                self.calculate_reference_density(layer)
+                break
+
+    def calculate_reference_density(self, layer):
+        layer_densities = []
+        for element in layer.elements:
+            self.g_mass = 0.0
+            mass = element.get_mass()
+            self.masses.append(mass * element.amount)
+            for mass in self.masses:
+                self.g_mass = (convert_amu_to_kg(mass) * 1000)
+            self.layer_reference_density = (layer.density / self.g_mass)
+            layer_densities.append(self.layer_reference_density)
+
+        for density in layer_densities:
+            if layer.thickness > self.reference_density_limit:
+                self.reference_density += density * (
+                    self.reference_density_meter / self.reference_density_limit)
+            else:
+                self.reference_density += density * (
+                    layer.thickness / self.reference_density_limit)

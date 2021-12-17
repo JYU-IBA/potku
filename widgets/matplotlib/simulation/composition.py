@@ -27,11 +27,14 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
+from typing import List
+
 import matplotlib
 import os
 import widgets
 
 import dialogs.dialog_functions as df
+import modules.general_functions as gf
 
 from widgets.matplotlib import mpl_utils
 from pathlib import Path
@@ -155,6 +158,16 @@ class _CompositionWidget(MatplotlibWidget):
         self.__layer_selector.set_visible(False)
         self.__layer_selector = None
         self.__selected_layer = None
+
+        reference_density = gf.ReferenceDensity(self.layers)
+        reference_density.update_reference_density()
+
+        if reference_density:
+            self.parent.referenceDensityLabel.setText(
+                f"Reference density: "
+                f"{reference_density.reference_density:1.2e} "
+                f"at./cm\xb3")
+
         # Update layer start depths
         self.update_start_depths()
 
@@ -196,6 +209,15 @@ class _CompositionWidget(MatplotlibWidget):
                 if self.foil_behaviour:
                     zoom_to_bottom = True
 
+                reference_density = gf.ReferenceDensity(self.layers)
+                reference_density.update_reference_density()
+
+                if reference_density:
+                    self.parent.referenceDensityLabel.setText(
+                        f"Reference density: "
+                        f"{reference_density.reference_density:1.2e} "
+                        f"at./cm\xb3")
+
                 self.__update_figure(zoom_to_bottom=zoom_to_bottom)
 
     def __update_selected_layer(self):
@@ -222,6 +244,31 @@ class _CompositionWidget(MatplotlibWidget):
         self.axes.add_patch(layer_patch)
 
         self.canvas.draw_idle()
+
+    def __update_reference_density(self, layers: List):
+
+        reference_density = 0.0
+        layer_reference_density = 0.0
+        reference_density_limit = 10.0
+        masses = []
+        g_mass = 0.0
+
+        for layer in layers:
+            if reference_density_limit - layer.start_depth > 0:
+                for element in layer.elements:
+                    mass = element.get_mass()
+                    masses.append(mass * element.amount)
+                    for mass in masses:
+                        g_mass += (gf.convert_amu_to_kg(mass) * 1000)
+                    layer_density = layer.density
+                    layer_reference_density += (layer_density / g_mass)
+                reference_density = layer_reference_density * (
+                        layer.thickness / reference_density_limit)
+
+        self.parent.referenceDensityLabel.setText(
+            f"Reference density: "
+            f"{reference_density:1.2e} "
+            f"at./cm\xb3")
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -353,6 +400,15 @@ class _CompositionWidget(MatplotlibWidget):
             self.update_start_depths()
             self.__selected_layer = dialog.layer
             self.__update_figure(zoom_to_bottom=True)
+
+        reference_density = gf.ReferenceDensity(self.layers)
+        reference_density.update_reference_density()
+
+        if reference_density:
+            self.parent.referenceDensityLabel.setText(
+                f"Reference density: "
+                f"{reference_density.reference_density:1.2e} "
+                f"at./cm\xb3")
 
         if type(self.parent) is widgets.simulation.target.TargetWidget:
             self.parent.recoilRadioButton.setEnabled(True)
