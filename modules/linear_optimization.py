@@ -742,18 +742,121 @@ class LinearOptimization(opt.BaseOptimizer):
                 peak.scale_width(normalized_height)
                 peak.scale_height(1 / normalized_height)
 
-        # TODO: Check that solution has x values in ascending order and
-        #   that they don't exceed limits
+        self._fix_and_check_solution(solution)
 
         return solution
+
+    def _fix_and_check_solution(self, solution) -> bool:
+        """Check and correct the solution if it has overlapping peaks or
+        it exceeds the beginning or the end.
+
+        Args:
+            solution: solution to check
+
+        Raises:
+            ValueError: if the solution required correcting but could
+                not be corrected.
+
+        Returns:
+            True if the solution was corrected, False if it stayed as-is.
+        """
+        solution_corrected = False
+
+        # Check start
+        first_point = solution.points[0]
+        if first_point.get_x() != self.lower_limits[0]:
+            if first_point is solution.peaks[0].lh:
+                difference = self.lower_limits[0] - first_point.get_x()
+                solution.peaks[0].move_left_x(difference)
+                solution.peaks[0].move_right_x(difference)
+
+                solution_corrected = True
+            elif first_point is solution.valleys[0].ll:
+                first_point.set_x(self.lower_limits[0])
+
+                solution_corrected = True
+            else:
+                raise ValueError(
+                    "Optimized solution did not start with a peak or valley.")
+
+        # Check end
+        # TODO: Does the last point ever get moved anyway?
+        last_point = solution.points[-1]
+        if last_point.get_x() != self.upper_limits[0]:
+            if last_point is not solution.valleys[-1].rl:
+                raise ValueError(
+                    "Optimized solution did not end with a valley.")
+            last_point.set_x(self.upper_limits[0])
+
+            solution_corrected = True
+
+        # Check peak overlaps
+        peak_gap_2 = 0.1 / 2  # TODO: Save this as a constant
+        prev_peak = None
+        for cur_peak in solution.peaks:
+            if prev_peak is None:
+                pass
+            else:
+                prev_left = prev_peak.leftmost_point.get_x()
+                prev_right = prev_peak.rightmost_point.get_x()
+                cur_left = cur_peak.leftmost_point.get_x()
+                cur_right = cur_peak.rightmost_point.get_x()
+
+                if prev_left >= cur_right or prev_right >= cur_right or prev_left >= cur_left:
+                    raise ValueError(
+                        "Completely overlapping peaks in optimized solution")
+
+                if prev_right >= cur_left:
+                    # Cut previous and current peaks overlaps
+
+                    real_width = cur_right - prev_left  # No overlap
+
+                    prev_width = prev_peak.width
+                    cur_width = cur_peak.width
+                    relative_width = prev_width + cur_width  # Partial overlap
+
+                    prev_ratio = prev_width / relative_width
+                    new_prev_right = prev_left + prev_ratio * real_width - peak_gap_2
+                    prev_move = prev_right - new_prev_right
+                    prev_peak.move_right_x(prev_move)
+
+                    cur_ratio = cur_width / relative_width
+                    new_cur_right = cur_right - cur_ratio * real_width + peak_gap_2
+                    cur_move = cur_left - new_cur_right
+                    cur_peak.move_left_x(cur_move)
+
+                    solution_corrected = True
+
+            prev_peak = cur_peak
+
+        # Check point order
+        prev_point = None
+        for cur_point in solution.points:
+            if prev_point is None:
+                pass
+            else:
+                if prev_point.get_x() > cur_point.get_x():
+                    raise ValueError(
+                        "Points are in wrong order in optimized solution")
+
+            prev_point = cur_point
+
+        return solution_corrected
 
     def _optimize(self):
         solution = copy.deepcopy(self.solution)
         bounds = self._get_bounds()
 
-        optimized1 = self._fit_simulation(solution, bounds)
+        try:
+            optimized1 = self._fit_simulation(solution, bounds)
+        except ValueError as e:
+            return str(e), None
+
         optimized_copy = copy.deepcopy(optimized1)
-        optimized2 = self._fit_simulation(optimized_copy, bounds)
+        try:
+            optimized2 = self._fit_simulation(optimized_copy, bounds)
+        except ValueError as e:
+            return optimized1, str(e)
 
         return optimized1, optimized2
 
@@ -779,6 +882,7 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.on_next(self._get_message(OptimizationState.RUNNING))
 
+        # TODO: handle possible str return types
         result1, result2 = self._optimize()
         if self.optimization_type is OptimizationType.RECOIL:
             first_sol = self.solution
@@ -819,54 +923,41 @@ class Peak:
 
     @property
     def center(self) -> Point:
+        """Return (calculated) center point"""
         x = (self.lh.get_x() + self.rh.get_x()) / 2
         y = (self.lh.get_y() + self.rh.get_y()) / 2
         return Point(x, y)
 
     @property
     def points(self) -> List[Point]:
+        """Return all points"""
         return [self.prev_point, self.ll, self.lh,
                 self.rh, self.rl, self.next_point]
 
-    # TODO: Use this and move the points' x in order based on amount's sign
-    #       (negative: left to right, positive: right to left)
-    #       (prevents overlapping)
-    @staticmethod
-    def _move_point(point, x=0.0, y=0.0,
-                    prev_point=None, next_point=None) -> bool:
-        clipped = False
+    @property
+    def leftmost_point(self) -> Point:
+        """Return leftmost point (ll or lh)"""
+        return self.ll if self.ll is not None else self.lh
 
-        if x != 0.0:
-            new_x = point.get_x() + x
-            clipped_x = np.clip(
-                new_x, a_min=prev_point.get_x(), a_max=next_point.get_x())
-            if new_x != clipped_x:
-                clipped = True
+    @property
+    def rightmost_point(self) -> Point:
+        """Return rightmost point (rl or rh)"""
+        return self.rl if self.rl is not None else self.rh
 
-            point.set_x(clipped_x)
-
-        if y != 0.0:
-            new_y = point.get_y() + y
-            clipped_y = np.clip(
-                new_y, a_min=prev_point.get_y(), a_max=next_point.get_y())
-            if new_y != clipped_y:
-                clipped = True
-
-            point.set_y(clipped_y)
-
-        return clipped
-
-    # TODO: check limits?
-    # TODO: remove checks from move_left_x and move_right_x, and check manually?
+    @property
+    def width(self) -> float:
+        left = self.leftmost_point
+        right = self.rightmost_point
+        return right.get_x() - left.get_x()
 
     def move_left_x(self, amount: float) -> None:
-        if self.prev_point and self.ll:
+        if self.ll:
             self.ll.set_x(self.ll.get_x() + amount)
-            self.lh.set_x(self.lh.get_x() + amount)
+        self.lh.set_x(self.lh.get_x() + amount)
 
     def move_right_x(self, amount: float) -> None:
-        if self.next_point and self.rl:
-            self.rh.set_x(self.rh.get_x() + amount)
+        self.rh.set_x(self.rh.get_x() + amount)
+        if self.rl:
             self.rl.set_x(self.rl.get_x() + amount)
 
     def move_y(self, amount: float) -> None:
