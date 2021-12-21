@@ -972,26 +972,27 @@ class Peak:
             scale_gap: whether to scale the gap between low and high points
                 (True) or keep it constant (False)
         """
-        center = self.center.get_x()
-        ll = self.ll.get_x()
         lh = self.lh.get_x()
         rh = self.rh.get_x()
-        rl = self.rl.get_x()
+        center = self.center.get_x()
 
         left_width = lh - center
-        left_gap = ll - lh
         right_width = rh - center
-        right_gap = rl - rh
-
         lh_new = center + left_width * factor
-        ll_new = lh_new + left_gap if not scale_gap else lh_new + left_gap * factor
         rh_new = center + right_width * factor
-        rl_new = rh_new + right_gap if not scale_gap else rh_new + right_gap * factor
 
-        self.ll.set_x(ll_new)
         self.lh.set_x(lh_new)
         self.rh.set_x(rh_new)
-        self.rl.set_x(rl_new)
+
+        if self.ll:
+            left_gap = self.ll.get_x() - lh
+            ll_new = lh_new + left_gap if not scale_gap else lh_new + left_gap * factor
+            self.ll.set_x(ll_new)
+
+        if self.rl:
+            right_gap = self.rl.get_x() - rh
+            rl_new = rh_new + right_gap if not scale_gap else rh_new + right_gap * factor
+            self.rl.set_x(rl_new)
 
     def scale_height(self, factor: float) -> None:
         """Scale peak's height (y values)
