@@ -1,14 +1,14 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 27.5.2019
+Updated on 3.1.2022
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2022 Joonas Kopoonen and Tuomas Pitkänen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen"
+             "\n Sinikka Siironen \n Joonas Koponen \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 from typing import List
@@ -34,7 +34,7 @@ import os
 import widgets
 
 import dialogs.dialog_functions as df
-import modules.general_functions as gf
+from modules.reference_density import ReferenceDensity
 
 from widgets.matplotlib import mpl_utils
 from pathlib import Path
@@ -159,7 +159,10 @@ class _CompositionWidget(MatplotlibWidget):
         self.__layer_selector = None
         self.__selected_layer = None
 
-        reference_density = gf.ReferenceDensity(self.layers)
+        # Update layer start depths
+        self.update_start_depths()
+
+        reference_density = ReferenceDensity(self.layers)
         reference_density.update_reference_density()
 
         if reference_density:
@@ -167,9 +170,6 @@ class _CompositionWidget(MatplotlibWidget):
                 f"Reference density: "
                 f"{reference_density.reference_density:1.2e} "
                 f"at./cm\xb3")
-
-        # Update layer start depths
-        self.update_start_depths()
 
         # Update canvas
         self.__update_figure(zoom_to_bottom=True)
@@ -209,7 +209,7 @@ class _CompositionWidget(MatplotlibWidget):
                 if self.foil_behaviour:
                     zoom_to_bottom = True
 
-                reference_density = gf.ReferenceDensity(self.layers)
+                reference_density = ReferenceDensity(self.layers)
                 reference_density.update_reference_density()
 
                 if reference_density:
@@ -244,31 +244,6 @@ class _CompositionWidget(MatplotlibWidget):
         self.axes.add_patch(layer_patch)
 
         self.canvas.draw_idle()
-
-    def __update_reference_density(self, layers: List):
-
-        reference_density = 0.0
-        layer_reference_density = 0.0
-        reference_density_limit = 10.0
-        masses = []
-        g_mass = 0.0
-
-        for layer in layers:
-            if reference_density_limit - layer.start_depth > 0:
-                for element in layer.elements:
-                    mass = element.get_mass()
-                    masses.append(mass * element.amount)
-                    for mass in masses:
-                        g_mass += (gf.convert_amu_to_kg(mass) * 1000)
-                    layer_density = layer.density
-                    layer_reference_density += (layer_density / g_mass)
-                reference_density = layer_reference_density * (
-                        layer.thickness / reference_density_limit)
-
-        self.parent.referenceDensityLabel.setText(
-            f"Reference density: "
-            f"{reference_density:1.2e} "
-            f"at./cm\xb3")
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -401,7 +376,7 @@ class _CompositionWidget(MatplotlibWidget):
             self.__selected_layer = dialog.layer
             self.__update_figure(zoom_to_bottom=True)
 
-        reference_density = gf.ReferenceDensity(self.layers)
+        reference_density = ReferenceDensity(self.layers)
         reference_density.update_reference_density()
 
         if reference_density:
