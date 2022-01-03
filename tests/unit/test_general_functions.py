@@ -1,10 +1,13 @@
 # coding=utf-8
 """
+Created on 2020
+Updated on 3.1.2022
+
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 Juhani Sundell
+Copyright (C) 2020 Juhani Sundell, 2022 Joonas Koponen and Tuomas Pitkänen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -20,7 +23,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 
-__author__ = "Juhani Sundell"
+__author__ = "Juhani Sundell \n Joonas Koponen \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import unittest
@@ -37,8 +40,8 @@ from pathlib import Path
 
 from modules import general_functions as gf
 from modules.element import Element
-from modules.general_functions import ReferenceDensity
 from modules.layer import Layer
+from modules.reference_density import ReferenceDensity
 
 _DIR_PATH = Path(
     utils.get_sample_data_dir(), "Ecaart-11-mini", "Tof-E_65-mini", "cuts"
@@ -530,31 +533,144 @@ class TestDigitsToSuperscript(unittest.TestCase):
 
 class TestUpdatingReferenceDensity(unittest.TestCase):
 
-    # TODO: More tests
     def test_update_reference_density(self):
 
-        target = mo.Target(layers=[
+        no_layers = mo.Target(layers=[])
+
+        one_layer_under_limit = mo.Target(layers=[
+            Layer("Si", [
+                Element.from_string("Si 1.0")
+            ], 1.0, 2.3290, start_depth=0.0)
+        ])
+
+        one_layer_over_limit = mo.Target(layers=[
             Layer("Si", [
                 Element.from_string("Si 1.0")
             ], 10.0, 2.3290, start_depth=0.0)
         ])
 
-        # target = mo.Target(layers=[
-        #     Layer("layer1", [
-        #         Element.from_string("Li 1.0")
-        #     ], 0.01, 0.01, start_depth=0.0),
-        #     Layer("layer2", [
-        #         Element.from_string("Li 0.048"),
-        #         Element.from_string("O 0.649"),
-        #         Element.from_string("Mn 0.303")
-        #     ], 90.0, 4.0, start_depth=0.01),
-        #     Layer("subtrate", [
-        #         Element.from_string("Si 1.0")
-        #     ], 1000.0, 2.32, start_depth=90.01)
-        # ])
+        two_layers_over_limit = mo.Target(layers=[Layer("Au", [
+                Element.from_string("Au 1.0")
+            ], 11.0, 20.0, start_depth=0.0),
+            Layer("Si", [
+                Element.from_string("Si 1.0")
+            ], 100.0, 2.3290, start_depth=0.0)
+        ])
 
-        reference_density = ReferenceDensity(target.layers)
-        reference_density.update_reference_density()
+        two_layers_under_limit = mo.Target(layers=[Layer("Au", [
+                Element.from_string("Au 1.0")
+            ], 1.0, 20.0, start_depth=0.0),
+            Layer("Si", [
+                Element.from_string("Si 1.0")
+            ], 100.0, 2.3290, start_depth=0.0)
+        ])
 
-        self.assertEqual(reference_density.reference_density,
+        two_in_same_layer_under_limit = mo.Target(layers=[Layer("Au", [
+                Element.from_string("Au 0.1"),
+                Element.from_string("H 0.9")
+            ], 1.0, 20.0, start_depth=0.0),
+            Layer("Si", [
+                Element.from_string("Si 1.0")
+            ], 100.0, 2.3290, start_depth=0.0)
+        ])
+
+        two_in_same_layer_over_limit = mo.Target(layers=[Layer("Au", [
+                Element.from_string("Au 0.1"),
+                Element.from_string("H 0.9")
+            ], 11.0, 20.0, start_depth=0.0),
+            Layer("Si", [
+                Element.from_string("Si 1.0")
+            ], 100.0, 2.3290, start_depth=0.0)
+        ])
+
+        two_layers_under_limit_reversed = mo.Target(layers=[Layer("Si", [
+                Element.from_string("Si 1.0")
+            ], 100.0, 2.3290, start_depth=0.0), Layer("Au", [
+                Element.from_string("Au 1.0")
+            ], 1.0, 20.0, start_depth=0.0),
+        ])
+
+        two_layers_over_limit_reversed = mo.Target(layers=[Layer("Si", [
+                Element.from_string("Si 1.0")
+            ], 100.0, 2.3290, start_depth=0.0), Layer("Au", [
+                Element.from_string("Au 1.0")
+            ], 11.0, 20.0, start_depth=0.0),
+        ])
+
+        # No layers
+        without_layers = ReferenceDensity(no_layers.layers)
+        without_layers.update_reference_density()
+
+        # One layer
+        only_one_layer_under_limit = ReferenceDensity(
+            one_layer_under_limit.layers)
+        only_one_layer_under_limit.update_reference_density()
+
+        only_one_layer_over_limit = ReferenceDensity(
+            one_layer_over_limit.layers)
+        only_one_layer_over_limit.update_reference_density()
+
+        # Two layers over the thickness limit
+        two_layers_over_limit_thickness_limit = ReferenceDensity(
+            two_layers_over_limit.layers)
+        two_layers_over_limit_thickness_limit.update_reference_density()
+
+        # Two layers under the thickness limit
+        two_layers_under_limit_thickness_limit = ReferenceDensity(
+            two_layers_under_limit.layers)
+        two_layers_under_limit_thickness_limit.update_reference_density()
+
+        # Two layers and two elements in the same layer under the thickness
+        # limit
+        two_elements_in_same_layer_under_thickness_limit = ReferenceDensity(
+            two_in_same_layer_under_limit.layers)
+        two_elements_in_same_layer_under_thickness_limit.update_reference_density()
+
+        # Two layers and two elements in the same layer over the thickness
+        # limit
+        two_elements_in_same_layer_over_thickness_limit = ReferenceDensity(
+            two_in_same_layer_over_limit.layers)
+        two_elements_in_same_layer_over_thickness_limit.update_reference_density()
+
+        # Two layers over the thickness limit REVERSED ELEMENTS
+
+        two_layers_over_thickness_limit_reversed = ReferenceDensity(
+            two_layers_over_limit_reversed.layers)
+        two_layers_over_thickness_limit_reversed.update_reference_density()
+
+        # Two layers under the thickness limit REVERSED ELEMENTS
+        two_layers_under_thickness_limit_reversed = ReferenceDensity(
+            two_layers_under_limit_reversed.layers)
+        two_layers_under_thickness_limit_reversed.update_reference_density()
+
+        self.assertEqual(without_layers.reference_density, 0.0)
+
+        self.assertEqual(only_one_layer_over_limit.reference_density,
                          4.9897601328705675e+22)
+
+        self.assertEqual(only_one_layer_over_limit.reference_density,
+                         4.9897601328705675e+22)
+
+        self.assertEqual(
+            two_layers_over_limit_thickness_limit.reference_density,
+            6.113849025499229e+22)
+
+        self.assertEqual(
+            two_layers_under_limit_thickness_limit.reference_density,
+            5.1021690221334335e+22)
+
+        self.assertEqual(
+            two_elements_in_same_layer_under_thickness_limit.reference_density,
+            1.4440992435399563e+24)
+
+        self.assertEqual(
+            two_elements_in_same_layer_over_thickness_limit.reference_density,
+            1.3991914023441212e+25)
+
+        self.assertEqual(
+            two_layers_under_thickness_limit_reversed.reference_density,
+            4.9897601328705675e+22)
+
+        self.assertEqual(
+            two_layers_over_thickness_limit_reversed.reference_density,
+            4.9897601328705675e+22)

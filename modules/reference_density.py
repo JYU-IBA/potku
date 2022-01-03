@@ -25,6 +25,7 @@ along with this program (file named 'LICENCE').
 __author__ = "Joonas Koponen \n Tuomas Pitkänen"
 __version__ = "2.0"
 
+import warnings
 from typing import List
 
 from modules.general_functions import convert_amu_to_kg
@@ -49,6 +50,9 @@ class ReferenceDensity:
         self.total_thickness = 0.0
 
     def update_reference_density(self):
+        if len(self.layers) == 0:
+            warnings.warn("There are no layers!")
+            return
         self.total_thickness = 0.0
         for layer in self.layers:
             self.add_layer_density(layer)
