@@ -138,10 +138,10 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.systematic_error = DepthProfileDialog.systerr
 
         # Checkboxes
-        self.systematic_error = DepthProfileDialog.systerr
-        self.show_scale_line = DepthProfileDialog.line_scale
-        self.show_zero_line = DepthProfileDialog.line_zero
-        self.show_used_eff = DepthProfileDialog.used_eff
+        self.systematic_error = False
+        self.show_scale_line = False
+        self.show_zero_line = False
+        self.show_used_eff = True
 
         self.cross_sections = global_settings.get_cross_sections()
 
