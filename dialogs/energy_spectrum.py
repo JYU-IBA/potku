@@ -37,7 +37,7 @@ import shutil
 from pathlib import Path
 from typing import Optional
 
-from PyQt5 import QtCore
+from PyQt5 import QtCore, sip
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
@@ -47,6 +47,8 @@ import dialogs.file_dialogs as fdialogs
 import modules.cut_file as cut_file
 import widgets.binding as bnd
 import widgets.gui_utils as gutils
+import widgets.icon_manager as icons
+
 
 from modules.element_simulation import ElementSimulation
 from modules.energy_spectrum import EnergySpectrum
@@ -143,6 +145,12 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         self.histogramTicksDoubleSpinBox.setLocale(locale)
 
         # Connect buttons
+        self.pushButton_Remove.setIcon(icons.get_reinhardt_icon(
+            "edit_delete.svg"))
+        self.pushButton_Remove.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                             QtWidgets.QSizePolicy.Fixed)
+        self.pushButton_Remove.clicked.connect(self.remove_external_file)
+        self.pushButton_Remove.setToolTip("Remove imported file")
         self.pushButton_Cancel.clicked.connect(self.close)
 
         self.external_tree_widget = QtWidgets.QTreeWidget()
@@ -192,6 +200,40 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # FIXME .eff files not shown in sim mode
         self.__update_eff_files()
         self.exec_()
+
+    def remove_external_file(self):
+        # Imported files UI widget
+        root = self.external_tree_widget.invisibleRootItem()
+        # Files that will be removed
+        checked_files = []
+        # All files from the UI widget
+        child_count = root.childCount()
+        for i in range(child_count):
+            if root.child(i) is None:
+                QtWidgets.QMessageBox.critical(
+                    self, "Error", "Nothing to remove!",
+                    QtWidgets.QMessageBox.Ok,
+                    QtWidgets.QMessageBox.Ok)
+                return
+            elif root.child(i).checkState(0) == 2:
+                try:
+                    if len(self.external_files) == 1:
+                        os.remove(Path(self.external_files[-1]))
+                    else:
+                        os.remove(Path(self.external_files[i]))
+                except OSError:
+                    pass
+                checked_files.append(root.child(i))
+        if len(checked_files) == 0:  # Only unchecked files
+            QtWidgets.QMessageBox.warning(
+                self, "Warning", "Choose an imported file to remove!",
+                QtWidgets.QMessageBox.Ok,
+                QtWidgets.QMessageBox.Ok)
+            return
+        else:
+            for external_file in checked_files:
+                sip.delete(external_file)
+        return
 
     def showEvent(self, event):
         """Adjust size after dialog has been shown.
@@ -271,7 +313,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             QtWidgets.QSizePolicy.Expanding,
             QtWidgets.QSizePolicy.Expanding)
         header = QtWidgets.QTreeWidgetItem()
-        header.setText(0, "External files")
+        header.setText(0, "Imported files")
         self.gridLayout_2.addWidget(self.external_tree_widget, 0, 2)
         self.external_tree_widget.setHeaderItem(header)
 
@@ -431,33 +473,35 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             "energy count\nenergy count\nenergy count\n...\n\n"
             "to match the simulation and measurement energy spectra files.",
             QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-        file_path = fdialogs.open_file_dialog(
+        file_paths = fdialogs.open_files_dialog(
             self, self.element_simulation.request.directory,
             "Select a file to import", "")
-        if file_path is None:
+        if file_paths is None:
             return
 
-        name = file_path.name
+        for file_path in file_paths:
+            name = file_path.name
 
-        new_file_name = \
-            self.element_simulation.request.get_imported_files_folder() / name
+            new_file_name = \
+                self.element_simulation.request.get_imported_files_folder() / name
 
-        if new_file_name.exists():
-            QtWidgets.QMessageBox.critical(
-                self, "Error", "A file with that name already exists.",
-                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-            return
+            if new_file_name.exists():
+                QtWidgets.QMessageBox.critical(
+                    self, "Error", "A file with that name already exists.",
+                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+                return
 
-        if not os.path.exists(new_file_name.parent):
-            os.makedirs(new_file_name.parent)
+            if not os.path.exists(new_file_name.parent):
+                os.makedirs(new_file_name.parent)
 
-        shutil.copyfile(file_path, new_file_name)
+            shutil.copyfile(file_path, new_file_name)
 
-        item = QtWidgets.QTreeWidgetItem()
-        item.setText(0, new_file_name.name)
-        item.setData(0, QtCore.Qt.UserRole, new_file_name)
-        item.setCheckState(0, QtCore.Qt.Checked)
-        self.external_tree_widget.addTopLevelItem(item)
+            item = QtWidgets.QTreeWidgetItem()
+            item.setText(0, new_file_name.name)
+            item.setData(0, QtCore.Qt.UserRole, new_file_name)
+            item.setCheckState(0, QtCore.Qt.Checked)
+
+            self.external_tree_widget.addTopLevelItem(item)
 
     def __update_eff_files(self):
         """Update efficiency files to UI which are used.

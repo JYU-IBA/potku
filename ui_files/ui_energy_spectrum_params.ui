@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>838</width>
-    <height>523</height>
+    <width>1035</width>
+    <height>536</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -70,21 +70,20 @@
          </property>
         </spacer>
        </item>
-       <item>
-        <widget class="QPushButton" name="importPushButton">
-         <property name="text">
-          <string>Import external file...</string>
-         </property>
-        </widget>
-       </item>
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_7">
+      <layout class="QHBoxLayout" name="horizontalLayout_4">
        <item>
         <widget class="QCheckBox" name="sum_spectrum_checkbox_simulation">
          <property name="enabled">
           <bool>true</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Generates the sum spectrum based on simulated energy spectra&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -99,6 +98,12 @@
        </item>
        <item>
         <widget class="QCheckBox" name="sum_spectrum_checkbox_measurement">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Generates the sum spectrum based on measured energy spectra&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
@@ -107,6 +112,38 @@
          </property>
          <property name="checked">
           <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="importPushButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>188</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Import external files</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushButton_Remove">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string/>
          </property>
         </widget>
        </item>
