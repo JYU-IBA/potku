@@ -23,29 +23,22 @@ along with this program (file named 'LICENCE').
 __author__ = "Tuomas Pitkänen"
 __version__ = "2.0"
 
-import abc
 import copy
 import subprocess
 from collections import namedtuple
-from pathlib import Path
-from timeit import default_timer as timer
 from typing import Tuple, List, Optional
 
 import numpy as np
 from scipy import signal
 from scipy.interpolate import interpolate
-from scipy.ndimage import filters
 
-from . import file_paths as fp
 from . import general_functions as gf
 from . import math_functions as mf
 from . import optimization as opt
 from .base import Espe
 from .element_simulation import ElementSimulation
-from .energy_spectrum import EnergySpectrum
 from .enums import OptimizationState, IonDivision
 from .enums import OptimizationType
-from .parsing import CSVParser
 from .point import Point
 from .recoil_element import RecoilElement
 
@@ -113,29 +106,27 @@ class LinearOptimization(opt.BaseOptimizer):
         self.solution = None
 
     def _generate_mev_to_nm_function(
-            self, peak_count: int = 12, peak_width: float = 3.0,
+            self, sample_count: int = 12, sample_width: float = 3.0,
             min_prominence_factor: float = 0.1) -> None:
         """Generate an interpolation function for `_convert_mev_to_nm`.
 
-        Simulates peaks at different points (in nm) to determine the function
-        parameters (based on MeV). Stops once peaks are not prominent enough or
-        maximum peak count is reached.
+        Samples thin, simulated peaks at different points (in nm) to determine
+        the function parameters (based on MeV). Stops once peaks are not
+        prominent enough or maximum sample count is reached.
 
         Args:
-            peak_count: number of peaks to simulate
-            peak_width: widths for peaks
+            sample_count: number of peaks to simulate
+            sample_width: widths for peaks
             min_prominence_factor: minimum fraction of average peak
                 prominences to include peak in results
         """
-        mev_range = self.measured_espe_x.min(), self.measured_espe_x.max()
-
-        nm_range = (self.lower_limits[0], self.upper_limits[0] - peak_width)
-        nm_points = np.linspace(*nm_range, peak_count)
+        nm_range = (self.lower_limits[0], self.upper_limits[0] - sample_width)
+        nm_points = np.linspace(*nm_range, sample_count)
 
         nm_step = nm_points[1] - nm_points[0]
-        if peak_width > nm_step:
+        if sample_width > nm_step:
             raise ValueError(
-                f"peak_width {peak_width} is wider than nm_step {nm_step}")
+                f"sample_width {sample_width} is wider than nm_step {nm_step}")
 
         smoothing_width = round(self.measured_espe_x.shape[0] / 30)
 
@@ -143,7 +134,7 @@ class LinearOptimization(opt.BaseOptimizer):
         prominences = []
         for nm in nm_points:  # TODO: multi-thread this
             solution = get_solution6(
-                nm, nm + peak_width, self.lower_limits, self.upper_limits)
+                nm, nm + sample_width, self.lower_limits, self.upper_limits)
             espe = self._run_solution(solution)
             espe_x, espe_y = split_espe(espe)
 
@@ -169,7 +160,7 @@ class LinearOptimization(opt.BaseOptimizer):
 
         mevs = np.array(mevs)
         # Pick matching points, centered
-        nms = nm_points[:mevs.shape[0]] + peak_width / 2
+        nms = nm_points[:mevs.shape[0]] + sample_width / 2
 
         mevs_diff = np.diff(mevs)
         if not np.all(mevs_diff <= 0):
@@ -338,13 +329,12 @@ class LinearOptimization(opt.BaseOptimizer):
         # Percentile reduces the impact of outliers
         self.measured_max_height = np.percentile(self.measured_espe_y, 98)
 
-    def _get_valley_intervals(self, y, peak_info: PeakInfo,
+    def _get_valley_intervals(self, peak_info: PeakInfo,
                               include_start: bool = False,
                               include_end: bool = False) -> List[slice]:
         """Get valley intervals (indexes) between peaks and/or start and end.
 
         Args:
-            y: y coordinates
             peak_info: peak information
             include_start:
             include_end:
@@ -408,8 +398,7 @@ class LinearOptimization(opt.BaseOptimizer):
     def _find_measured_valleys(self):
         # TODO: Get include_start and include_end from solution shape.
         self.measured_valley_intervals = self._get_valley_intervals(
-            self.measured_espe_y, self.measured_peak_info,
-            include_start=True, include_end=False)
+            self.measured_peak_info, include_start=True, include_end=False)
 
         self.measured_valley_heights = self._get_valley_heights(
             self.measured_espe_y, self.measured_valley_intervals)
@@ -430,7 +419,6 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.prepare_measured_spectra()
 
-        # TODO: Is this needed?
         self.combine_previous_erd_files()
 
         # Modify measurement file to match the simulation file in regards to
@@ -460,9 +448,6 @@ class LinearOptimization(opt.BaseOptimizer):
             self.run_initial_simulation(cancellation_token, ion_division)
 
         self.solution = initial_solution
-
-        # TODO: Is something like this needed?
-        # self.population = self.evaluate_solutions(initial_pop)
 
     def _get_spectra_difference(self, optim_espe) -> float:
         """Returns the difference between spectra points or area.
@@ -502,7 +487,6 @@ class LinearOptimization(opt.BaseOptimizer):
             x_min, y_min = self.lower_limits
             x_max, y_max = self.upper_limits
             gap = 0.01  # TODO: Save this as a constant
-            # TODO: Create inverse solutions too (swap peak & valley heights)?
             if self.rec_type == "box":
                 if self.sol_size == 5:  # 4-point recoil
                     peak0 = self.measured_peaks_nm[0]
@@ -611,40 +595,6 @@ class LinearOptimization(opt.BaseOptimizer):
 
         return objective_value
 
-    # TODO: Is this needed?
-    def _get_bounds(self):
-        # TODO: Select by type, use real values
-        x_ub = 120.0
-        x_lb = 0.01
-
-        y_ub = 1.0000
-        y_lb = 0.0001
-
-        x_bounds = [
-            (0.0, 0.0),
-            (x_lb, x_ub),
-            (x_lb, x_ub),
-            (x_lb, x_ub),
-            (x_lb, x_ub),
-            (x_lb, x_ub),
-            (x_lb, x_ub),
-            (120.0, 120.0)
-        ]
-
-        y_bounds = [
-            (y_lb, y_ub),
-            (y_lb, y_ub),
-            (y_lb, y_ub),
-            (y_lb, y_ub),
-            (y_lb, y_ub),
-            (y_lb, y_ub),
-            (0.0001, 0.0001),
-            (y_lb, y_ub)
-        ]
-
-        # TODO: namedtuple
-        return x_bounds, y_bounds
-
     # TODO: Unify with BaseOptimizer.modify_measurement?
     def _resize_simulated_espe(
             self, espe_x, espe_y, step_decimals=4) -> Tuple[np.ndarray, np.ndarray]:
@@ -699,7 +649,7 @@ class LinearOptimization(opt.BaseOptimizer):
 
         return resized_x, resized_y
 
-    def _fit_simulation(self, solution: "BaseSolution", bounds):
+    def _fit_simulation(self, solution: "BaseSolution"):
         espe = self._run_solution(solution)
         espe_x, espe_y = split_espe(espe)
 
@@ -718,14 +668,13 @@ class LinearOptimization(opt.BaseOptimizer):
         # Scale valley heights
 
         valley_intervals = self._get_valley_intervals(
-            resized_espe_y, peak_info, include_start=True, include_end=False)
+            peak_info, include_start=True, include_end=False)
         valley_heights = self._get_valley_heights(
             resized_espe_y, valley_intervals)
 
         for i, valley in enumerate(solution.valleys[::-1]):
             differences = np.array(self.measured_valley_heights[i]) - np.array(valley_heights[i])
             corrections = differences / self.measured_max_height
-            # TODO: Check max height
             if not self.is_skewed:
                 valley.move_y(corrections[0])
             else:
@@ -853,16 +802,15 @@ class LinearOptimization(opt.BaseOptimizer):
 
     def _optimize(self):
         solution = copy.deepcopy(self.solution)
-        bounds = self._get_bounds()
 
         try:
-            optimized1 = self._fit_simulation(solution, bounds)
+            optimized1 = self._fit_simulation(solution)
         except ValueError as e:
             return str(e), None
 
         optimized_copy = copy.deepcopy(optimized1)
         try:
-            optimized2 = self._fit_simulation(optimized_copy, bounds)
+            optimized2 = self._fit_simulation(optimized_copy)
         except ValueError as e:
             return optimized1, str(e)
 
@@ -899,8 +847,8 @@ class LinearOptimization(opt.BaseOptimizer):
 
             self.element_simulation.optimization_recoils = [
                 self.form_recoil(first_sol, "optfirst"),
-                self.form_recoil(med_sol, "optmed"),
-                self.form_recoil(last_sol, "optlast")
+                self.form_recoil(med_sol, "optmed") if hasattr(med_sol, "points") else None,  # TODO: Display message instead
+                self.form_recoil(last_sol, "optlast") if hasattr(last_sol, "points") else None  # TODO: Display message instead
             ]
         else:
             raise NotImplementedError
@@ -911,9 +859,6 @@ class LinearOptimization(opt.BaseOptimizer):
         self.on_completed(self._get_message(OptimizationState.FINISHED))
 
 
-# TODO: Probably needlessly complicated now, just move points up/down in pairs
-# TODO: Combine Valley with Peak (move_left_valley, move_right_valley)?
-# TODO: Parametric representation (width, center_point, prev_point/next_point)?
 class Peak:
     def __init__(
             self, lh: Point, rh: Point, ll: Point = None, rl: Point = None,
