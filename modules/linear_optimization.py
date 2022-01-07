@@ -751,7 +751,7 @@ class LinearOptimization(opt.BaseOptimizer):
         it exceeds the beginning or the end.
 
         Args:
-            solution: solution to check
+            solution: solution to check and correct (in place)
 
         Raises:
             ValueError: if the solution required correcting but could
@@ -761,6 +761,8 @@ class LinearOptimization(opt.BaseOptimizer):
             True if the solution was corrected, False if it stayed as-is.
         """
         solution_corrected = False
+        valley_gap = 0.1  # TODO: Save this as a constant
+        valley_gap_2 = valley_gap / 2
 
         # Check start
         first_point = solution.points[0]
@@ -790,8 +792,14 @@ class LinearOptimization(opt.BaseOptimizer):
 
             solution_corrected = True
 
+        # Check last peak end
+        difference = last_point.get_x() - solution.peaks[-1].rightmost_point.get_x() - valley_gap
+        if difference < 0:
+            solution.peaks[-1].move_right_x(difference)
+
+            solution_corrected = True
+
         # Check peak overlaps
-        peak_gap_2 = 0.1 / 2  # TODO: Save this as a constant
         prev_peak = None
         for cur_peak in solution.peaks:
             if prev_peak is None:
@@ -816,12 +824,12 @@ class LinearOptimization(opt.BaseOptimizer):
                     relative_width = prev_width + cur_width  # Partial overlap
 
                     prev_ratio = prev_width / relative_width
-                    new_prev_right = prev_left + prev_ratio * real_width - peak_gap_2
+                    new_prev_right = prev_left + prev_ratio * real_width - valley_gap_2
                     prev_move = prev_right - new_prev_right
                     prev_peak.move_right_x(prev_move)
 
                     cur_ratio = cur_width / relative_width
-                    new_cur_right = cur_right - cur_ratio * real_width + peak_gap_2
+                    new_cur_right = cur_right - cur_ratio * real_width + valley_gap_2
                     cur_move = cur_left - new_cur_right
                     cur_peak.move_left_x(cur_move)
 
@@ -951,16 +959,19 @@ class Peak:
         return right.get_x() - left.get_x()
 
     def move_left_x(self, amount: float) -> None:
+        """Move left half of peak"""
         if self.ll:
             self.ll.set_x(self.ll.get_x() + amount)
         self.lh.set_x(self.lh.get_x() + amount)
 
     def move_right_x(self, amount: float) -> None:
+        """Move right half of peak"""
         self.rh.set_x(self.rh.get_x() + amount)
         if self.rl:
             self.rl.set_x(self.rl.get_x() + amount)
 
     def move_y(self, amount: float) -> None:
+        """Move peak height"""
         self.lh.set_y(self.lh.get_y() + amount)
         self.rh.set_y(self.rh.get_y() + amount)
 
