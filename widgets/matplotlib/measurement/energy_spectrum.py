@@ -61,8 +61,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
     MEASURED_SUM_SPECTRUM_LINE_STYLE = "dashed"
     SIMULATED_SUM_SPECTRUM_LINE_STYLE = "dotted"
     SUM_SPECTRUM_LINE_WIDTH = 2
-    SIMULATED_SUM_SPECTRUM_Z_ORDER = -2
-    MEASURED_SUM_SPECTRUM_Z_ORDER = -1
+    SIMULATED_SUM_SPECTRUM_Z_ORDER = 102
+    MEASURED_SUM_SPECTRUM_Z_ORDER = 101
 
     def __init__(self, parent, simulation_energy=None, measurement_energy=None,
                  rbs_list=None, spectrum_type=None, legend=True,
