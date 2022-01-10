@@ -136,6 +136,11 @@ class LinearOptimization(opt.BaseOptimizer):
             solution = get_solution6(
                 nm, nm + sample_width, self.lower_limits, self.upper_limits)
             espe = self._run_solution(solution)
+            if not espe:
+                raise ValueError(
+                    "Ensure that there is simulated data for this recoil "
+                    "element before starting optimization.")
+
             espe_x, espe_y = split_espe(espe)
 
             try:
@@ -183,7 +188,6 @@ class LinearOptimization(opt.BaseOptimizer):
             Converted value (in nm)
         """
         if self._mev_to_nm_function is None:
-            # TODO: Better error type
             raise ValueError("Generate the MeV-to-nm conversion function first")
 
         return float(self._mev_to_nm_function(mev))
@@ -833,8 +837,6 @@ class LinearOptimization(opt.BaseOptimizer):
                 error=f"Preparation for optimization failed: {e}"))
             self.clean_up(cancellation_token)
             return
-
-        pass
 
         self.on_next(self._get_message(OptimizationState.RUNNING))
 
