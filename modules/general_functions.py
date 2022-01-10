@@ -656,3 +656,26 @@ def find_next(iterable: Iterable[T], cond: Callable[[T], bool]) -> T:
         return next(i for i in iterable if cond(i))
     except StopIteration:
         raise ValueError("Value not found in iterable.")
+
+
+def check_if_sum_in_directory_name(directory):
+    """
+    Check if a directory name contains "SUM" string.
+
+    Args:
+        directory: Directory that is iterated
+
+    Return:
+        True if there is at least one directory name contains "SUM" string.
+        False if there is not.
+
+    """
+    measured_sum_found = False
+    simulated_sum_found = False
+    with os.scandir(directory) as s_dir:
+        for entry in s_dir:
+            if entry.name.startswith("MEASURED_SUM"):
+                measured_sum_found = True
+            if entry.name.startswith("SIMULATED_SUM"):
+                simulated_sum_found = True
+    return measured_sum_found, simulated_sum_found
