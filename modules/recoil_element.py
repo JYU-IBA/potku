@@ -48,6 +48,8 @@ from .point import Point
 from .parsing import CSVParser
 
 from modules.global_settings import GlobalSettings
+from .profile import REFERENCE_DENSITY
+
 
 class RecoilElement(MCERDParameterContainer, Serializable):
     """An element that has a list of points and a widget. The points are kept
@@ -56,7 +58,7 @@ class RecoilElement(MCERDParameterContainer, Serializable):
     def __init__(self, element: Element, points: List[Point], color="red",
                  name="Default", rec_type="rec",
                  description="These are default recoil settings.",
-                 reference_density=None, modification_time=None,
+                 reference_density=REFERENCE_DENSITY, modification_time=None,
                  channel_width=None):
         """Inits recoil element.
 
