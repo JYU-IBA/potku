@@ -57,7 +57,12 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
     """Energy spectrum widget
     """
     # By default, draw spectra lines with a solid line
-    default_linestyle = "-"
+    DEFAULT_LINESTYLE = "-"
+    MEASURED_SUM_SPECTRUM_LINE_STYLE = "dashed"
+    SIMULATED_SUM_SPECTRUM_LINE_STYLE = "dotted"
+    SUM_SPECTRUM_LINE_WIDTH = 2
+    SIMULATED_SUM_SPECTRUM_Z_ORDER = 102
+    MEASURED_SUM_SPECTRUM_Z_ORDER = 101
 
     def __init__(self, parent, simulation_energy=None, measurement_energy=None,
                  rbs_list=None, spectrum_type=None, legend=True,
@@ -492,7 +497,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                     self.__ignore_elements, self.__rbs_list,
                     self.__selection_colors)
                 ignore_measurement_elements.iterate_keys_and_plot_them(
-                    x_min, self.axes, self.plots, self.default_linestyle)
+                    x_min, self.axes, self.plots)
 
             else:
                 ignore_measurement_elements = IgnoreMeasurementElements(
@@ -500,7 +505,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                     self.__ignore_elements, self.__rbs_list,
                     self.__selection_colors)
                 ignore_measurement_elements.iterate_keys_and_plot_them(
-                    x_min, self.axes, self.plots, self.default_linestyle)
+                    x_min, self.axes, self.plots)
             if self.measured_sum_spectrum_is_selected:
                 self.plot_measured_sum_spectrum()
         else:
@@ -657,10 +662,10 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
             if not color:
                 line, = self.axes.plot(x, y, label=label,
-                                       linestyle=self.default_linestyle)
+                                       linestyle=self.DEFAULT_LINESTYLE)
             else:
                 line, = self.axes.plot(x, y, label=label, color=color,
-                                       linestyle=self.default_linestyle)
+                                       linestyle=self.DEFAULT_LINESTYLE)
             self.plots[key] = line
 
     def plot_simulated_sum_spectrum(self):
@@ -668,7 +673,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 self.simulated_sum_spectrum.sum_spectrum:
             x, y = zip(*self.simulated_sum_spectrum.sum_spectrum)
             line, = self.axes.plot(x, y, label='SIMULATION_SUM',
-                                   linestyle=self.default_linestyle)
+                                   linestyle=self.SIMULATED_SUM_SPECTRUM_LINE_STYLE,
+                                   linewidth=self.SUM_SPECTRUM_LINE_WIDTH,
+                                   zorder=self.SIMULATED_SUM_SPECTRUM_Z_ORDER)
             self.plots[self.simulated_sum_spectrum.sum_spectrum_path] = line
 
     def plot_measured_sum_spectrum(self):
@@ -677,12 +684,16 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                     self.measured_sum_spectrum.sum_spectrum:
                 x, y = zip(*self.measured_sum_spectrum.sum_spectrum)
                 line, = self.axes.plot(x, y, label='MEASUREMENT_SUM',
-                                       linestyle=self.default_linestyle)
+                                       linestyle=self.MEASURED_SUM_SPECTRUM_LINE_STYLE,
+                                       linewidth=self.SUM_SPECTRUM_LINE_WIDTH,
+                                       zorder=self.MEASURED_SUM_SPECTRUM_Z_ORDER)
                 self.plots[self.measured_sum_spectrum.sum_spectrum_path] = line
         else:
             x, y = zip(*self.measured_sum_spectrum.sum_spectrum)
             line, = self.axes.plot(x, y, label='MEASUREMENT_SUM',
-                                   linestyle=self.default_linestyle)
+                                   linestyle=self.MEASURED_SUM_SPECTRUM_LINE_STYLE,
+                                   linewidth=self.SUM_SPECTRUM_LINE_WIDTH,
+                                   zorder=self.self.MEASURED_SUM_SPECTRUM_Z_ORDER)
             self.plots[self.measured_sum_spectrum.sum_spectrum_key] = line
 
     def remove_ignored_elements(self):
@@ -778,9 +789,13 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         for file_name, line in self.plots.items():
             if file_name in plots_to_hide:
                 line.set_linestyle("None")
+            elif "MEASURED_SUM" in str(file_name):
+                line.set_linestyle(self.MEASURED_SUM_SPECTRUM_LINE_STYLE)
+            elif "SIMULATED_SUM" in str(file_name):
+                line.set_linestyle(self.SIMULATED_SUM_SPECTRUM_LINE_STYLE)
             else:
                 # Any other plot will use the default style
-                line.set_linestyle(self.default_linestyle)
+                line.set_linestyle(self.DEFAULT_LINESTYLE)
 
         self.canvas.draw()
         self.canvas.flush_events()
@@ -1031,15 +1046,13 @@ class IgnoreMeasurementElements:
         self.element_counts: Optional[Dict] = {}
 
     # FIXME: Simplify me :)
-    def iterate_keys_and_plot_them(self, x_min, axes, plots, default_linestyle):
+    def iterate_keys_and_plot_them(self, x_min, axes, plots):
         """Iterate element keys and plot them on the GUI.
 
         Args:
             x_min: The current minimum x-value
             axes: Axes that will on the GUI
             plots: Plots the will be on the GUI
-            default_linestyle: Default line style that will be on the GUI
-
         """
         for key, points in self.measurement_keys_and_points.items():
             if key is None or key is self.sum_spectrum_key:
@@ -1104,7 +1117,7 @@ class IgnoreMeasurementElements:
                 label = r"$^{" + str(isotope) + "}$" + element \
                         + rbs_string + "$_{split: " + key + "}$"
             line, = axes.plot(x, y, color=color, label=label,
-                              linestyle=default_linestyle)
+                              linestyle=MatplotlibEnergySpectrumWidget.DEFAULT_LINESTYLE)
             plots[key] = line
 
 
