@@ -62,7 +62,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
     x_unit = DepthProfileUnit.ATOMS_PER_SQUARE_CM
     line_zero = False
     line_scale = False
-    used_eff = False
+    used_eff = True
     systerr = 0.0
 
     status_msg = bnd.bind("label_status")
@@ -138,10 +138,10 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.systematic_error = DepthProfileDialog.systerr
 
         # Checkboxes
-        self.systematic_error = False
-        self.show_scale_line = False
-        self.show_zero_line = False
-        self.show_used_eff = True
+        self.systematic_error = DepthProfileDialog.systerr
+        self.show_scale_line = DepthProfileDialog.line_scale
+        self.show_zero_line = DepthProfileDialog.line_zero
+        self.show_used_eff = DepthProfileDialog.used_eff
 
         self.cross_sections = global_settings.get_cross_sections()
 
