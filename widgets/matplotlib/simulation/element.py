@@ -103,17 +103,6 @@ class ElementWidget(QtWidgets.QWidget):
         # Circle for showing the recoil color
         self.circle = Circle(color)
 
-        self.change_recoil_element_info = QtWidgets.QPushButton()
-        self.change_recoil_element_info.setIcon(icon_manager.get_icon(
-            "measuring_unit_settings.svg"))
-        self.change_recoil_element_info.setSizePolicy(
-            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-
-        self.change_recoil_element_info.clicked.connect(
-            parent.change_recoil_element_info)
-        self.change_recoil_element_info.setToolTip("Modify the recoil element "
-                                                   "info")
-
         self.draw_spectrum_button = QtWidgets.QPushButton()
         self.draw_spectrum_button.setIcon(icon_manager.get_icon(
             "energy_spectrum_icon.svg"))
@@ -145,14 +134,12 @@ class ElementWidget(QtWidgets.QWidget):
         if platform.system() == "Darwin":
             horizontal_layout.setContentsMargins(0, 0, 12, 0)
 
-        self.change_recoil_element_info.setMaximumWidth(BUTTON_MAX_WIDTH)
         self.draw_spectrum_button.setMaximumWidth(BUTTON_MAX_WIDTH)
         self.settings_button.setMaximumWidth(BUTTON_MAX_WIDTH)
         self.add_recoil_button.setMaximumWidth(BUTTON_MAX_WIDTH)
 
         horizontal_layout.addWidget(self.radio_button)
         horizontal_layout.addWidget(self.circle)
-        horizontal_layout.addWidget(self.change_recoil_element_info)
         horizontal_layout.addWidget(self.draw_spectrum_button)
         horizontal_layout.addWidget(self.settings_button)
         horizontal_layout.addWidget(self.add_recoil_button)

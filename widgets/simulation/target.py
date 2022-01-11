@@ -118,6 +118,24 @@ class TargetWidget(QtWidgets.QWidget):
         self.editPushButtonRecoil.setToolTip(
             "Edit the reference density this target composition")
 
+        icon_manager.set_icon(
+            self.editRecoilElementInfo, "measuring_unit_settings.svg")
+        self.editRecoilElementInfo.clicked.connect(
+            self.recoil_distribution_widget.change_recoil_element_info)
+        self.editRecoilElementInfo.setIconSize(QtCore.QSize(14, 14))
+        self.editRecoilElementInfo.setToolTip(
+            "Edit the recoil element info")
+
+        icon_manager.set_icon(
+            self.drawEnergySpectra, "energy_spectrum_icon.svg")
+        # self.drawEnergySpectra.clicked.connect(
+        #     lambda: self.recoil_distribution_widget.parent.plot_spectrum(
+        #         spectra_changed=self.recoil_distribution_widget.parent.spectra_changed))
+        self.drawEnergySpectra.setIconSize(QtCore.QSize(14, 14))
+        self.drawEnergySpectra.setToolTip(
+            "Draw energy spectra")
+        self.drawEnergySpectra.setEnabled(False)
+
         self.recoilListWidget.hide()
         self.editLockPushButton.hide()
         self.elementInfoWidget.hide()

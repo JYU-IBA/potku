@@ -389,26 +389,6 @@ class ElementManager:
             radio_buttons.append(recoil_element.widgets[0].radio_button)
         return radio_buttons
 
-    def disable_push_buttons(self, current_element):
-        for element_simulation in self.element_simulations:
-            if element_simulation == current_element:
-                for recoil_element in element_simulation.recoil_elements:
-                    self.change_button_state(recoil_element, True)
-            else:
-                for recoil_element in element_simulation.recoil_elements:
-                    self.change_button_state(recoil_element, False)
-
-    @staticmethod
-    def change_button_state(recoil_element: RecoilElement, state: bool):
-        recoil_element.widgets[
-            0].change_recoil_element_info.setEnabled(
-            state)
-        recoil_element.widgets[0].draw_spectrum_button.setEnabled(
-            state)
-        recoil_element.widgets[0].settings_button.setEnabled(state)
-        recoil_element.widgets[0].add_recoil_button.setEnabled(
-            state)
-
     def has_element(self, element: Element) -> bool:
         """Checks whether any ElementSimulation has an element that matches
         the given argument.
@@ -1001,7 +981,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.other_recoils.append(self.current_recoil_element)
         current_element_simulation = self.element_manager \
             .get_element_simulation_with_radio_button(button)
-        self.element_manager.disable_push_buttons(current_element_simulation)
         self.current_element_simulation = current_element_simulation
         self.current_recoil_element = \
             self.element_manager.get_recoil_element_with_radio_button(
