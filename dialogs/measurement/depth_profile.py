@@ -62,7 +62,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
     x_unit = DepthProfileUnit.ATOMS_PER_SQUARE_CM
     line_zero = False
     line_scale = False
-    used_eff = False
+    used_eff = True
     systerr = 0.0
 
     status_msg = bnd.bind("label_status")
