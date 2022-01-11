@@ -472,7 +472,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 data_func=lambda tpl: tpl[0])
         else:
             detector = self.measurement.get_detector_or_default()
-            label_txt = df.get_efficiency_text(self.treeWidget, detector)
+            label_txt = df.get_efficiency_text_tree(self.treeWidget, detector)
 
         self.label_efficiency_files.setText(label_txt)
 

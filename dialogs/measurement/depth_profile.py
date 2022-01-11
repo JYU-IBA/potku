@@ -57,7 +57,9 @@ class DepthProfileDialog(QtWidgets.QDialog):
     """
     Dialog for making a depth profile.
     """
-    # TODO replace these global variables with PropertySavingWidget
+    # TODO replace these global variables with PropertySavingWidget.
+    #   These should not be mutated because they are (static) class variables
+    #   instead of member variables.
     checked_cuts = {}
     x_unit = DepthProfileUnit.ATOMS_PER_SQUARE_CM
     line_zero = False
@@ -286,7 +288,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         """Update efficiency files to UI which are used.
         """
         detector, *_ = self.measurement.get_used_settings()
-        self.used_efficiency_files = df.get_efficiency_text(
+        self.used_efficiency_files = df.get_efficiency_text_tree(
             self.treeWidget, detector)
 
     def _show_measurement_settings(self):
@@ -314,10 +316,10 @@ class DepthProfileWidget(QtWidgets.QWidget):
                  elements: List[Element], x_units: DepthProfileUnit,
                  line_zero: bool, used_eff: bool, line_scale: bool,
                  systematic_error: float,
-                 eff_files_str: str,
+                 eff_files_str: Optional[str],
                  progress: Optional[ProgressReporter] = None):
         """Inits widget.
-        
+
         Args:
             parent: a MeasurementTabWidget.
             output_dir: full path to depth file location
@@ -351,6 +353,11 @@ class DepthProfileWidget(QtWidgets.QWidget):
             else:
                 sub_progress = None
 
+            detector, _, _, profile, _ = self.measurement.get_used_settings()
+            if self._eff_files_str is None:
+                cuts = self.measurement.get_cut_files()[0]  # Ignore element losses
+                self._eff_files_str = df.get_efficiency_text_cuts(cuts, detector)
+
             depth_files.generate_depth_files(
                 self.use_cuts, self.output_dir, self.measurement,
                 progress=sub_progress
@@ -376,7 +383,6 @@ class DepthProfileWidget(QtWidgets.QWidget):
                         elements[i] = rbs_list[rbs]
 
             if self._line_scale_shown:
-                _, _, _, profile, _ = self.measurement.get_used_settings()
                 depth_scale = (
                     profile.depth_for_concentration_from,
                     profile.depth_for_concentration_to

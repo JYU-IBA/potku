@@ -199,9 +199,9 @@ class MeasurementTabWidget(BaseTab):
             progress.report(100)
 
     def make_depth_profile(self, directory: Path, name: str, serial_number_m:
-    int, sample_folder_name: str, progress=None):
+                           int, sample_folder_name: str, progress=None):
         """Make depth profile from loaded lines from saved file.
-        
+
         Args:
             directory: A path to depth files directory.
             name: A string representing measurement's name.
@@ -238,7 +238,7 @@ class MeasurementTabWidget(BaseTab):
             line_zero = False
             line_scale = False
             systerr = 0.0
-            used_eff = False
+            used_eff = True
             eff_files_str = None
             if len(lines) == 7:  # "Backwards compatibility"
                 line_zero = lines[4].strip() == "True"
@@ -251,7 +251,7 @@ class MeasurementTabWidget(BaseTab):
             DepthProfileDialog.systerr = systerr
             DepthProfileDialog.used_eff = used_eff
             DepthProfileDialog.eff_files_str = eff_files_str
-            
+
             self.depth_profile_widget = DepthProfileWidget(
                 self, output_dir, use_cuts, elements, x_unit, line_zero,
                 used_eff, line_scale, systerr, eff_files_str,
@@ -266,7 +266,7 @@ class MeasurementTabWidget(BaseTab):
     def make_elemental_losses(self, directory, name, serial_number,
                               old_sample_name, progress=None):
         """Make elemental losses from loaded lines from saved file.
-        
+
         Args:
             directory: A string representing directory.
             name: A string representing measurement's name.
@@ -312,7 +312,7 @@ class MeasurementTabWidget(BaseTab):
     def make_energy_spectrum(self, directory, name, serial_number,
                              old_sample_name):
         """Make energy spectrum from loaded lines from saved file.
-        
+
         Args:
             directory: A string representing directory.
             name: A string representing measurement's name.
@@ -488,7 +488,7 @@ class MeasurementTabWidget(BaseTab):
         """Enables save cuts button if the given selections list's lenght is
         not 0.
         Otherwise disable.
-        
+
         Args:
             selections: list of Selection objects
         """
