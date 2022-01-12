@@ -122,15 +122,22 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
             text = f"{state}."
         self.progressLabel.setText(text)
 
-    def show_results(self, evaluations):
+    def show_results(self, evaluations=None, errors=None):
         """
-        Show optimized recoils and finished amount of evaluations.
+        Show optimized recoils. Optionally show finished amount of evaluations
+        and/or errors.
         """
+        progress_text = ""
+
         if evaluations is not None:
-            self.progressLabel.setText(
-                f"{evaluations} evaluations done. Finished.")
+            progress_text += f"{evaluations} evaluations done. Finished."
         else:
-            self.progressLabel.setText("Finished.")
+            progress_text += "Finished."
+
+        if errors is not None:
+            progress_text += str(errors)
+
+        self.progressLabel.setText(progress_text)
         self.recoil_atoms.show_recoils()
 
     def on_next_handler(self, msg):
@@ -155,4 +162,5 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
     def on_completed_handler(self, msg=None):
         if msg is not None:
             evaluations_done = msg.get("evaluations_done")
-            self.show_results(evaluations_done)
+            error = msg.get("error")
+            self.show_results(evaluations_done, errors=error)

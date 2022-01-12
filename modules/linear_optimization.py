@@ -188,6 +188,7 @@ class LinearOptimization(opt.BaseOptimizer):
             Converted value (in nm)
         """
         if self._mev_to_nm_function is None:
+            # TODO: This isn't a user error, reword it
             raise ValueError("Generate the MeV-to-nm conversion function first")
 
         return float(self._mev_to_nm_function(mev))
@@ -832,13 +833,13 @@ class LinearOptimization(opt.BaseOptimizer):
 
         try:
             optimized1 = self._fit_simulation(solution)
-        except ValueError as e:
+        except (ValueError, IndexError) as e:
             return str(e), None
 
         optimized_copy = copy.deepcopy(optimized1)
         try:
             optimized2 = self._fit_simulation(optimized_copy)
-        except ValueError as e:
+        except (ValueError, IndexError) as e:
             return optimized1, str(e)
 
         return optimized1, optimized2
@@ -868,25 +869,39 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.on_next(self._get_message(OptimizationState.RUNNING))
 
-        # TODO: handle possible str return types
         result1, result2 = self._optimize()
+        completed_msg = None
         if self.optimization_type is OptimizationType.RECOIL:
             first_sol = self.solution
             med_sol = result1
             last_sol = result2
 
             self.element_simulation.optimization_recoils = [
-                self.form_recoil(first_sol, "optfirst"),
-                self.form_recoil(med_sol, "optmed") if hasattr(med_sol, "points") else None,  # TODO: Display message instead
-                self.form_recoil(last_sol, "optlast") if hasattr(last_sol, "points") else None  # TODO: Display message instead
+                self.form_recoil(first_sol, "optfirst")
             ]
+
+            for sol, name in zip((med_sol, last_sol), ("optmed", "optlast")):
+                if hasattr(sol, "points"):
+                    self.element_simulation.optimization_recoils.append(
+                        self.form_recoil(sol, name)
+                    )
+                elif isinstance(sol, str):
+                    if completed_msg is None:
+                        completed_msg = ""
+                    completed_msg += f"\n{name}: {sol}"
+                else:
+                    if completed_msg is None:
+                        completed_msg = ""
+                    completed_msg += f"\n{name}: missing"
+
         else:
             raise NotImplementedError
 
         self.clean_up(cancellation_token)
         self.element_simulation.optimization_results_to_file(self.cut_file)
 
-        self.on_completed(self._get_message(OptimizationState.FINISHED))
+        self.on_completed(self._get_message(
+            OptimizationState.FINISHED, error=completed_msg))
 
 
 class Peak:
