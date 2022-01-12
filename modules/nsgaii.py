@@ -824,7 +824,7 @@ class Nsgaii(opt.BaseOptimizer):
         except (OSError, ValueError, subprocess.SubprocessError) as e:
             self.on_error(self._get_message(
                 OptimizationState.FINISHED,
-                error=f"Preparation for optimization failed: {e}"))
+                error=f"Preparation for optimization failed: {e}."))
             self.clean_up(cancellation_token)
             return
 
@@ -872,7 +872,7 @@ class Nsgaii(opt.BaseOptimizer):
             except IndexError as e:
                 self.on_error(self._get_message(
                     OptimizationState.FINISHED,
-                    error=f"Failed to process offspring: {e}"))
+                    error=f"Failed to process offspring: {e}."))
                 self.clean_up(cancellation_token)
                 return
             # Evaluate offspring solutions to get offspring population

@@ -862,7 +862,7 @@ class LinearOptimization(opt.BaseOptimizer):
         except (OSError, ValueError, subprocess.SubprocessError) as e:
             self.on_error(self._get_message(
                 OptimizationState.FINISHED,
-                error=f"Preparation for optimization failed: {e}"))
+                error=f"Preparation for optimization failed: {e}."))
             self.clean_up(cancellation_token)
             return
 
