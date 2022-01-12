@@ -400,6 +400,8 @@ class LinearOptimization(opt.BaseOptimizer):
         return heights
 
     def _find_measured_valleys(self):
+        """Find valleys between peaks in measured espe.
+        """
         # TODO: Get include_start and include_end from solution shape.
         self.measured_valley_intervals = self._get_valley_intervals(
             self.measured_peak_info, include_start=True, include_end=False)
@@ -476,6 +478,8 @@ class LinearOptimization(opt.BaseOptimizer):
         return sum_diff
 
     def form_recoil(self, current_solution, name="") -> RecoilElement:
+        """Create a recoil element based on given solution.
+        """
         if not name:
             name = "opt"
 
@@ -487,6 +491,8 @@ class LinearOptimization(opt.BaseOptimizer):
         return recoil
 
     def initialize_solution(self):
+        """Create a starting solution.
+        """
         if self.optimization_type is OptimizationType.RECOIL:
             x_min, y_min = self.lower_limits
             x_max, y_max = self.upper_limits
@@ -567,6 +573,7 @@ class LinearOptimization(opt.BaseOptimizer):
         return solution
 
     def _run_solution(self, solution) -> Espe:
+        """Form a recoil based on the given solution and return its espe."""
         if self.optimization_type is OptimizationType.RECOIL:
             self.element_simulation.optimization_recoils = [
                 self.form_recoil(solution)
@@ -586,7 +593,10 @@ class LinearOptimization(opt.BaseOptimizer):
 
         return espe
 
+    # TODO: Unused, remove if not needed for fluence optimization
     def evaluate_solution(self, solution) -> float:
+        """Evaluate solution based on its difference from measured espe.
+        """
         espe = self._run_solution(solution)
 
         if self.optimization_type is OptimizationType.RECOIL:
@@ -654,6 +664,17 @@ class LinearOptimization(opt.BaseOptimizer):
         return resized_x, resized_y
 
     def _fit_simulation(self, solution: "BaseSolution"):
+        """Fit solution to simulation.
+
+        Fitting scales peak and valley heights, and widens peaks.
+        The fitting attempts to replicate the measured espe.
+
+        Args:
+            solution: starting point for fitting. solution is mutated.
+
+        Returns:
+            Fitted solution
+        """
         espe = self._run_solution(solution)
         espe_x, espe_y = split_espe(espe)
 
@@ -805,6 +826,8 @@ class LinearOptimization(opt.BaseOptimizer):
         return solution_corrected
 
     def _optimize(self):
+        """Run _fit_simulation several times.
+        """
         solution = copy.deepcopy(self.solution)
 
         try:
@@ -823,7 +846,14 @@ class LinearOptimization(opt.BaseOptimizer):
     # TODO: Change starting_solutions to starting_solution
     def start_optimization(self, starting_solutions=None,
                            cancellation_token=None,
-                           ion_division=IonDivision.BOTH):
+                           ion_division=IonDivision.BOTH) -> None:
+        """Run optimization from start to finish.
+
+        Args:
+            starting_solutions: possible starting solution(s)
+            cancellation_token: token for cancelling the optimization
+            ion_division: how to divide ions over multiple MCERD processes
+        """
         # TODO: Messages aren't visible, probably because they
         #  don't carry information about evaluations
         self.on_next(self._get_message(OptimizationState.PREPARING))
