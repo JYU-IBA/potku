@@ -819,7 +819,7 @@ class LinearOptimization(opt.BaseOptimizer):
             else:
                 if prev_point.get_x() > cur_point.get_x():
                     raise ValueError(
-                        "Points are in wrong order in optimized solution")
+                        "Points are in wrong order in the optimized solution")
 
             prev_point = cur_point
 
@@ -854,8 +854,6 @@ class LinearOptimization(opt.BaseOptimizer):
             cancellation_token: token for cancelling the optimization
             ion_division: how to divide ions over multiple MCERD processes
         """
-        # TODO: Messages aren't visible, probably because they
-        #  don't carry information about evaluations
         self.on_next(self._get_message(OptimizationState.PREPARING))
 
         try:

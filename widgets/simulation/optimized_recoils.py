@@ -112,25 +112,33 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
             pass
         super().closeEvent(evnt)
 
-    def update_progress(self, evaluations, state):
+    def update_progress(self, state, evaluations=None):
         """
         Show calculated solutions in the widget.
         """
-        text = f"{evaluations} evaluations left. {state}."
+        if evaluations is not None:
+            text = f"{evaluations} evaluations left. {state}."
+        else:
+            text = f"{state}."
         self.progressLabel.setText(text)
 
     def show_results(self, evaluations):
         """
         Show optimized recoils and finished amount of evaluations.
         """
-        if evaluations:
+        if evaluations is not None:
             self.progressLabel.setText(
                 f"{evaluations} evaluations done. Finished.")
+        else:
+            self.progressLabel.setText("Finished.")
         self.recoil_atoms.show_recoils()
 
     def on_next_handler(self, msg):
         if "evaluations_left" in msg:
-            self.update_progress(msg["evaluations_left"], msg["state"])
+            self.update_progress(
+                msg["state"], evaluations=msg["evaluations_left"])
+        else:
+            self.update_progress(msg["state"])
         if "pareto_front" in msg:
             self.pareto_front.update_pareto_front(msg["pareto_front"])
 
