@@ -795,6 +795,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.tab.add_widget(percentage_widget)
 
     def change_recoil_element_info(self):
+        if self.current_recoil_element is None:
+            QtWidgets.QMessageBox.warning(self, "Warning",
+                                                "The current simulation has "
+                                                "no recoil elements",
+                                                QtWidgets.QMessageBox.Ok,
+                                                QtWidgets.QMessageBox.Ok)
+            return
+
         dialog = RecoilInfoDialog(
             self.current_recoil_element, self.colormap,
             self.current_element_simulation)
@@ -836,6 +844,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         dialog = ReferenceDensityDialog(
             self.current_recoil_element, self.current_element_simulation)
+
+        if self.current_recoil_element is None:  # Otherwise crash
+            return
 
         if dialog.userSelectionCheckBox.isChecked():
 
@@ -1247,10 +1258,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def recoil_element_info_on_switch(self):
         """Show recoil element info on switch.
         """
-        if self.current_element_simulation is None:
-            self.parent.elementInfoWidget.hide()
-        else:
-            self.parent.elementInfoWidget.show()
+        self.parent.elementInfoWidget.show()
 
     def add_element_with_dialog(self, **kwargs):
         """Add new element simulation with dialog.
@@ -1454,7 +1462,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.current_element_simulation = None
         self.remove_element(element_simulation)
         self.show_other_recoils()
-        self.parent.elementInfoWidget.hide()
         self.update_plot()
 
     def remove_all_elements(self, export_dialog=False):

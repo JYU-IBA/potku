@@ -49,18 +49,6 @@ class ReferenceDensityDialog(QtWidgets.QDialog,
     # TODO possibly track name changes
     reference_density = bnd.bind("scientific_spinbox")
 
-    @property
-    def name(self):
-        return self.recoil_element.name
-
-    @property
-    def description(self):
-        return self.recoil_element.description
-
-    @property
-    def color(self):
-        return self.recoil_element.color
-
     def __init__(self, recoil_element: RecoilElement,
                  element_simulation: ElementSimulation):
         """Inits a recoil info dialog.
@@ -75,6 +63,14 @@ class ReferenceDensityDialog(QtWidgets.QDialog,
 
         self.recoil_element = recoil_element
         self.element_simulation = element_simulation
+
+        if self.recoil_element is None:
+            QtWidgets.QMessageBox.warning(self, "Warning",
+                                                "The current simulation has "
+                                                "no recoil elements",
+                                                QtWidgets.QMessageBox.Ok,
+                                                QtWidgets.QMessageBox.Ok)
+            return
 
         value = self.recoil_element.reference_density
         self.scientific_spinbox = ScientificSpinBox(

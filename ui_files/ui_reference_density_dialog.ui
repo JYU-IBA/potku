@@ -46,7 +46,7 @@
         <item>
          <widget class="QCheckBox" name="userSelectionCheckBox">
           <property name="text">
-           <string>I want to define the reference density by myself</string>
+           <string>Set the reference density manually</string>
           </property>
          </widget>
         </item>
