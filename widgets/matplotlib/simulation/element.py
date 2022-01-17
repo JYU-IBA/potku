@@ -29,6 +29,9 @@ __version__ = "2.0"
 
 import copy
 import platform
+from pathlib import Path
+
+from typing import List
 
 import modules.general_functions as general
 
@@ -76,6 +79,11 @@ class ElementWidget(QtWidgets.QWidget):
                 has changed.
         """
         super().__init__()
+
+        # Stores imported external files (QTreeWidgetItems) paths outside the
+        # EnergySpectrumParamsDialog because the dialog (instance) is always
+        # created again.
+        self.qtreewidget_item_paths: List = [Path]
 
         self.parent = parent
         self.tab = parent_tab

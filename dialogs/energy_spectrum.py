@@ -149,8 +149,10 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             "edit_delete.svg"))
         self.pushButton_Remove.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                              QtWidgets.QSizePolicy.Fixed)
-        self.pushButton_Remove.clicked.connect(self.remove_external_file)
-        self.pushButton_Remove.setToolTip("Remove imported file")
+        self.pushButton_Remove.clicked.connect(lambda:
+                                               self.remove_external_file(
+                                                   recoil_widget.qtreewidget_item_paths))
+        self.pushButton_Remove.setToolTip("Remove the highlighted item")
         self.pushButton_Cancel.clicked.connect(self.close)
 
         self.external_tree_widget = QtWidgets.QTreeWidget()
@@ -194,46 +196,36 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
             self.pushButton_OK.clicked.connect(
                 self.__calculate_selected_spectra)
-            self.importPushButton.clicked.connect(self.__import_external_file)
+            self.importPushButton.clicked.connect(
+                lambda: self.__import_external_file(recoil_widget))
 
         self.used_bin_width = EnergySpectrumParamsDialog.bin_width
         # FIXME .eff files not shown in sim mode
         self.__update_eff_files()
         self.exec_()
 
-    def remove_external_file(self):
-        # Imported files UI widget
-        root = self.external_tree_widget.invisibleRootItem()
-        # Files that will be removed
-        checked_files = []
-        # All files from the UI widget
-        child_count = root.childCount()
-        for i in range(child_count):
-            if root.child(i) is None:
-                QtWidgets.QMessageBox.critical(
-                    self, "Error", "Nothing to remove!",
+    def remove_external_file(self, item_paths):
+        # Remove an item from the GUI and from the directory where it's located
+        for i in range(self.external_tree_widget.topLevelItemCount()):
+            imported_file = self.external_tree_widget.topLevelItem(i)
+            if imported_file.isSelected():
+                reply = QtWidgets.QMessageBox.warning(
+                    self, "Warning", f"Are you sure you want to remove "
+                                     f"{item_paths[i].name}",
                     QtWidgets.QMessageBox.Ok,
-                    QtWidgets.QMessageBox.Ok)
-                return
-            elif root.child(i).checkState(0) == 2:
-                try:
-                    if len(self.external_files) == 1:
-                        os.remove(Path(self.external_files[-1]))
-                    else:
-                        os.remove(Path(self.external_files[i]))
-                except OSError:
-                    pass
-                checked_files.append(root.child(i))
-        if len(checked_files) == 0:  # Only unchecked files
-            QtWidgets.QMessageBox.warning(
-                self, "Warning", "Choose an imported file to remove!",
-                QtWidgets.QMessageBox.Ok,
-                QtWidgets.QMessageBox.Ok)
-            return
-        else:
-            for external_file in checked_files:
-                sip.delete(external_file)
-        return
+                    QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.Ok:
+                    sip.delete(imported_file)
+                    os.remove(item_paths[i])
+                    del item_paths[i]
+                    return
+                else:
+                    return
+
+        QtWidgets.QMessageBox.warning(
+            self, "Error", "Nothing to remove!",
+            QtWidgets.QMessageBox.Ok,
+            QtWidgets.QMessageBox.Ok)
 
     def showEvent(self, event):
         """Adjust size after dialog has been shown.
@@ -463,45 +455,43 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             self.status_msg = "Please select .cut file[s] to create energy " \
                               "spectra."
 
-    def __import_external_file(self):
+    def __import_external_file(self, recoil_widget):
         """
         Import an external file that matches the format of hist and simu files.
         """
-        QtWidgets.QMessageBox.information(
-            self, "Notice",
-            "The external file needs to have the following format:\n\n"
-            "energy count\nenergy count\nenergy count\n...\n\n"
-            "to match the simulation and measurement energy spectra files.",
-            QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+
         file_paths = fdialogs.open_files_dialog(
             self, self.element_simulation.request.directory,
-            "Select a file to import", "")
+            "Select a file to import", "*.hist *.simu")
         if file_paths is None:
             return
 
         for file_path in file_paths:
             name = file_path.name
 
-            new_file_name = \
+            self.new_file_name = \
                 self.element_simulation.request.get_imported_files_folder() / name
 
-            if new_file_name.exists():
+            if self.new_file_name.exists():
                 QtWidgets.QMessageBox.critical(
                     self, "Error", "A file with that name already exists.",
                     QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 return
 
-            if not os.path.exists(new_file_name.parent):
-                os.makedirs(new_file_name.parent)
+            if not os.path.exists(self.new_file_name.parent):
+                os.makedirs(self.new_file_name.parent)
 
-            shutil.copyfile(file_path, new_file_name)
+            shutil.copyfile(file_path, self.new_file_name)
 
-            item = QtWidgets.QTreeWidgetItem()
-            item.setText(0, new_file_name.name)
-            item.setData(0, QtCore.Qt.UserRole, new_file_name)
-            item.setCheckState(0, QtCore.Qt.Checked)
+            self.item = QtWidgets.QTreeWidgetItem()
+            self.item.setText(0, self.new_file_name.name)
+            self.item.setData(0, QtCore.Qt.UserRole, self.new_file_name)
+            self.item.setCheckState(0, QtCore.Qt.Checked)
 
-            self.external_tree_widget.addTopLevelItem(item)
+            recoil_widget.qtreewidget_item_paths.append(Path(
+                self.new_file_name))
+
+            self.external_tree_widget.addTopLevelItem(self.item)
 
     def __update_eff_files(self):
         """Update efficiency files to UI which are used.
