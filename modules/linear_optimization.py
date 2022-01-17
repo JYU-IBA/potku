@@ -119,6 +119,9 @@ class LinearOptimization(opt.BaseOptimizer):
             sample_width: widths for peaks
             min_prominence_factor: minimum fraction of average peak
                 prominences to include peak in results
+
+        Raises:
+            ValueError: if interpolation function could not be generated
         """
         nm_range = (self.lower_limits[0], self.upper_limits[0] - sample_width)
         nm_points = np.linspace(*nm_range, sample_count)
@@ -132,6 +135,7 @@ class LinearOptimization(opt.BaseOptimizer):
 
         mevs = []
         prominences = []
+        nms = []
         for nm in nm_points:  # TODO: multi-thread this
             solution = get_solution6(
                 nm, nm + sample_width, self.lower_limits, self.upper_limits)
@@ -147,7 +151,10 @@ class LinearOptimization(opt.BaseOptimizer):
                 peak_info = self._get_peak_info(
                     espe_y, 1, peak_width=smoothing_width, retry_count=0)
             except ValueError:
-                break
+                continue
+                # TODO: Maybe continue until mevs is not empty, then break.
+                #   Alternatively add None to mevs and nms, then at the end
+                #   pick the longest non-None streak.
 
             prominence = peak_info.info["prominences"][0]
             if prominences:
@@ -158,14 +165,14 @@ class LinearOptimization(opt.BaseOptimizer):
 
             prominences.append(prominence)
             mevs.append(espe_x[peak_info.peaks[0]])
+            nms.append(nm + sample_width / 2)  # Centered points
 
         if len(mevs) <= 1:
             raise ValueError("Could not generate a nm-to-MeV function."
                              " Not enough significant data points.")
 
         mevs = np.array(mevs)
-        # Pick matching points, centered
-        nms = nm_points[:mevs.shape[0]] + sample_width / 2
+        nms = np.array(nms)
 
         mevs_diff = np.diff(mevs)
         if not np.all(mevs_diff <= 0):
