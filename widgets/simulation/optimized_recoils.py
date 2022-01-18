@@ -127,12 +127,10 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
         Show optimized recoils. Optionally show finished amount of evaluations
         and/or errors.
         """
-        progress_text = ""
-
         if evaluations is not None:
-            progress_text += f"{evaluations} evaluations done. Finished."
+            progress_text = f"{evaluations} evaluations done. Finished."
         else:
-            progress_text += "Finished."
+            progress_text = "Finished."
 
         if errors is not None:
             progress_text += str(errors)

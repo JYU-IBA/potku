@@ -71,10 +71,14 @@ class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
 
         super().closeEvent(evnt)
 
-    def update_progress(self, evaluations):
+    def update_progress(self, state, evaluations=None):
         """Show calculated solutions in the widget.
         """
-        text = f"{evaluations} evaluations left. Running."
+        if evaluations is not None:
+            text = f"{evaluations} evaluations left. Running."
+        else:
+            text = f"{state}."
+
         if self.element_simulation.is_optimization_running():
             text += " Simulating."
         self.progressLabel.setText(text)
@@ -89,14 +93,27 @@ class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
             f"{self.element_simulation.optimized_fluence:e}")
         self.roundedFluenceLineEdit.setText(f"{rounded_fluence:e}")
 
-    def show_results(self, evaluations):
-        """Show optimized fluence and finished amount of evaluations.
+    def show_results(self, evaluations=None, errors=None):
+        """Show optimized fluence. Optionally show finished amount of
+        evaluations and/or errors.
         """
-        self.progressLabel.setText(f"{evaluations} evaluations left. Finished.")
+        if evaluations is not None:
+            progress_text = f"{evaluations} evaluations done. Finished."
+        else:
+            progress_text = "Finished."
+
+        if errors is not None:
+            progress_text += str(errors)
+
+        self.progressLabel.setText(progress_text)
         self.show_fluence()
 
     def on_next_handler(self, msg):
-        self.update_progress(msg["evaluations_left"])
+        if "evaluations_left" in msg:
+            self.update_progress(
+                msg["state"], evaluations=msg["evaluations_left"])
+        else:
+            self.update_progress(msg["state"])
 
     def on_error_handler(self, err):
         # TODO fix the layout of the dialog show that this is shown properly.
@@ -105,4 +122,6 @@ class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
 
     def on_completed_handler(self, msg=None):
         if msg is not None:
-            self.show_results(msg["evaluations_done"])
+            evaluations_done = msg.get("evaluations_done")
+            error = msg.get("error")
+            self.show_results(evaluations_done, errors=error)
