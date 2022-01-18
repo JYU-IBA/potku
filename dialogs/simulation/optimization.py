@@ -147,7 +147,6 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             self._enable_ok_button)
         self.verbose = False
         self.eff_file_check_box.clicked.connect(self._enable_efficiency_label)
-        # self.optimization_verbose_box.clicked.connect(self._verbose)
         self._update_efficiency_label()
 
         self.exec_()
@@ -176,12 +175,6 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         """Enables or disables efficiency label.
         """
         self.efficiency_label.setEnabled(self.use_efficiency)
-
-    def _verbose(self):
-        if self.optimization_verbose_box.isChecked():
-            return True
-        else:
-            return False
 
     def _fill_measurement_widget(self):
         """Add calculated tof_list files to tof_list_tree_widget by
