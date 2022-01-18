@@ -57,7 +57,26 @@ class LinearOptimization(opt.BaseOptimizer):
                  ch=0.025, measurement=None, cut_file=None, check_max=900,
                  check_min=0, skip_simulation=False, use_efficiency=False,
                  optimize_by_area=False, verbose=False,
+                 sample_count=12, sample_width=3.0, sample_prominence=0.1,
+                 fitting_iteration_count=2, is_skewed=False,
                  **kwargs):  # TODO: Remove kwargs when this is fully integrated
+        """Initialize the linear optimizer.
+
+        Only LinearOptimization-specific arguments are documented here. See
+        BaseOptimizer for general arguments.
+
+        Args:
+            sol_size:
+            sample_count: number of samples used for Mev-to-nm interpolation
+                function
+            sample_width: width of samples used for MeV-to-nm interpolation
+                function
+            sample_prominence: minimum prominence factor of samples in
+                MeV-to-nm interpolation function. Compared to the average peak
+                prominence.
+            fitting_iteration_count: number of fitting iterations
+            is_skewed: whether solution can be non-rectangular
+        """
         opt.BaseOptimizer.__init__(
             self,
             element_simulation=element_simulation,
@@ -76,11 +95,17 @@ class LinearOptimization(opt.BaseOptimizer):
             skip_simulation=skip_simulation,
             use_efficiency=use_efficiency,
             verbose=verbose,
-            optimize_by_area=optimize_by_area
+            optimize_by_area=optimize_by_area  # TODO: remove
         )
         self.element_simulation = element_simulation
 
         self.sol_size = sol_size
+
+        self.sample_count = sample_count
+        self.sample_width = sample_width
+        self.sample_prominence = sample_prominence
+        self.is_skewed = is_skewed
+        self.fitting_iteration_count = fitting_iteration_count
 
         self.measured_espe_x = None
         self.measured_espe_y = None
@@ -94,9 +119,6 @@ class LinearOptimization(opt.BaseOptimizer):
         self.measured_valley_intervals: Optional[List[slice]] = None
         self.measured_valley_heights: Optional[List[Tuple[float]]] = None
 
-        # TODO: Ask user
-        self.is_skewed = False
-
         self.peak_count = None
         if self.rec_type == "box":
             self.peak_count = 1
@@ -105,31 +127,23 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.solution = None
 
-    def _generate_mev_to_nm_function(
-            self, sample_count: int = 12, sample_width: float = 3.0,
-            min_prominence_factor: float = 0.1) -> None:
+    def _generate_mev_to_nm_function(self) -> None:
         """Generate an interpolation function for `_convert_mev_to_nm`.
 
         Samples thin, simulated peaks at different points (in nm) to determine
         the function parameters (based on MeV). Stops once peaks are not
         prominent enough or maximum sample count is reached.
 
-        Args:
-            sample_count: number of peaks to simulate
-            sample_width: widths for peaks
-            min_prominence_factor: minimum fraction of average peak
-                prominences to include peak in results
-
         Raises:
             ValueError: if interpolation function could not be generated
         """
-        nm_range = (self.lower_limits[0], self.upper_limits[0] - sample_width)
-        nm_points = np.linspace(*nm_range, sample_count)
+        nm_range = (self.lower_limits[0], self.upper_limits[0] - self.sample_width)
+        nm_points = np.linspace(*nm_range, self.sample_count)
 
         nm_step = nm_points[1] - nm_points[0]
-        if sample_width > nm_step:
+        if self.sample_width > nm_step:
             raise ValueError(
-                f"sample_width {sample_width} is wider than nm_step {nm_step}")
+                f"sample_width {self.sample_width} is wider than nm_step {nm_step}")
 
         smoothing_width = round(self.measured_espe_x.shape[0] / 30)
 
@@ -138,7 +152,7 @@ class LinearOptimization(opt.BaseOptimizer):
         nms = []
         for nm in nm_points:  # TODO: multi-thread this
             solution = get_solution6(
-                nm, nm + sample_width, self.lower_limits, self.upper_limits)
+                nm, nm + self.sample_width, self.lower_limits, self.upper_limits)
             espe = self._run_solution(solution)
             if not espe:
                 raise ValueError(
@@ -159,13 +173,13 @@ class LinearOptimization(opt.BaseOptimizer):
             prominence = peak_info.info["prominences"][0]
             if prominences:
                 prominence_threshold = (sum(prominences) / len(prominences)
-                                        * min_prominence_factor)
+                                        * self.sample_prominence)
                 if prominence < prominence_threshold:
                     break
 
             prominences.append(prominence)
             mevs.append(espe_x[peak_info.peaks[0]])
-            nms.append(nm + sample_width / 2)  # Centered points
+            nms.append(nm + self.sample_width / 2)  # Centered points
 
         if len(mevs) <= 1:
             raise ValueError("Could not generate a nm-to-MeV function."
@@ -178,7 +192,7 @@ class LinearOptimization(opt.BaseOptimizer):
         if not np.all(mevs_diff <= 0):
             # TODO: Remove non-monotonous parts from start and end.
             #   Note that mevs_diff.shape[0] == mevs.shape[0] - 1
-            raise ValueError("Simulated MeV values were non-monotonous.")
+            raise ValueError("Simulated sample MeV values were non-monotonous.")
 
         self._mev_to_nm_function = interpolate.interp1d(
             mevs, nms, fill_value="extrapolate", assume_sorted=True)
@@ -836,6 +850,7 @@ class LinearOptimization(opt.BaseOptimizer):
     def _optimize(self):
         """Run _fit_simulation several times.
         """
+        # TODO: Run self.fitting_iteration_count number of times
         solution = copy.deepcopy(self.solution)
 
         try:

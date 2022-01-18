@@ -70,8 +70,7 @@ class Nsgaii(opt.BaseOptimizer):
                  use_efficiency=False, optimize_by_area=False, verbose=False):
 
         """
-        Initialize the NSGA-II algorithm with needed parameters and start
-        running it.
+        Initialize the NSGA-II optimizer.
 
         Only NSGA-II-specific arguments are documented here. See
         BaseOptimizer for general arguments.

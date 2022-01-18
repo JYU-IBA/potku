@@ -223,16 +223,6 @@ class BaseOptimizer(abc.ABC, Observable):
                 "Could not start simulation. Check that simulation is not "
                 "currently running.")
 
-    # TODO: maybe?
-    # @abc.abstractmethod
-    # def evaluate_solutions(self, sols):
-    #     pass
-
-    # TODO: maybe? How to deal with different call signatures?
-    # @abc.abstractmethod
-    # def get_objective_values(self, optim_espe):
-    #     pass
-
     def modify_measurement(self) -> None:
         """
         Modify measured energy spectrum to match the simulated in regards to
