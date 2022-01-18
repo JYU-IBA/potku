@@ -50,6 +50,10 @@ from widgets.simulation.optimization_parameters import \
     OptimizationFluenceParameterWidget
 from widgets.simulation.optimization_parameters import \
     OptimizationRecoilParameterWidget
+from widgets.simulation.optimization_linear_parameters import \
+    LinearOptimizationRecoilParameterWidget
+from widgets.simulation.optimization_linear_parameters import \
+    LinearOptimizationFluenceParameterWidget
 
 
 class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
@@ -68,21 +72,26 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         fset=bnd.set_selected_tree_item)
     auto_adjust_x: bool = bnd.bind("auto_adjust_x_box")
 
+    # TODO: Add PropertySavingWidget (& PropertyBindingWidget) support for
+    #   linear optimization settings. How to save both nsgaii and linear?
+
     @property
     def fluence_parameters(self) -> Dict[str, Any]:
-        return self.fluence_widget.get_properties()
+        return self.nsgaii_fluence_widget.get_properties()
 
     @fluence_parameters.setter
     def fluence_parameters(self, value: Dict[str, Any]):
-        self.fluence_widget.set_properties(**value)
+        self.nsgaii_fluence_widget.set_properties(**value)
 
     @property
     def recoil_parameters(self) -> Dict[str, Any]:
-        return self.recoil_widget.get_properties()
+        return self.nsgaii_recoil_widget.get_properties()
 
     @recoil_parameters.setter
     def recoil_parameters(self, value: Dict[str, Any]):
-        self.recoil_widget.set_properties(**value)
+        self.nsgaii_recoil_widget.set_properties(**value)
+
+    # TODO: Create property for current_mode
 
     def __init__(self, simulation: Simulation, parent):
         """Initializes an OptimizationDialog that displays various optimization
@@ -100,8 +109,12 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
 
         uic.loadUi(gutils.get_ui_dir() / "ui_optimization_params.ui", self)
 
-        self.recoil_widget = OptimizationRecoilParameterWidget()
-        self.fluence_widget = OptimizationFluenceParameterWidget()
+        self.nsgaii_recoil_widget = OptimizationRecoilParameterWidget()
+        self.nsgaii_fluence_widget = OptimizationFluenceParameterWidget()
+
+        # TODO check where nsgaii_*_widgets are used and do the same for these
+        self.linear_recoil_widget = LinearOptimizationRecoilParameterWidget()
+        self.linear_fluence_widget = LinearOptimizationFluenceParameterWidget()
 
         self.load_properties_from_file()
 
@@ -123,9 +136,14 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         self.mode_radios = QtWidgets.QButtonGroup(self)
         self.mode_radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
             self.choose_optimization_mode)
-        self.parametersLayout.addWidget(self.recoil_widget)
-        self.parametersLayout.addWidget(self.fluence_widget)
-        self.fluence_widget.hide()
+        self.parametersLayout.addWidget(self.nsgaii_recoil_widget)
+        self.parametersLayout.addWidget(self.nsgaii_fluence_widget)
+        self.nsgaii_fluence_widget.hide()
+
+        self.parametersLayout.addWidget(self.linear_recoil_widget)
+        self.parametersLayout.addWidget(self.linear_fluence_widget)
+        self.linear_recoil_widget.hide()
+        self.linear_fluence_widget.hide()
 
         self.mode_radios.addButton(self.fluenceRadioButton)
         self.mode_radios.addButton(self.recoilRadioButton)
@@ -227,8 +245,13 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             return
 
         _, max_x = elem_sim.get_main_recoil().get_range()
-        _, prev_y = self.recoil_widget.upper_limits
-        self.recoil_widget.upper_limits = max_x, prev_y
+        if self.current_method == OptimizationMethod.NSGAII:
+            _, prev_y = self.nsgaii_recoil_widget.upper_limits
+        else:
+            _, prev_y = self.linear_recoil_widget.upper_limits
+
+        self.nsgaii_recoil_widget.upper_limits = max_x, prev_y
+        self.linear_recoil_widget.upper_limits = max_x, prev_y
 
     def choose_optimization_method(self, button, checked):
         """Choose whether to use NSGA-II or linear optimization method."""
@@ -236,22 +259,50 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             # TODO: Recognize the button without relying on constant text
             if button.text() == "NSGA-II (slow)":
                 self.current_method = OptimizationMethod.NSGAII
+
+                if self.current_mode == OptimizationType.RECOIL:
+                    self.linear_recoil_widget.hide()
+                    self.nsgaii_recoil_widget.show()
+                    self.nsgaii_recoil_widget.enable_sim_params()
+                else:
+                    self.linear_fluence_widget.hide()
+                    self.nsgaii_fluence_widget.show()
+                    self.nsgaii_fluence_widget.enable_sim_params()
             else:
                 self.current_method = OptimizationMethod.LINEAR
+
+                if self.current_mode == OptimizationType.RECOIL:
+                    self.nsgaii_recoil_widget.hide()
+                    self.linear_recoil_widget.show()
+                    self.linear_recoil_widget.enable_sim_params()
+                else:
+                    self.nsgaii_fluence_widget.hide()
+                    self.linear_fluence_widget.show()
+                    self.linear_fluence_widget.enable_sim_params()
 
     def choose_optimization_mode(self, button, checked):
         """Choose whether to optimize recoils or fluence. Show correct widget.
         """
         if checked:
-            # TODO: Recognize the button without relying on constant tex
+            # TODO: Recognize the button without relying on constant text
             if button.text() == "Recoil":
                 self.current_mode = OptimizationType.RECOIL
-                self.fluence_widget.hide()
-                self.recoil_widget.show()
+
+                if self.current_method == OptimizationMethod.NSGAII:
+                    self.nsgaii_fluence_widget.hide()
+                    self.nsgaii_recoil_widget.show()
+                else:
+                    self.linear_fluence_widget.hide()
+                    self.linear_recoil_widget.show()
             else:
-                self.recoil_widget.hide()
-                self.fluence_widget.show()
                 self.current_mode = OptimizationType.FLUENCE
+
+                if self.current_method == OptimizationMethod.NSGAII:
+                    self.nsgaii_recoil_widget.hide()
+                    self.nsgaii_fluence_widget.show()
+                else:
+                    self.linear_recoil_widget.hide()
+                    self.linear_fluence_widget.show()
 
     def start_optimization(self):
         """Find necessary cut file and make energy spectrum with it, and start
@@ -270,26 +321,30 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
 
         self.close()
 
-        if self.current_mode == OptimizationType.RECOIL:
-            params = self.recoil_widget.get_properties()
-            optimize_by_area = self.recoil_widget.optimize_by_area
-        else:
-            params = self.fluence_widget.get_properties()
-            optimize_by_area = self.fluence_widget.optimize_by_area
-
         # TODO move following code to the result widget
         if self.current_method == OptimizationMethod.NSGAII:
+            if self.current_mode == OptimizationType.RECOIL:
+                params = self.nsgaii_recoil_widget.get_properties()
+                optimize_by_area = self.nsgaii_recoil_widget.optimize_by_area
+            else:
+                params = self.nsgaii_fluence_widget.get_properties()
+                optimize_by_area = self.nsgaii_fluence_widget.optimize_by_area
+
             optimizer = Nsgaii(
                 element_simulation=elem_sim, measurement=measurement,
                 cut_file=cut, ch=self.ch, **params,
                 use_efficiency=self.use_efficiency,
                 optimize_by_area=optimize_by_area, verbose=self.verbose)
         else:
+            if self.current_mode == OptimizationType.RECOIL:
+                params = self.linear_recoil_widget.get_properties()
+            else:
+                params = self.linear_fluence_widget.get_properties()
+
             optimizer = LinearOptimization(
                 element_simulation=elem_sim, measurement=measurement,
                 cut_file=cut, ch=self.ch, **params,
-                use_efficiency=self.use_efficiency,
-                optimize_by_area=optimize_by_area, verbose=self.verbose)
+                use_efficiency=self.use_efficiency, verbose=self.verbose)
 
         # Optimization running thread
         ct = CancellationToken()
