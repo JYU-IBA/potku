@@ -84,7 +84,7 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
                                   PropertyBindingWidget,
                                   abc.ABC,
                                   metaclass=QtABCMeta):
-    """Abstract base class for recoil and fluence optimization parameter
+    """Abstract base class for NSGA-II recoil and fluence optimization parameter
     widgets.
     """
     # Common properties
@@ -122,6 +122,7 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
 
         self.skip_sim_chk_box.stateChanged.connect(self.enable_sim_params)
         self.set_properties(**kwargs)
+        self.enable_sim_params()
 
     def enable_sim_params(self, *_):
         """Either enables or disables simulation parameters depending on the
@@ -153,7 +154,7 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
 
 class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
     """
-    Class that handles the recoil optimization parameters' ui.
+    Class that handles NSGA-II recoil optimization parameters' ui.
     """
 
     # Recoil specific properties
@@ -193,7 +194,7 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
 
 class OptimizationFluenceParameterWidget(OptimizationParameterWidget):
     """
-    Class that handles the fluence optimization parameters' ui.
+    Class that handles NSGA-II fluence optimization parameters' ui.
     """
 
     # Fluence specific properties
