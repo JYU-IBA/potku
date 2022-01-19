@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, 2022 Joonas Koponen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,16 +28,15 @@ along with this program (file named 'LICENCE').
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n " \
-             "Juhani Sundell"
+             "Juhani Sundell \n Joonas Koponen"
 __version__ = "2.0"
 
 import copy
 import os
-import shutil
 from pathlib import Path
 from typing import Optional
 
-from PyQt5 import QtCore, sip
+from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
@@ -150,8 +149,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         self.pushButton_Remove.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                              QtWidgets.QSizePolicy.Fixed)
         self.pushButton_Remove.clicked.connect(lambda:
-                                               self.remove_external_file(
-                                                   recoil_widget.qtreewidget_item_paths))
+                                               self._remove_external_file(
+                                                   self.element_simulation.request.get_imported_files()))
         self.pushButton_Remove.setToolTip("Remove the highlighted item")
         self.pushButton_Cancel.clicked.connect(self.close)
 
@@ -196,28 +195,30 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
             self.pushButton_OK.clicked.connect(
                 self.__calculate_selected_spectra)
-            self.importPushButton.clicked.connect(
-                lambda: self.__import_external_file(recoil_widget))
+
+            self.importPushButton.clicked.connect(self._import_external_file)
 
         self.used_bin_width = EnergySpectrumParamsDialog.bin_width
         # FIXME .eff files not shown in sim mode
         self.__update_eff_files()
         self.exec_()
 
-    def remove_external_file(self, item_paths):
+    def _remove_external_file(self, imported_external_files_path):
         # Remove an item from the GUI and from the directory where it's located
         for i in range(self.external_tree_widget.topLevelItemCount()):
-            imported_file = self.external_tree_widget.topLevelItem(i)
-            if imported_file.isSelected():
+            imported_external_file = self.external_tree_widget.topLevelItem(i)
+            if imported_external_file.isSelected():
                 reply = QtWidgets.QMessageBox.warning(
                     self, "Warning", f"Are you sure you want to remove "
-                                     f"{item_paths[i].name}",
+                                     f"{imported_external_files_path[i].name}",
                     QtWidgets.QMessageBox.Ok,
                     QtWidgets.QMessageBox.Cancel)
                 if reply == QtWidgets.QMessageBox.Ok:
-                    sip.delete(imported_file)
-                    os.remove(item_paths[i])
-                    del item_paths[i]
+                    self.external_tree_widget.clear()
+                    self.element_simulation.request.remove_external_file(
+                        imported_external_files_path[i])
+                    del imported_external_files_path[i]
+                    self._set_external_files()
                     return
                 else:
                     return
@@ -455,43 +456,23 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             self.status_msg = "Please select .cut file[s] to create energy " \
                               "spectra."
 
-    def __import_external_file(self, recoil_widget):
-        """
-        Import an external file that matches the format of hist and simu files.
-        """
-
-        file_paths = fdialogs.open_files_dialog(
+    def _import_external_file(self):
+        imported_external_files_paths = fdialogs.open_files_dialog(
             self, self.element_simulation.request.directory,
             "Select a file to import", "*.hist *.simu")
-        if file_paths is None:
+        if not imported_external_files_paths:
             return
-
-        for file_path in file_paths:
-            name = file_path.name
-
-            self.new_file_name = \
-                self.element_simulation.request.get_imported_files_folder() / name
-
-            if self.new_file_name.exists():
-                QtWidgets.QMessageBox.critical(
-                    self, "Error", "A file with that name already exists.",
-                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-                return
-
-            if not os.path.exists(self.new_file_name.parent):
-                os.makedirs(self.new_file_name.parent)
-
-            shutil.copyfile(file_path, self.new_file_name)
-
-            self.item = QtWidgets.QTreeWidgetItem()
-            self.item.setText(0, self.new_file_name.name)
-            self.item.setData(0, QtCore.Qt.UserRole, self.new_file_name)
-            self.item.setCheckState(0, QtCore.Qt.Checked)
-
-            recoil_widget.qtreewidget_item_paths.append(Path(
-                self.new_file_name))
-
-            self.external_tree_widget.addTopLevelItem(self.item)
+        else:
+            for file_path in imported_external_files_paths:
+                imported_file_path = \
+                    self.element_simulation.request.import_external_file(
+                        file_path)
+                if not imported_file_path:
+                    QtWidgets.QMessageBox.critical(
+                        self, "Error", "%s already exists." % file_path.name,
+                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            self.external_tree_widget.clear()
+            self._set_external_files()
 
     def __update_eff_files(self):
         """Update efficiency files to UI which are used.

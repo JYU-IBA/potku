@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.  
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, 2022 Joona Koponen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -27,16 +27,19 @@ along with this program (file named 'LICENCE').
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen " \
-             "\n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+             "\n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen " \
+             "\n Joonas Koponen"
 __version__ = "2.0"
 
 import configparser
 import os
 import re
+import shutil
 import time
 
 from pathlib import Path
 from typing import Tuple, List, Union, Optional, Iterable
+
 
 from .ui_log_handlers import RequestLogger
 from .base import ElementSimulationContainer
@@ -666,3 +669,35 @@ class Request(ElementSimulationContainer, RequestLogger):
         for measurement in self._get_measurements():
             measurement.close_log_files()
         RequestLogger.close_log_files(self)
+
+    def import_external_file(self, imported_file_path: Path) -> Path or bool:
+        file_in_path = \
+            self.get_imported_files_folder() / imported_file_path.name
+
+        if file_in_path.exists():
+            try:
+                return False
+            except ValueError:
+                raise "The imported external file %s with the same name " \
+                      "has already been imported" % imported_file_path.name
+
+        if not os.path.exists(file_in_path.parent):
+            os.makedirs(file_in_path.parent)
+
+        shutil.copyfile(imported_file_path, file_in_path)
+
+        return file_in_path
+
+    def remove_external_file(self, imported_file_path: Path):
+        file_in_path = self.get_imported_files_folder() / imported_file_path.name
+
+        if file_in_path.exists():
+            file_in_path.unlink()
+        else:
+            try:
+                return False
+            except ValueError:
+                raise "The imported external file %s is not in %s" % \
+                      (imported_file_path.name,
+                       self.get_imported_files_folder())
+

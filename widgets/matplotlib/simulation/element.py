@@ -8,7 +8,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2022 Joonas Koponen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,14 +24,11 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Joonas Koponen"
 __version__ = "2.0"
 
 import copy
 import platform
-from pathlib import Path
-
-from typing import List
 
 import modules.general_functions as general
 
@@ -79,11 +76,6 @@ class ElementWidget(QtWidgets.QWidget):
                 has changed.
         """
         super().__init__()
-
-        # Stores imported external files (QTreeWidgetItems) paths outside the
-        # EnergySpectrumParamsDialog because the dialog (instance) is always
-        # created again.
-        self.qtreewidget_item_paths: List = [Path]
 
         self.parent = parent
         self.tab = parent_tab
