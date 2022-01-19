@@ -131,7 +131,13 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
         Args:
             *_: not used
         """
-        self.simGroupBox.setEnabled(not self.skip_simulation)
+        enable = not self.skip_simulation
+
+        self.processesSpinBox.setEnabled(enable)
+        self.percentDoubleSpinBox.setEnabled(enable)
+        self.timeSpinBox.setEnabled(enable)
+        self.minTimeEdit.setEnabled(enable)
+        self.maxTimeEdit.setEnabled(enable)
 
     # TODO: Make this work the same way as the rest of the radio buttons
     #  in Potku

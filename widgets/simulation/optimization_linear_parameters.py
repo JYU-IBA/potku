@@ -130,7 +130,13 @@ class LinearOptimizationParameterWidget(QtWidgets.QWidget,
         Args:
             *_: not used
         """
-        self.simGroupBox.setEnabled(not self.skip_simulation)
+        enable = not self.skip_simulation
+
+        self.processesSpinBox.setEnabled(enable)
+        self.percentDoubleSpinBox.setEnabled(enable)
+        self.timeSpinBox.setEnabled(enable)
+        self.minTimeEdit.setEnabled(enable)
+        self.maxTimeEdit.setEnabled(enable)
 
 
 class LinearOptimizationRecoilParameterWidget(LinearOptimizationParameterWidget):
