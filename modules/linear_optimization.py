@@ -75,7 +75,7 @@ class LinearOptimization(opt.BaseOptimizer):
                 MeV-to-nm interpolation function. Compared to the average peak
                 prominence.
             fitting_iteration_count: number of fitting iterations
-            is_skewed: whether solution can be non-rectangular
+            is_skewed: whether solution shape can be non-rectangular
         """
         opt.BaseOptimizer.__init__(
             self,
