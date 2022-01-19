@@ -76,14 +76,14 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         self.prefix = element.get_prefix()
         self.description = description
         self.type = rec_type
-        
+
         if reference_density is None:
             self.reference_density = GlobalSettings().get_default_reference_density()
         else:
             self.reference_density = reference_density
 
         self.manual_reference_density_checked = False
-            
+
         self.channel_width = channel_width
 
         # TODO might want to use some sort of sorted collection instead of a
@@ -446,6 +446,9 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         Args:
             new_values: dictionary
         """
+        if "name" or "description" or "color" not in new_values:
+            self.reference_density = new_values["reference_density"]
+            return
         try:
             self.name = new_values["name"]
             self.description = new_values["description"]

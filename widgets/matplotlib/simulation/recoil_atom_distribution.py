@@ -1050,6 +1050,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # TODO it would be better to update the old lines rather than keep
         #   adding new lines
         self.other_recoils_lines = []
+
+        if not self.simulation.element_simulations:
+            self.main_frame.remove_target_labels()
+
         for element_simulation in self.simulation.element_simulations:
             for recoil in element_simulation.recoil_elements:
                 if recoil in self.other_recoils:

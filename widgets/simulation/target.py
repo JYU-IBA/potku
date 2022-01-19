@@ -258,3 +258,13 @@ class TargetWidget(QtWidgets.QWidget):
         self.del_points.setKey(QtCore.Qt.Key_Delete)
         self.del_points.activated.connect(
             lambda: self.recoil_distribution_widget.remove_points())
+
+    def remove_target_labels(self):
+        self.referenceDensityLabel.setText("")
+        self.targetReferenceDensityLabel.setText("")
+
+        self.targetUserSelectionLabel.setText("")
+        self.targetUserSelectionLabel.setStyleSheet("")
+
+        self.recoilUserSelectionLabel.setText("")
+        self.recoilUserSelectionLabel.setStyleSheet("")
