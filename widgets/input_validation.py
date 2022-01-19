@@ -33,6 +33,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli " \
 __version__ = "2.0"
 
 import re
+from typing import Optional, Callable, Tuple
 
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui
@@ -108,11 +109,22 @@ class InputValidator(QtGui.QValidator):
 class ScientificValidator(QtGui.QDoubleValidator):
     """Validator for scientific notation.
     """
-    def __init__(self, *args, accepted=None, intermediate=None, invalid=None):
+    def __init__(
+            self,
+            minimum: float,
+            maximum: float,
+            decimal_places: int,
+            parent: Optional[QtWidgets.QWidget] = None,
+            accepted: Optional[Callable[[], None]] = None,
+            intermediate: Optional[Callable[[], None]] = None,
+            invalid: Optional[Callable[[], None]] = None):
         """Initializes a new ScientificValidator.
 
         Args:
-            *args: positional arguments passed down to QDoubleValidator
+            minimum: minimum allowed value
+            maximum: maximum allowed value
+            decimal_places: decimal places allowed
+            parent: parent QWidget for this validator
             accepted: function that is called if validation result is
                 QDoubleValidator.Acceptable
             intermediate: function that is called if validation result is
@@ -120,14 +132,17 @@ class ScientificValidator(QtGui.QDoubleValidator):
             invalid: function that is called if validation result is
                 QDoubleValidator.Invalid
         """
-        super().__init__(*args)
+        super().__init__(minimum, maximum, decimal_places, parent=parent)
         self.setNotation(QtGui.QDoubleValidator.ScientificNotation)
         self.setLocale(QtCore.QLocale.c())
         self._accepted = accepted
         self._intermediate = intermediate
         self._invalid = invalid
 
-    def validate(self, value: str, position: int):
+    def validate(
+            self,
+            value: str,
+            position: int) -> Tuple[QtGui.QDoubleValidator.State, str, int]:
         """Overrides QDoubleValidator's validate method.
         """
         state, inp, pos = super().validate(value, position)
