@@ -180,21 +180,18 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
 
         self.run_form_layout: QtWidgets.QFormLayout
         self.run_form_layout.insertRow(3, "Fluence", self.fluenceDoubleSpinBox)
-        self.fluenceDoubleSpinBox.scientificLineEdit.setContextMenuPolicy(
+        self.fluenceDoubleSpinBox.setContextMenuPolicy(
             Qt.ActionsContextMenu)
-        self.actionMultiply = QtWidgets.QAction(
-            self.fluenceDoubleSpinBox.scientificLineEdit)
+        self.actionMultiply = QtWidgets.QAction(self.fluenceDoubleSpinBox)
         self.actionMultiply.triggered.connect(self.__multiply_fluence)
-        self.fluenceDoubleSpinBox.scientificLineEdit.addAction(
-            self.actionMultiply)
+        self.fluenceDoubleSpinBox.addAction(self.actionMultiply)
 
-        self.actionUndo = QtWidgets.QAction(
-            self.fluenceDoubleSpinBox.scientificLineEdit)
+        self.actionUndo = QtWidgets.QAction(self.fluenceDoubleSpinBox)
         self.actionUndo.setText("Undo multiply")
         self.actionUndo.triggered.connect(self.__undo_fluence)
 
         self.actionUndo.setEnabled(bool(self.tmp_run.previous_fluence))
-        self.fluenceDoubleSpinBox.scientificLineEdit.addAction(self.actionUndo)
+        self.fluenceDoubleSpinBox.addAction(self.actionUndo)
 
         self.clipboard = QGuiApplication.clipboard()
         self._ratio = None
