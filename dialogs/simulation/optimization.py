@@ -263,22 +263,18 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
                 if self.current_mode == OptimizationType.RECOIL:
                     self.linear_recoil_widget.hide()
                     self.nsgaii_recoil_widget.show()
-                    self.nsgaii_recoil_widget.enable_sim_params()
                 else:
                     self.linear_fluence_widget.hide()
                     self.nsgaii_fluence_widget.show()
-                    self.nsgaii_fluence_widget.enable_sim_params()
             else:
                 self.current_method = OptimizationMethod.LINEAR
 
                 if self.current_mode == OptimizationType.RECOIL:
                     self.nsgaii_recoil_widget.hide()
                     self.linear_recoil_widget.show()
-                    self.linear_recoil_widget.enable_sim_params()
                 else:
                     self.nsgaii_fluence_widget.hide()
                     self.linear_fluence_widget.show()
-                    self.linear_fluence_widget.enable_sim_params()
 
     def choose_optimization_mode(self, button, checked):
         """Choose whether to optimize recoils or fluence. Show correct widget.
