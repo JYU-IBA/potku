@@ -147,6 +147,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
 
         self.mode_radios.addButton(self.fluenceRadioButton)
         self.mode_radios.addButton(self.recoilRadioButton)
+        self._enable_linear_fluence()
 
         gutils.fill_tree(
             self.simulationTreeWidget.invisibleRootItem(),
@@ -253,6 +254,27 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         self.nsgaii_recoil_widget.upper_limits = max_x, prev_y
         self.linear_recoil_widget.upper_limits = max_x, prev_y
 
+    # TODO: Remove once linear fluence optimization is done
+    def _enable_linear_fluence(self) -> None:
+        """Disable fluence button if linear is selected or
+        linear button if fluence is selected. Otherwise enable both.
+        """
+        disabled_text = "Fluence optimization using linear optimization is not implemented yet"
+
+        if self.current_method == OptimizationMethod.LINEAR:
+            self.fluenceRadioButton.setEnabled(False)
+            self.fluenceRadioButton.setToolTip(disabled_text)
+        else:
+            self.fluenceRadioButton.setEnabled(True)
+            self.fluenceRadioButton.setToolTip("")
+
+        if self.current_mode == OptimizationType.FLUENCE:
+            self.linearRadioButton.setEnabled(False)
+            self.linearRadioButton.setToolTip(disabled_text)
+        else:
+            self.linearRadioButton.setEnabled(True)
+            self.linearRadioButton.setToolTip("")
+
     def choose_optimization_method(self, button, checked):
         """Choose whether to use NSGA-II or linear optimization method."""
         if checked:
@@ -275,6 +297,8 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
                 else:
                     self.nsgaii_fluence_widget.hide()
                     self.linear_fluence_widget.show()
+
+            self._enable_linear_fluence()
 
     def choose_optimization_mode(self, button, checked):
         """Choose whether to optimize recoils or fluence. Show correct widget.
@@ -299,6 +323,8 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
                 else:
                     self.linear_recoil_widget.hide()
                     self.linear_fluence_widget.show()
+
+            self._enable_linear_fluence()
 
     def start_optimization(self):
         """Find necessary cut file and make energy spectrum with it, and start
