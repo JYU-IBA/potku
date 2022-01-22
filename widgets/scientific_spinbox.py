@@ -76,6 +76,7 @@ class ScientificSpinBox(QDoubleSpinBox):
             invalid=lambda: iv.set_input_field_red(line_edit)
         )
         line_edit.setValidator(self._validator)
+        line_edit.textChanged.connect(self._update_value_from_text)
         self.setRange(minimum, maximum)
         self.setDecimals(decimal_places)
         self.setValue(value)
@@ -126,6 +127,19 @@ class ScientificSpinBox(QDoubleSpinBox):
         """
         value = _cast_to_decimal(value)
         return ScientificSpinBox._format_value(value, self.decimals())
+
+    def _update_value_from_text(self, input_text: str) -> None:
+        """Updates the value of this ScientificSpinBox based on the
+        text input. Input has to be a valid number between minimum
+        and maximum, otherwise the value is not updated.
+        """
+        try:
+            new_value = _cast_to_decimal(input_text)
+        except ValueError:
+            return
+
+        if self.minimum() <= new_value <= self.maximum():
+            self.setValue(new_value)
 
     @staticmethod
     def _format_value(value: Decimal, decimals: int) -> str:
@@ -179,7 +193,7 @@ class ScientificSpinBox(QDoubleSpinBox):
 
 
 def _cast_to_decimal(value: Union[float, str, Decimal]) -> Decimal:
-    """Casts given value to Decimal. Raises TypeError if casting fails.
+    """Casts given value to Decimal. Raises ValueError if casting fails.
     """
     if not isinstance(value, Decimal):
         try:
