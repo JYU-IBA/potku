@@ -80,6 +80,30 @@ class ScientificSpinBox(QDoubleSpinBox):
         self.setDecimals(decimal_places)
         self.setValue(value)
 
+    def setMinimum(self, minimum: float) -> None:
+        super(ScientificSpinBox, self).setMinimum(minimum)
+        self._update_validator()
+
+    def setMaximum(self, maximum: float) -> None:
+        super(ScientificSpinBox, self).setMaximum(maximum)
+        self._update_validator()
+
+    def setRange(self, minimum: float, maximum: float) -> None:
+        super(ScientificSpinBox, self).setRange(minimum, maximum)
+        self._update_validator()
+
+    def setDecimals(self, decimal_places: int) -> None:
+        super(ScientificSpinBox, self).setDecimals(decimal_places)
+        self._update_validator()
+
+    def _update_validator(self) -> None:
+        """Updates validator range with current minimum, maximum and decimal
+        places.
+        """
+        self._validator.setRange(
+            self.minimum(), self.maximum(), self.decimals()
+        )
+
     def stepBy(self, steps: int) -> None:
         """Called whenever the user triggers a step. The steps parameter
         indicates how many steps were taken.

@@ -147,6 +147,42 @@ class TestDisplayingValuesAsText(TestScientifiSpinBox):
         self.assertEqual("1.234e+10", self.sbox.text())
 
 
+class TestValidatingUserInputs(TestScientifiSpinBox):
+    def test_empty_string_is_not_a_valid_input(self):
+        self.sbox.lineEdit().setText("")
+        self.assertFalse(self.sbox.hasAcceptableInput())
+
+    def test_positive_number_with_positive_exponent_is_a_valid_input(self):
+        self.sbox.lineEdit().setText("1.0e+12")
+        self.assertTrue(self.sbox.hasAcceptableInput())
+
+    def test_negative_number_with_negative_exponent_is_a_valid_input(self):
+        self.sbox.lineEdit().setText("-1.0e-1")
+        self.assertTrue(self.sbox.hasAcceptableInput())
+
+    def test_number_in_non_scientific_notation_is_a_valid_input(self):
+        self.sbox.lineEdit().setText("1")
+        self.assertTrue(self.sbox.hasAcceptableInput())
+
+    def test_number_in_wrong_scientific_notation_is_not_a_valid_input(self):
+        self.sbox.lineEdit().setText("1.0e")
+        self.assertFalse(self.sbox.hasAcceptableInput())
+
+    def test_string_that_is_not_a_number_is_not_a_valid_input(self):
+        self.sbox.lineEdit().setText("foo")
+        self.assertFalse(self.sbox.hasAcceptableInput())
+
+    def test_number_over_maximum_is_not_a_valid_input(self):
+        self.sbox.setMaximum(2.0e+1)
+        self.sbox.lineEdit().setText("3.0e+1")
+        self.assertFalse(self.sbox.hasAcceptableInput())
+
+    def test_number_below_minimum_is_not_a_valid_input(self):
+        self.sbox.setMinimum(2.0e+1)
+        self.sbox.lineEdit().setText("1.0e+1")
+        self.assertFalse(self.sbox.hasAcceptableInput())
+
+
 class TestSteppingUpAndDown(TestScientifiSpinBox):
     def test_step_up_positive_value_positive_exponent(self):
         self.sbox.setValue(5.123e10)
