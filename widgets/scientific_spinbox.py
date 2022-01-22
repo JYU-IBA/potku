@@ -65,18 +65,17 @@ class ScientificSpinBox(QDoubleSpinBox):
         """
         super().__init__(parent)
 
-        self.scientificLineEdit = self.lineEdit()
+        line_edit = self.lineEdit()
         self._validator = ScientificValidator(
             minimum,
             maximum,
             decimal_places,
             self,
-            accepted=lambda: iv.set_input_field_white(self.scientificLineEdit),
-            intermediate=lambda: iv.set_input_field_yellow(
-                 self.scientificLineEdit),
-            invalid=lambda: iv.set_input_field_red(self.scientificLineEdit)
+            accepted=lambda: iv.set_input_field_white(line_edit),
+            intermediate=lambda: iv.set_input_field_yellow(line_edit),
+            invalid=lambda: iv.set_input_field_red(line_edit)
         )
-        self.scientificLineEdit.setValidator(self._validator)
+        line_edit.setValidator(self._validator)
         self.setRange(minimum, maximum)
         self.setDecimals(decimal_places)
         self.setValue(value)
