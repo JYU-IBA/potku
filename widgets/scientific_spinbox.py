@@ -28,15 +28,21 @@ __version__ = "2.0"
 import math
 import decimal
 from decimal import Decimal
-from typing import Union, Tuple, Optional, Callable
+from typing import Union, Optional, Tuple
+from enum import IntEnum
 
-from PyQt5.QtWidgets import QAbstractSpinBox, QWidget
+from PyQt5.QtWidgets import QDoubleSpinBox, QWidget
 
 import widgets.input_validation as iv
 from widgets.input_validation import ScientificValidator
 
 
-class ScientificSpinBox(QAbstractSpinBox):
+class _StepDirection(IntEnum):
+    UP = 1
+    DOWN = -1
+
+
+class ScientificSpinBox(QDoubleSpinBox):
     """
     Class for custom double spinbox that handles scientific notation.
     """
@@ -58,15 +64,12 @@ class ScientificSpinBox(QAbstractSpinBox):
             decimal_places: maximum number of decimals to show
         """
         super().__init__(parent)
-        self._minimum = minimum
-        self._maximum = maximum
-        self._decimal_places = decimal_places
 
         self.scientificLineEdit = self.lineEdit()
         self._validator = ScientificValidator(
-            self.minimum,
-            self.maximum,
-            self._decimal_places,
+            minimum,
+            maximum,
+            decimal_places,
             self,
             accepted=lambda: iv.set_input_field_white(self.scientificLineEdit),
             intermediate=lambda: iv.set_input_field_yellow(
@@ -74,84 +77,32 @@ class ScientificSpinBox(QAbstractSpinBox):
             invalid=lambda: iv.set_input_field_red(self.scientificLineEdit)
         )
         self.scientificLineEdit.setValidator(self._validator)
-        self.set_value(value)
-
-    @property
-    def minimum(self) -> float:
-        """Minimum allowed value.
-        """
-        return self._minimum
-
-    @minimum.setter
-    def minimum(self, value: float) -> None:
-        self._validator.setRange(value, self.maximum, self.decimal_places)
-        self._minimum = value
-
-    @property
-    def maximum(self) -> float:
-        """Maximum allowed value.
-        """
-        return self._maximum
-
-    @maximum.setter
-    def maximum(self, value: float) -> None:
-        self._validator.setRange(self.minimum, value, self.decimal_places)
-        self._maximum = value
-
-    @property
-    def decimal_places(self) -> int:
-        """Maximum number of decimals to show.
-        """
-        return self._decimal_places
-
-    @decimal_places.setter
-    def decimal_places(self, value: int) -> None:
-        self._validator.setRange(self.minimum, self.maximum, value)
-        self._decimal_places = value
+        self.setRange(minimum, maximum)
+        self.setDecimals(decimal_places)
+        self.setValue(value)
 
     def stepBy(self, steps: int) -> None:
         """Called whenever the user triggers a step. The steps parameter
         indicates how many steps were taken.
 
-        Overrides QAbstractSpinBox.stepBy.
+        Overrides QDoubleSpinBox.stepBy.
         """
-        if steps < 0:
-            step_func = self._down_step
+        if steps > 0:
+            direction = _StepDirection.UP
         else:
-            step_func = self._up_step
-        self._step_adjustment(step_func)
+            direction = _StepDirection.DOWN
 
-    def stepEnabled(self) -> QAbstractSpinBox.StepEnabled:
-        """Determines whether stepping up and down is legal.
+        value = _cast_to_decimal(self.value())
+        for _ in range(abs(steps)):
+            value = ScientificSpinBox._step(value, direction)
 
-        Overrides QAbstractSpinBox.stepEnabled.
-        """
-        value = self._get_value()
-        if value < self.maximum:
-            step_up_enabled = QAbstractSpinBox.StepUpEnabled
-        else:
-            step_up_enabled = ~QAbstractSpinBox.StepUpEnabled
-        if value > self.minimum:
-            step_down_enabled = QAbstractSpinBox.StepDownEnabled
-        else:
-            step_down_enabled = ~QAbstractSpinBox.StepDownEnabled
+        self.setValue(value)
 
-        return step_up_enabled | step_down_enabled
-
-    def set_value(self, value: Union[float, Decimal, str]) -> None:
-        """Sets the value of the Spin box, provided that the given value is
-        valid.
+    def textFromValue(self, value: float) -> str:
+        """Called whenever ScientificSpinBox needs to display the given value.
         """
         value = _cast_to_decimal(value)
-
-        if not value.is_nan():
-            if value < self.minimum:
-                value = _cast_to_decimal(self.minimum)
-            if value > self.maximum:
-                value = _cast_to_decimal(self.maximum)
-
-        self.scientificLineEdit.setText(
-            self._format_value(value, self._decimal_places))
+        return ScientificSpinBox._format_value(value, self.decimals())
 
     @staticmethod
     def _format_value(value: Decimal, decimals: int) -> str:
@@ -171,33 +122,8 @@ class ScientificSpinBox(QAbstractSpinBox):
             v = f"{v}.0"
         return f"{v}e{m}"
 
-    def _step_adjustment(self, step_func: Callable[[Decimal], Decimal]):
-        """Adjusts current value of the spinbox either up or down a step.
-        """
-        try:
-            cur_val = self._get_value()
-        except TypeError:
-            return
-        new_value = step_func(cur_val)
-
-        self.set_value(new_value)
-
     @staticmethod
-    def _down_step(value: Decimal) -> Decimal:
-        """Returns a new value where the first decimal place of the given value
-        has been decremented by one (for example 1.0e10 -> 9.9e9).
-        """
-        return ScientificSpinBox._step(value, -1, (1, 0), (9, 9))
-
-    @staticmethod
-    def _up_step(value: Decimal) -> Decimal:
-        """Returns a new value where the first decimal place of the given value
-        has been incremented by one (for example 9.9e10 -> 1.0e11).
-        """
-        return ScientificSpinBox._step(value, 1, (9, 9), (1, 0))
-
-    @staticmethod
-    def _step(value: Decimal, coef: int, c1: Tuple, c2: Tuple):
+    def _step(value: Decimal, direction: _StepDirection):
         """Helper function for incrementing and decrementing first decimal in
         scientific notation.
 
@@ -206,35 +132,27 @@ class ScientificSpinBox(QAbstractSpinBox):
         addition or subtraction here would cause a too big of a gap in step
         size.
         """
-        if value.is_nan() or value.is_infinite():
+        if value.is_infinite():
             return value
+
+        step_from, step_to = _determine_step_threshold(value, direction)
+
         sign, digits, exp = value.as_tuple()
         padded_digits = *digits, 0, 0
-        if sign:
-            c1, c2 = c2, c1
 
-        if padded_digits[:2] == c1:
+        if padded_digits[:2] == step_from:
             # Handle special cases where incrementing or decrementing a decimal
             # causes a change in the exponent part.
-            digits = *c2, *digits[2:]
-            if sign:
-                coef *= -1
-            exp += coef * 1
-            return Decimal((sign, digits, exp))
-        diff_sign = 1 if coef < 0 else 0
+            new_digits = *step_to, *digits[2:]
+            if value < 0:
+                direction *= -1
+            exp += direction
+            if len(digits) == 1:
+                exp += direction
+            return Decimal((sign, new_digits, exp))
+        diff_sign = 0 if direction is _StepDirection.UP else 1
         diff = Decimal((diff_sign, (1, *(0 for _ in digits)), exp - 2))
         return value + diff
-
-    def get_value(self) -> float:
-        """Returns the value of the spinbox as a float.
-        """
-        return float(self._get_value())
-
-    def _get_value(self) -> Decimal:
-        """Returns the value of the spinbox as a Decimal. This is used
-        for internal handling of the value.
-        """
-        return _cast_to_decimal(self.text())
 
 
 def _cast_to_decimal(value: Union[float, str, Decimal]) -> Decimal:
@@ -244,5 +162,17 @@ def _cast_to_decimal(value: Union[float, str, Decimal]) -> Decimal:
         try:
             value = Decimal(str(value))
         except decimal.InvalidOperation:
-            raise TypeError(f"Could not convert value '{value}' into a number.")
+            raise ValueError(
+                f"Could not convert value '{value}' into a number.")
     return value
+
+
+def _determine_step_threshold(
+        value: Union[float, Decimal],
+        direction: _StepDirection) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+    is_step_up = direction == _StepDirection.UP
+    is_positive = value > 0
+
+    if (is_step_up and is_positive) or (not is_step_up and not is_positive):
+        return (9, 9), (1, 0)
+    return (1, 0), (9, 9)
