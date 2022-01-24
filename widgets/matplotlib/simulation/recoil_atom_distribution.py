@@ -848,9 +848,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if self.current_recoil_element is None:  # Otherwise crash
             return
 
-        if dialog.userSelectionCheckBox.isChecked():
+        if dialog.isCancelled:
+            return
 
-            self.current_recoil_element.manual_reference_density_checked = True
+        if dialog.userSelectionCheckBox.isChecked():
+            self.current_element_simulation.request\
+                .manual_reference_density_checked = True
 
             self.parent.targetUserSelectionLabel.setText(
                 "Using user-defined reference density")
@@ -862,9 +865,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.parent.recoilUserSelectionLabel.setStyleSheet(
                 "background-color: yellow")
         else:
-            self.current_recoil_element.manual_reference_density_checked = False
+            self.current_element_simulation.request\
+                .manual_reference_density_checked = False
             self.parent.targetUserSelectionLabel.setText("")
             self.parent.recoilUserSelectionLabel.setText("")
+            dialog.reference_density = \
+                self.current_recoil_element.reference_density_element_default
 
         if dialog.isOk:
             try:
@@ -1248,10 +1254,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.parent.nameLabel.setText(
             f"Name: {self.current_recoil_element.name}")
 
-        density = self.current_recoil_element.reference_density
+        if self.current_element_simulation.request\
+                .manual_reference_density_checked:
+            density = self.current_recoil_element.reference_density
+        else:
+            density = self.current_recoil_element.reference_density_element_default
+
         updated_reference_density = f" Reference density:" \
                                     f" {density:1.2e} at./cm\xb3 "
-
         # The target tab
         self.parent.targetReferenceDensityLabel.setText(
             updated_reference_density)

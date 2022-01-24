@@ -86,6 +86,8 @@ class Request(ElementSimulationContainer, RequestLogger):
         # e.g. Sample-01, Sample-02.optional_name,...
         self._running_int = 1  # TODO: Maybe be saved into .request file?
 
+        self.manual_reference_density_checked = False
+
         # Check folder exists and make request file there.
         if save_on_creation:
             self.create_folder_structure()

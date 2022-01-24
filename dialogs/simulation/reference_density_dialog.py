@@ -76,17 +76,19 @@ class ReferenceDensityDialog(QtWidgets.QDialog,
         self.scientific_spinbox = ScientificSpinBox(
             value=value, minimum=0.01, maximum=9.99e23)
 
-        if self.recoil_element.manual_reference_density_checked:
-            self.scientific_spinbox.setDisabled(False)
+        self.initial_state = self.element_simulation.request.manual_reference_density_checked
+
+        if self.element_simulation.request.manual_reference_density_checked:
+            self.change_state(is_disabled=False, is_checked=True)
             self.userSelectionCheckBox.setChecked(True)
         else:
-            self.scientific_spinbox.setDisabled(True)
+            self.change_state(is_disabled=True, is_checked=False)
             self.userSelectionCheckBox.setChecked(False)
 
         self.userSelectionCheckBox.stateChanged.connect(self._state_changed)
 
         self.okPushButton.clicked.connect(self._accept_settings)
-        self.cancelPushButton.clicked.connect(self.close)
+        self.cancelPushButton.clicked.connect(self._close)
 
         self.fields_are_valid = True
 
@@ -97,14 +99,41 @@ class ReferenceDensityDialog(QtWidgets.QDialog,
         self.formLayout.removeRow(self.widget)
 
         self.isOk = False
+        self.isCancelled = False  # Cancel-button's state
 
         self.exec_()
 
     def _state_changed(self):
         if self.userSelectionCheckBox.isChecked():
-            self.scientific_spinbox.setDisabled(False)
+            # When the reference density is set by manually and the user
+            # cancels modifications
+            if self.element_simulation.request.\
+                    manual_reference_density_checked == self.initial_state \
+                    and self.isCancelled:
+                return
+            if self.element_simulation.request.manual_reference_density_checked:
+                self.change_state(is_disabled=True, is_checked=False)
+                self.userSelectionCheckBox.setChecked(False)
+            else:
+                reply = QtWidgets.QMessageBox.critical(
+                    self, "Critical warning",
+                    "This is an unstable feature. "
+                    "It only changes the reference density of the selected "
+                    "element %s.\n"
+                    "\nDo not continue unless you are sure what you are doing!" %
+                    self.recoil_element.element.symbol,
+                    QtWidgets.QMessageBox.Ok,
+                    QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.Ok:
+                    self.change_state(is_disabled=False, is_checked=True)
+                    self.userSelectionCheckBox.setChecked(True)
+                else:
+                    self.change_state(is_disabled=False, is_checked=False)
+                    self.userSelectionCheckBox.setChecked(False)
+                    self.isCancelled = True
+                    self.close()
         else:
-            self.scientific_spinbox.setDisabled(True)
+            self.change_state(is_disabled=True, is_checked=False)
 
     def _density_valid(self):
         """
@@ -154,3 +183,24 @@ class ReferenceDensityDialog(QtWidgets.QDialog,
 
         self.isOk = True
         self.close()
+
+    def _close(self):
+        self.isCancelled = True
+        # Return the checkbox state when the reference density is set by
+        # manually and the user cancels modifications
+        if self.element_simulation.request\
+                .manual_reference_density_checked != self.initial_state:
+            self.change_state(is_disabled=False, is_checked=True)
+            self.close()
+        elif self.element_simulation.request\
+                .manual_reference_density_checked:
+            self.change_state(is_disabled=False, is_checked=True)
+            self.close()
+        else:
+            self.change_state(is_disabled=True, is_checked=False)
+            self.close()
+
+    def change_state(self, is_disabled, is_checked):
+        self.scientific_spinbox.setDisabled(is_disabled)
+        self.element_simulation.request \
+            .manual_reference_density_checked = is_checked

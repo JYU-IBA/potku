@@ -81,8 +81,8 @@ class RecoilElement(MCERDParameterContainer, Serializable):
             self.reference_density = GlobalSettings().get_default_reference_density()
         else:
             self.reference_density = reference_density
-
-        self.manual_reference_density_checked = False
+            if reference_density == self.reference_density:
+                self.reference_density_element_default = reference_density
 
         self.channel_width = channel_width
 
