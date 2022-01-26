@@ -58,8 +58,7 @@ class LinearOptimization(opt.BaseOptimizer):
                  check_min=0, skip_simulation=False, use_efficiency=False,
                  optimize_by_area=False, verbose=False,
                  sample_count=12, sample_width=3.0, sample_prominence=0.1,
-                 fitting_iteration_count=2, is_skewed=False,
-                 **kwargs):  # TODO: Remove kwargs when this is fully integrated
+                 fitting_iteration_count=2, is_skewed=False):
         """Initialize the linear optimizer.
 
         Only LinearOptimization-specific arguments are documented here. See
@@ -301,7 +300,7 @@ class LinearOptimization(opt.BaseOptimizer):
     def _convert_peaks_to_nm(self, mev_peaks: List[Tuple[float]]) -> List[Tuple[float]]:
         """Convert peak x values from MeV to nm.
 
-        If peaks would exceed limits, they are corrected.
+        If peaks would exceed limits, they are moved and/or clipped.
 
         Args:
             mev_peaks: peaks to convert (in MeV)
@@ -320,22 +319,28 @@ class LinearOptimization(opt.BaseOptimizer):
             right_correction = self.upper_limits[0] - converted[-1]
             exceeds_right = right_correction < 0.0
 
-            corrected = None
+            new_left = None
+            new_right = None
             if exceeds_left and exceeds_right:
-                # TODO: does it make sense to clip left and right?
-                raise NotImplementedError("Detected peak exceeded both limits.")
+                new_left = self.lower_limits[0]
+                new_right = self.upper_limits[0]
             elif exceeds_left:
-                corrected = tuple(nm + left_correction for nm in converted)
-                if corrected[-1] > self.upper_limits[0]:
-                    # TODO: clip right?
-                    raise NotImplementedError
+                new_left = converted[0] + left_correction
+                new_right = min(converted[-1] + left_correction, self.upper_limits[0])
             elif exceeds_right:
-                corrected = tuple(nm + right_correction for nm in converted)
-                if corrected[0] < self.lower_limits[0]:
-                    # TODO: clip left?
-                    raise NotImplementedError
+                new_left = max(converted[0] + right_correction, self.lower_limits[0])
+                new_right = converted[-1] + right_correction
 
-            peaks_nm.append(corrected if corrected else converted)
+            if new_left >= new_right:  # Equivalent to new_right < new_left
+                raise ValueError("Detected peak was too far to be corrected")
+
+            if new_left is not None or new_right is not None:
+                # TODO: Should new_middle be weighted?
+                #   It's not necessarily at the exact center in converted.
+                new_middle = (new_left + new_right) / 2
+                peaks_nm.append((new_left, new_middle, new_right))
+            else:
+                peaks_nm.append(converted)
 
         return peaks_nm
 
@@ -782,6 +787,7 @@ class LinearOptimization(opt.BaseOptimizer):
         last_point = solution.points[-1]
         if last_point.get_x() != self.upper_limits[0]:
             if last_point is not solution.valleys[-1].rl:
+                # TODO: Doesn't work for substrate
                 raise ValueError(
                     "Optimized solution did not end with a valley.")
             last_point.set_x(self.upper_limits[0])
@@ -917,7 +923,12 @@ class LinearOptimization(opt.BaseOptimizer):
                     completed_msg += f"\n{name}: missing"
 
         else:
-            raise NotImplementedError
+            # raise NotImplementedError
+            self.on_error(self._get_message(
+                OptimizationState.FINISHED,
+                error=f"Linear fluence optimization not implemented"))
+            self.clean_up(cancellation_token)
+            return
 
         self.clean_up(cancellation_token)
         self.element_simulation.optimization_results_to_file(self.cut_file)
