@@ -111,13 +111,14 @@ class ElementWidget(QtWidgets.QWidget):
             spectra_changed=spectra_changed))
         draw_spectrum_button.setToolTip("Draw energy spectra")
 
-        settings_button = QtWidgets.QPushButton()
+        settings_button = QtWidgets .QPushButton()
         settings_button.setIcon(icon_manager.get_icon("gear.svg"))
         settings_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                       QtWidgets.QSizePolicy.Fixed)
         settings_button.clicked.connect(
             lambda: self.open_element_simulation_settings(
-                settings_updated=settings_updated))
+                settings_updated=settings_updated,
+                settings_button=settings_button))
         settings_button.setToolTip("Edit element simulation settings")
 
         add_recoil_button = QtWidgets.QPushButton()
@@ -187,11 +188,13 @@ class ElementWidget(QtWidgets.QWidget):
         # Save recoil element
         recoil_element.to_file(self.element_simulation.directory)
 
-    def open_element_simulation_settings(self, settings_updated=None):
+    def open_element_simulation_settings(self, settings_updated=None,
+                                         settings_button=None):
         """
         Open element simulation settings.
         """
-        es = ElementSimulationSettingsDialog(self.element_simulation, self.tab)
+        es = ElementSimulationSettingsDialog(self.element_simulation,
+                                             self.tab, settings_button)
         if settings_updated is not None:
             es.settings_updated.connect(settings_updated.emit)
         es.exec_()

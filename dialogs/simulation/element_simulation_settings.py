@@ -50,7 +50,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
     use_default_settings = bnd.bind("defaultSettingsCheckBox",
                                     track_change=True)
 
-    def __init__(self, element_simulation, tab):
+    def __init__(self, element_simulation, tab, settings_button):
         """
         Initializes the dialog.
 
@@ -61,6 +61,8 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_specific_settings.ui", self)
         self.setWindowTitle("Element Settings")
+
+        self.settings_button = settings_button
 
         self.element_simulation = element_simulation
         self.tab = tab
@@ -104,9 +106,11 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
         if self.use_default_settings:
             self.tabs.setEnabled(False)
             self.sim_widget.setEnabled(False)
+            self.settings_button.setStyleSheet("")
         else:
             self.tabs.setEnabled(True)
             self.sim_widget.setEnabled(True)
+            self.settings_button.setStyleSheet("background-color : yellow")
 
     def update_settings_and_close(self):
         """Updates settings and closes the dialog if update_settings returns
