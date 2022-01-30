@@ -121,7 +121,7 @@ def set_input_field_red(input_field: QtWidgets.QWidget):
     Args:
         input_field: Qt widget that supports Qt Style Sheets.
     """
-    input_field.setStyleSheet("background-color: %s" % "#f6989d")
+    input_field.setStyleSheet("background-color: #f6989d")
 
 
 def set_input_field_white(input_field: QtWidgets.QWidget):
@@ -130,7 +130,14 @@ def set_input_field_white(input_field: QtWidgets.QWidget):
     Args:
         input_field: Qt widget that supports Qt Style Sheets.
     """
-    input_field.setStyleSheet("background-color: %s" % "#ffffff")
+    if input_field.styleSheet():
+        # Only set background white if style sheet has already
+        # been defined, otherwise use default style. This fixes
+        # an issue where ScientificSpinBoxes may appear smaller
+        # than regular spin boxes on Windows.
+        # FIXME this is a quick hack. There is probably a better
+        #   way to do this.
+        input_field.setStyleSheet("background-color: #ffffff")
 
 
 def set_input_field_yellow(input_field: QtWidgets.QWidget):
@@ -139,7 +146,7 @@ def set_input_field_yellow(input_field: QtWidgets.QWidget):
     Args:
         input_field: Qt widget that supports Qt Style Sheets.
     """
-    input_field.setStyleSheet("background-color: %s" % "#ebde34")
+    input_field.setStyleSheet("background-color: #ebde34")
 
 
 def validate_text_input(text, regex):
