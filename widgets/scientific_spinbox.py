@@ -75,11 +75,12 @@ class ScientificSpinBox(QDoubleSpinBox):
             intermediate=lambda: iv.set_input_field_yellow(line_edit),
             invalid=lambda: iv.set_input_field_red(line_edit)
         )
-        line_edit.setValidator(self._validator)
-        line_edit.textChanged.connect(self._update_value_from_text)
         self.setRange(minimum, maximum)
         self.setDecimals(decimal_places)
         self.setValue(value)
+
+        line_edit.textChanged.connect(self._update_value_from_text)
+        line_edit.setValidator(self._validator)
 
     def setMinimum(self, minimum: float) -> None:
         super(ScientificSpinBox, self).setMinimum(minimum)
