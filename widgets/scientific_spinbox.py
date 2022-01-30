@@ -161,7 +161,7 @@ class ScientificSpinBox(QDoubleSpinBox):
         return f"{v}e{m}"
 
     @staticmethod
-    def _step(value: Decimal, direction: _StepDirection):
+    def _step(value: Decimal, direction: _StepDirection) -> Decimal:
         """Helper function for incrementing and decrementing first decimal in
         scientific notation.
 
