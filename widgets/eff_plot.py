@@ -36,7 +36,7 @@ from widgets.matplotlib.eff_plot import \
     MatplotlibEfficiencyWidget
 
 
-class EfficiencyDialog(QtWidgets.QWidget):
+class EfficiencyDialog(QtWidgets.QDialog):
     """Efficiency widget which is opened on top of detector settings.
     """
 

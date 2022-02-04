@@ -631,16 +631,9 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         """
         Open efficiency plot widget
         """
-        self.eff_folder = gutils.get_potku_setting(
-            DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
-            self.request.default_folder)
-        self.efficiency_files = self.obj.get_efficiency_files()
-        self.efficiency_files_list = []
-        for file in self.efficiency_files:
-            file_name = gf.get_root_dir() / self.eff_folder / str(
-                self.efficiency_files[self.efficiency_files.index(file)])
-            self.efficiency_files_list.append(file_name)
-        EfficiencyDialog(self.efficiency_files_list, self)
+        eff_files = self.obj.get_efficiency_files(return_full_paths=True)
+        dialog = EfficiencyDialog(eff_files, self)
+        dialog.exec_()
 
     def __open_calibration_dialog(self):
         """
