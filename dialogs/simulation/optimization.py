@@ -72,15 +72,12 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         fset=bnd.set_selected_tree_item)
     auto_adjust_x: bool = bnd.bind("auto_adjust_x_box")
 
-    # TODO: Add PropertySavingWidget (& PropertyBindingWidget) support for
-    #   linear optimization settings. How to save both nsgaii and linear?
-
     @property
     def fluence_parameters(self) -> Dict[str, Any]:
         return self.nsgaii_fluence_widget.get_properties()
 
     @fluence_parameters.setter
-    def fluence_parameters(self, value: Dict[str, Any]):
+    def fluence_parameters(self, value: Dict[str, Any]) -> None:
         self.nsgaii_fluence_widget.set_properties(**value)
 
     @property
@@ -88,10 +85,32 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         return self.nsgaii_recoil_widget.get_properties()
 
     @recoil_parameters.setter
-    def recoil_parameters(self, value: Dict[str, Any]):
+    def recoil_parameters(self, value: Dict[str, Any]) -> None:
         self.nsgaii_recoil_widget.set_properties(**value)
 
-    # TODO: Create property for current_mode
+    @property
+    def linear_fluence_parameters(self) -> Dict[str, Any]:
+        try:
+            return self.linear_fluence_widget.get_properties()
+        except AttributeError:
+            pass  # Backwards compatibility
+
+    @linear_fluence_parameters.setter
+    def linear_fluence_parameters(self, value: Dict[str, Any]) -> None:
+        self.linear_fluence_widget.set_properties(**value)
+
+    @property
+    def linear_recoil_parameters(self) -> Dict[str, Any]:
+        try:
+            return self.linear_recoil_widget.get_properties()
+        except AttributeError:
+            pass  # Backwards compatibility
+
+    @linear_recoil_parameters.setter
+    def linear_recoil_parameters(self, value: Dict[str, Any]) -> None:
+        self.linear_recoil_widget.set_properties(**value)
+
+    # TODO: Remember method & mode too
 
     def __init__(self, simulation: Simulation, parent):
         """Initializes an OptimizationDialog that displays various optimization
