@@ -28,24 +28,28 @@ along with this program (file named 'LICENCE').
 __author__ = "Aleksi Kauppi"
 __version__ = "2.0"
 
+from pathlib import Path
+from typing import List
+
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
 import widgets.gui_utils as gutils
+from widgets.base_tab import BaseTab
 from widgets.matplotlib.eff_plot import \
     MatplotlibEfficiencyWidget
 
 
 class EfficiencyDialog(QtWidgets.QDialog):
-    """Efficiency widget which is opened on top of detector settings.
+    """Efficiency dialog which is opened on top of detector settings.
     """
 
-    def __init__(self, efficiency_files, parent_widget=None):
-        """Inits widget.
+    def __init__(self, efficiency_files: List[Path], parent_widget: BaseTab = None):
+        """Inits dialog.
 
         Args:
-            parent: A TabWidget.
             efficiency_files: Paths to .eff files
+            parent_widget: Parent TabWidget.
         """
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_eff_plot.ui", self)
