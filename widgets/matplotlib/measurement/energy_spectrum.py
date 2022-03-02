@@ -694,7 +694,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             line, = self.axes.plot(x, y, label='MEASUREMENT_SUM',
                                    linestyle=self.MEASURED_SUM_SPECTRUM_LINE_STYLE,
                                    linewidth=self.SUM_SPECTRUM_LINE_WIDTH,
-                                   zorder=self.self.MEASURED_SUM_SPECTRUM_Z_ORDER)
+                                   zorder=self.MEASURED_SUM_SPECTRUM_Z_ORDER)
             self.plots[self.measured_sum_spectrum.sum_spectrum_key] = line
 
     def remove_ignored_elements(self):
