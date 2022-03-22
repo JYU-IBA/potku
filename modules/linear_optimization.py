@@ -331,10 +331,12 @@ class LinearOptimization(opt.BaseOptimizer):
                 new_left = max(converted[0] + right_correction, self.lower_limits[0])
                 new_right = converted[-1] + right_correction
 
-            if new_left >= new_right:  # Equivalent to new_right < new_left
-                raise ValueError("Detected peak was too far to be corrected")
+            if new_left is not None and new_right is not None:
+                # Equivalent to new_right < new_left
+                if new_left >= new_right:
+                    raise ValueError(
+                        "Detected peak was too far to be corrected")
 
-            if new_left is not None or new_right is not None:
                 # TODO: Should new_middle be weighted?
                 #   It's not necessarily at the exact center in converted.
                 new_middle = (new_left + new_right) / 2
