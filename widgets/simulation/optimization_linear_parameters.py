@@ -1,13 +1,11 @@
-# coding=utf-8
 """
-Created on 20.5.2019
-Updated on 22.5.2019
+Created on 18.01.2022
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2019 Heta Rekilä, 2020 Juhani Sundell
+Copyright (C) 2019 Heta Rekilä, 2020 Juhani Sundell; 2022 Tuomas Pitkänen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,9 +20,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-
-__author__ = "Heta Rekilä \n Juhani Sundell"
+__author__ = "Heta Rekilä \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
+
 
 import abc
 
@@ -41,6 +39,9 @@ from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 from PyQt5.QtCore import Qt
+
+
+# TODO: Reduce copy-paste
 
 _REC_TYPES = {
     "4-point box": ("box", 5),
@@ -80,19 +81,19 @@ def sol_size_to_combobox(instance, combobox, value):
         pass
 
 
-class OptimizationParameterWidget(QtWidgets.QWidget,
-                                  PropertyBindingWidget,
-                                  abc.ABC,
-                                  metaclass=QtABCMeta):
-    """Abstract base class for NSGA-II recoil and fluence optimization parameter
+class LinearOptimizationParameterWidget(QtWidgets.QWidget,
+                                        PropertyBindingWidget,
+                                        abc.ABC,
+                                        metaclass=QtABCMeta):
+    """Abstract base class for linear recoil and fluence optimization parameter
     widgets.
     """
     # Common properties
-    gen = bnd.bind("generationSpinBox")
-    pop_size = bnd.bind("populationSpinBox")
-    number_of_processes = bnd.bind("processesSpinBox")
-    cross_p = bnd.bind("crossoverProbDoubleSpinBox")
-    mut_p = bnd.bind("mutationProbDoubleSpinBox")
+    sample_count = bnd.bind("sampleCountSpinBox")
+    sample_width = bnd.bind("sampleWidthDoubleSpinBox")
+    sample_prominence = bnd.bind("sampleProminenceDoubleSpinBox")
+    fitting_iteration_count = bnd.bind("fittingIterationCountSpinBox")
+    is_skewed = bnd.bind("skewedCheckBox")
     stop_percent = bnd.bind("percentDoubleSpinBox")
     check_time = bnd.bind("timeSpinBox")
     check_max = bnd.bind("maxTimeEdit")
@@ -111,13 +112,11 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
             kwargs: values to show in the widget
         """
         super().__init__()
-        self.optimize_by_area = False
-        self.radios = QtWidgets.QButtonGroup(self)
         uic.loadUi(ui_file, self)
 
         locale = QLocale.c()
-        self.crossoverProbDoubleSpinBox.setLocale(locale)
-        self.mutationProbDoubleSpinBox.setLocale(locale)
+        self.sampleWidthDoubleSpinBox.setLocale(locale)
+        self.sampleProminenceDoubleSpinBox.setLocale(locale)
         self.percentDoubleSpinBox.setLocale(locale)
 
         self.skip_sim_chk_box.stateChanged.connect(self.enable_sim_params)
@@ -139,28 +138,10 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
         self.minTimeEdit.setEnabled(enable)
         self.maxTimeEdit.setEnabled(enable)
 
-    # TODO: Make this work the same way as the rest of the radio buttons
-    #  in Potku
-    def radio_buttons(self):
-        """Radio buttons for optimization parameters Sum and Area
-        """
-        self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
-            self.isChecked)
-        self.radios.addButton(self.areaRadioButton)
-        self.radios.addButton(self.sumRadioButton)
 
-    def isChecked(self, button, checked):
-        """Choose whether to optimize by Sum or Area
-        """
-        if checked and button.text() == 'Sum':
-            self.optimize_by_area = False
-        else:
-            self.optimize_by_area = True
-
-
-class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
+class LinearOptimizationRecoilParameterWidget(LinearOptimizationParameterWidget):
     """
-    Class that handles NSGA-II recoil optimization parameters' ui.
+    Class that handles linear recoil optimization parameters' ui.
     """
 
     # Recoil specific properties
@@ -188,9 +169,8 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
         Args:
             kwargs: property values to be shown in the widget.
         """
-        ui_file = gutils.get_ui_dir() / "ui_optimization_recoil_params.ui"
+        ui_file = gutils.get_ui_dir() / "ui_optimization_linear_recoil_params.ui"
         super().__init__(ui_file, **kwargs)
-        self.radio_buttons()
         locale = QLocale.c()
         self.upperXDoubleSpinBox.setLocale(locale)
         self.lowerXDoubleSpinBox.setLocale(locale)
@@ -198,15 +178,13 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
         self.lowerYDoubleSpinBox.setLocale(locale)
 
 
-class OptimizationFluenceParameterWidget(OptimizationParameterWidget):
+class LinearOptimizationFluenceParameterWidget(LinearOptimizationParameterWidget):
     """
-    Class that handles NSGA-II fluence optimization parameters' ui.
+    Class that handles linear fluence optimization parameters' ui.
     """
 
     # Fluence specific properties
     upper_limits = bnd.bind("fluenceDoubleSpinBox")
-    dis_c = bnd.bind("disCSpinBox")
-    dis_m = bnd.bind("disMSpinBox")
 
     @property
     def lower_limits(self):
@@ -226,9 +204,8 @@ class OptimizationFluenceParameterWidget(OptimizationParameterWidget):
         Args:
             kwargs: property values to be shown in the widget.
         """
-        ui_file = gutils.get_ui_dir() / "ui_optimization_fluence_params.ui"
+        ui_file = gutils.get_ui_dir() / "ui_optimization_linear_fluence_params.ui"
         super().__init__(ui_file, **kwargs)
-        self.radio_buttons()
         self.fluenceDoubleSpinBox = ScientificSpinBox(10e12)
         self.fluence_form_layout.addRow(
             "Upper limit", self.fluenceDoubleSpinBox)

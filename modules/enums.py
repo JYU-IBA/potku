@@ -31,6 +31,12 @@ from enum import Enum
 
 
 @enum.unique
+class OptimizationMethod(IntEnum):
+    NSGAII = 1
+    LINEAR = 2
+
+
+@enum.unique
 class OptimizationType(IntEnum):
     RECOIL = 1
     FLUENCE = 2

@@ -73,9 +73,9 @@
        <item>
         <widget class="QCheckBox" name="optimization_verbose_box">
          <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Automatically
-           sets the X upper limit depending on the distribution of the selected
-           simulation element&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;
+           If enabled, displays get_espe's stderr messages in the console
+           &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
           </string>
          </property>
          <property name="text">
@@ -97,7 +97,36 @@
         </spacer>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBox">
+        <widget class="QGroupBox" name="methodGroupBox">
+         <property name="title">
+          <string/>
+         </property>
+         <property name="flat">
+          <bool>false</bool>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <item>
+           <widget class="QRadioButton" name="nsgaiiRadioButton">
+            <property name="text">
+             <string>NSGA-II (slow)</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="linearRadioButton">
+            <property name="text">
+             <string>Linear (fast)</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="typeGroupBox">
          <property name="title">
           <string/>
          </property>
