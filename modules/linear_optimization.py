@@ -26,11 +26,10 @@ __version__ = "2.0"
 import copy
 import subprocess
 from collections import namedtuple
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Callable, Union
 
 import numpy as np
 from scipy import signal
-from scipy.interpolate import interpolate
 
 from . import general_functions as gf
 from . import math_functions as mf
@@ -43,9 +42,15 @@ from .point import Point
 from .recoil_element import RecoilElement
 
 
+SolutionOrStr = Union["BaseSolution", str]
+
+
 PeakInfo = namedtuple("PeakInfo", ("peaks", "info"))
 
 
+# FIXME: verbose=True is unusable due to thousands of lines of
+#   "Depth distribution thinks here (depth=2.87755e-07) should be nothing."
+#   (depth varies).
 class LinearOptimization(opt.BaseOptimizer):
     """Class that handles linear optimization for Optimize Recoils or
     Fluence.
@@ -57,7 +62,7 @@ class LinearOptimization(opt.BaseOptimizer):
                  ch=0.025, measurement=None, cut_file=None, check_max=900,
                  check_min=0, skip_simulation=False, use_efficiency=False,
                  optimize_by_area=False, verbose=False,
-                 sample_count=12, sample_width=3.0, sample_prominence=0.1,
+                 sample_count=12, sample_width=3.0, sample_polynomial_degree=2,
                  fitting_iteration_count=2, is_skewed=False):
         """Initialize the linear optimizer.
 
@@ -70,9 +75,8 @@ class LinearOptimization(opt.BaseOptimizer):
                 function
             sample_width: width of samples used for MeV-to-nm interpolation
                 function
-            sample_prominence: minimum prominence factor of samples in
-                MeV-to-nm interpolation function. Compared to the average peak
-                prominence.
+            sample_polynomial_degree: degree of the polynomial used to fit
+                MeV -> nm conversion
             fitting_iteration_count: number of fitting iterations
             is_skewed: whether solution shape can be non-rectangular
         """
@@ -102,14 +106,14 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.sample_count = sample_count
         self.sample_width = sample_width
-        self.sample_prominence = sample_prominence
+        self.sample_polynomial_degree = sample_polynomial_degree
         self.is_skewed = is_skewed
         self.fitting_iteration_count = fitting_iteration_count
 
         self.measured_espe_x = None
         self.measured_espe_y = None
 
-        self._mev_to_nm_function = None
+        self._mev_to_nm_function: Optional[Callable] = None
 
         self.measured_peak_info: Optional[PeakInfo] = None
         self.measured_peaks_mev: Optional[List[Tuple[float]]] = None
@@ -129,9 +133,9 @@ class LinearOptimization(opt.BaseOptimizer):
     def _generate_mev_to_nm_function(self) -> None:
         """Generate an interpolation function for `_convert_mev_to_nm`.
 
-        Samples thin, simulated peaks at different points (in nm) to determine
-        the function parameters (based on MeV). Stops once peaks are not
-        prominent enough or maximum sample count is reached.
+        Samples thin, simulated peaks at different points (in nm) to fit a
+        polynomial for MeV -> nm conversion. Peak prominences are used as
+        statistical weights.
 
         Raises:
             ValueError: if interpolation function could not be generated
@@ -165,36 +169,26 @@ class LinearOptimization(opt.BaseOptimizer):
                     espe_y, 1, peak_width=smoothing_width, retry_count=0)
             except ValueError:
                 continue
-                # TODO: Maybe continue until mevs is not empty, then break.
-                #   Alternatively add None to mevs and nms, then at the end
-                #   pick the longest non-None streak.
 
             prominence = peak_info.info["prominences"][0]
-            if prominences:
-                prominence_threshold = (sum(prominences) / len(prominences)
-                                        * self.sample_prominence)
-                if prominence < prominence_threshold:
-                    break
-
             prominences.append(prominence)
             mevs.append(espe_x[peak_info.peaks[0]])
             nms.append(nm + self.sample_width / 2)  # Centered points
 
-        if len(mevs) <= 1:
-            raise ValueError("Could not generate a nm-to-MeV function."
-                             " Not enough significant data points.")
+        # TODO: Should this scale based on the selected degree?
+        len_mevs = len(mevs)
+        if len_mevs <= 1:
+            raise ValueError(f"Could not generate a nm-to-MeV function."
+                             f" Not enough significant data points."
+                             f" {len_mevs} found.")
 
         mevs = np.array(mevs)
         nms = np.array(nms)
+        prominences = np.array(prominences)
 
-        mevs_diff = np.diff(mevs)
-        if not np.all(mevs_diff <= 0):
-            # TODO: Remove non-monotonous parts from start and end.
-            #   Note that mevs_diff.shape[0] == mevs.shape[0] - 1
-            raise ValueError("Simulated sample MeV values were non-monotonous.")
-
-        self._mev_to_nm_function = interpolate.interp1d(
-            mevs, nms, fill_value="extrapolate", assume_sorted=True)
+        coefficients = np.polyfit(
+            mevs, nms, deg=self.sample_polynomial_degree, w=prominences)
+        self._mev_to_nm_function = lambda x: np.polyval(coefficients, x)
 
     def _convert_mev_to_nm(self, mev: float) -> float:
         """Interpolate/extrapolate a depth from MeV to nm.
@@ -208,8 +202,8 @@ class LinearOptimization(opt.BaseOptimizer):
             Converted value (in nm)
         """
         if self._mev_to_nm_function is None:
-            # TODO: This isn't a user error, reword it
-            raise ValueError("Generate the MeV-to-nm conversion function first")
+            raise ValueError(
+                "Internal error: MeV-to-nm conversion function is missing.")
 
         return float(self._mev_to_nm_function(mev))
 
@@ -730,11 +724,13 @@ class LinearOptimization(opt.BaseOptimizer):
             differences = np.array(self.measured_valley_heights[i]) - np.array(valley_heights[i])
             corrections = differences / self.measured_max_height
             if not self.is_skewed:
-                valley.move_y(corrections[0])
+                valley.move_y(corrections[0], minimum=self.lower_limits[1])
             else:
                 # Reversed order because of the Mev -> nm difference
-                valley.rl.set_y(valley.rl.get_y() + corrections[0])
-                valley.ll.set_y(valley.ll.get_y() + corrections[-1])
+                valley.rl.set_y(
+                    max(valley.rl.get_y() + corrections[0], self.lower_limits[1]))
+                valley.ll.set_y(
+                    max(valley.ll.get_y() + corrections[-1], self.lower_limits[1]))
 
         # Widen and lower peaks if necessary to stay under the max y value
         # TODO: Skewed top
@@ -855,24 +851,33 @@ class LinearOptimization(opt.BaseOptimizer):
 
         return solution_corrected
 
-    def _optimize(self):
+    def _optimize(self) -> Tuple[SolutionOrStr, Optional[SolutionOrStr], Optional[str]]:
         """Run _fit_simulation several times.
+
+        Returns:
+            Solution or error message * 2, additional error message
         """
-        # TODO: Run self.fitting_iteration_count number of times
         solution = copy.deepcopy(self.solution)
 
         try:
-            optimized1 = self._fit_simulation(solution)
+            optimized_middle = self._fit_simulation(solution)
         except (ValueError, IndexError) as e:
-            return str(e), None
+            return str(e), None, None
 
-        optimized_copy = copy.deepcopy(optimized1)
+        optimized_last = copy.deepcopy(optimized_middle)
+        optimized_last_successful = None
         try:
-            optimized2 = self._fit_simulation(optimized_copy)
+            for i in range(self.fitting_iteration_count - 1):
+                optimized_last = self._fit_simulation(optimized_last)
+                optimized_last_successful = copy.deepcopy(optimized_last)
         except (ValueError, IndexError) as e:
-            return optimized1, str(e)
+            if optimized_last_successful is not None:
+                # i does exist, even though PyCharm warns about it
+                message = f"Failed on iteration {i + 1}"
+                return optimized_middle, optimized_last_successful, message
+            return optimized_middle, str(e), None
 
-        return optimized1, optimized2
+        return optimized_middle, optimized_last, None
 
     # TODO: Change starting_solutions to starting_solution
     def start_optimization(self, starting_solutions=None,
@@ -899,7 +904,7 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.on_next(self._get_message(OptimizationState.RUNNING))
 
-        result1, result2 = self._optimize()
+        result1, result2, extra_message = self._optimize()
         completed_msg = None
         if self.optimization_type is OptimizationType.RECOIL:
             first_sol = self.solution
@@ -923,6 +928,9 @@ class LinearOptimization(opt.BaseOptimizer):
                     if completed_msg is None:
                         completed_msg = ""
                     completed_msg += f"\n{name}: missing"
+
+            if extra_message is not None:
+                completed_msg += "\n" + extra_message
 
         else:
             # raise NotImplementedError
@@ -979,6 +987,7 @@ class Peak:
 
     @property
     def width(self) -> float:
+        """Return peak width"""
         left = self.leftmost_point
         right = self.rightmost_point
         return right.get_x() - left.get_x()
@@ -995,10 +1004,17 @@ class Peak:
         if self.rl:
             self.rl.set_x(self.rl.get_x() + amount)
 
-    def move_y(self, amount: float) -> None:
+    def move_y(self, amount: float, minimum: float = None) -> None:
         """Move peak height"""
-        self.lh.set_y(self.lh.get_y() + amount)
-        self.rh.set_y(self.rh.get_y() + amount)
+        ll_y = self.ll.get_y() + amount
+        rl_y = self.rl.get_y() + amount
+
+        if minimum is not None:
+            ll_y = max(ll_y, minimum)
+            rl_y = max(rl_y, minimum)
+
+        self.ll.set_y(ll_y)
+        self.rl.set_y(rl_y)
 
     def scale_width(self, factor: float, scale_gap: bool = False) -> None:
         """Scale peak's width (x values)
@@ -1053,20 +1069,33 @@ class Valley:
 
     @property
     def center(self) -> Point:
+        """Return a point represting the valley center"""
         x = (self.ll.get_x() + self.rl.get_x()) / 2
         y = (self.ll.get_y() + self.rl.get_y()) / 2
         return Point(x, y)
 
     @property
     def points(self) -> List[Point]:
+        """Return points in valley"""
         return [self.prev_point, self.ll, self.rl, self.next_point]
 
-    def move_y(self, amount: float) -> None:
-        if amount:
-            self.ll.set_y(self.ll.get_y() + amount)
-            self.rl.set_y(self.rl.get_y() + amount)
+    def move_y(self, amount: float, minimum: float = None) -> None:
+        """Move valley y by specified amount.
+
+        If minimum is specified, the resulting y is at least that much
+        """
+        ll_y = self.ll.get_y() + amount
+        rl_y = self.rl.get_y() + amount
+
+        if minimum is not None:
+            ll_y = max(ll_y, minimum)
+            rl_y = max(rl_y, minimum)
+
+        self.ll.set_y(ll_y)
+        self.rl.set_y(rl_y)
 
     def set_y(self, y: float) -> None:
+        """Set valley's y"""
         amount = y - self.center.get_y()
         self.move_y(amount)
 

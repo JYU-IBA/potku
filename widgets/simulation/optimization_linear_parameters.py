@@ -91,7 +91,7 @@ class LinearOptimizationParameterWidget(QtWidgets.QWidget,
     # Common properties
     sample_count = bnd.bind("sampleCountSpinBox")
     sample_width = bnd.bind("sampleWidthDoubleSpinBox")
-    sample_prominence = bnd.bind("sampleProminenceDoubleSpinBox")
+    sample_polynomial_degree = bnd.bind("samplePolynomialDegreeSpinBox")
     fitting_iteration_count = bnd.bind("fittingIterationCountSpinBox")
     is_skewed = bnd.bind("skewedCheckBox")
     stop_percent = bnd.bind("percentDoubleSpinBox")
@@ -116,7 +116,7 @@ class LinearOptimizationParameterWidget(QtWidgets.QWidget,
 
         locale = QLocale.c()
         self.sampleWidthDoubleSpinBox.setLocale(locale)
-        self.sampleProminenceDoubleSpinBox.setLocale(locale)
+        self.samplePolynomialDegreeSpinBox.setLocale(locale)
         self.percentDoubleSpinBox.setLocale(locale)
 
         self.skip_sim_chk_box.stateChanged.connect(self.enable_sim_params)
