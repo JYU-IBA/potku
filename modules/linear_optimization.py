@@ -45,6 +45,9 @@ from .recoil_element import RecoilElement
 PeakInfo = namedtuple("PeakInfo", ("peaks", "info"))
 
 
+# FIXME: verbose=True is unusable due to thousands of lines of
+#   "Depth distribution thinks here (depth=2.87755e-07) should be nothing."
+#   (depth varies).
 class LinearOptimization(opt.BaseOptimizer):
     """Class that handles linear optimization for Optimize Recoils or
     Fluence.
@@ -728,11 +731,13 @@ class LinearOptimization(opt.BaseOptimizer):
             differences = np.array(self.measured_valley_heights[i]) - np.array(valley_heights[i])
             corrections = differences / self.measured_max_height
             if not self.is_skewed:
-                valley.move_y(corrections[0])
+                valley.move_y(corrections[0], minimum=self.lower_limits[1])
             else:
                 # Reversed order because of the Mev -> nm difference
-                valley.rl.set_y(valley.rl.get_y() + corrections[0])
-                valley.ll.set_y(valley.ll.get_y() + corrections[-1])
+                valley.rl.set_y(
+                    max(valley.rl.get_y() + corrections[0], self.lower_limits[1]))
+                valley.ll.set_y(
+                    max(valley.ll.get_y() + corrections[-1], self.lower_limits[1]))
 
         # Widen and lower peaks if necessary to stay under the max y value
         # TODO: Skewed top
@@ -977,6 +982,7 @@ class Peak:
 
     @property
     def width(self) -> float:
+        """Return peak width"""
         left = self.leftmost_point
         right = self.rightmost_point
         return right.get_x() - left.get_x()
@@ -993,10 +999,17 @@ class Peak:
         if self.rl:
             self.rl.set_x(self.rl.get_x() + amount)
 
-    def move_y(self, amount: float) -> None:
+    def move_y(self, amount: float, minimum: float = None) -> None:
         """Move peak height"""
-        self.lh.set_y(self.lh.get_y() + amount)
-        self.rh.set_y(self.rh.get_y() + amount)
+        ll_y = self.ll.get_y() + amount
+        rl_y = self.rl.get_y() + amount
+
+        if minimum is not None:
+            ll_y = max(ll_y, minimum)
+            rl_y = max(rl_y, minimum)
+
+        self.ll.set_y(ll_y)
+        self.rl.set_y(rl_y)
 
     def scale_width(self, factor: float, scale_gap: bool = False) -> None:
         """Scale peak's width (x values)
@@ -1051,20 +1064,33 @@ class Valley:
 
     @property
     def center(self) -> Point:
+        """Return a point represting the valley center"""
         x = (self.ll.get_x() + self.rl.get_x()) / 2
         y = (self.ll.get_y() + self.rl.get_y()) / 2
         return Point(x, y)
 
     @property
     def points(self) -> List[Point]:
+        """Return points in valley"""
         return [self.prev_point, self.ll, self.rl, self.next_point]
 
-    def move_y(self, amount: float) -> None:
-        if amount:
-            self.ll.set_y(self.ll.get_y() + amount)
-            self.rl.set_y(self.rl.get_y() + amount)
+    def move_y(self, amount: float, minimum: float = None) -> None:
+        """Move valley y by specified amount.
+
+        If minimum is specified, the resulting y is at least that much
+        """
+        ll_y = self.ll.get_y() + amount
+        rl_y = self.rl.get_y() + amount
+
+        if minimum is not None:
+            ll_y = max(ll_y, minimum)
+            rl_y = max(rl_y, minimum)
+
+        self.ll.set_y(ll_y)
+        self.rl.set_y(rl_y)
 
     def set_y(self, y: float) -> None:
+        """Set valley's y"""
         amount = y - self.center.get_y()
         self.move_y(amount)
 
