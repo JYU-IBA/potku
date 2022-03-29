@@ -26,7 +26,7 @@ __version__ = "2.0"
 import copy
 import subprocess
 from collections import namedtuple
-from typing import Tuple, List, Optional, Callable
+from typing import Tuple, List, Optional, Callable, Union
 
 import numpy as np
 from scipy import signal
@@ -40,6 +40,9 @@ from .enums import OptimizationState, IonDivision
 from .enums import OptimizationType
 from .point import Point
 from .recoil_element import RecoilElement
+
+
+SolutionOrStr = Union["BaseSolution", str]
 
 
 PeakInfo = namedtuple("PeakInfo", ("peaks", "info"))
@@ -848,24 +851,33 @@ class LinearOptimization(opt.BaseOptimizer):
 
         return solution_corrected
 
-    def _optimize(self):
+    def _optimize(self) -> Tuple[SolutionOrStr, Optional[SolutionOrStr], Optional[str]]:
         """Run _fit_simulation several times.
+
+        Returns:
+            Solution or error message * 2, additional error message
         """
-        # TODO: Run self.fitting_iteration_count number of times
         solution = copy.deepcopy(self.solution)
 
         try:
-            optimized1 = self._fit_simulation(solution)
+            optimized_middle = self._fit_simulation(solution)
         except (ValueError, IndexError) as e:
-            return str(e), None
+            return str(e), None, None
 
-        optimized_copy = copy.deepcopy(optimized1)
+        optimized_last = copy.deepcopy(optimized_middle)
+        optimized_last_successful = None
         try:
-            optimized2 = self._fit_simulation(optimized_copy)
+            for i in range(self.fitting_iteration_count - 1):
+                optimized_last = self._fit_simulation(optimized_last)
+                optimized_last_successful = copy.deepcopy(optimized_last)
         except (ValueError, IndexError) as e:
-            return optimized1, str(e)
+            if optimized_last_successful is not None:
+                # i does exist, even though PyCharm warns about it
+                message = f"Failed on iteration {i + 1}"
+                return optimized_middle, optimized_last_successful, message
+            return optimized_middle, str(e), None
 
-        return optimized1, optimized2
+        return optimized_middle, optimized_last, None
 
     # TODO: Change starting_solutions to starting_solution
     def start_optimization(self, starting_solutions=None,
@@ -892,7 +904,7 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.on_next(self._get_message(OptimizationState.RUNNING))
 
-        result1, result2 = self._optimize()
+        result1, result2, extra_message = self._optimize()
         completed_msg = None
         if self.optimization_type is OptimizationType.RECOIL:
             first_sol = self.solution
@@ -916,6 +928,9 @@ class LinearOptimization(opt.BaseOptimizer):
                     if completed_msg is None:
                         completed_msg = ""
                     completed_msg += f"\n{name}: missing"
+
+            if extra_message is not None:
+                completed_msg += "\n" + extra_message
 
         else:
             # raise NotImplementedError

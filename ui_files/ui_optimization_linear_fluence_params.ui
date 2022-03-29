@@ -138,11 +138,8 @@
           </item>
           <item row="3" column="1">
            <widget class="QSpinBox" name="fittingIterationCountSpinBox">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
             <property name="toolTip">
-             <string>Number of fitting iterations</string>
+             <string>Number of fitting iterations. Initial solution does not count</string>
             </property>
             <property name="minimum">
              <number>0</number>
