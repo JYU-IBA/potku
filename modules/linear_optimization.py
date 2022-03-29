@@ -26,11 +26,10 @@ __version__ = "2.0"
 import copy
 import subprocess
 from collections import namedtuple
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Callable
 
 import numpy as np
 from scipy import signal
-from scipy.interpolate import interpolate
 
 from . import general_functions as gf
 from . import math_functions as mf
@@ -109,7 +108,7 @@ class LinearOptimization(opt.BaseOptimizer):
         self.measured_espe_x = None
         self.measured_espe_y = None
 
-        self._mev_to_nm_function = None
+        self._mev_to_nm_function: Optional[Callable] = None
 
         self.measured_peak_info: Optional[PeakInfo] = None
         self.measured_peaks_mev: Optional[List[Tuple[float]]] = None
@@ -126,12 +125,15 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.solution = None
 
-    def _generate_mev_to_nm_function(self) -> None:
+    def _generate_mev_to_nm_function(self, fitting_degrees: int = 2) -> None:
         """Generate an interpolation function for `_convert_mev_to_nm`.
 
         Samples thin, simulated peaks at different points (in nm) to determine
         the function parameters (based on MeV). Stops once peaks are not
         prominent enough or maximum sample count is reached.
+
+        Args:
+            fitting_degrees: degree of interpolation fitting polynomial
 
         Raises:
             ValueError: if interpolation function could not be generated
@@ -180,21 +182,17 @@ class LinearOptimization(opt.BaseOptimizer):
             mevs.append(espe_x[peak_info.peaks[0]])
             nms.append(nm + self.sample_width / 2)  # Centered points
 
-        if len(mevs) <= 1:
-            raise ValueError("Could not generate a nm-to-MeV function."
-                             " Not enough significant data points.")
+        len_mevs = len(mevs)
+        if len_mevs <= 1:
+            raise ValueError(f"Could not generate a nm-to-MeV function."
+                             f" Not enough significant data points."
+                             f" {len_mevs} found.")
 
         mevs = np.array(mevs)
         nms = np.array(nms)
 
-        mevs_diff = np.diff(mevs)
-        if not np.all(mevs_diff <= 0):
-            # TODO: Remove non-monotonous parts from start and end.
-            #   Note that mevs_diff.shape[0] == mevs.shape[0] - 1
-            raise ValueError("Simulated sample MeV values were non-monotonous.")
-
-        self._mev_to_nm_function = interpolate.interp1d(
-            mevs, nms, fill_value="extrapolate", assume_sorted=True)
+        coefficients = np.polyfit(mevs, nms, deg=fitting_degrees)
+        self._mev_to_nm_function = lambda x: np.polyval(coefficients, x)
 
     def _convert_mev_to_nm(self, mev: float) -> float:
         """Interpolate/extrapolate a depth from MeV to nm.
@@ -208,8 +206,8 @@ class LinearOptimization(opt.BaseOptimizer):
             Converted value (in nm)
         """
         if self._mev_to_nm_function is None:
-            # TODO: This isn't a user error, reword it
-            raise ValueError("Generate the MeV-to-nm conversion function first")
+            raise ValueError(
+                "Internal error: MeV-to-nm conversion function is missing.")
 
         return float(self._mev_to_nm_function(mev))
 
