@@ -59,7 +59,7 @@ class LinearOptimization(opt.BaseOptimizer):
                  ch=0.025, measurement=None, cut_file=None, check_max=900,
                  check_min=0, skip_simulation=False, use_efficiency=False,
                  optimize_by_area=False, verbose=False,
-                 sample_count=12, sample_width=3.0, sample_prominence=0.1,
+                 sample_count=12, sample_width=3.0, sample_polynomial_degree=2,
                  fitting_iteration_count=2, is_skewed=False):
         """Initialize the linear optimizer.
 
@@ -72,9 +72,8 @@ class LinearOptimization(opt.BaseOptimizer):
                 function
             sample_width: width of samples used for MeV-to-nm interpolation
                 function
-            sample_prominence: minimum prominence factor of samples in
-                MeV-to-nm interpolation function. Compared to the average peak
-                prominence.
+            sample_polynomial_degree: degree of the polynomial used to fit
+                MeV -> nm conversion
             fitting_iteration_count: number of fitting iterations
             is_skewed: whether solution shape can be non-rectangular
         """
@@ -104,7 +103,7 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.sample_count = sample_count
         self.sample_width = sample_width
-        self.sample_prominence = sample_prominence
+        self.sample_polynomial_degree = sample_polynomial_degree
         self.is_skewed = is_skewed
         self.fitting_iteration_count = fitting_iteration_count
 
@@ -128,15 +127,12 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.solution = None
 
-    def _generate_mev_to_nm_function(self, fitting_degrees: int = 2) -> None:
+    def _generate_mev_to_nm_function(self) -> None:
         """Generate an interpolation function for `_convert_mev_to_nm`.
 
-        Samples thin, simulated peaks at different points (in nm) to determine
-        the function parameters (based on MeV). Stops once peaks are not
-        prominent enough or maximum sample count is reached.
-
-        Args:
-            fitting_degrees: degree of interpolation fitting polynomial
+        Samples thin, simulated peaks at different points (in nm) to fit a
+        polynomial for MeV -> nm conversion. Peak prominences are used as
+        statistical weights.
 
         Raises:
             ValueError: if interpolation function could not be generated
@@ -170,21 +166,13 @@ class LinearOptimization(opt.BaseOptimizer):
                     espe_y, 1, peak_width=smoothing_width, retry_count=0)
             except ValueError:
                 continue
-                # TODO: Maybe continue until mevs is not empty, then break.
-                #   Alternatively add None to mevs and nms, then at the end
-                #   pick the longest non-None streak.
 
             prominence = peak_info.info["prominences"][0]
-            if prominences:
-                prominence_threshold = (sum(prominences) / len(prominences)
-                                        * self.sample_prominence)
-                if prominence < prominence_threshold:
-                    break
-
             prominences.append(prominence)
             mevs.append(espe_x[peak_info.peaks[0]])
             nms.append(nm + self.sample_width / 2)  # Centered points
 
+        # TODO: Should this scale based on the selected degree?
         len_mevs = len(mevs)
         if len_mevs <= 1:
             raise ValueError(f"Could not generate a nm-to-MeV function."
@@ -193,8 +181,10 @@ class LinearOptimization(opt.BaseOptimizer):
 
         mevs = np.array(mevs)
         nms = np.array(nms)
+        prominences = np.array(prominences)
 
-        coefficients = np.polyfit(mevs, nms, deg=fitting_degrees)
+        coefficients = np.polyfit(
+            mevs, nms, deg=self.sample_polynomial_degree, w=prominences)
         self._mev_to_nm_function = lambda x: np.polyval(coefficients, x)
 
     def _convert_mev_to_nm(self, mev: float) -> float:
