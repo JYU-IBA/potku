@@ -11,11 +11,11 @@ PyQt5 = "==5.14.2"
 Shapely = "*"
 wheel = "*"
 rx = "*"
+hypothesis = "*"
 
 [dev-packages]
 pypiwin32 = {sys_platform = "== 'win32'"}
 pywin32 = {sys_platform = "== 'win32'"}
-hypothesis = "*"
 
 [requires]
 python_version = "3.6"
