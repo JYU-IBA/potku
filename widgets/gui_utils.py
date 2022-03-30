@@ -27,6 +27,7 @@ __version__ = "2.0"
 import abc
 import platform
 import functools
+
 import modules.general_functions as gf
 
 from pathlib import Path
@@ -45,6 +46,7 @@ from modules.global_settings import GlobalSettings
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QSettings
+from PyQt5.QtGui import QWheelEvent
 
 NumSpinBox = Union[QtWidgets.QSpinBox, QtWidgets.QDoubleSpinBox]
 
@@ -509,3 +511,22 @@ def disable_widget(func: Callable):
         finally:
             qwidget.setEnabled(True)
     return wrapper
+
+
+def disable_scrolling_in_spin_boxes() -> None:
+    """Disables mouse wheel scrolling in all QSpinBoxes,
+    QDoubleSpinBoxes and ScientificSpinBoxes.
+    """
+    def ignore_wheel_event(
+            _: QtWidgets.QAbstractSpinBox, e: QWheelEvent) -> None:
+        e.ignore()
+
+    QtWidgets.QAbstractSpinBox.wheelEvent = ignore_wheel_event
+
+
+def disable_scrolling_in_combo_boxes() -> None:
+    def ignore_wheel_event(
+            _: QtWidgets.QComboBox, e: QWheelEvent) -> None:
+        e.ignore()
+
+    QtWidgets.QComboBox.wheelEvent = ignore_wheel_event

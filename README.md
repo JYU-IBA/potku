@@ -47,7 +47,7 @@ $ cd potku
 Install and activate the virtual environment in `potku/` root directory with Pipenv:
 
 ````
-$ pipenv install
+$ pipenv install --dev
 $ pipenv shell
 ````
 
