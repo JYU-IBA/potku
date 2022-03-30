@@ -522,3 +522,11 @@ def disable_scrolling_in_spin_boxes() -> None:
         e.ignore()
 
     QtWidgets.QAbstractSpinBox.wheelEvent = ignore_wheel_event
+
+
+def disable_scrolling_in_combo_boxes() -> None:
+    def ignore_wheel_event(
+            _: QtWidgets.QComboBox, e: QWheelEvent) -> None:
+        e.ignore()
+
+    QtWidgets.QComboBox.wheelEvent = ignore_wheel_event

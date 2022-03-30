@@ -90,9 +90,11 @@ class Potku(QtWidgets.QMainWindow):
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_main_window.ui", self)
 
-        # Disable mouse wheel scrolling in all spin boxes as requested by a
-        # user (see comments in https://github.com/JYU-IBA/potku/issues/214).
+        # Disable mouse wheel scrolling in all spin boxes and combo boxes as
+        # requested by a user (see comments in
+        # https://github.com/JYU-IBA/potku/issues/214).
         gutils.disable_scrolling_in_spin_boxes()
+        gutils.disable_scrolling_in_combo_boxes()
 
         self.title = self.windowTitle()
         self.treeWidget.setHeaderLabel("")
