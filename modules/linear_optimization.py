@@ -1,3 +1,5 @@
+# Multithreaded espes
+
 """
 Created on 20.09.2021
 
@@ -26,6 +28,7 @@ __version__ = "2.0"
 import copy
 import subprocess
 from collections import namedtuple
+from concurrent.futures import ThreadPoolExecutor
 from typing import Tuple, List, Optional, Callable, Union
 
 import numpy as np
@@ -150,13 +153,16 @@ class LinearOptimization(opt.BaseOptimizer):
 
         smoothing_width = round(self.measured_espe_x.shape[0] / 30)
 
+        solutions = [
+            get_solution6(nm, nm + self.sample_width, self.lower_limits, self.upper_limits)
+            for nm in nm_points]
+
+        espes = self._run_solutions(solutions)
+
         mevs = []
         prominences = []
         nms = []
-        for nm in nm_points:  # TODO: multi-thread this
-            solution = get_solution6(
-                nm, nm + self.sample_width, self.lower_limits, self.upper_limits)
-            espe = self._run_solution(solution)
+        for espe, nm in zip(espes, nm_points):
             if not espe:
                 raise ValueError(
                     "Ensure that there is simulated data for this recoil "
@@ -478,7 +484,7 @@ class LinearOptimization(opt.BaseOptimizer):
 
         self.solution = initial_solution
 
-    def _get_spectra_difference(self, optim_espe) -> float:
+    def _get_spectra_difference(self, optim_espe: Espe) -> float:
         """Returns the difference between spectra points or area.
 
         self.optimize_by_area defines which result to get.
@@ -500,7 +506,7 @@ class LinearOptimization(opt.BaseOptimizer):
 
         return sum_diff
 
-    def form_recoil(self, current_solution, name="") -> RecoilElement:
+    def form_recoil(self, current_solution: "BaseSolution", name="") -> RecoilElement:
         """Create a recoil element based on given solution.
         """
         if not name:
@@ -595,7 +601,50 @@ class LinearOptimization(opt.BaseOptimizer):
 
         return solution
 
-    def _run_solution(self, solution) -> Espe:
+    # TODO: This could be a more general solution (at least for NSGA-II too)
+    def _run_solutions(self, solutions: List["BaseSolution"]) -> List[Espe]:
+        """Form a recoil for each solution and return their espes.
+
+        This function is multithreaded.
+
+        Args:
+            solutions: solutions to run
+
+        Returns:
+            Energy spectra for each solution (in correct order)
+        """
+        if self.optimization_type is OptimizationType.RECOIL:
+            # TODO: Using a dummy value like this is questionable
+            self.element_simulation.optimization_recoils = [
+                self.form_recoil(copy.deepcopy(solutions[0]))]
+
+            recoil_elements = [self.form_recoil(sol, f"thread-{i}")
+                               for i, sol in enumerate(solutions)]
+
+            # TODO: Splitting the solutions over fewer threads (more than one
+            #  solution per thread) may be slightly faster than this
+            with ThreadPoolExecutor(max_workers=len(solutions)) as executor:
+                futures = [
+                    executor.submit(
+                        self.element_simulation.calculate_espe,
+                        rec,
+                        verbose=self.verbose,
+                        optimization_type=self.optimization_type,
+                        ch=self.channel_width,
+                        write_to_file=False,
+                        remove_recoil_file=True)
+                    for rec in recoil_elements]
+
+                espes = [future.result()[0] for future in futures]
+        elif self.optimization_type is OptimizationType.FLUENCE:
+            raise NotImplementedError
+        else:
+            raise ValueError(
+                f"Unknown optimization type {self.optimization_type}")
+
+        return espes
+
+    def _run_solution(self, solution: "BaseSolution") -> Espe:
         """Form a recoil based on the given solution and return its espe."""
         if self.optimization_type is OptimizationType.RECOIL:
             self.element_simulation.optimization_recoils = [
@@ -607,7 +656,8 @@ class LinearOptimization(opt.BaseOptimizer):
                 verbose=self.verbose,
                 optimization_type=self.optimization_type,
                 ch=self.channel_width,
-                write_to_file=False)
+                write_to_file=False,
+                remove_recoil_file=True)
         elif self.optimization_type is OptimizationType.FLUENCE:
             raise NotImplementedError
         else:
@@ -617,7 +667,7 @@ class LinearOptimization(opt.BaseOptimizer):
         return espe
 
     # TODO: Unused, remove if not needed for fluence optimization
-    def evaluate_solution(self, solution) -> float:
+    def evaluate_solution(self, solution: "BaseSolution") -> float:
         """Evaluate solution based on its difference from measured espe.
         """
         espe = self._run_solution(solution)
@@ -634,7 +684,8 @@ class LinearOptimization(opt.BaseOptimizer):
 
     # TODO: Unify with BaseOptimizer.modify_measurement?
     def _resize_simulated_espe(
-            self, espe_x, espe_y, step_decimals=4) -> Tuple[np.ndarray, np.ndarray]:
+            self, espe_x: np.ndarray, espe_y: np.ndarray, step_decimals: int = 4
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Pad and/or slice simulated espe so that it has the same x axis
          values as the measured espe.
 
@@ -745,7 +796,7 @@ class LinearOptimization(opt.BaseOptimizer):
 
         return solution
 
-    def _fix_and_check_solution(self, solution) -> bool:
+    def _fix_and_check_solution(self, solution: "BaseSolution") -> bool:
         """Check and correct the solution if it has overlapping peaks or
         it exceeds the beginning or the end.
 

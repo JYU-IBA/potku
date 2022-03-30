@@ -151,17 +151,20 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
 
         self.method_radios.addButton(self.nsgaiiRadioButton)
         self.method_radios.addButton(self.linearRadioButton)
+        self.linearRadioButton.setChecked(True)
 
         self.mode_radios = QtWidgets.QButtonGroup(self)
         self.mode_radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
             self.choose_optimization_mode)
         self.parametersLayout.addWidget(self.nsgaii_recoil_widget)
         self.parametersLayout.addWidget(self.nsgaii_fluence_widget)
+        self.nsgaii_recoil_widget.hide()
         self.nsgaii_fluence_widget.hide()
 
+        # TODO: Why does selecting linear_recoil_widget by default cause a
+        #   brief flash when opening the optimization dialog?
         self.parametersLayout.addWidget(self.linear_recoil_widget)
         self.parametersLayout.addWidget(self.linear_fluence_widget)
-        self.linear_recoil_widget.hide()
         self.linear_fluence_widget.hide()
 
         self.mode_radios.addButton(self.fluenceRadioButton)
