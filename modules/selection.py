@@ -47,6 +47,8 @@ from pathlib import Path
 
 from .element import Element
 
+import math
+
 
 class AxesLimits:
     """
@@ -522,8 +524,7 @@ class Selector:
         if not selection.is_closed:
             selection.events_counted = True
             return
-        for n in range(len(data)):
-            selection.point_inside(data[n])
+        selection.fast_points_inside(data)
         selection.events_counted = True
 
     def update_selection_points(self, progress=None):
@@ -537,12 +538,17 @@ class Selector:
             selection.events_counted = False
             selection.event_count = 0
 
-        for i, point in enumerate(data):
-            for selection in self.selections:
-                if selection.is_closed:
-                    selection.point_inside(point)
-            if progress is not None and i % 10_000 == 0:
-                progress.report(i / len(data) * 100)
+        # for i, point in enumerate(data):
+        #     for selection in self.selections:
+        #         if selection.is_closed:
+        #             selection.point_inside(point)
+        #     if progress is not None and i % 10_000 == 0:
+        #         progress.report(i / len(data) * 100)
+
+        for i, selection in enumerate(self.selections):
+            selection.fast_points_inside(data)
+            if progress is not None:
+                progress.report(i / len(self.selections) * 100)
 
         for selection in self.selections:
             selection.events_counted = True
@@ -613,6 +619,10 @@ class Selection:
         self.points = None
         self.axes = axes
         self.axes_limits = AxesLimits()
+
+        self.cached_points = []
+        self.cached_intersect_x = []
+        self.cached_intersect_x_max = []
 
         Selection.GLOBAL_ID += 1
 
@@ -891,3 +901,49 @@ class Selection:
         if inside and not self.events_counted:
             self.event_count += 1
         return inside
+
+    def calculate_intersect_values(self, poly):
+        """
+        pre-calculates selection intersect x-values
+        """
+        x_list = []
+        x_max_list = []
+        for i in range(8192):  # improve max size of list, either check data for real value or atleast make it a constant
+            x_list.append([])
+            x_max_list.append(-1)
+        n = len(poly)
+        p1x, p1y = poly[0]
+        for i in range(n + 1):
+            p2x, p2y = poly[i % n]
+            if p1y != p2y:
+                for i in range(math.ceil(min(p1y, p2y)), math.floor(max(p1y, p2y)) + 1):
+                    xinters = (i - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                    if x_list[i] == [9999]:
+                        x_list[i] = [xinters]
+                    else:
+                        x_list[i].append(xinters)
+            p1x, p1y = p2x, p2y
+        for i in range(len(x_list)):
+            if x_list[i] != []:
+                x_list[i].sort(reverse=True)
+                x_max_list[i] = x_list[i][0]
+            if x_list[i] == []:
+                x_list[i] = [9999]
+        return x_list, x_max_list
+
+    def fast_points_inside(self, points):
+        """
+        Faster algorithm testing which points are inside selection
+        Relies on data points being integers.
+        """
+        # check if cached intersect values are current
+        if self.cached_points != self.get_points():
+            self.cached_points = list(self.get_points())
+            self.cached_intersect_x, self.cached_intersect_x_max = self.calculate_intersect_values(self.cached_points)
+
+        # First test if points x-value is less then x_max then test how many polygon x_values point crosses
+
+        points_inside = [point for point in points if (point[0] < self.cached_intersect_x_max[point[1]]) and
+                         len([x for x in self.cached_intersect_x[point[1]] if x < point[0]]) % 2]
+        self.event_count = len(points_inside) # update events_count
+        return points_inside
