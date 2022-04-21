@@ -104,18 +104,20 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__x_data = [x[0] for x in self.measurement.data]
         self.__y_data = [x[1] for x in self.measurement.data]
 
-        # TL testing
-        print(f"TL max_x = {max(self.__x_data)}")
-        print(f"TL max_y = {max(self.__y_data)}")
+        self.__x_data_max = max(self.__x_data)
+        self.__y_data_max = max(self.__y_data)
 
-        #self.__2dhist = np.zeros((8192,4472))
-        self.__2d_hist = np.histogram2d(self.__y_data, self.__x_data, bins = (int(4472/3),int(8192/3)))
-        self.__2d_hist_im = Image.fromarray(np.uint8(cm.gist_gray_r(self.__2d_hist[0]/np.amax(self.__2d_hist[0])) * 255))
-        print(self.__2d_hist)
-        #print('empty array made')
-        #for point in self.measurement.data:
-        #    self.__2dhist[x[0]][x[1]] += 1
-        print('Histogram made')
+        # Manually setting the limits for data
+        self.axes.set_xlim(0, max(self.__x_data))
+        self.axes.set_ylim(0, max(self.__y_data))
+
+        # Blitting image limits, used to trigger blitted image refresh
+        self.__blit_xlim = (-1, -1) #Should trigger update at startup
+        self.__blit_ylim = (-1, -1)
+
+        # 2D histogram image and histogram
+        self.__2d_hist = None # 2D histogram
+        self.__2d_hist_im = None # image of histogram
 
         # Variables
         self.__inverted_Y = False
@@ -210,16 +212,11 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.axes.set_ylim([y_min, y_max])
         self.axes.set_xlim([x_min, x_max]) 
 
-        # self.axes.hist2d(x_data,
-        #                  y_data,
-        #                  bins=bin_counts,
-        #                  norm=LogNorm(),
-        #                  range=axes_range,
-        #                  cmap=colormap)
+        self.__2d_hist = np.histogram2d(self.__y_data, self.__x_data,
+                                        bins = (int(self.__y_data_max/4),int(self.__x_data_max/4)))
+        self.__2d_hist_im = Image.fromarray(np.uint8(cm.gist_gray_r(self.__2d_hist[0]/np.amax(self.__2d_hist[0])) * 255))
 
-        #self.axes.imshow(self.__2d_hist[0])
-
-        self.axes.imshow(self.__2d_hist_im, extent=(0,8192,4472,0))
+        self.axes.imshow(self.__2d_hist_im, extent=(0,self.__x_data_max,self.__y_data_max,0))
 
         self.__on_draw_legend()
 
