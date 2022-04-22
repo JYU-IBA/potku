@@ -108,8 +108,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__x_data_min = min(self.__x_data)  # min x-value of data
         self.__y_data_min = min(self.__y_data)  # min y-value of data
 
-        print(f'{self.__x_data_min}, {self.__x_data_max}, {self.__y_data_min}, {self.__y_data_max}')
-
         # Manually setting the limits for data
         self.axes.set_xlim(0, max(self.__x_data))
         self.axes.set_ylim(0, max(self.__y_data))
@@ -119,6 +117,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__2d_hist_im = None # image of histogram
         self.__2d_hist_cx = None # x-compress value, used to trigger recomputing histogram
         self.__2d_hist_cy = None # y-compress value, used to trigger recomputing histogram
+        self.__2d_hist_tr = False # histogram axis transposed, used to trigger recompute
 
         # Variables
         self.__inverted_Y = False
@@ -214,12 +213,16 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.axes.set_xlim([x_min, x_max]) 
 
         #if changes in compress values, recompute 2d histogram and histogram image
-        if (self.__2d_hist_cx != self.compression_x) or (self.__2d_hist_cy != self.compression_y):
+        if (self.__2d_hist_cx != self.compression_x) or \
+                (self.__2d_hist_cy != self.compression_y) or (self.transpose_axes != self.__2d_hist_tr):
             self.__2d_hist_cx = self.compression_x
             self.__2d_hist_cy = self.compression_y
-            self.__x_data_max = max(self.__x_data)
-            self.__y_data_max = max(self.__y_data)
-            self.__2d_hist = np.histogram2d(self.__y_data, self.__x_data,
+            self.__x_data_max = max(x_data)
+            self.__y_data_max = max(y_data)
+            self.__x_data_min = min(x_data)
+            self.__y_data_min = min(y_data)
+            self.__2d_hist_tr = self.transpose_axes
+            self.__2d_hist = np.histogram2d(y_data, x_data,
                                         bins = (int(self.__y_data_max/self.__2d_hist_cy),int(self.__x_data_max/self.__2d_hist_cx)))
             self.__2d_hist_im = Image.fromarray(np.uint8(cm.gist_gray_r(np.log(self.__2d_hist[0])/np.amax(np.log(self.__2d_hist[0]))) * 255))
 
