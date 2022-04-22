@@ -78,12 +78,12 @@ class MatplotlibWidget(QtWidgets.QWidget):
         """Remove ticks from axes.
         """
         if not self.show_axis_ticks:
-            for tick in self.axes.yaxis.get_major_ticks():
-                tick.label1On = False
-                tick.label2On = False
-            for tick in self.axes.xaxis.get_major_ticks():
-                tick.label1On = False
-                tick.label2On = False
+            for tick in self.axes.get_yticklabels():
+                tick.set_visible = False
+                tick.set_fontsize(0.0)
+            for tick in self.axes.get_xticklabels():
+                tick.set_visible = False
+                tick.set_fontsize(0.0)
 
     def delete(self):
         """Delete matplotlib objects.
