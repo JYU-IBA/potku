@@ -103,8 +103,12 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__x_data = [x[0] for x in self.measurement.data]
         self.__y_data = [x[1] for x in self.measurement.data]
 
-        self.__x_data_max = max(self.__x_data)
-        self.__y_data_max = max(self.__y_data)
+        self.__x_data_max = max(self.__x_data) # max x-value of data
+        self.__y_data_max = max(self.__y_data) # max y-value of data
+        self.__x_data_min = min(self.__x_data)  # min x-value of data
+        self.__y_data_min = min(self.__y_data)  # min y-value of data
+
+        print(f'{self.__x_data_min}, {self.__x_data_max}, {self.__y_data_min}, {self.__y_data_max}')
 
         # Manually setting the limits for data
         self.axes.set_xlim(0, max(self.__x_data))
@@ -209,6 +213,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.axes.set_ylim([y_min, y_max])
         self.axes.set_xlim([x_min, x_max]) 
 
+        #if changes in compress values, recompute 2d histogram and histogram image
         if (self.__2d_hist_cx != self.compression_x) or (self.__2d_hist_cy != self.compression_y):
             self.__2d_hist_cx = self.compression_x
             self.__2d_hist_cy = self.compression_y
@@ -216,10 +221,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.__y_data_max = max(self.__y_data)
             self.__2d_hist = np.histogram2d(self.__y_data, self.__x_data,
                                         bins = (int(self.__y_data_max/self.__2d_hist_cy),int(self.__x_data_max/self.__2d_hist_cx)))
-            self.__2d_hist_im = Image.fromarray(np.uint8(cm.gist_gray_r(self.__2d_hist[0]/np.amax(self.__2d_hist[0])) * 255))
-            #self.__2d_hist_im = Image.fromarray(np.uint8(cm.gist_gray_r(LogNorm(self.__2d_hist[0]/np.amax(self.__2d_hist[0])))))
+            self.__2d_hist_im = Image.fromarray(np.uint8(cm.gist_gray_r(np.log(self.__2d_hist[0])/np.amax(np.log(self.__2d_hist[0]))) * 255))
 
-        self.axes.imshow(self.__2d_hist_im, extent=(0,self.__x_data_max,0, self.__y_data_max), origin='bottom')
+        self.axes.imshow(self.__2d_hist_im, extent=(self.__x_data_min,self.__x_data_max,self.__y_data_min, self.__y_data_max), origin='bottom')
 
         self.__on_draw_legend()
 
