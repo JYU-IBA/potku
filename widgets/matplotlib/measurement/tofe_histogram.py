@@ -55,7 +55,6 @@ from widgets.matplotlib.base import MatplotlibWidget
 from widgets.gui_utils import StatusBarHandler
 from widgets.matplotlib import mpl_utils
 
-#TL testing
 import numpy as np
 from PIL import Image
 
@@ -111,13 +110,11 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.axes.set_xlim(0, max(self.__x_data))
         self.axes.set_ylim(0, max(self.__y_data))
 
-        # Blitting image limits, used to trigger blitted image refresh
-        self.__blit_xlim = (-1, -1) #Should trigger update at startup
-        self.__blit_ylim = (-1, -1)
-
         # 2D histogram image and histogram
         self.__2d_hist = None # 2D histogram
         self.__2d_hist_im = None # image of histogram
+        self.__2d_hist_cx = None # x-compress value, used to trigger recomputing histogram
+        self.__2d_hist_cy = None # y-compress value, used to trigger recomputing histogram
 
         # Variables
         self.__inverted_Y = False
@@ -212,11 +209,17 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.axes.set_ylim([y_min, y_max])
         self.axes.set_xlim([x_min, x_max]) 
 
-        self.__2d_hist = np.histogram2d(self.__y_data, self.__x_data,
-                                        bins = (int(self.__y_data_max/4),int(self.__x_data_max/4)))
-        self.__2d_hist_im = Image.fromarray(np.uint8(cm.gist_gray_r(self.__2d_hist[0]/np.amax(self.__2d_hist[0])) * 255))
+        if (self.__2d_hist_cx != self.compression_x) or (self.__2d_hist_cy != self.compression_y):
+            self.__2d_hist_cx = self.compression_x
+            self.__2d_hist_cy = self.compression_y
+            self.__x_data_max = max(self.__x_data)
+            self.__y_data_max = max(self.__y_data)
+            self.__2d_hist = np.histogram2d(self.__y_data, self.__x_data,
+                                        bins = (int(self.__y_data_max/self.__2d_hist_cy),int(self.__x_data_max/self.__2d_hist_cx)))
+            self.__2d_hist_im = Image.fromarray(np.uint8(cm.gist_gray_r(self.__2d_hist[0]/np.amax(self.__2d_hist[0])) * 255))
+            #self.__2d_hist_im = Image.fromarray(np.uint8(cm.gist_gray_r(LogNorm(self.__2d_hist[0]/np.amax(self.__2d_hist[0])))))
 
-        self.axes.imshow(self.__2d_hist_im, extent=(0,self.__x_data_max,self.__y_data_max,0))
+        self.axes.imshow(self.__2d_hist_im, extent=(0,self.__x_data_max,0, self.__y_data_max), origin='bottom')
 
         self.__on_draw_legend()
 
