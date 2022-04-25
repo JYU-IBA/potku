@@ -228,7 +228,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             # self.__2d_hist_im = Image.fromarray(np.uint8(cm.gist_gray_r(np.log(self.__2d_hist[0])/np.amax(np.log(self.__2d_hist[0]))) * 255))
             self.__2d_hist_im = Image.fromarray(np.uint8(255*self.__2d_hist[0]/np.amax(self.__2d_hist[0])))
             # self.axes.imshow(self.__2d_hist_im, extent=(self.__x_data_min,self.__x_data_max,self.__y_data_min, self.__y_data_max), origin='bottom')
-        self.axes.imshow(self.__2d_hist_im, norm = LogNorm(), cmap='jet',
+        self.axes.imshow(self.__2d_hist_im, norm = LogNorm(), cmap=self.color_scheme,
                          extent=(self.__x_data_min, self.__x_data_max, self.__y_data_min, self.__y_data_max),
                          origin='bottom', interpolation='none')
 
