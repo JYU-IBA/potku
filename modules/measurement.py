@@ -960,6 +960,16 @@ class Measurement(MeasurementLogger, Serializable):
         """
         self.selector.load(filename, progress=progress)
 
+    def load_chosen_selection(self, chosen_selections, progress=None):
+        """Loads and updates selections.
+        Args:
+            filename: String representing (full) path to selection file.
+            progress: ProgressReporter object.
+        """
+
+        self.selector.load_loop(chosen_selections, progress=progress)
+
+
     def get_used_settings(
             self) -> Tuple[Detector, Run, Target, Profile, "Measurement"]:
         if self.use_request_settings:
