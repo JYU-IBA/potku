@@ -61,7 +61,7 @@ from PIL import Image
 class MatplotlibHistogramWidget(MatplotlibWidget):
     """Matplotlib histogram widget, used to graph "bananas" (ToF-E).
     """
-    MAX_BIN_COUNT = 8000
+    MAX_BIN_COUNT = 10000
     selectionsChanged = QtCore.pyqtSignal("PyQt_PyObject")
     saveCuts = QtCore.pyqtSignal("PyQt_PyObject")
 
@@ -97,6 +97,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
         self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
+        #self.canvas.mpl_connect('scroll_event', self.draw_event_hangler)
         self.__fork_toolbar_buttons()
 
         self.measurement = measurement
@@ -143,6 +144,43 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.name_x_axis = "time of flight (Ch)"
 
         self.on_draw()
+
+    def draw_event_hangler(self,e):
+        print(f'TL measurements: {self.canvas.get_width_height()}')
+        print(f' limits x:{self.axes.get_xlim()}, y:{self.axes.get_ylim()}')
+
+        canvas_x, canvas_y =  self.canvas.get_width_height()
+        canvas_ratio = canvas_y/canvas_x
+        print(f'Canvas ratio: {canvas_ratio}')
+
+        x_min, x_max = self.axes.get_xlim()
+        y_min, y_max = self.axes.get_ylim()
+        aspect_ratio = (y_max-y_min)/(x_max-x_min)
+        print(f'aspect ratio: {aspect_ratio}')
+
+        if(canvas_ratio-aspect_ratio > 0.01):
+            print("expand y")
+            mid_y = (y_max+y_min)/2
+            span_y = (x_max-x_min)*canvas_ratio
+            min_y = mid_y-span_y/2
+            max_y = mid_y+span_y/2
+            self.axes.set_ylim(min_y, max_y)
+            self.canvas.draw()
+
+        if(aspect_ratio-canvas_ratio > 0.01 ):
+            print("expand x")
+            mid_x = (x_max+x_min)/2
+            span_x = (y_max-y_min)/canvas_ratio
+            min_x = mid_x-span_x/2
+            max_x = mid_x+span_x/2
+            self.axes.set_xlim(min_x, max_x)
+            self.canvas.draw()
+
+        x_min, x_max = self.axes.get_xlim()
+        y_min, y_max = self.axes.get_ylim()
+        aspect_ratio = (y_max - y_min) / (x_max - x_min)
+        print(f'aspect ratio: {aspect_ratio}')
+
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -218,20 +256,19 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.__2d_hist_cx = self.compression_x
             self.__2d_hist_cy = self.compression_y
             self.__2d_hist_tr = self.transpose_axes
-            # Minimum and maximum values used to position image in plot
-            self.__x_data_max = max(x_data)
-            self.__y_data_max = max(y_data)
-            self.__x_data_min = min(x_data)
-            self.__y_data_min = min(y_data)
+
+            #self.__2d_hist = np.histogram2d(y_data, x_data,
+            #                                bins = bin_counts)
             self.__2d_hist = np.histogram2d(y_data, x_data,
-                                            bins = (int((self.__y_data_max-self.__y_data_min)/self.__2d_hist_cy)
-                                                    ,int((self.__x_data_max-self.__x_data_min)/self.__2d_hist_cx)))
+                                            bins = (int((self.__y_data_max-self.__y_data_min)/self.__2d_hist_cy),
+                                                    int((self.__x_data_max-self.__x_data_min)/self.__2d_hist_cx)))
+
             self.__2d_hist_im = Image.fromarray(np.uint8(255*self.__2d_hist[0]/np.amax(self.__2d_hist[0])))
             self.__2d_hist = None # Free memory
 
         self.axes.imshow(self.__2d_hist_im, norm = LogNorm(), cmap=self.color_scheme,
                          extent=(self.__x_data_min, self.__x_data_max, self.__y_data_min, self.__y_data_max),
-                         origin='bottom', interpolation='none')
+                         origin='bottom', interpolation='none', aspect='auto')
 
         self.__on_draw_legend()
 
