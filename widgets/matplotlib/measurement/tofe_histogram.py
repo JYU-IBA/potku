@@ -257,11 +257,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.__2d_hist_cy = self.compression_y
             self.__2d_hist_tr = self.transpose_axes
 
-            #self.__2d_hist = np.histogram2d(y_data, x_data,
-            #                                bins = bin_counts)
             self.__2d_hist = np.histogram2d(y_data, x_data,
-                                            bins = (int((self.__y_data_max-self.__y_data_min)/self.__2d_hist_cy),
-                                                    int((self.__x_data_max-self.__x_data_min)/self.__2d_hist_cx)))
+                                            bins = (bin_counts[1], bin_counts[0]))
 
             self.__2d_hist_im = Image.fromarray(np.uint8(255*self.__2d_hist[0]/np.amax(self.__2d_hist[0])))
             self.__2d_hist = None # Free memory
