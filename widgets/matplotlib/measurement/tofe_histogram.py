@@ -30,6 +30,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import os
+import select
 from pathlib import Path
 import modules.math_functions as mf
 import modules.general_functions as gf
@@ -818,14 +819,15 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 if selection.point_inside(point):
                     points = selection.get_event_count()
                     in_selection = True
+                    element = selection.element
                     break
         if in_selection:
+            points_text = str(element) + ", points in selection: {0}".format(points)
             if self.mpl_toolbar.mode_tool:
                 str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
-                str_text = str_tool + "; points in selection: {0}".format(
-                    points)
+                str_text = str_tool + "; " + points_text
             else:
-                str_text = "points in selection: {0}".format(points)
+                str_text = points_text
             self.mpl_toolbar.mode = str_text
         else:
             if self.mpl_toolbar.mode_tool:
