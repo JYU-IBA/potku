@@ -30,7 +30,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import os
-import select
 from pathlib import Path
 import modules.math_functions as mf
 import modules.general_functions as gf
