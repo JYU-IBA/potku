@@ -217,9 +217,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 (self.__2d_hist_cy != self.compression_y) or\
                 (self.transpose_axes != self.__2d_hist_tr):
 
-            if self.transpose_axes != self.__2d_hist_tr:
-                print(f'Transpose!')
-
             self.__2d_hist_cx = self.compression_x
             self.__2d_hist_cy = self.compression_y
             self.__2d_hist_tr = self.transpose_axes
