@@ -109,8 +109,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__y_data_min = min(self.__y_data)  # min y-value of data
 
         # Manually setting the limits for data
-        self.axes.set_xlim(0, max(self.__x_data))
-        self.axes.set_ylim(0, max(self.__y_data))
+        self.axes.set_xlim(self.__x_data_min, self.__x_data_max)
+        self.axes.set_ylim(self.__y_data_min, self.__y_data_max)
 
         # 2D histogram image and histogram
         self.__2d_hist = None # 2D histogram
@@ -209,8 +209,12 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
         colormap = cm.get_cmap(self.color_scheme.value)
 
-        self.axes.set_ylim([y_min, y_max])
-        self.axes.set_xlim([x_min, x_max])
+        if axes_range:
+            self.axes.set_ylim(axes_range[1])
+            self.axes.set_xlim(axes_range[0])
+        else:
+            self.axes.set_ylim([y_min, y_max])
+            self.axes.set_xlim([x_min, x_max])
 
         # if changes in compress values or transpose, recompute 2d histogram and histogram image
         if (self.__2d_hist_cx != self.compression_x) or \
