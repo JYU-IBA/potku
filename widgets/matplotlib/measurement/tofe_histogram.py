@@ -167,6 +167,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 x_min, x_max, y_min, y_max = y_min, y_max, x_min, x_max
                 # Switch inverts
                 self.invert_X, self.invert_Y = self.invert_Y, self.invert_X
+                self.__inverted_X, self.__inverted_Y = self.__inverted_Y, self.__inverted_X
         if not self.transpose_axes and self.__transposed:
             self.__transposed = False
             self.measurement.selector.transpose(False)
@@ -177,6 +178,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             x_min, x_max, y_min, y_max = y_min, y_max, x_min, x_max
             # Switch inverts
             self.invert_X, self.invert_Y = self.invert_Y, self.invert_X
+            self.__inverted_X, self.__inverted_Y = self.__inverted_Y, self.__inverted_X
 
         # Clear old stuff
         self.axes.clear()
