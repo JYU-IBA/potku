@@ -11,6 +11,7 @@ PyQt5 = "==5.14.2"
 Shapely = "*"
 wheel = "*"
 rx = "*"
+Pillow = "*"
 
 [dev-packages]
 pypiwin32 = {sys_platform = "== 'win32'"}
