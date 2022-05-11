@@ -943,7 +943,12 @@ class Selection:
 
         # First test if points x-value is less then x_max then test how many polygon x_values point crosses
 
-        points_inside = [point for point in points if (point[0] < self.cached_intersect_x_max[point[1]]) and
-                         len([x for x in self.cached_intersect_x[point[1]] if x < point[0]]) % 2]
+        if self.__is_transposed:
+            points_inside = [point for point in points if (point[1] < self.cached_intersect_x_max[point[0]]) and
+                             len([x for x in self.cached_intersect_x[point[0]] if x < point[1]]) % 2]
+        else:
+            points_inside = [point for point in points if (point[0] < self.cached_intersect_x_max[point[1]]) and
+                            len([x for x in self.cached_intersect_x[point[1]] if x < point[0]]) % 2]
+
         self.event_count = len(points_inside) # update events_count
         return points_inside
