@@ -916,7 +916,7 @@ class Selection:
         for i in range(n + 1):
             p2x, p2y = poly[i % n]
             if p1y != p2y:
-                for i in range(math.ceil(min(p1y, p2y)), math.floor(max(p1y, p2y)) + 1):
+                for i in range(math.ceil(min(p1y, p2y)), math.floor(max(p1y, p2y))):
                     xinters = (i - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
                     if x_list[i] == [9999]:
                         x_list[i] = [xinters]
