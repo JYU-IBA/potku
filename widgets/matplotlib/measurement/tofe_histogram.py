@@ -818,14 +818,15 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 if selection.point_inside(point):
                     points = selection.get_event_count()
                     in_selection = True
+                    element = selection.element
                     break
         if in_selection:
+            points_text = str(element) + ", points in selection: {0}".format(points)
             if self.mpl_toolbar.mode_tool:
                 str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
-                str_text = str_tool + "; points in selection: {0}".format(
-                    points)
+                str_text = str_tool + "; " + points_text
             else:
-                str_text = "points in selection: {0}".format(points)
+                str_text = points_text
             self.mpl_toolbar.mode = str_text
         else:
             if self.mpl_toolbar.mode_tool:
