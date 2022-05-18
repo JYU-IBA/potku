@@ -109,8 +109,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__y_data_min = min(self.__y_data)  # min y-value of data
 
         # Manually setting the limits for data
-        self.axes.set_xlim(self.__x_data_min, self.__x_data_max)
-        self.axes.set_ylim(self.__y_data_min, self.__y_data_max)
+        #self.axes.set_xlim(self.__x_data_min, self.__x_data_max)
+        #self.axes.set_ylim(self.__y_data_min, self.__y_data_max)
 
         # 2D histogram image and histogram
         self.__2d_hist = None # 2D histogram
@@ -124,7 +124,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__inverted_X = False
         self.__transposed = False
         self.__inited = False
-        self.__range_mode_automated = False
+        self.__range_mode_automated = -1 # set to -1 to trigger view update
 
         # Get settings from global settings
         self.__global_settings = self.main_frame.measurement.request\
@@ -211,13 +211,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
         colormap = cm.get_cmap(self.color_scheme.value)
 
-        if axes_range:
-            self.axes.set_ylim(axes_range[1])
-            self.axes.set_xlim(axes_range[0])
-        else:
-            self.axes.set_ylim([y_min, y_max])
-            self.axes.set_xlim([x_min, x_max])
-
         # if changes in compress values or transpose, recompute 2d histogram and histogram image
         if (self.__2d_hist_cx != self.compression_x) or \
                 (self.__2d_hist_cy != self.compression_y) or\
@@ -244,22 +237,19 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
         self.__on_draw_legend()
 
-        # Change zoom limits if compression factor was changed (or new graph).
-        if not self.__range_mode_automated and self.axes_range_mode == 0 \
-                or self.axes_range_mode == 1:
-            # self.__range_mode_automated and self.axes_range_mode == 1
-            tx_min, tx_max = self.axes.get_xlim()
-            ty_min, ty_max = self.axes.get_ylim()
-            # If user has zoomed the graph, change the home position to new max.
-            # Else reset the graph to new ranges and clear zoom levels.
-            if self.mpl_toolbar._views:
-                self.mpl_toolbar._views[0][0] = (tx_min, tx_max, ty_min, ty_max)
-            else:
-                x_min, x_max = tx_min, tx_max
-                y_min, y_max = ty_min, ty_max
-                self.mpl_toolbar.update()
-        self.__range_mode_automated = self.axes_range_mode == 0 
-        
+
+        # Set view and set home view
+        if self.__range_mode_automated != self.axes_range_mode:
+            if self.axes_range_mode == 0: # Automatic limits
+                self.axes.set_ylim(self.__y_data_min, self.__y_data_max)
+                self.axes.set_xlim(self.__x_data_min, self.__x_data_max)
+            else: # Manual limits
+                self.axes.set_ylim(self.axes_range[1])
+                self.axes.set_xlim(self.axes_range[0])
+
+            self.__range_mode_automated = self.axes_range_mode
+            self.mpl_toolbar.update()
+
         self.measurement.draw_selection()
         
         # Invert axis
