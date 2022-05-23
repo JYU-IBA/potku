@@ -554,7 +554,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
               use_old_erd_files=True, optimization_type=None,
               ion_division=IonDivision.NONE,
               ct: Optional[CancellationToken] = None,
-              start_interval=5, status_check_interval=1,
+              start_interval=1, status_check_interval=1,
               **kwargs) -> Optional[rx.Observable]:
         """
         Start the simulation.
