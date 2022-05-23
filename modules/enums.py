@@ -128,7 +128,7 @@ class IonDivision(IntEnum):
 @enum.unique
 class DetectorType(str, Enum):
     TOF = "TOF"
-    ENERGY = "Energy"
+    ENERGY = "Energy Detector"
 
     def __str__(self):
         return self.value
