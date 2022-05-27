@@ -49,14 +49,14 @@ class GetEspe:
     """
     __slots__ = "recoil_file", "beam_ion", "energy", "theta", \
                 "channel_width", "fluence", "timeres", "density", \
-                "solid", "erd_file", "tangle", "toflen", "_output_parser"
+                "solid", "erd_file", "tangle", "toflen", "_output_parser", "eres", "dtype"
 
     def __init__(self, beam_ion: str, energy: float, theta: float,
                  tangle: float, toflen: float, solid: float,
                  recoil_file: Path, erd_file: Path,
                  reference_density: float = None,
                  ch: float = 0.025, fluence: float = 5.00e+11,
-                 timeres: float = 250.0):
+                 timeres: float = 250.0, eres: float = 500, dtype: str = "TOF"):
         """Initializes the GetEspe class.
         Args:
             beam_ion: mass number and the chemical symbol of the primary ion
@@ -81,6 +81,8 @@ class GetEspe:
         self.channel_width = ch
         self.fluence = fluence
         self.timeres = timeres
+        self.dtype = dtype
+        self.eres = eres
 
         if reference_density is None:
             self.density = GlobalSettings().get_default_reference_density()
@@ -219,18 +221,37 @@ class GetEspe:
         else:
             executable = "./get_espe"
 
-        return (
-            executable,
-            "-beam", self.beam_ion,
-            "-energy", str(self.energy),
-            "-theta", str(self.theta),
-            "-tangle", str(self.tangle),
-            "-timeres", str(self.timeres),
-            "-toflen", str(self.toflen),
-            "-solid", str(self.solid),
-            "-dose", str(self.fluence),
-            "-avemass",
-            "-density", str(self.density),
-            "-ch", str(self.channel_width),
-            "-dist", str(self.recoil_file),
-        )
+        if self.dtype == "TOF":
+            print("GET_ESPE: TOF")
+            return (
+                executable,
+                "-beam", self.beam_ion,
+                "-energy", str(self.energy),
+                "-theta", str(self.theta),
+                "-tangle", str(self.tangle),
+                "-timeres", str(self.timeres),
+                "-toflen", str(self.toflen),
+                "-solid", str(self.solid),
+                "-dose", str(self.fluence),
+                "-avemass",
+                "-density", str(self.density),
+                "-ch", str(self.channel_width),
+                "-dist", str(self.recoil_file),
+            )
+        if self.dtype == "Energy":
+            print("GET_ESPE: Energy")
+            return (
+                executable,
+                "-beam", self.beam_ion,
+                "-energy", str(self.energy),
+                "-theta", str(self.theta),
+                "-tangle", str(self.tangle),
+                "-eres", str(self.eres),
+                "-toflen", str(self.toflen),
+                "-solid", str(self.solid),
+                "-dose", str(self.fluence),
+                "-avemass",
+                "-density", str(self.density),
+                "-ch", str(self.channel_width),
+                "-dist", str(self.recoil_file),
+            )
