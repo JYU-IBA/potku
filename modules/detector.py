@@ -65,9 +65,9 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
     def __init__(self, path: Path, name="Default",
                  description="", modification_time=None,
                  detector_type=DetectorType.TOF,
-                 foils=None, tof_foils=None, virtual_size=(2.0, 5.0),
+                 foils=None, tof_foils=None, virtual_size=(7.0, 7.0),
                  tof_slope=5.8e-11, tof_offset=-1.0e-9, angle_slope=0,
-                 angle_offset=0, timeres=250.0, detector_theta=41,
+                 angle_offset=0, timeres=500.0, detector_theta=41,
                  save_on_creation=True):
         """Initialize a detector.
 
