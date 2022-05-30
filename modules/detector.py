@@ -292,8 +292,11 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
     def get_mcerd_params(self):
         """Returns a list of strings that are passed as parameters for MCERD.
         """
+        # Always set mcerd detector type to TOF
+        # f"Detector type: {self.detector_type}",
+        print(f"Detector type: TOF")
         return [
-            f"Detector type: {self.detector_type}",
+            f"Detector type: TOF",
             f"Detector angle: {self.detector_theta}",
             f"Virtual detector size: {'%0.1f %0.1f' % self.virtual_size}",
             f"Timing detector numbers: {self.tof_foils[0]} {self.tof_foils[1]}"
