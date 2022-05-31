@@ -99,7 +99,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
 
         # TODO: This should be called type, but renaming it solved issues with
         #       initialization and backwards incompatibility (deserialization)
-        self.detector_type = DetectorType(detector_type.upper())
+        self.detector_type = DetectorType(detector_type)
         self.foils = foils
 
         if not self.foils:

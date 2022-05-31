@@ -33,7 +33,6 @@ import subprocess
 import re
 import multiprocessing
 import rx
-import copy
 
 from . import general_functions as gf
 from . import subprocess_utils as sutils
@@ -446,9 +445,8 @@ class MCERD:
     def get_detector_file_contents(self) -> str:
         """Returns the contents of the detector file as a string.
         """
-        detector = copy.deepcopy(self._settings["detector"])
-        # Set detector type always to "TOF"
-        detector.detector_type = "TOF"
+        detector = self._settings["detector"]
+
         foils = "\n----------\n".join("\n".join(foil.get_mcerd_params())
                                       for foil in detector.foils)
 
