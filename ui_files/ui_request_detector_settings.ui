@@ -82,8 +82,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>462</width>
-        <height>587</height>
+        <width>469</width>
+        <height>582</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -199,7 +199,7 @@
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>Type:</string>
+                 <string>Detector type:</string>
                 </property>
                </widget>
               </item>
@@ -366,7 +366,7 @@ profiles correctly.</string>
                      <rect>
                       <x>0</x>
                       <y>0</y>
-                      <width>412</width>
+                      <width>419</width>
                       <height>154</height>
                      </rect>
                     </property>
@@ -481,11 +481,11 @@ T</string>
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
+                   <property name="toolTip">
+                    <string>File names must be in form symbol.eff or symbol-comments.eff, i.e. 1H-Jan2020.eff</string>
+                   </property>
                    <property name="text">
                     <string/>
-                   </property>
-                   <property name="toolTip">
-                   <string>File names must be in form symbol.eff or symbol-comments.eff, i.e. 1H-Jan2020.eff</string>
                    </property>
                    <property name="icon">
                     <iconset>
