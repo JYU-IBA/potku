@@ -66,12 +66,12 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
     modification_time = bnd.bind(
         "dateLabel", fget=bnd.unix_time_from_label, fset=bnd.unix_time_to_label)
     description = bnd.bind("descriptionLineEdit")
-    detector_type = bnd.bind("typeComboBox", track_change=True)
+    detector_type = bnd.bind("typeComboBox", track_change=False) # True
     angle_slope = bnd.bind("angleSlopeLineEdit", track_change=True)
     angle_offset = bnd.bind("angleOffsetLineEdit", track_change=True)
     tof_slope = bnd.bind("scientific_tof_slope", track_change=True)
     tof_offset = bnd.bind("scientific_tof_offset", track_change=True)
-    timeres = bnd.bind("timeResSpinBox", track_change=True)
+    timeres = bnd.bind("timeResSpinBox", track_change=False) # True
     virtual_size = bnd.multi_bind(
         ("virtualSizeXSpinBox", "virtualSizeYSpinBox"), track_change=True
     )
@@ -166,6 +166,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         # Save as and load
         self.saveButton.clicked.connect(self.__save_file)
         self.loadButton.clicked.connect(self.__load_file)
+
+        self.typeComboBox.currentTextChanged.connect(self.detector_type_change)
 
         self.show_settings()
 
@@ -680,3 +682,11 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.foils_layout.removeWidget(foil_widget)
         foil_widget.deleteLater()
         self.calculate_distance()
+
+    def detector_type_change(self, value):
+        print(f'Detector type: {value}')
+        #Time res [ps]:
+        if value == "TOF":
+            self.label_3.setText("Time res [ps]:")
+        if value == "Energy":
+            self.label_3.setText("Energy res [kev]:")
