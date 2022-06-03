@@ -466,20 +466,7 @@ class Selector:
         try:
             with open(filename) as fp:
                 for line in fp:
-                    # ['ONone', '16', 'red', '3436, 2964, 4054;2376, 3964, 3914']
-                    split = line.strip().split("    ")
-                    sel = Selection(self.axes, self.element_colormap,
-                                    element_type=split[0],
-                                    element=split[1],
-                                    isotope=(split[2] if split[2] == ""
-                                             else int(split[2])),
-                                    weight_factor=float(split[3]),
-                                    scatter=split[4],
-                                    color=split[5],
-                                    points=split[6],
-                                    transposed=self.is_transposed,
-                                    measurement=self.measurement)
-                    self.selections.append(sel)
+                   self.selection_from_string(line)
             message = f"Selection file {filename} was read successfully!"
             self.measurement.log(message)
         except OSError as e:
@@ -489,10 +476,73 @@ class Selector:
             message = f"Could not read selection data from {filename}. " \
                       f"Reason: {e}. Check that the file contains valid data."
             self.measurement.log_error(message)
+        self.update_selections(progress)
+
+    def load_loop(self, chosen_selections, progress):
+        """Load selections from a file.
+
+        Loads chosen selections and updates the histogram with the selections.
+
+        Args:
+            chosen selections: All of the chosen selections
+            progress: ProgressReporter object.
+        """
+        try:
+            for line in chosen_selections:
+                self.selection_from_string(line)
+            message = f"Chosen selections were read successfully!"
+            self.measurement.log(message)
+            self.update_selections(progress)
+        except TypeError as e:
+            message = f"Could not read selections due to: {e}."
+            self.measurement.log_error(message)
+
+
+    def update_selections(self, progress=None):
+
         self.update_axes_limits()
         self.draw()  # Draw all selections
         self.auto_save()
         self.update_selection_points(progress=progress)
+
+    def selection_from_string(self, line):
+        # ['ONone', '16', 'red', '3436, 2964, 4054;2376, 3964, 3914']
+        split = line.strip().split("    ")
+        sel = Selection(self.axes, self.element_colormap,
+                        element_type=split[0],
+                        element=split[1],
+                        isotope=(split[2] if split[2] == ""
+                                 else int(split[2])),
+                        weight_factor=float(split[3]),
+                        scatter=split[4],
+                        color=split[5],
+                        points=split[6],
+                        transposed=self.is_transposed,
+                        measurement=self.measurement)
+        self.selections.append(sel)
+
+    def load_chosen(self, filename):
+        """Load selections from a file.
+
+        Args:
+            filename: String representing (full) path to selection file.
+
+        Returns:
+            elements: a list of elements in a selection
+            selection: All of the information in a selection
+        """
+        elements = []
+        selection = []
+        with open(filename) as fp:
+            for line in fp:
+                # ['ONone', '16', 'red', '3436, 2964, 4054;2376, 3964, 3914']
+                split = line.strip().split("    ")
+                sel = line
+                el = split[1]
+                elements.append(el)
+                selection.append(sel)
+
+        return elements, selection
 
     def update_axes_limits(self):
         """Update selector's axes limits based on all points in all selections.

@@ -87,7 +87,6 @@ class TofeHistogramWidget(QtWidgets.QWidget):
             self.saveCutsButton.setEnabled(False)
         else:
             self.saveCutsButton.setEnabled(True)
-            # self.measurement.request.save_selection(self.measurement)
 
     def __save_cuts(self):
         """Connect to saving cuts. Issue it to request for every other

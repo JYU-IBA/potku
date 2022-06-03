@@ -43,7 +43,7 @@ from dialogs.graph_settings import TofeGraphSettingsWidget
 from dialogs.measurement.depth_profile import DepthProfileWidget
 from dialogs.measurement.element_losses import ElementLossesWidget
 from dialogs.measurement.selection import SelectionSettingsDialog
-import dialogs.file_dialogs as fdialogs
+from dialogs.measurement.import_selection import SelectionDialog
 
 from matplotlib import cm
 from matplotlib.colors import LogNorm
@@ -342,10 +342,13 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                                             element)
 
         # Sort legend text
+        global sel_text
         sel_text = []
+        global sel_points
         sel_points = []
 
         items = sorted(selection_legend.items(), key=lambda x: x[1][3])
+
         for item in items:
             # [0] is the key of the item.
             sel_text.append(item[1][0])
@@ -453,6 +456,19 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.elementSelectionDeleteButton.setToolTip("Delete all selections")
         self.mpl_toolbar.addWidget(self.elementSelectionDeleteButton)
 
+
+    def click_check(self, cursor_location):
+        import numpy as np
+        x_cut_coord = np.array(sel_points[0].get_xdata())
+        y_cut_coord = np.array(sel_points[0].get_ydata())
+
+        print(cursor_location)
+
+        idx_x = (np.abs(int(x_cut_coord[0]) - int(cursor_location[0]))).argmin()
+        idx_y = (np.abs(int(y_cut_coord[1]) - int(cursor_location[1]))).argmin()
+
+        chosen_point = [x_cut_coord[idx_x], y_cut_coord[idx_y]]
+
     def on_click(self, event):
         """On click event above graph.
 
@@ -487,6 +503,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         #        print("\t{0}".format(item))
         if event.button == 1:  # Left click
             if self.elementSelectionSelectButton.isChecked():
+                self.click_check(cursor_location)
                 if self.measurement.selection_select(cursor_location) == 1:
                     # self.elementSelectDeleteButton.setChecked(True)
                     self.elementSelectDeleteButton.setEnabled(True)
@@ -578,24 +595,23 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
     def load_selections(self):
         """Show dialog to load selections.
-        """
-        filename = fdialogs.open_file_dialog(
-            self, self.measurement.directory, "Load Element Selection",
-            "Selection file (*.selections)")
-        if filename is not None:
-            sbh = StatusBarHandler(self.statusbar)
-            sbh.reporter.report(40)
+                """
 
-            self.measurement.load_selection(
-                filename, progress=sbh.reporter.get_sub_reporter(
-                    lambda x: 40 + 0.6 * x
-                ))
-            self.on_draw()
-            self.elementSelectionSelectButton.setEnabled(True)
+        dialog = SelectionDialog()
+        dialog.exec()
 
-            sbh.reporter.report(100)
+        sbh = StatusBarHandler(self.statusbar)
+        sbh.reporter.report(40)
+        self.measurement.load_chosen_selection(dialog.chosen_selections,
+                                               progress=
+                                               sbh.reporter.get_sub_reporter(
+                                                   lambda x: 40 + 0.6 * x))
+        self.on_draw()
+        self.elementSelectionSelectButton.setEnabled(True)
 
+        sbh.reporter.report(100)
         self.__emit_selections_changed()
+
 
     def save_cuts(self):
         """Save measurement cuts.
@@ -833,14 +849,15 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 if selection.point_inside(point):
                     points = selection.get_event_count()
                     in_selection = True
+                    element = selection.element
                     break
         if in_selection:
+            points_text = str(element) + ", points in selection: {0}".format(points)
             if self.mpl_toolbar.mode_tool:
                 str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
-                str_text = str_tool + "; points in selection: {0}".format(
-                    points)
+                str_text = str_tool + "; " + points_text
             else:
-                str_text = "points in selection: {0}".format(points)
+                str_text = points_text
             self.mpl_toolbar.mode = str_text
         else:
             if self.mpl_toolbar.mode_tool:

@@ -47,7 +47,7 @@ $ cd potku
 Install and activate the virtual environment in `potku/` root directory with Pipenv:
 
 ````
-$ pipenv install
+$ pipenv install --dev
 $ pipenv shell
 ````
 
@@ -184,6 +184,24 @@ or
 `````
 $ pipenv run ./create_bundle.sh
 `````
+
+## Code style
+
+Potku follows [PEP 8](https://www.python.org/dev/peps/pep-0008/). Current maximum line length is 80, but that could be increased to 100 or 120 (see issue #209 for more information).
+
+### Code style/architecture guidelines
+
+- add typing annotations to new (and old) code. Potku didn't originally use typing annotations.
+- add tests for new features and bug fixes, if possible
+- try to keep GUI code separate from the backend code as much as possible (for possible use with other frontends, and for ease of testing)
+
+### Development process guidelines
+
+- use pull requests and do code reviews
+- create an issue for each pull request, and mention that issue number in the commit message (e.g. #1)
+- remember to assign issues and add labels
+- run tests before creating a pull request (and after merging it if the code changed in the meantime)
+- manually test Potku before creating a pull request (and after merging it if the code changed in the meantime)
 
 ## Issues
 
