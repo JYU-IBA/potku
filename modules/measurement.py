@@ -882,21 +882,12 @@ class Measurement(MeasurementLogger, Serializable):
         # Initializes the list size to match the number of selections.
         points_in_selection = [[] for _ in range(self.selector.count())]
 
-        # Go through all points in measurement data
-        data_count = len(self.data)
-        for n in range(data_count):  # while n < data_count: 
-            if n % 5000 == 0:
-                # Do not always update UI to make it faster.
-                if progress is not None:
-                    progress.report(n / data_count * 80)
-            point = self.data[n]
-            # Check if point is within selectors' limits for faster processing.
-            if not self.selector.axes_limits.is_inside(point):
-                continue
+        for i, selection in enumerate(self.selector.selections):
+            points_in_selection[i] = selection.fast_points_inside(self.data)
+            if progress is not None:
+                progress.report(i / len(self.selector.selections) * 80)
 
-            for i, selection in enumerate(self.selector.selections):
-                if selection.point_inside(point):
-                    points_in_selection[i].append(point)
+        #print(points_in_selection[0])
 
         self.selector.update_selection_beams()
         self.selector.auto_save()

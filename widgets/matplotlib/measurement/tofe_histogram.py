@@ -55,11 +55,13 @@ from widgets.matplotlib.base import MatplotlibWidget
 from widgets.gui_utils import StatusBarHandler
 from widgets.matplotlib import mpl_utils
 
+import numpy as np
+from PIL import Image
 
 class MatplotlibHistogramWidget(MatplotlibWidget):
     """Matplotlib histogram widget, used to graph "bananas" (ToF-E).
     """
-    MAX_BIN_COUNT = 8000
+    MAX_BIN_COUNT = 10000
     selectionsChanged = QtCore.pyqtSignal("PyQt_PyObject")
     saveCuts = QtCore.pyqtSignal("PyQt_PyObject")
 
@@ -101,12 +103,28 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__x_data = [x[0] for x in self.measurement.data]
         self.__y_data = [x[1] for x in self.measurement.data]
 
+        self.__x_data_max = max(self.__x_data) # max x-value of data
+        self.__y_data_max = max(self.__y_data) # max y-value of data
+        self.__x_data_min = min(self.__x_data)  # min x-value of data
+        self.__y_data_min = min(self.__y_data)  # min y-value of data
+
+        # Manually setting the limits for data
+        #self.axes.set_xlim(self.__x_data_min, self.__x_data_max)
+        #self.axes.set_ylim(self.__y_data_min, self.__y_data_max)
+
+        # 2D histogram image and histogram
+        self.__2d_hist = None # 2D histogram
+        self.__2d_hist_im = None # image of histogram
+        self.__2d_hist_cx = None # x-compress value, used to trigger recomputing histogram
+        self.__2d_hist_cy = None # y-compress value, used to trigger recomputing histogram
+        self.__2d_hist_tr = False # histogram axis transposed, used to trigger recompute
+
         # Variables
         self.__inverted_Y = False
         self.__inverted_X = False
         self.__transposed = False
         self.__inited = False
-        self.__range_mode_automated = False
+        self.__range_mode_automated = -1 # set to -1 to trigger view update
 
         # Get settings from global settings
         self.__global_settings = self.main_frame.measurement.request\
@@ -149,6 +167,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 x_min, x_max, y_min, y_max = y_min, y_max, x_min, x_max
                 # Switch inverts
                 self.invert_X, self.invert_Y = self.invert_Y, self.invert_X
+                self.__inverted_X, self.__inverted_Y = self.__inverted_Y, self.__inverted_X
         if not self.transpose_axes and self.__transposed:
             self.__transposed = False
             self.measurement.selector.transpose(False)
@@ -159,6 +178,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             x_min, x_max, y_min, y_max = y_min, y_max, x_min, x_max
             # Switch inverts
             self.invert_X, self.invert_Y = self.invert_Y, self.invert_X
+            self.__inverted_X, self.__inverted_Y = self.__inverted_Y, self.__inverted_X
 
         # Clear old stuff
         self.axes.clear()
@@ -190,35 +210,46 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 QtWidgets.QMessageBox.Ok)
 
         colormap = cm.get_cmap(self.color_scheme.value)
-        
-        self.axes.set_ylim([y_min, y_max])
-        self.axes.set_xlim([x_min, x_max]) 
 
-        self.axes.hist2d(x_data,
-                         y_data,
-                         bins=bin_counts,
-                         norm=LogNorm(),
-                         range=axes_range,
-                         cmap=colormap)
+        # if changes in compress values or transpose, recompute 2d histogram and histogram image
+        if (self.__2d_hist_cx != self.compression_x) or \
+                (self.__2d_hist_cy != self.compression_y) or\
+                (self.transpose_axes != self.__2d_hist_tr):
+
+            self.__2d_hist_cx = self.compression_x
+            self.__2d_hist_cy = self.compression_y
+            self.__2d_hist_tr = self.transpose_axes
+
+            self.__x_data_max = max(x_data)  # max x-value of data
+            self.__y_data_max = max(y_data)  # max y-value of data
+            self.__x_data_min = min(x_data)  # min x-value of data
+            self.__y_data_min = min(y_data)  # min y-value of data
+
+            self.__2d_hist = np.histogram2d(y_data, x_data,
+                                            bins = (bin_counts[1], bin_counts[0]))
+
+            self.__2d_hist_im = Image.fromarray(np.uint8(255*self.__2d_hist[0]/np.amax(self.__2d_hist[0])))
+            self.__2d_hist = None # Free memory
+
+        self.axes.imshow(self.__2d_hist_im, norm = LogNorm(), cmap=self.color_scheme,
+                         extent=(self.__x_data_min, self.__x_data_max, self.__y_data_min, self.__y_data_max),
+                         origin='bottom', interpolation='none', aspect='auto')
 
         self.__on_draw_legend()
 
-        # Change zoom limits if compression factor was changed (or new graph).
-        if not self.__range_mode_automated and self.axes_range_mode == 0 \
-                or self.axes_range_mode == 1:
-            # self.__range_mode_automated and self.axes_range_mode == 1
-            tx_min, tx_max = self.axes.get_xlim()
-            ty_min, ty_max = self.axes.get_ylim()
-            # If user has zoomed the graph, change the home position to new max.
-            # Else reset the graph to new ranges and clear zoom levels.
-            if self.mpl_toolbar._views:
-                self.mpl_toolbar._views[0][0] = (tx_min, tx_max, ty_min, ty_max)
-            else:
-                x_min, x_max = tx_min, tx_max
-                y_min, y_max = ty_min, ty_max
-                self.mpl_toolbar.update()
-        self.__range_mode_automated = self.axes_range_mode == 0 
-        
+
+        # Set view and set home view
+        if self.__range_mode_automated != self.axes_range_mode:
+            if self.axes_range_mode == 0: # Automatic limits
+                self.axes.set_ylim(self.__y_data_min, self.__y_data_max)
+                self.axes.set_xlim(self.__x_data_min, self.__x_data_max)
+            else: # Manual limits
+                self.axes.set_ylim(self.axes_range[1])
+                self.axes.set_xlim(self.axes_range[0])
+
+            self.__range_mode_automated = self.axes_range_mode
+            self.mpl_toolbar.update()
+
         self.measurement.draw_selection()
         
         # Invert axis
