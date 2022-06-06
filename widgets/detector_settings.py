@@ -72,6 +72,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
     tof_slope = bnd.bind("scientific_tof_slope", track_change=True)
     tof_offset = bnd.bind("scientific_tof_offset", track_change=True)
     timeres = bnd.bind("timeResSpinBox", track_change=False) # True
+    energyres = bnd.bind("energyResSpinBox", track_change=False)
     virtual_size = bnd.multi_bind(
         ("virtualSizeXSpinBox", "virtualSizeYSpinBox"), track_change=True
     )
@@ -167,6 +168,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.saveButton.clicked.connect(self.__save_file)
         self.loadButton.clicked.connect(self.__load_file)
 
+        self.resolutionStack.setCurrentIndex(self.typeComboBox.currentIndex())
         self.typeComboBox.currentTextChanged.connect(self.detector_type_change)
 
         self.show_settings()
@@ -684,9 +686,4 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.calculate_distance()
 
     def detector_type_change(self, value):
-        print(f'Detector type: {value}')
-        #Time res [ps]:
-        if value == "TOF":
-            self.label_3.setText("Time res [ps]:")
-        if value == "Energy":
-            self.label_3.setText("Energy res [kev]:")
+        self.resolutionStack.setCurrentIndex(self.typeComboBox.currentIndex())

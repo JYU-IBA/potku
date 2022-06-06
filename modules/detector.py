@@ -57,7 +57,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
     __slots__ = "name", "description", "date", "detector_type", "foils",\
                 "tof_foils", "virtual_size", "tof_slope", "tof_offset",\
                 "angle_slope", "angle_offset", "path", "modification_time",\
-                "timeres", "detector_theta"
+                "timeres", "energyres", "detector_theta"
 
     EFFICIENCY_DIR = "Efficiency_files"
     USED_EFFICIENCIES_DIR = "Used_efficiencies"
@@ -67,7 +67,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
                  detector_type=DetectorType.TOF,
                  foils=None, tof_foils=None, virtual_size=(7.0, 7.0),
                  tof_slope=5.8e-11, tof_offset=-1.0e-9, angle_slope=0,
-                 angle_offset=0, timeres=500.0, detector_theta=41,
+                 angle_offset=0, timeres=500.0, energyres=25.0, detector_theta=41,
                  save_on_creation=True):
         """Initialize a detector.
 
@@ -85,6 +85,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             angle_slope: Angle slope.
             angle_offset: Angle offset.
             timeres: Time resolution.
+            energyres: Energy resolution.
             detector_theta: Angle of the detector.
             save_on_creation: Whether to save created detector into a file.
         """
@@ -127,6 +128,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             # Set default ToF foils
             self.tof_foils = [1, 2]
         self.timeres = timeres
+        self.energyres = energyres
         self.virtual_size = virtual_size
         self.tof_slope = tof_slope
         self.tof_offset = tof_offset
@@ -203,7 +205,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         return {
                 "name", "modification_time", "description", "detector_type",
                 "angle_slope", "angle_offset", "tof_slope", "tof_offset",
-                "timeres", "virtual_size", "detector_theta"
+                "timeres", "energyres", "virtual_size", "detector_theta"
             }
 
     def remove_efficiency_file(self, file_name: Path):
@@ -293,10 +295,8 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         """Returns a list of strings that are passed as parameters for MCERD.
         """
         # Always set mcerd detector type to TOF
-        # f"Detector type: {self.detector_type}",
-        print(f"Detector type: TOF")
         return [
-            f"Detector type: TOF",
+            f"Detector type: TOF", # f"Detector type: {self.detector_type}",
             f"Detector angle: {self.detector_theta}",
             f"Virtual detector size: {'%0.1f %0.1f' % self.virtual_size}",
             f"Timing detector numbers: {self.tof_foils[0]} {self.tof_foils[1]}"

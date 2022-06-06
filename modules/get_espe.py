@@ -57,7 +57,7 @@ class GetEspe:
                  recoil_file: Path, erd_file: Path,
                  reference_density: float = None,
                  ch: float = 0.025, fluence: float = 5.00e+11,
-                 timeres: float = 250.0, eres: float = 1000, dtype: str = "TOF"):
+                 timeres: float = 250.0, eres: float = 25.0, dtype: str = "TOF"):
         """Initializes the GetEspe class.
         Args:
             beam_ion: mass number and the chemical symbol of the primary ion
@@ -123,7 +123,7 @@ class GetEspe:
             solid=detector.calculate_solid(),
             tangle=target.target_theta,
             dtype=detector.detector_type,
-            eres=detector.timeres,
+            eres=detector.energyres,
             **kwargs)
         return get_espe.run(output_file=output_file, verbose=verbose)
 
