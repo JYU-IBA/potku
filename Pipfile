@@ -6,9 +6,9 @@ name = "pypi"
 [packages]
 numpy = "*"
 scipy = "*"
-matplotlib = "==3.2.2"
-PyQt5 = "==5.14.2"
-Shapely = "==1.7.1"
+matplotlib = "*"
+PyQt5 = "*"
+Shapely = "*"
 wheel = "*"
 rx = "*"
 Pillow = "*"
@@ -19,4 +19,4 @@ pypiwin32 = {sys_platform = "== 'win32'"}
 pywin32 = {sys_platform = "== 'win32'"}
 
 [requires]
-python_version = "3.6"
+python_version = "3.10"
