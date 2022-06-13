@@ -420,9 +420,8 @@ class MCERD:
         sim_mode = self._settings['simulation_mode']
         scale_ion_count = self._settings['number_of_scaling_ions']
         ions_in_presim = self._settings['number_of_ions_in_presimu']
-
         return "\n".join([
-            f"Type of simulation: {self._settings['simulation_type']}",
+            f"Type of simulation: {self._settings['simulation_type'].name}",
             *beam.get_mcerd_params(),
             f"Target description file: {self.target_file}",
             f"Detector description file: {self.detector_file}",
