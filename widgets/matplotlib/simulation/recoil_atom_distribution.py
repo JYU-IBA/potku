@@ -563,7 +563,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.span_selector = SpanSelector(
             self.axes, self.on_span_select, "horizontal", useblit=True,
             rectprops=dict(alpha=0.5, facecolor="red"), button=1,
-            span_stays=True, onmove_callback=self.on_span_motion)
+            interactive=True, onmove_callback=self.on_span_motion)
         self.span_selector.set_active(False)
 
         self.rectangle_selector = RectangleSelector(
