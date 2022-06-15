@@ -568,7 +568,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         self.rectangle_selector = RectangleSelector(
             self.axes, self.on_rectangle_select, useblit=True, drawtype="box",
-            rectprops=dict(alpha=0.5, facecolor="red"), button=3)
+            props=dict(alpha=0.5, facecolor="red"), button=3)
 
         # Connections and setup
         self.canvas.mpl_connect("button_press_event", self.on_click)
