@@ -433,7 +433,7 @@ class MCERD:
             f"Minimum main scattering angle: {min_main_scat_angle} deg",
             f"Minimum energy of ions: {min_ene_ions} MeV",
             f"Average number of recoils per primary ion: {rec_count}",
-            f"Recoil angle width (wide or narrow): {sim_mode}",
+            f"Recoil angle width (wide or narrow): {sim_mode.lower()}",
             f"Presimulation * result file: {self.presimulation_file}",
             f"Number of real ions per each scaling ion: {scale_ion_count}",
             f"Number of ions: {self._settings['number_of_ions']}",
