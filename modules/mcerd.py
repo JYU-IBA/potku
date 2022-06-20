@@ -32,7 +32,7 @@ import platform
 import subprocess
 import re
 import multiprocessing
-import rx
+import reactivex as rx
 
 from . import general_functions as gf
 from . import subprocess_utils as sutils
@@ -44,8 +44,8 @@ from typing import Callable
 from typing import Mapping
 from typing import Any
 from pathlib import Path
-from rx import operators as ops
-from rx.scheduler import ThreadPoolScheduler
+from reactivex import operators as ops
+from reactivex.scheduler import ThreadPoolScheduler
 
 from .layer import Layer
 from .concurrency import CancellationToken
