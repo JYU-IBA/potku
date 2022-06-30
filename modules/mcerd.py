@@ -160,7 +160,7 @@ class MCERD:
 
         process = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            cwd=gf.get_bin_dir(), universal_newlines=True)
+            cwd=gf.get_bin_dir() , universal_newlines=True)
 
         errs = rx.from_iterable(iter(process.stderr.readline, ""))
         outs = rx.from_iterable(iter(process.stdout.readline, ""))
@@ -177,18 +177,18 @@ class MCERD:
         pool_scheduler = ThreadPoolScheduler(thread_count)
 
         merged = rx.merge(errs, outs).pipe(
-            ops.subscribe_on(pool_scheduler),
-            MCERD.get_pipeline(
-                self._seed, self._rec_filename, print_output=print_output),
-            ops.combine_latest(rx.merge(
-                is_running, ct_check, timeout
-            )),
-            ops.starmap(lambda x, y: {
-                **x, **y,
-                MCERD.IS_RUNNING: x[MCERD.IS_RUNNING] and y[MCERD.IS_RUNNING]
-            }),
-            ops.take_while(lambda x: x[MCERD.IS_RUNNING], inclusive=True),
-        )
+             ops.subscribe_on(pool_scheduler),
+             MCERD.get_pipeline(
+                 self._seed, self._rec_filename, print_output=print_output),
+             ops.combine_latest(rx.merge(
+                 is_running, ct_check, timeout
+             )),
+             ops.starmap(lambda x, y: {
+                 **x, **y,
+                 MCERD.IS_RUNNING: x[MCERD.IS_RUNNING] and y[MCERD.IS_RUNNING]
+             }),
+             ops.take_while(lambda x: x[MCERD.IS_RUNNING], inclusive=True),
+         )
 
         # on_completed does not get called if the take_while condition is
         # inclusive so this is a quick fix to get the files deleted.
@@ -246,7 +246,7 @@ class MCERD:
             print_output: whether output is printed to console
         """
         # TODO add handling for fatal error messages
-        return rx.pipe(
+        return rx.compose(
             ops.map(lambda x: x.strip()),
             MCERD._conditional_printer(
                 print_output, f"simulation process with seed {seed}."),
