@@ -27,7 +27,7 @@ __version__ = "2.0"
 
 import unittest
 
-import rx
+import reactivex as rx
 import modules.observing as observing
 
 from modules.observing import Observable
