@@ -30,7 +30,7 @@ depth profile graph.
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n" \
-             "Juhani Sundell \n Aleksi Kauppi"
+             "Juhani Sundell \n Aleksi Kauppi \n Timo Leppälä"
 __version__ = "2.0"
 
 from pathlib import Path
