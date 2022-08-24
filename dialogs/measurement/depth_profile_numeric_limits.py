@@ -38,7 +38,7 @@ class NumericLimitsDialog(QtWidgets.QDialog):
     """Numeric limits dialog for the depth profile graph.
     """
 
-    def __init__(self, lim_a, lim_b):
+    def __init__(self, lim_a, lim_b, lim_min=-200, lim_max=2000):
         """Inits Depth profile numeric limits dialog.
         
         Args:
@@ -51,7 +51,11 @@ class NumericLimitsDialog(QtWidgets.QDialog):
         # Connect and show
         self.OKButton.clicked.connect(self.accept_limits)
         self.cancelButton.clicked.connect(self.close)
+        self.spinbox_limit_min.setRange(lim_min, lim_max)
+        self.spinbox_limit_min.setSingleStep(1.0)
         self.spinbox_limit_min.setValue(lim_a)
+        self.spinbox_limit_max.setRange(lim_min, lim_max)
+        self.spinbox_limit_max.setSingleStep(1.0)
         self.spinbox_limit_max.setValue(lim_b)
         self.limit_min = lim_a
         self.limit_max = lim_b

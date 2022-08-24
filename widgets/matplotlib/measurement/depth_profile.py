@@ -190,7 +190,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         """Show numeric limits dialog and update graph if new limits are set.
         """
         lim_a, lim_b = self._limit_lines.get_range()
-        limit_dialog = NumericLimitsDialog(lim_a, lim_b)
+        lim_min, lim_max = self.axes.get_xlim()
+        limit_dialog = NumericLimitsDialog(lim_a, lim_b, lim_min, lim_max)
 
         if not limit_dialog.exec_():
             return
