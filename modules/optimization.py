@@ -35,8 +35,8 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import rx
-from rx import operators as ops
+import reactivex
+from reactivex import operators as ops
 
 from . import file_paths as fp
 from . import general_functions as gf

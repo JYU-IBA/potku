@@ -32,7 +32,7 @@ import platform
 import subprocess
 import re
 import multiprocessing
-import rx
+import reactivex as rx
 
 from . import general_functions as gf
 from . import subprocess_utils as sutils
@@ -44,8 +44,8 @@ from typing import Callable
 from typing import Mapping
 from typing import Any
 from pathlib import Path
-from rx import operators as ops
-from rx.scheduler import ThreadPoolScheduler
+from reactivex import operators as ops
+from reactivex.scheduler import ThreadPoolScheduler
 
 from .layer import Layer
 from .concurrency import CancellationToken
@@ -160,7 +160,7 @@ class MCERD:
 
         process = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            cwd=gf.get_bin_dir(), universal_newlines=True)
+            cwd=gf.get_bin_dir() , universal_newlines=True)
 
         errs = rx.from_iterable(iter(process.stderr.readline, ""))
         outs = rx.from_iterable(iter(process.stdout.readline, ""))
@@ -177,18 +177,18 @@ class MCERD:
         pool_scheduler = ThreadPoolScheduler(thread_count)
 
         merged = rx.merge(errs, outs).pipe(
-            ops.subscribe_on(pool_scheduler),
-            MCERD.get_pipeline(
-                self._seed, self._rec_filename, print_output=print_output),
-            ops.combine_latest(rx.merge(
-                is_running, ct_check, timeout
-            )),
-            ops.starmap(lambda x, y: {
-                **x, **y,
-                MCERD.IS_RUNNING: x[MCERD.IS_RUNNING] and y[MCERD.IS_RUNNING]
-            }),
-            ops.take_while(lambda x: x[MCERD.IS_RUNNING], inclusive=True),
-        )
+             ops.subscribe_on(pool_scheduler),
+             MCERD.get_pipeline(
+                 self._seed, self._rec_filename, print_output=print_output),
+             ops.combine_latest(rx.merge(
+                 is_running, ct_check, timeout
+             )),
+             ops.starmap(lambda x, y: {
+                 **x, **y,
+                 MCERD.IS_RUNNING: x[MCERD.IS_RUNNING] and y[MCERD.IS_RUNNING]
+             }),
+             ops.take_while(lambda x: x[MCERD.IS_RUNNING], inclusive=True),
+         )
 
         # on_completed does not get called if the take_while condition is
         # inclusive so this is a quick fix to get the files deleted.
@@ -246,7 +246,7 @@ class MCERD:
             print_output: whether output is printed to console
         """
         # TODO add handling for fatal error messages
-        return rx.pipe(
+        return rx.compose(
             ops.map(lambda x: x.strip()),
             MCERD._conditional_printer(
                 print_output, f"simulation process with seed {seed}."),
@@ -420,9 +420,8 @@ class MCERD:
         sim_mode = self._settings['simulation_mode']
         scale_ion_count = self._settings['number_of_scaling_ions']
         ions_in_presim = self._settings['number_of_ions_in_presimu']
-
         return "\n".join([
-            f"Type of simulation: {self._settings['simulation_type']}",
+            f"Type of simulation: {self._settings['simulation_type'].name}",
             *beam.get_mcerd_params(),
             f"Target description file: {self.target_file}",
             f"Detector description file: {self.detector_file}",
@@ -434,7 +433,7 @@ class MCERD:
             f"Minimum main scattering angle: {min_main_scat_angle} deg",
             f"Minimum energy of ions: {min_ene_ions} MeV",
             f"Average number of recoils per primary ion: {rec_count}",
-            f"Recoil angle width (wide or narrow): {sim_mode}",
+            f"Recoil angle width (wide or narrow): {sim_mode.lower()}",
             f"Presimulation * result file: {self.presimulation_file}",
             f"Number of real ions per each scaling ion: {scale_ion_count}",
             f"Number of ions: {self._settings['number_of_ions']}",

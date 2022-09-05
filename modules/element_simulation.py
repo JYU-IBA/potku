@@ -40,8 +40,8 @@ from typing import Set
 from typing import Tuple
 from typing import Union
 
-import rx
-from rx import operators as ops
+import reactivex as rx
+from reactivex import operators as ops
 
 from . import file_paths as fp
 from . import general_functions as gf
@@ -627,7 +627,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         self._cts.add(ct)
 
-        # New MCERD process is started every five seconds until number of
+        # New MCERD process is started every second until number of
         # processes is reached or cancellation has been requested.
         # Seed is incremented for each new process.
         return rx.timer(0, start_interval).pipe(

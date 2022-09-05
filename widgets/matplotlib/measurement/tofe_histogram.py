@@ -229,7 +229,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
         self.axes.imshow(self.__2d_hist_im, norm = LogNorm(), cmap=self.color_scheme,
                          extent=(self.__x_data_min, self.__x_data_max, self.__y_data_min, self.__y_data_max),
-                         origin='bottom', interpolation='none', aspect='auto')
+                         origin='lower', interpolation='none', aspect='auto')
 
         self.__on_draw_legend()
 

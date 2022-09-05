@@ -48,7 +48,7 @@ class TestGUIReporter(unittest.TestCase):
         self.prg_bar.setValue.assert_called_with(10)
 
         self.reporter.report(15.5)
-        self.prg_bar.setValue.assert_called_with(15.5)
+        self.prg_bar.setValue.assert_called_with(15)
 
     def test_sub_reporting(self):
         sub_reporter = self.reporter.get_sub_reporter(lambda x: x / 2)

@@ -562,13 +562,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # on the x axis)
         self.span_selector = SpanSelector(
             self.axes, self.on_span_select, "horizontal", useblit=True,
-            rectprops=dict(alpha=0.5, facecolor="red"), button=1,
-            span_stays=True, onmove_callback=self.on_span_motion)
+            props=dict(alpha=0.5, facecolor="red"), button=1,
+            interactive=True, onmove_callback=self.on_span_motion)
         self.span_selector.set_active(False)
 
         self.rectangle_selector = RectangleSelector(
-            self.axes, self.on_rectangle_select, useblit=True, drawtype="box",
-            rectprops=dict(alpha=0.5, facecolor="red"), button=3)
+            self.axes, self.on_rectangle_select, useblit=True,
+            props=dict(alpha=0.5, facecolor="red"), button=3)
 
         # Connections and setup
         self.canvas.mpl_connect("button_press_event", self.on_click)

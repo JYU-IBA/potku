@@ -188,7 +188,7 @@ class GUIReporter(ProgressReporter):
         def __update_func(value):
             # Callback function that will be connected to the signal
             if progress_bar is not None:
-                progress_bar.setValue(value)
+                progress_bar.setValue(int(value))
 
         self.signaller = self.Signaller()
         ProgressReporter.__init__(self, self.signaller.sig.emit)
