@@ -446,6 +446,7 @@ class MCERD:
         """Returns the contents of the detector file as a string.
         """
         detector = self._settings["detector"]
+
         foils = "\n----------\n".join("\n".join(foil.get_mcerd_params())
                                       for foil in detector.foils)
 

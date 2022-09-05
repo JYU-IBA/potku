@@ -49,14 +49,15 @@ class GetEspe:
     """
     __slots__ = "recoil_file", "beam_ion", "energy", "theta", \
                 "channel_width", "fluence", "timeres", "density", \
-                "solid", "erd_file", "tangle", "toflen", "_output_parser"
+                "solid", "erd_file", "tangle", "toflen", "_output_parser", \
+                "eres", "dtype"
 
     def __init__(self, beam_ion: str, energy: float, theta: float,
                  tangle: float, toflen: float, solid: float,
                  recoil_file: Path, erd_file: Path,
                  reference_density: float = None,
                  ch: float = 0.025, fluence: float = 5.00e+11,
-                 timeres: float = 250.0):
+                 timeres: float = 250.0, eres: float = 25.0, dtype: str = "TOF"):
         """Initializes the GetEspe class.
         Args:
             beam_ion: mass number and the chemical symbol of the primary ion
@@ -81,6 +82,8 @@ class GetEspe:
         self.channel_width = ch
         self.fluence = fluence
         self.timeres = timeres
+        self.dtype = dtype
+        self.eres = eres
 
         if reference_density is None:
             self.density = GlobalSettings().get_default_reference_density()
@@ -119,6 +122,8 @@ class GetEspe:
             toflen=detector.calculate_tof_length(),
             solid=detector.calculate_solid(),
             tangle=target.target_theta,
+            dtype=detector.detector_type,
+            eres=detector.energyres,
             **kwargs)
         return get_espe.run(output_file=output_file, verbose=verbose)
 
@@ -219,18 +224,61 @@ class GetEspe:
         else:
             executable = "./get_espe"
 
-        return (
-            executable,
-            "-beam", self.beam_ion,
-            "-energy", str(self.energy),
-            "-theta", str(self.theta),
-            "-tangle", str(self.tangle),
-            "-timeres", str(self.timeres),
-            "-toflen", str(self.toflen),
-            "-solid", str(self.solid),
-            "-dose", str(self.fluence),
-            "-avemass",
-            "-density", str(self.density),
-            "-ch", str(self.channel_width),
-            "-dist", str(self.recoil_file),
-        )
+        if self.dtype == "TOF":
+            print("GET_ESPE: TOF")
+            print("-beam", self.beam_ion,
+                "-energy", str(self.energy),
+                "-theta", str(self.theta),
+                "-tangle", str(self.tangle),
+                "-timeres", str(self.timeres),
+                "-toflen", str(self.toflen),
+                "-solid", str(self.solid),
+                "-dose", str(self.fluence),
+                "-avemass",
+                "-density", str(self.density),
+                "-ch", str(self.channel_width),
+                "-dist", str(self.recoil_file),
+            )
+            return (
+                executable,
+                "-beam", self.beam_ion,
+                "-energy", str(self.energy),
+                "-theta", str(self.theta),
+                "-tangle", str(self.tangle),
+                "-timeres", str(self.timeres),
+                "-toflen", str(self.toflen),
+                "-solid", str(self.solid),
+                "-dose", str(self.fluence),
+                "-avemass",
+                "-density", str(self.density),
+                "-ch", str(self.channel_width),
+                "-dist", str(self.recoil_file),
+            )
+        if self.dtype == "Energy":
+            print("GET_ESPE: Energy")
+            print("-beam", self.beam_ion,
+                "-energy", str(self.energy),
+                "-theta", str(self.theta),
+                "-tangle", str(self.tangle),
+                "-eres", str(self.eres),
+                "-solid", str(self.solid),
+                "-dose", str(self.fluence),
+                "-avemass",
+                "-density", str(self.density),
+                "-ch", str(self.channel_width),
+                "-dist", str(self.recoil_file),
+            )
+            return (
+                executable,
+                "-beam", self.beam_ion,
+                "-energy", str(self.energy),
+                "-theta", str(self.theta),
+                "-tangle", str(self.tangle),
+                "-eres", str(self.eres),
+                "-solid", str(self.solid),
+                "-dose", str(self.fluence),
+                "-avemass",
+                "-density", str(self.density),
+                "-ch", str(self.channel_width),
+                "-dist", str(self.recoil_file),
+            )
