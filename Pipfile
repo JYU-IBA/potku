@@ -8,10 +8,11 @@ numpy = "*"
 scipy = "*"
 matplotlib = "==3.2.2"
 PyQt5 = "==5.14.2"
-Shapely = "*"
+Shapely = "==1.7.1"
 wheel = "*"
 rx = "*"
 Pillow = "*"
+hypothesis = "*"
 
 [dev-packages]
 pypiwin32 = {sys_platform = "== 'win32'"}

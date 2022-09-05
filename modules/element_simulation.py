@@ -833,8 +833,10 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             ch: Optional[float] = None,
             fluence: Optional[float] = None,
             optimization_type: Optional[OptimizationType] = None,
-            write_to_file: bool = True) -> Tuple[List, Optional[Path]]:
+            write_to_file: bool = True,
+            remove_recoil_file: bool = False) -> Tuple[List, Optional[Path]]:
         """Calculate the energy spectrum from the MCERD result file.
+
         Args:
             recoil_element: Recoil element.
             verbose: In terminal (disabled by default).
@@ -842,6 +844,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             fluence: Fluence to use.
             optimization_type: Either recoil, fluence or None
             write_to_file: Whether spectrum is written to file
+            remove_recoil_file: Whether to remove temporary .recoil file
+                after getting the energy spectrum.
+
         Return:
             tuple consisting of spectrum data and espe file
         """
@@ -893,6 +898,10 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             recoil_file=recoil_file,
             verbose=verbose
         )
+
+        if remove_recoil_file:
+            recoil_file.unlink()
+
         # TODO returning espe_file is a bit pointless if write_to_file is
         #   False
         return spectrum, output_file

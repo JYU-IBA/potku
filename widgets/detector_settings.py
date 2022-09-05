@@ -161,8 +161,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             1, "ToF offset[s]:", self.scientific_tof_offset)
 
         if platform.system() == "Darwin":
-            self.scientific_tof_offset.scientificLineEdit.setFixedWidth(170)
-            self.scientific_tof_slope.scientificLineEdit.setFixedWidth(170)
+            self.scientific_tof_offset.setFixedWidth(170)
+            self.scientific_tof_slope.setFixedWidth(170)
 
         # Save as and load
         self.saveButton.clicked.connect(self.__save_file)
