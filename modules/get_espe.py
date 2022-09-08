@@ -225,20 +225,6 @@ class GetEspe:
             executable = "./get_espe"
 
         if self.dtype == "TOF":
-            print("GET_ESPE: TOF")
-            print("-beam", self.beam_ion,
-                "-energy", str(self.energy),
-                "-theta", str(self.theta),
-                "-tangle", str(self.tangle),
-                "-timeres", str(self.timeres),
-                "-toflen", str(self.toflen),
-                "-solid", str(self.solid),
-                "-dose", str(self.fluence),
-                "-avemass",
-                "-density", str(self.density),
-                "-ch", str(self.channel_width),
-                "-dist", str(self.recoil_file),
-            )
             return (
                 executable,
                 "-beam", self.beam_ion,
@@ -255,19 +241,6 @@ class GetEspe:
                 "-dist", str(self.recoil_file),
             )
         if self.dtype == "Energy":
-            print("GET_ESPE: Energy")
-            print("-beam", self.beam_ion,
-                "-energy", str(self.energy),
-                "-theta", str(self.theta),
-                "-tangle", str(self.tangle),
-                "-eres", str(self.eres),
-                "-solid", str(self.solid),
-                "-dose", str(self.fluence),
-                "-avemass",
-                "-density", str(self.density),
-                "-ch", str(self.channel_width),
-                "-dist", str(self.recoil_file),
-            )
             return (
                 executable,
                 "-beam", self.beam_ion,
