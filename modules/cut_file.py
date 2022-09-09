@@ -162,7 +162,7 @@ class CutFile:
             name_with_number = measurement_name_with_prefix.name.split(
                 "Measurement_")[1]
             measurement_name = name_with_number.split('-', 1)[1]
-            if element is not "":
+            if element != "":
                 element = str(element)
             if self.type == "RBS":
                 suffix = f"RBS_{self.element_scatter}"
@@ -180,7 +180,7 @@ class CutFile:
             else:
                 file = self._find_available_cut_file_name(
                     measurement_name, element, suffix, element_count)
-            if self.element_scatter is not "":
+            if self.element_scatter != "":
                 element_scatter = str(self.element_scatter)
             else:
                 element_scatter = ""
