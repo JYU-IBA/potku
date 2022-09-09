@@ -155,9 +155,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 self.measurement.profile.channel_width
             self.pushButton_OK.clicked.connect(
                 lambda: self.__accept_params(
-                    spectra_changed=spectra_changed,
-                    simulated_sum_spectrum_is_selected=self.simulated_sum_spectrum_is_selected,
-                    measured_sum_spectrum_is_selected=self.measured_sum_spectrum_is_selected
+                    spectra_changed=spectra_changed
                 )
             )
 
