@@ -347,30 +347,22 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         if xmin == xmax:  # Do nothing if graph is clicked
             return
 
-        # Limit files_to_draw to only two
+        if self.simulated_sum_spectrum_is_selected or self.measured_sum_spectrum_is_selected:
+            self.__check_draw_lines()
+            return
 
-        if self.simulated_sum_spectrum_is_selected:
-            simulation_drawn_lines = self.__draw_line(
-                self.simulation_energy_files_to_draw)
-            if len(simulation_drawn_lines) != 2:
-                self.__check_draw_lines()
-        if self.measured_sum_spectrum_is_selected:
-            measurement_drawn_lines = self.__draw_line(
-                self.meausrement_energy_files_to_draw)
-            if len(measurement_drawn_lines) != 2:
-                self.__check_draw_lines()
+        self.files_to_draw = self.simulation_energy_files_to_draw|self.measurement_energy_files_to_draw
+
+        drawn_lines = self.__draw_line(self.files_to_draw)
+
+        if len(drawn_lines) != 2:
+            self.__check_draw_lines()
+            return
+
         low_x = round(xmin, 3)
         high_x = round(xmax, 3)
         self.lines_of_area = []
-
-        # Find the min and max of the files
-        if self.simulated_sum_spectrum_is_selected:
-            low_x, high_x = self.__find_max_and_min(simulation_drawn_lines,
-                                                    low_x, high_x)
-
-        if self.measured_sum_spectrum_is_selected:
-            low_x, high_x = self.__find_max_and_min(measurement_drawn_lines,
-                                                    low_x, high_x)
+        low_x, high_x = self.__find_max_and_min(drawn_lines, low_x, high_x)
 
         ylim = self.axes.get_ylim()
         try:
@@ -416,9 +408,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 lowest = first
             if not highest:
                 highest = last
-            if first < lowest:
+            if first > lowest:
                 lowest = first
-            if highest < last:
+            if highest > last:
                 highest = last
 
         # Check that limits are not beyond files' min and max points
@@ -521,24 +513,14 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                     self.measurement_energy
 
             if self.spectrum_type == SpectrumTab.SIMULATION:
-                if self.simulated_sum_spectrum_is_selected and len(
-                        self.simulation_energy) \
-                        > 0:
-                    self.plot_energy_files(self.simulation_energy_files_to_draw,
-                                           x_min)
-                    self.plot_simulated_sum_spectrum()
-                if self.measured_sum_spectrum_is_selected and len(
-                        self.measurement_energy) \
-                        > 0:
-                    self.plot_energy_files(
-                        self.measurement_energy_files_to_draw, x_min)
-                    self.plot_measured_sum_spectrum()
-                if not self.simulated_sum_spectrum_is_selected and \
-                        not self.measured_sum_spectrum_is_selected:
-                    self.plot_energy_files(self.simulation_energy_files_to_draw,
-                                           x_min)
-                    self.plot_energy_files(
-                        self.measurement_energy_files_to_draw, x_min)
+                if len(self.simulation_energy) > 0:
+                    self.plot_energy_files(self.simulation_energy_files_to_draw, x_min)
+                    if self.simulated_sum_spectrum_is_selected:
+                        self.plot_simulated_sum_spectrum()
+                if len(self.measurement_energy) > 0:
+                    self.plot_energy_files(self.measurement_energy_files_to_draw, x_min)
+                    if self.measured_sum_spectrum_is_selected:
+                        self.plot_measured_sum_spectrum()
 
             if self.spectrum_type == SpectrumTab.MEASUREMENT:
                 if self.measured_sum_spectrum_is_selected and len(
