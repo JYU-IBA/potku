@@ -70,7 +70,6 @@ class FoilDialog(QtWidgets.QDialog):
         self.dimension_edits = []
         self.first_dimension_edit = QtWidgets.QDoubleSpinBox()
         self.first_dimension_edit.setMinimum(0.01)
-        self.first_dimension_edit.setMaximumWidth(10000)
         self.first_dimension_edit.setMaximumWidth(70)
         self.locale = QLocale.c()
         self.first_dimension_edit.setLocale(self.locale)
@@ -121,7 +120,7 @@ class FoilDialog(QtWidgets.QDialog):
             self.dimension_label.setText("Size (mm):")
             self.second_dimension_edit = QtWidgets.QDoubleSpinBox()
             self.second_dimension_edit.setMinimum(0.01)
-            self.second_dimension_edit.setMaximumWidth(9999.99)
+            self.second_dimension_edit.setMaximumWidth(9999)
             self.dimension_edits.append(self.second_dimension_edit)
             self.dimensionLayout.addWidget(self.dimension_edits[1])
             self.first_dimension_edit.setValue(self.tmp_foil.size[0])
