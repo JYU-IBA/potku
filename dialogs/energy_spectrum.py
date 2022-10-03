@@ -464,6 +464,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
 
     def __remove_external_files(self):
+        for file in self.external_files:
+            os.remove(file)
         root = self.external_tree_widget.invisibleRootItem()
         for i in reversed(range(root.childCount())):
             if root.child(i).checkState(0) != 0:
