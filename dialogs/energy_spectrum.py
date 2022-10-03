@@ -172,6 +172,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 EnergySpectrumParamsDialog.checked_cuts[m_name]
 
             self.importPushButton.setVisible(False)
+            self.removePushButton.setVisible(False)
         else:
             EnergySpectrumParamsDialog.bin_width = \
                 self.element_simulation.channel_width
@@ -187,6 +188,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             self.pushButton_OK.clicked.connect(
                 self.__calculate_selected_spectra)
             self.importPushButton.clicked.connect(self.__import_external_file)
+            self.removePushButton.clicked.connect(self.__remove_external_files)
+
 
         self.used_bin_width = EnergySpectrumParamsDialog.bin_width
         # FIXME .eff files not shown in sim mode
@@ -458,6 +461,14 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         item.setData(0, QtCore.Qt.UserRole, new_file_name)
         item.setCheckState(0, QtCore.Qt.Checked)
         self.external_tree_widget.addTopLevelItem(item)
+
+
+    def __remove_external_files(self):
+        root = self.external_tree_widget.invisibleRootItem()
+        for i in reversed(range(root.childCount())):
+            if root.child(i).checkState(0) != 0:
+                root.removeChild(root.child(i))
+
 
     def __update_eff_files(self):
         """Update efficiency files to UI which are used.
