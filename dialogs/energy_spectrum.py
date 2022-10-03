@@ -464,6 +464,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
 
     def __remove_external_files(self):
+        """ Remove selected external file(s)
+        """
         for file in self.external_files:
             os.remove(file)
         root = self.external_tree_widget.invisibleRootItem()
