@@ -148,7 +148,8 @@ class Potku(QtWidgets.QMainWindow):
 
         self.menuImport.setEnabled(False)
 
-        # Show or hide left panel depending on the previous usage
+        # by default show left panel when opening application
+        gutils.set_potku_setting("left_panel_shown", True)
         df.set_up_side_panel(self, "left_panel_shown", "left")
 
         # Set up simulation connections within UI
