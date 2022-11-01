@@ -30,6 +30,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import os
+import time
 from pathlib import Path
 import modules.math_functions as mf
 import modules.general_functions as gf
@@ -97,7 +98,10 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
         self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
+        self.canvas.mpl_connect('pick_event', self._on_pick)
         self.__fork_toolbar_buttons()
+
+        self._lined = {}
 
         self.measurement = measurement
         self.__x_data = [x[0] for x in self.measurement.data]
@@ -357,6 +361,12 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         for handle in leg.legendHandles:
             handle.set_linewidth(3.0)
 
+        for origline, legline in zip(sel_points, leg.get_lines()):
+            self._lined[legline] = origline
+            legline.set_picker(True)
+            legline.set_pickradius(7)
+
+
         # Set the markers back to original.
         for sel in self.measurement.selector.selections:
             sel.points.set_marker(sel.LINE_MARKER)
@@ -501,8 +511,11 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 if self.measurement.selection_select(cursor_location) == 1:
                     # self.elementSelectDeleteButton.setChecked(True)
                     self.elementSelectDeleteButton.setEnabled(True)
-                    self.canvas.draw_idle()
-                    self.__on_draw_legend()
+                else:
+                    self.measurement.selector.reset_select()
+                    self.elementSelectDeleteButton.setEnabled(False)
+                self.canvas.draw_idle()
+                self.__on_draw_legend()
             # If selection is enabled:
             if self.elementSelectionButton.isChecked():
                 if self.measurement.add_point(cursor_location, self.canvas) \
@@ -882,4 +895,13 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.compression_x -= 1
         if (mode == 1 or mode == 2) and self.compression_y > 1:
             self.compression_y -= 1
+        self.on_draw()
+
+    def _on_pick(self,event):
+        for i, sel in enumerate(self.measurement.selector.selections):
+            if(sel.points == self._lined[event.artist]):
+                self.measurement.selector.reset_select()
+                self.measurement.selector.selected_id = i
+                self.measurement.selector.grey_out_except(i)
+                break
         self.on_draw()
