@@ -101,6 +101,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.canvas.mpl_connect('pick_event', self._on_pick)
         self.__fork_toolbar_buttons()
 
+        # maps legend lines with selections
         self._lined = {}
 
         self.measurement = measurement
