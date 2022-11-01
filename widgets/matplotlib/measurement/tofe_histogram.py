@@ -362,6 +362,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         for handle in leg.legendHandles:
             handle.set_linewidth(3.0)
 
+        # Map legend items with selections and enable picker
         for origline, legline in zip(sel_points, leg.get_lines()):
             self._lined[legline] = origline
             legline.set_picker(True)
@@ -898,7 +899,10 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.compression_y -= 1
         self.on_draw()
 
+
     def _on_pick(self,event):
+    """When legend item is picked select and highlight selection
+    """
         for i, sel in enumerate(self.measurement.selector.selections):
             if(sel.points == self._lined[event.artist]):
                 self.measurement.selector.reset_select()
