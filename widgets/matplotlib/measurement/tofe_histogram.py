@@ -51,6 +51,7 @@ from matplotlib.colors import LogNorm
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
+from PyQt5.QtGui import QGuiApplication
 
 from widgets.matplotlib.base import MatplotlibWidget
 from widgets.gui_utils import StatusBarHandler
@@ -103,6 +104,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
         # maps legend lines with selections
         self._lined = {}
+
+        self.clipboard = QGuiApplication.clipboard()
 
         self.measurement = measurement
         self.__x_data = [x[0] for x in self.measurement.data]
@@ -566,11 +569,19 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         action.triggered.connect(self.graph_settings_dialog)
         menu.addAction(action)
 
-        if self.measurement.selection_select(cursor_location,
-                                             highlight=False) == 1:
+        if self.measurement.selector.selected_id != None:
             action = QtWidgets.QAction(self.tr("Selection settings..."), self)
             action.triggered.connect(self.selection_settings_dialog)
             menu.addAction(action)
+            action = QtWidgets.QAction(self.tr("Copy selection"), self)
+            action.triggered.connect(self.copy_selection)
+            menu.addAction(action)
+
+        if self.clipboard.text().split(":")[0] == "Potku_selection":
+            action = QtWidgets.QAction(self.tr("Paste selection"), self)
+            action.triggered.connect(self.paste_selection)
+            menu.addAction(action)
+
 
         menu.addSeparator()
         action = QtWidgets.QAction(self.tr("Load selections..."), self)
@@ -901,12 +912,24 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
 
     def _on_pick(self,event):
-    """When legend item is picked select and highlight selection
-    """
+        """When legend item is picked select and highlight selection
+        """
         for i, sel in enumerate(self.measurement.selector.selections):
             if(sel.points == self._lined[event.artist]):
                 self.measurement.selector.reset_select()
                 self.measurement.selector.selected_id = i
                 self.measurement.selector.grey_out_except(i)
                 break
+        self.on_draw()
+
+    def copy_selection(self):
+        selection_id = self.measurement.selector.selected_id
+        selection = self.measurement.selector.selections[selection_id]
+        transposed = self.measurement.selector.is_transposed
+        self.clipboard.setText(f'Potku_selection:{selection.save_string(transposed)}')
+
+    def paste_selection(self):
+        string_data = self.clipboard.text().split(":")[1]
+        self.measurement.selector.selection_from_string(string_data)
+        self.__on_draw_legend()
         self.on_draw()
