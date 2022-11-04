@@ -914,13 +914,15 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     def _on_pick(self,event):
         """When legend item is picked select and highlight selection
         """
-        for i, sel in enumerate(self.measurement.selector.selections):
-            if(sel.points == self._lined[event.artist]):
-                self.measurement.selector.reset_select()
-                self.measurement.selector.selected_id = i
-                self.measurement.selector.grey_out_except(i)
-                break
-        self.on_draw()
+        if self.elementSelectionSelectButton.isChecked():
+            for i, sel in enumerate(self.measurement.selector.selections):
+                if(sel.points == self._lined[event.artist]):
+                    self.measurement.selector.reset_select()
+                    self.measurement.selector.selected_id = i
+                    self.measurement.selector.grey_out_except(i)
+                    break
+            self.canvas.draw_idle()
+            self.__on_draw_legend()
 
     def copy_selection(self):
         selection_id = self.measurement.selector.selected_id
