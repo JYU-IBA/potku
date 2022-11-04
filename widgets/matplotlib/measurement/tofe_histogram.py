@@ -931,5 +931,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     def paste_selection(self):
         string_data = self.clipboard.text().split(":")[1]
         self.measurement.selector.selection_from_string(string_data)
+        self.measurement.selector.auto_save()
         self.__on_draw_legend()
         self.on_draw()
