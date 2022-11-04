@@ -511,7 +511,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         #    for item in self.mpl_toolbar._positions:
         #        print("\t{0}".format(item))
         if event.button == 1:  # Left click
-            if self.elementSelectionSelectButton.isChecked():
+            if not self.elementSelectionButton.isChecked(): #self.elementSelectionSelectButton.isChecked():
                 self.click_check(cursor_location)
                 if self.measurement.selection_select(cursor_location) == 1:
                     # self.elementSelectDeleteButton.setChecked(True)
@@ -914,12 +914,13 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     def _on_pick(self,event):
         """When legend item is picked select and highlight selection
         """
-        if self.elementSelectionSelectButton.isChecked():
+        if not self.elementSelectionButton.isChecked(): #self.elementSelectionSelectButton.isChecked():
             for i, sel in enumerate(self.measurement.selector.selections):
                 if(sel.points == self._lined[event.artist]):
                     self.measurement.selector.reset_select()
                     self.measurement.selector.selected_id = i
                     self.measurement.selector.grey_out_except(i)
+                    self.elementSelectDeleteButton.setEnabled(True)
                     break
             self.canvas.draw_idle()
             self.__on_draw_legend()
