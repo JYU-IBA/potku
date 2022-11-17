@@ -59,6 +59,7 @@ from widgets.matplotlib import mpl_utils
 
 import numpy as np
 from PIL import Image
+from math import sqrt
 
 class MatplotlibHistogramWidget(MatplotlibWidget):
     """Matplotlib histogram widget, used to graph "bananas" (ToF-E).
@@ -98,12 +99,16 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
+        self.canvas.mpl_connect('button_release_event', self.on_release)
         self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
         self.canvas.mpl_connect('pick_event', self._on_pick)
         self.__fork_toolbar_buttons()
 
         # maps legend lines with selections
         self._lined = {}
+        self.__point_selected = None
+        self.__point_undo = None
+        self.__point_select_distance = 20 # Selection distance -TL
 
         self.clipboard = QGuiApplication.clipboard()
 
@@ -145,6 +150,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
         self.name_y_axis = "Energy (Ch)"
         self.name_x_axis = "time of flight (Ch)"
+
+        self.cur_points = None
+        self.cur_selection = None
 
         self.on_draw()
 
@@ -534,8 +542,16 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                     self.__emit_selections_changed()
                 self.canvas.draw_idle()  # Draw selection points
             if self.elementSelectionSelectButton.isChecked() and self.measurement.selector.selected_id:
-                selection_id = self.measurement.selector.selected_id
-                print(f"editing selection {selection_id}")
+                self.cur_selection = self.measurement.selector.get_selected()
+                self.cur_points = self.cur_selection.get_points()
+                if self.cur_points[0] != self.cur_points[-1]:
+                    self.cur_points.append(self.cur_points[0])
+                closest = None
+                for i in range(len(self.cur_points)):
+                    if (sqrt((event.xdata-self.cur_points[i][0])**2+(event.ydata-self.cur_points[i][1])**2) < self.__point_select_distance):
+                        self.__point_selected = i
+                        break
+
         if event.button == 3:  # Right click
             # Return if matplotlib tools are in use.
             if self.__button_drag.isChecked():
@@ -554,6 +570,11 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.__context_menu(event, cursor_location)
             self.canvas.draw_idle()
             self.__on_draw_legend()
+
+    def on_release(self, event):
+        if (event.button == 1) and (self.__point_selected != None):
+            self.__point_selected = None
+
 
     def __emit_selections_changed(self):
         """Emits a 'selectionsChanged' signal with the selections list as a
@@ -865,6 +886,23 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
+        if self.__point_selected != None:
+            #cur_selection = self.measurement.selector.get_selected()
+            #cur_points = cur_selection.get_points()
+            x,y = zip(*self.cur_points)
+            x, y = list(x), list(y)
+            for coords in zip(x,y):
+                print(coords)
+            for coords in self.cur_points:
+                print(coords)
+            x[self.__point_selected], y[self.__point_selected] = int(event.xdata), int(event.ydata)
+            if (self.__point_selected == 0):
+                x[-1] = x[0]
+                y[-1] = y[0]
+            self.cur_selection.points.set_data(x,y)
+            self.canvas.draw_idle()
+            return
+
         event.button = -1  # Fix for printing.
         if event.inaxes != self.axes:
             return
