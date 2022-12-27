@@ -106,6 +106,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         self.measured_sum_spectrum = SumEnergySpectrum()
         self.simulated_sum_spectrum = SumEnergySpectrum()
+        self.sum_spectra_directory = sum_spectra_directory
 
         if self.spectrum_type == SpectrumTab.SIMULATION:
             # Simulated sum spectrum in Simulation tab
@@ -219,6 +220,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         self.channel_width = channel_width
         self.on_draw()
+
+        self.save_spectrums()
 
     def closeEvent(self, evnt):
         """Disconnects the slot from the spectra_changed signal
@@ -850,6 +853,54 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.plots[self.measured_sum_spectrum.sum_spectrum_path]\
                 .set_data(data)
 
+    def save_spectrums(self):
+        """ Save plotted energy spectrums """
+        separator = ';'
+        default_value = 0.0
+        spectrums_file = self.sum_spectra_directory / "espectra.hist"
+        xs = set()
+        y_values = []
+        for spectrum in self.simulation_energy.values():
+            x,y = zip(*spectrum)
+            xs.update(set(x))
+        for spectrum in self.measurement_energy.values():
+            x,y = zip(*spectrum)
+            xs.update(set(x))
+
+        xs = list(xs)
+        xs = sorted(xs)
+
+        for spectrum in self.simulation_energy.values():
+            x,y = zip(*spectrum)
+            new_y = [y[x.index(all_x)] if (all_x in x) else default_value for all_x in xs]
+            y_values.append(new_y)
+
+        for spectrum in self.measurement_energy.values():
+            x,y = zip(*spectrum)
+            new_y = [y[x.index(all_x)] if (all_x in x) else default_value for all_x in xs]
+            y_values.append(new_y)
+
+        with open(spectrums_file, 'w') as file:
+            file.write("#Energy")
+            for title in self.simulation_energy.keys():
+                file.write(f"{separator}{title.stem}")
+            for title in self.measurement_energy.keys():
+                file.write(f"{separator}{title.stem}")
+            file.write("\n")
+
+            file.write("#MeV")
+            for _ in y_values:
+                file.write(f"{separator}Count")
+            file.write("\n")
+
+            for i,x in enumerate(xs):
+                file.write(f"{x}")
+                for y in y_values:
+                    if (y[i] != None):
+                        file.write(f"{separator}{y[i]}")
+                    else:
+                        file.write(f"{separator}")
+                file.write("\n")
 
 def get_axis_values(data):
     """Returns the x and y axis values from given data."""
