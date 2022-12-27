@@ -108,7 +108,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self._lined = {}
         self.__point_selected = None
         self.__point_undo = None
-        self.__point_select_distance = 20 # Selection distance -TL
+        self.__point_select_distance = 5 # Selection distance
 
         self.clipboard = QGuiApplication.clipboard()
 
@@ -153,6 +153,11 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
         self.cur_points = None
         self.cur_selection = None
+        self.cur_mid_points = None
+        self.mid_point_elems = None
+        self.end_point_elems = None
+
+        self.background = None
 
         self.on_draw()
 
@@ -240,7 +245,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.__2d_hist = np.histogram2d(y_data, x_data,
                                             bins = (bin_counts[1], bin_counts[0]))
 
-            self.__2d_hist_im = Image.fromarray(np.uint8(255*self.__2d_hist[0]/np.amax(self.__2d_hist[0])))
+            self.__2d_hist_im = Image.fromarray(self.__2d_hist[0].astype('uint16'))
             self.__2d_hist = None # Free memory
 
         self.axes.imshow(self.__2d_hist_im, norm = LogNorm(), cmap=self.color_scheme,
@@ -391,7 +396,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.mpl_toolbar.mode_tool = 0
             # self.elementSelectionButton.setChecked(False)
         # self.elementSelectUndoButton.setEnabled(False)
-        self.elementSelectionSelectButton.setChecked(False)
+        #self.elementSelectionSelectButton.setChecked(False)
         # self.measurement.purge_selection()
         # self.measurement.reset_select()
         self.canvas.draw_idle()
@@ -403,7 +408,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.mpl_toolbar.mode_tool = 0
             # self.elementSelectionButton.setChecked(False)
         # self.elementSelectUndoButton.setEnabled(False)
-        self.elementSelectionSelectButton.setChecked(False)
+        # self.elementSelectionSelectButton.setChecked(False)
         # self.measurement.purge_selection()
         # self.measurement.reset_select()
         self.canvas.draw_idle()
@@ -521,7 +526,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         #        print("\t{0}".format(item))
         if event.button == 1:  # Left click
             if not (self.elementSelectionButton.isChecked() or self.elementSelectionSelectButton.isChecked()):
-                self.click_check(cursor_location)
+                #self.click_check(cursor_location)
                 if self.measurement.selection_select(cursor_location) == 1:
                     # self.elementSelectDeleteButton.setChecked(True)
                     self.elementSelectDeleteButton.setEnabled(True)
@@ -542,15 +547,44 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                     self.__emit_selections_changed()
                 self.canvas.draw_idle()  # Draw selection points
             if self.elementSelectionSelectButton.isChecked() and self.measurement.selector.selected_id:
-                self.cur_selection = self.measurement.selector.get_selected()
-                self.cur_points = self.cur_selection.get_points()
-                if self.cur_points[0] != self.cur_points[-1]:
-                    self.cur_points.append(self.cur_points[0])
-                closest = None
+                # self.cur_selection = self.measurement.selector.get_selected()
+                # self.cur_points = self.cur_selection.get_points()
+                # if self.cur_points[0] != self.cur_points[-1]:
+                #     self.cur_points.append(self.cur_points[0])
+                # # calculates midpoints from points
+                # self.cur_mid_points = [[(x[0]+y[0])/2, (x[1]+y[1])/2] for x, y in list(zip(self.cur_points, self.cur_points[1:]))]
+                # sc_x, sc_y = list(zip(*self.cur_mid_points))
+                # self.mid_point_elems = self.axes.plot(sc_x, sc_y, 's', color='blue')
+                # closest = None
+
                 for i in range(len(self.cur_points)):
-                    if (sqrt((event.xdata-self.cur_points[i][0])**2+(event.ydata-self.cur_points[i][1])**2) < self.__point_select_distance):
+                    xdisplay, ydisplay = self.axes.transData.transform(self.cur_points[i])
+                    if (sqrt((event.x - xdisplay) ** 2 +
+                             (event.y - ydisplay) ** 2) < self.__point_select_distance):
                         self.__point_selected = i
+                        self.background = self.canvas.copy_from_bbox(self.axes.bbox)
                         break
+                for i in range(len(self.cur_mid_points)):
+                    xdisplay, ydisplay = self.axes.transData.transform(self.cur_mid_points[i])
+                    if (sqrt((event.x - xdisplay) ** 2 +
+                             (event.y - ydisplay) ** 2) < self.__point_select_distance):
+                        self.cur_points.insert(i+1, self.cur_mid_points[i])
+                        self.cur_selection.points.set_data(zip(*self.cur_points))
+                        self.end_point_elems.set_data(zip(*self.cur_points))
+                        self.cur_mid_points = [[(x[0] + y[0]) / 2, (x[1] + y[1]) / 2] for x, y in
+                                               list(zip(self.cur_points, self.cur_points[1:]))]
+                        sc_x, sc_y = list(zip(*self.cur_mid_points))
+                        self.mid_point_elems.set_data(sc_x, sc_y)
+                        break
+            else:
+                if self.mid_point_elems:
+                    self.mid_point_elems.remove()
+                    self.mid_point_elems = None
+                    self.cur_mid_points = None
+                    self.end_point_elems.remove()
+                    self.end_point_elems = None
+            self.canvas.draw_idle()
+
 
         if event.button == 3:  # Right click
             # Return if matplotlib tools are in use.
@@ -567,6 +601,33 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                     self.__on_draw_legend()
                     self.__emit_selections_changed()
                 return  # We don't want menu to be shown also
+
+            if self.elementSelectionSelectButton.isChecked() and self.measurement.selector.selected_id:
+                self.cur_points = self.cur_selection.get_points()
+                if self.cur_points[0] != self.cur_points[-1]:
+                    self.cur_points.append(self.cur_points[0])
+                self.__point_selected = None
+                for i in range(len(self.cur_points)):
+                    xdisplay, ydisplay = self.axes.transData.transform(self.cur_points[i])
+                    if (sqrt((event.x - xdisplay) ** 2 +
+                             (event.y - ydisplay) ** 2) < self.__point_select_distance):
+                        self.__point_selected = i
+                        break
+                if (self.__point_selected != None):
+                    if len(self.cur_points) > 4:
+                        del self.cur_points[i]
+                        self.cur_points[-1] = self.cur_points[0]
+
+                    self.cur_selection.points.set_data(zip(*self.cur_points))
+                    self.cur_mid_points = [[(x[0]+y[0])/2, (x[1]+y[1])/2] for x, y in list(zip(self.cur_points, self.cur_points[1:]))]
+                    sc_x, sc_y = list(zip(*self.cur_mid_points))
+                    self.mid_point_elems.set_data(sc_x, sc_y)
+                    self.end_point_elems.set_data(list(zip(*self.cur_points)))
+
+                    self.canvas.draw_idle()
+                    self.__on_draw_legend()
+                    return
+
             self.__context_menu(event, cursor_location)
             self.canvas.draw_idle()
             self.__on_draw_legend()
@@ -706,11 +767,31 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
             self.__tool_label.setText(str_tool)
             self.mpl_toolbar.mode = str_tool
+            if self.measurement.selector.selected_id:
+                self.cur_selection = self.measurement.selector.get_selected()
+                self.cur_points = self.cur_selection.get_points()
+                if self.cur_points[0] != self.cur_points[-1]:
+                    self.cur_points.append(self.cur_points[0])
+                # calculates midpoints from points
+                self.cur_mid_points = [[(x[0] + y[0]) / 2, (x[1] + y[1]) / 2] for x, y in
+                                       list(zip(self.cur_points, self.cur_points[1:]))]
+                sc_x, sc_y = list(zip(*self.cur_mid_points))
+                self.mid_point_elems, = self.axes.plot(sc_x, sc_y, 's', color='blue', alpha=0.5)
+                x,y = list(zip(*self.cur_points))
+                self.end_point_elems, = self.axes.plot(x, y, marker = '$\\bigodot$', color='red', markersize = 10, alpha=0.5)
         else:
             self.elementSelectDeleteButton.setEnabled(False)
+            self.elementSelectionButton.setEnabled(True)
+            self.elementSelectionSelectButton.setEnabled(False)
+            self.measurement.selector.auto_save()
             self.__tool_label.setText("")
             self.mpl_toolbar.mode_tool = 0
             self.mpl_toolbar.mode = ""
+            if self.mid_point_elems:
+                self.mid_point_elems.remove()
+                self.end_point_elems.remove()
+            self.mid_point_elems = None
+            self.end_point_elems = None
             self.measurement.reset_select()
             self.__on_draw_legend()
             self.canvas.draw_idle()
@@ -886,7 +967,12 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
-        if self.__point_selected != None:
+        if event.inaxes != self.axes:
+            return
+        if event.xdata is None and event.ydata is None:
+            return
+
+        if (self.__point_selected != None) and (event.button == 1):
             #cur_selection = self.measurement.selector.get_selected()
             #cur_points = cur_selection.get_points()
             x,y = zip(*self.cur_points)
@@ -900,14 +986,16 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 x[-1] = x[0]
                 y[-1] = y[0]
             self.cur_selection.points.set_data(x,y)
-            self.canvas.draw_idle()
+            self.cur_points = list(zip(x,y))
+            self.cur_mid_points = [[(x[0] + y[0]) / 2, (x[1] + y[1]) / 2] for x, y in
+                                   list(zip(self.cur_points, self.cur_points[1:]))]
+            sc_x, sc_y = list(zip(*self.cur_mid_points))
+            self.mid_point_elems.set_data(sc_x, sc_y)
+            self.end_point_elems.set_data(x,y)
+            self.canvas.draw()
             return
 
         event.button = -1  # Fix for printing.
-        if event.inaxes != self.axes:
-            return
-        if event.xdata is None and event.ydata is None:
-            return
 
         in_selection = False
         points = 0
