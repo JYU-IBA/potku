@@ -968,7 +968,7 @@ class Selection:
             if p1y != p2y:
                 for i in range(math.ceil(min(p1y, p2y)), math.floor(max(p1y, p2y))):
                     xinters = (i - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
-                    if x_list[i] == [9999]:
+                    if x_list[i] == [9999999]:
                         x_list[i] = [xinters]
                     else:
                         x_list[i].append(xinters)
@@ -978,10 +978,10 @@ class Selection:
                 x_list[i].sort(reverse=True)
                 x_max_list[i] = x_list[i][0]
             if x_list[i] == []:
-                x_list[i] = [9999]
+                x_list[i] = [99999999]
         return x_list, x_max_list
 
-    def fast_points_inside(self, points):
+    def fast_points_inside(self, points): #Check speed python list vs numpy array -TL
         """
         Faster algorithm testing which points are inside selection
         Relies on data points being integers.
