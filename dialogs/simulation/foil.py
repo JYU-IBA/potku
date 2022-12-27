@@ -70,7 +70,7 @@ class FoilDialog(QtWidgets.QDialog):
         self.dimension_edits = []
         self.first_dimension_edit = QtWidgets.QDoubleSpinBox()
         self.first_dimension_edit.setMinimum(0.01)
-        self.first_dimension_edit.setMaximumWidth(9999.99)
+        self.first_dimension_edit.setMaximumWidth(10000)
         self.first_dimension_edit.setMaximumWidth(70)
         self.locale = QLocale.c()
         self.first_dimension_edit.setLocale(self.locale)
