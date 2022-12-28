@@ -431,7 +431,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         QtWidgets.QMessageBox.information(
             self, "Notice",
             "The external file needs to have the following format:\n\n"
-            "energy count\nenergy count\nenergy count\n...\n\n"
+            "energy[MeV] count[yield]\nenergy[MeV] count[yield]\nenergy[MeV] count[yield]\n...\n\n"
             "to match the simulation and measurement energy spectra files.",
             QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
         file_path = fdialogs.open_file_dialog(
