@@ -1094,7 +1094,7 @@ class IgnoreMeasurementElements:
             else:
                 color = self.selection_colors[color_string]
 
-            if len(key) == 3:
+            if True: #len(key) == 3: # TODO: printing splits properly
                 label = r"$^{" + str(isotope) + "}$" + element + rbs_string
             else:
                 label = r"$^{" + str(isotope) + "}$" + element \
