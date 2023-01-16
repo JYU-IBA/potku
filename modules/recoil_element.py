@@ -50,13 +50,15 @@ from .parsing import CSVParser
 from modules.global_settings import GlobalSettings
 from .profile import REFERENCE_DENSITY
 
+from .enums import SimulationType
+
 
 class RecoilElement(MCERDParameterContainer, Serializable):
     """An element that has a list of points and a widget. The points are kept
     in ascending order by their x coordinate.
     """
     def __init__(self, element: Element, points: List[Point], color="red",
-                 name="Default", rec_type="rec",
+                 name="Default", rec_type=SimulationType.ERD,
                  description="These are default recoil settings.",
                  reference_density=REFERENCE_DENSITY, modification_time=None,
                  channel_width=None):
@@ -121,10 +123,18 @@ class RecoilElement(MCERDParameterContainer, Serializable):
 
         return self.element < other.element
 
+    def get_full_name_without_simtype(self):
+        """Returns the prefixed name of the RecoilElement.
+        """
+        return f"{self.prefix}-{self.name}"
+
     def get_full_name(self):
         """Returns the prefixed name of the RecoilElement.
         """
         return f"{self.prefix}-{self.name}"
+
+    def get_name(self):
+        return self.name
 
     def delete_widgets(self):
         """Delete all widgets.
@@ -475,7 +485,7 @@ class RecoilElement(MCERDParameterContainer, Serializable):
             "modification_time": time.strftime("%c %z %Z", time.localtime(
                 timestamp)),
             "modification_time_unix": timestamp,
-            "simulation_type": self.type,
+            "simulation_type": str(self.type).lower(),
             "element":  self.element.get_prefix(),
             "reference_density": self.reference_density,
             "multiplier": 1,
@@ -492,7 +502,7 @@ class RecoilElement(MCERDParameterContainer, Serializable):
             json.dump(obj, file, indent=4)
 
     @classmethod
-    def from_file(cls, file_path: Path, channel_width=None, rec_type="rec") \
+    def from_file(cls, file_path: Path, channel_width=None, rec_type=SimulationType.ERD) \
             -> "RecoilElement":
         """Returns a RecoilElement from a json file.
 
@@ -516,7 +526,8 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         # is of the old format
         reco["reference_density"] *= reco.pop("multiplier")
         # TODO do something with simulation_type
-        reco.pop("simulation_type")
+        rtype = SimulationType.fromStr(reco.pop('simulation_type'))
+        print(f"simulation_type pop: {rtype}")
 
         # Profile is a list of dicts where each dict is in the form of
         # { 'Point': 'x y' }. itertools.chain produces a flattened list of
@@ -533,7 +544,7 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         )
 
         return cls(element, list(points), channel_width=channel_width,
-                   rec_type=rec_type, **reco)
+                   rec_type=rtype, **reco)
 
     def get_mcerd_params(self):
         """Returns the parameters used in MCERD calculations as a list of
@@ -587,3 +598,46 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         area_points = list(mf.get_continuous_range(
             *self.get_xs_and_ys(), a=start, b=end))
         return mf.calculate_area(area_points)
+
+    def get_simulation_type(self):
+        return SimulationType.fromStr(self.type)
+
+    def get_json_content(self):
+        """
+        Return recoil settings as dictionary.
+        """
+        timestamp = time.time()
+        obj = {
+            "name": self.name,
+            "description": self.description,
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
+                timestamp)),
+            "modification_time_unix": timestamp,
+            "simulation_type": str(self.type).lower(),
+            "element":  self.element.get_json_content(),
+            "reference_density": self.reference_density,
+            "profile": [
+                {
+                    "Point": str(point)
+                }
+                for point in self.get_points()
+            ],
+            "color": self.color
+        }
+        return obj
+
+    @classmethod
+    def from_json(cls, reco, channel_width=None):
+        print(f'recoilelement.from_json\n{reco}\nChannel: {channel_width}')
+        element = Element.from_json(reco.pop("element"))
+        reco["modification_time"] = reco.pop("modification_time_unix")
+        rtype = SimulationType.fromStr(reco.pop('simulation_type'))
+        profile = reco.pop("profile")
+        p_iter = itertools.chain.from_iterable(p.values() for p in profile)
+        parser = CSVParser((0, float), (1, float))
+        points = (
+            Point(xy)
+            for xy in parser.parse_strs(p_iter, method="row")
+        )
+        return cls(element, list(points), channel_width=channel_width,
+                   rec_type=rtype, **reco)
