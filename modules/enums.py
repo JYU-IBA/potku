@@ -154,7 +154,7 @@ class SimulationType(str, Enum):
 
     @classmethod
     def fromStr(cls, inputStr: str) -> "SimulationType":
-    """Reads different types of simulation type and return SimulationType"""
+        """Reads different types of simulation type and return SimulationType"""
         if inputStr.upper() in {"ERD", "REC", "RECOIL"}:
             return cls.ERD
         if inputStr.upper() in {"RBS", "SCT", "SCATTER"}:
