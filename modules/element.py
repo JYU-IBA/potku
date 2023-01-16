@@ -41,7 +41,7 @@ class Element(MCERDParameterContainer):
     """
     Element class that handles information about one element.
     """
-    def __init__(self, symbol, isotope=None, amount=0.0):
+    def __init__(self, symbol, isotope=None, amount=0.0, RRectype=None):
         """Initializes an element object.
         Args:
               symbol: Two letter symbol of the element. E.g. 'He' for Helium.
@@ -49,10 +49,13 @@ class Element(MCERDParameterContainer):
                        then this parameter is not required.
               amount:  This is an optional parameter. It is used to describe
                        the amount of the element in a single layer of a target.
+              RRectype: Used for passing simulation type from add_with_dialog window
         """
         self.symbol = symbol
         self.isotope = isotope
         self.amount = amount
+        self.RRectype = RRectype
+        print(f'init:RRectype = {self.RRectype}, symbol: {self.symbol}')
 
     @classmethod
     def from_string(cls, element_str):
@@ -255,3 +258,21 @@ class Element(MCERDParameterContainer):
                 symbol, filter_unlikely=True, sort_by_abundance=True))
 
         return isotopes
+
+    def get_simulation_type(self):
+        return self.RRectype
+
+    def get_json_content(self):
+        obj = {
+        "symbol": self.symbol,
+        "isotope": self.isotope,
+        "amount": self.amount
+        }
+        return obj
+
+    @classmethod
+    def from_json(cls, data):
+        symbol = data["symbol"]
+        isotope = data["isotope"]
+        amount = data["amount"]
+        return cls(symbol, isotope, amount)
