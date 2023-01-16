@@ -35,6 +35,8 @@ import modules.masses as masses
 import widgets.input_validation as iv
 import widgets.gui_utils as gutils
 import dialogs.dialog_functions as df
+from modules.enums import SimulationType
+
 
 from dialogs.element_selection import ElementSelectionDialog
 
@@ -64,6 +66,7 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         self.color = None
         self.tmp_element = None
         self.colormap = self.recoil_atom_distribution.colormap
+        self.simType = None
 
         # Setup connections
         self.element_button.clicked.connect(self.__change_element)
@@ -76,6 +79,8 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         self.isotopeInfoLabel.setVisible(False)
 
         self.isOk = False
+
+        gutils.fill_combobox(self.simulation_type, SimulationType)
 
         self.setMinimumWidth(350)
 
@@ -197,6 +202,6 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         if self.isotope_radio.isChecked():
             elem = self.isotope_combobox.currentData()["element"]
             self.isotope = elem.isotope
-
+        self.simType = SimulationType.fromStr(self.simulation_type.currentText())
         self.isOk = True
         self.close()
