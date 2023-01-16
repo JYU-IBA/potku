@@ -695,6 +695,7 @@ class Potku(QtWidgets.QMainWindow):
 
         if progress is not None:
             progress.report(100)
+    pass
 
     def make_new_request(self):
         """Opens a dialog for creating a new request.
@@ -1120,6 +1121,13 @@ class Potku(QtWidgets.QMainWindow):
             return measurement
 
         if tab_type == "simulation":
+            filepath_json = filepath.with_suffix(".mccfg")
+            print(f'Simulation file: {filepath}')
+            print(f'Alternative Simulation file: {filepath_json}')
+            if filepath_json.is_file():
+                print(f'Alternative exists!')
+                simulation_json = self.request.samples.simulations.add_simulation_json(
+                    sample, filepath_json, self.tab_id)
             simulation = self.request.samples.simulations.add_simulation_file(
                 sample, filepath, self.tab_id)
 
