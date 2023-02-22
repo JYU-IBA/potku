@@ -177,7 +177,8 @@ class Simulations:
                 self.request.log_error(log)
         if simulation is not None:
             sample.simulations.simulations[tab_id] = simulation
-        self.sim_config.read_simulation(simulation)
+        self.sim_config.set_simulation(simulation)
+        self.sim_config.read_simulation()
         self.sim_config.save()
         return simulation
 
@@ -231,6 +232,8 @@ class Simulations:
         with simulation_json.open("r") as file:
             simu_obj = json.load(file)
 
+        self.sim_config.set_config_file(simulation_json)
+
         # Create simulation from file
         if simulation_json:
             (target_file, mesu_file,
@@ -265,6 +268,8 @@ class Simulations:
                 element_str_with_name = mcsimu['name']
 
                 prefix, name = element_str_with_name.split("-")
+
+                print(f"{prefix}, {name}")
 
                 profile_file = next(
                     p for p in profile_files if p.name.startswith(prefix)
@@ -305,6 +310,7 @@ class Simulations:
             sample.simulations.simulations[tab_id] = simulation
         #self.sim_config.read_simulation(simulation)
         #self.sim_config.save()
+        self.sim_config.set_simulation(simulation)
         return simulation
 
 
@@ -581,56 +587,59 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             simulation_file: path to a .simulation file
             measurement_file: path to a .measurement_file
         """
-        if simulation_file is None:
-            simulation_file = self.path
 
-        time_stamp = time.time()
-        obj = {
-            "name": self.name,
-            "description": self.description,
-            "modification_time": time.strftime("%c %z %Z", time.localtime(
-                time_stamp)),
-            "modification_time_unix": time_stamp,
-            "use_request_settings": self.use_request_settings
-        }
-        with simulation_file.open("w") as file:
-            json.dump(obj, file, indent=4)
+        print(f"Save simulation {simulation_file}")
 
-        if not self.use_request_settings:
-            # Save measurement settings parameters.
-            if measurement_file is None:
-                measurement_file = self.get_measurement_file()
-
-            general_obj = {
-                "name": self.measurement_setting_file_name,
-                "description":
-                    self.measurement_setting_file_description,
-                "modification_time":
-                    time.strftime("%c %z %Z", time.localtime(time_stamp)),
-                "modification_time_unix": time_stamp,
-            }
-
-            if measurement_file.exists():
-                with measurement_file.open("r") as mesu:
-                    obj = json.load(mesu)
-                obj["general"] = general_obj
-            else:
-                obj = {
-                    "general": general_obj
-                }
-
-            # Write measurement settings to file
-            with measurement_file.open("w") as file:
-                json.dump(obj, file, indent=4)
-
-            # Save Run object to file
-            self.run.to_file(measurement_file)
-            # Save Detector object to file
-            self.detector.to_file(self.detector.path)
-
-            # Save Target object to file
-            target_file = Path(self.directory, f"{self.target.name}.target")
-            self.target.to_file(target_file)
+        # if simulation_file is None:
+        #     simulation_file = self.path
+        #
+        # time_stamp = time.time()
+        # obj = {
+        #     "name": self.name,
+        #     "description": self.description,
+        #     "modification_time": time.strftime("%c %z %Z", time.localtime(
+        #         time_stamp)),
+        #     "modification_time_unix": time_stamp,
+        #     "use_request_settings": self.use_request_settings
+        # }
+        # with simulation_file.open("w") as file:
+        #     json.dump(obj, file, indent=4)
+        #
+        # if not self.use_request_settings:
+        #     # Save measurement settings parameters.
+        #     if measurement_file is None:
+        #         measurement_file = self.get_measurement_file()
+        #
+        #     general_obj = {
+        #         "name": self.measurement_setting_file_name,
+        #         "description":
+        #             self.measurement_setting_file_description,
+        #         "modification_time":
+        #             time.strftime("%c %z %Z", time.localtime(time_stamp)),
+        #         "modification_time_unix": time_stamp,
+        #     }
+        #
+        #     if measurement_file.exists():
+        #         with measurement_file.open("r") as mesu:
+        #             obj = json.load(mesu)
+        #         obj["general"] = general_obj
+        #     else:
+        #         obj = {
+        #             "general": general_obj
+        #         }
+        #
+        #     # Write measurement settings to file
+        #     with measurement_file.open("w") as file:
+        #         json.dump(obj, file, indent=4)
+        #
+        #     # Save Run object to file
+        #     self.run.to_file(measurement_file)
+        #     # Save Detector object to file
+        #     self.detector.to_file(self.detector.path)
+        #
+        #     # Save Target object to file
+        #     target_file = Path(self.directory, f"{self.target.name}.target")
+        #     self.target.to_file(target_file)
 
     def update_directory_references(self, new_dir: Path):
         """Update simulation's directory references.
@@ -761,8 +770,55 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             general = {}
 
         print(f'add simulations: \n{json.dumps(simu_obj, indent=4)}')
-
+        #not saving on creation -TL
         return cls(
             simulation_json_file, request, detector=detector, target=target, run=run,
-            sample=sample, **simu_obj, save_on_creation=save_on_creation,
+            sample=sample, **simu_obj, save_on_creation=False,
+            enable_logging=enable_logging, **general)
+
+    @classmethod
+    def from_manager(cls, request: "Request", simulation_json_file, simu_obj,
+                  measurement_file: Optional[Path] = None,
+                  detector=None, target=None, run=None, sample=None,
+                  save_on_creation=True, enable_logging=True) -> "Simulation":
+        """Initialize Simulation from a JSON.
+
+        Args:
+            request: Request which the Simulation belongs to.
+            simu_ocj: simulation json
+            measurement_file: path to .measurement file
+            detector: Detector used by this simulation
+            target: Target used by this simulation
+            run: Run used by this simulation
+            sample: Sample under which this simulation belongs to
+            save_on_creation: whether Simulation object is saved to file
+                after initialization
+            enable_logging: whether logging is enabled
+        """
+
+        # Overwrite the human readable time stamp with unix time stamp, as
+        # that is what the Simulation object uses internally
+        simu_obj["modification_time"] = simu_obj.pop("modification_time_unix")
+
+        if measurement_file is not None:
+            run = Run.from_file(measurement_file)
+            with measurement_file.open("r") as mesu_f:
+                mesu_settings = json.load(mesu_f)
+
+            try:
+                general = {
+                    "measurement_setting_file_name": mesu_settings["name"],
+                    "measurement_setting_file_description": mesu_settings[
+                        "description"]
+                }
+            except KeyError:
+                general = {}
+        else:
+            general = {}
+
+        print(f'add simulations: \n{json.dumps(simu_obj, indent=4)}')
+        # not saving on creation -TL
+        return cls(
+            simulation_json_file, request, detector=detector, target=target, run=run,
+            sample=sample, **simu_obj, save_on_creation=False,
             enable_logging=enable_logging, **general)
