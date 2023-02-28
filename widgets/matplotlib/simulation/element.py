@@ -99,8 +99,6 @@ class ElementWidget(QtWidgets.QWidget):
         if element.RRectype == None:
             #element.RRectype = str(element_simulation.simulation_type)
             element.RRectype = str(self.recoil_element.get_simulation_type())
-        print(f'element type: {element.RRectype}')
-        print(f'element simulation type: {element_simulation.simulation_type}')
         if str(element.RRectype) == "SCT" or element_simulation.simulation_type == "RBS":
             button_text = button_text + "*"
 

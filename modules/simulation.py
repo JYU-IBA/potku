@@ -65,7 +65,6 @@ class Simulations:
         self.request = request
         self.simulations = {}
         self.sim_config = ConfigManager()
-        print(f'simulations init: {self.sim_config.get_config()}')
 
     def is_empty(self) -> bool:
         """Check if there are any simulations.
@@ -203,15 +202,6 @@ class Simulations:
 
         self.simulations = remove_key(self.simulations, tab_id)
 
-    # def add_simulations_json(self):
-    #     print("Add_simulation_json:")
-    #     for simulation in self.sim_config.get_node(["element_simulations"]):
-    #         print(f'\t{simulation["name"]}, {simulation["simulation_type"]}')
-    #         for recoil in simulation["recoils"]:
-    #             print(f'\t\trecoil: {recoil["name"]}')
-    #             print(f'\t\t\telement: {recoil["element"]["symbol"]}')
-    #     pass
-
     def add_simulation_json(self, sample: "Sample", simulation_json,
                             tab_id: int) -> Optional["Simulation"]:
         """Add a new file to simulations.
@@ -268,8 +258,6 @@ class Simulations:
                 element_str_with_name = mcsimu['name']
 
                 prefix, name = element_str_with_name.split("-")
-
-                print(f"{prefix}, {name}")
 
                 profile_file = next(
                     p for p in profile_files if p.name.startswith(prefix)
@@ -570,8 +558,6 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
         else:
             general = {}
 
-        print(f'add simulations: \n{json.dumps(simu_obj, indent=4)}')
-
         return cls(
             simulation_file, request, detector=detector, target=target, run=run,
             sample=sample, **simu_obj, save_on_creation=save_on_creation,
@@ -587,8 +573,6 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             simulation_file: path to a .simulation file
             measurement_file: path to a .measurement_file
         """
-
-        print(f"Save simulation {simulation_file}")
 
         # if simulation_file is None:
         #     simulation_file = self.path
@@ -726,7 +710,6 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
                                 for simulation in self.element_simulations
             ],
         }
-        #print(json.dumps(obj, indent=4))
         return obj
 
     @classmethod
@@ -769,7 +752,6 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
         else:
             general = {}
 
-        print(f'add simulations: \n{json.dumps(simu_obj, indent=4)}')
         #not saving on creation -TL
         return cls(
             simulation_json_file, request, detector=detector, target=target, run=run,
@@ -816,7 +798,6 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
         else:
             general = {}
 
-        print(f'add simulations: \n{json.dumps(simu_obj, indent=4)}')
         # not saving on creation -TL
         return cls(
             simulation_json_file, request, detector=detector, target=target, run=run,

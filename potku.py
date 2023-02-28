@@ -1123,12 +1123,9 @@ class Potku(QtWidgets.QMainWindow):
 
         if tab_type == "simulation":
             filepath_json = filepath.with_suffix(".mccfg")
-            print(f'Simulation file: {filepath}')
-            print(f'Alternative Simulation file: {filepath_json}')
             config_manager = ConfigManager()
             config_manager.set_config_file(filepath_json)
             if filepath_json.is_file():
-                print(f'Alternative exists!') #simulation json -TL
                 simulation = self.request.samples.simulations.add_simulation_json(
                     sample, filepath_json, self.tab_id)
             else:

@@ -36,7 +36,6 @@ class ConfigManager:
 
     def __init__(self):
         if ConfigManager.config_data == None:
-            print("ConfigManager init: load config")
             ConfigManager.config_data = {}
             ConfigManager.config_file = None
 
@@ -60,7 +59,6 @@ class ConfigManager:
         ConfigManager.simulation = simulation
 
     def get_node(self, path):
-        print(f'get_node: {path}')
         node_path = ConfigManager.config_data
         if path == None:
             return ConfigManager.config_data
@@ -72,12 +70,9 @@ class ConfigManager:
 
     def save(self):
         self.update_simulation()
-        print("Saving configuration:")
 
-        #print(json.dumps(ConfigManager.config_data, indent=4))
 
         config_file = ConfigManager.config_file
-        #config_file = None
         if config_file != None:
             try:
                 with open(config_file, "w") as cfgfile:
@@ -85,24 +80,16 @@ class ConfigManager:
             except (json.JSONDecodeError, OSError, KeyError, AttributeError) as e:
                 msg = f"Failed to write data to configuration file " \
                       f"file {config_file}: {e}."
-            print("Success!")
 
     def add_to_array(self, path, item):
-        print(f'Add to array: {path}:{item}')
-        print(f'node: {self.get_node(path)}')
         self.get_node(path).append(item)
 
     def add_element(self, path, key, item):
-        print(f'Add element ({key}:{element} to {path}')
         ConfigManager.config_data[self.get_node(path)][key]=item
 
     def read_simulation(self):
         ConfigManager.config_data=ConfigManager.simulation.get_json_content()
-        print(f"Read_simulation")
-        print(json.dumps(ConfigManager.config_data, indent=4))
 
     def update_simulation(self):
         ConfigManager.config_data=ConfigManager.simulation.get_json_content()
-        print(f"update_simulation")
-        #print(json.dumps(ConfigManager.config_data, indent=4))
 

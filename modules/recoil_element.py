@@ -470,36 +470,37 @@ class RecoilElement(MCERDParameterContainer, Serializable):
             simulation_folder: Path to simulation folder in which ".rec" or
                                ".sct" files are stored.
         """
-        # TODO is it necessary to have the recoil type ('rec' or 'sct') in the
-        #  file extension? Currently Potku always has to delete the other types
-        #  of files when the simulation type is changed.
-        recoil_file_path = fp.get_recoil_file_path(self, simulation_folder)
 
-        timestamp = time.time()
-
-        # Multiplier is saved to maintain backwards compatibility with old
-        # save files
-        obj = {
-            "name": self.name,
-            "description": self.description,
-            "modification_time": time.strftime("%c %z %Z", time.localtime(
-                timestamp)),
-            "modification_time_unix": timestamp,
-            "simulation_type": str(self.type).lower(),
-            "element":  self.element.get_prefix(),
-            "reference_density": self.reference_density,
-            "multiplier": 1,
-            "profile": [
-                {
-                    "Point": str(point)
-                }
-                for point in self.get_points()
-            ],
-            "color": self.color
-        }
-
-        with recoil_file_path.open("w") as file:
-            json.dump(obj, file, indent=4)
+        # # TODO is it necessary to have the recoil type ('rec' or 'sct') in the
+        # #  file extension? Currently Potku always has to delete the other types
+        # #  of files when the simulation type is changed.
+        # recoil_file_path = fp.get_recoil_file_path(self, simulation_folder)
+        #
+        # timestamp = time.time()
+        #
+        # # Multiplier is saved to maintain backwards compatibility with old
+        # # save files
+        # obj = {
+        #     "name": self.name,
+        #     "description": self.description,
+        #     "modification_time": time.strftime("%c %z %Z", time.localtime(
+        #         timestamp)),
+        #     "modification_time_unix": timestamp,
+        #     "simulation_type": str(self.type).lower(),
+        #     "element":  self.element.get_prefix(),
+        #     "reference_density": self.reference_density,
+        #     "multiplier": 1,
+        #     "profile": [
+        #         {
+        #             "Point": str(point)
+        #         }
+        #         for point in self.get_points()
+        #     ],
+        #     "color": self.color
+        # }
+        #
+        # with recoil_file_path.open("w") as file:
+        #     json.dump(obj, file, indent=4)
 
     @classmethod
     def from_file(cls, file_path: Path, channel_width=None, rec_type=SimulationType.ERD) \
@@ -527,7 +528,6 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         reco["reference_density"] *= reco.pop("multiplier")
         # TODO do something with simulation_type
         rtype = SimulationType.fromStr(reco.pop('simulation_type'))
-        print(f"simulation_type pop: {rtype}")
 
         # Profile is a list of dicts where each dict is in the form of
         # { 'Point': 'x y' }. itertools.chain produces a flattened list of
@@ -628,7 +628,6 @@ class RecoilElement(MCERDParameterContainer, Serializable):
 
     @classmethod
     def from_json(cls, reco, channel_width=None):
-        print(f'recoilelement.from_json\n{reco}\nChannel: {channel_width}')
         element = Element.from_json(reco.pop("element"))
         reco["modification_time"] = reco.pop("modification_time_unix")
         rtype = SimulationType.fromStr(reco.pop('simulation_type'))

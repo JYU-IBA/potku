@@ -174,7 +174,6 @@ class ElementManager:
             Created ElementSimulation
         """
         # TODO check that element does not exist
-        print(f'Add element {element}')
         # There is no y_2 if there is only one layer
         y_2 = None
         # Set first point
@@ -213,7 +212,6 @@ class ElementManager:
                 current_isotope = element.isotope
                 current_RRectype = element.RRectype
                 for next_element in next_layer.elements:
-                    print(f'compare {next_element}: {element}')
                     if (next_element.symbol == current_symbol and
                             next_element.isotope == current_isotope and
                             next_element.RRectype == current_RRectype):
@@ -238,9 +236,6 @@ class ElementManager:
 
         rec_type = self.simulation.request.default_element_simulation\
             .simulation_type.get_recoil_type()
-
-        print(f"RRectype = {element.RRectype}")
-        #rec_type = element.RRectype
 
         recoil_element = RecoilElement(
             element, points, color, rec_type=element.RRectype)
@@ -281,7 +276,6 @@ class ElementManager:
                 settings are updated
             kwargs: keyword arguments passed down to SimulationControl
         """
-        print(f'recoil_atom_dist: simulationtype: ')
         main_element_widget = ElementWidget(
             self.parent, element_simulation.get_main_recoil().element,
             self.parent_tab, element_simulation,
