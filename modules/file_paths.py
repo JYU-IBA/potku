@@ -33,6 +33,7 @@ from typing import Callable
 from typing import Iterator
 
 from .enums import OptimizationType
+from .enums import SimulationType
 from . import general_functions as gf
 
 
@@ -139,7 +140,7 @@ def is_recoil_file(prefix: str, file: Path) -> bool:
 def get_recoil_file_path(recoil_element: "RecoilElement", directory: Path) \
         -> Path:
     return Path(directory,
-                f"{recoil_element.get_full_name()}.{recoil_element.type}")
+                f"{recoil_element.get_full_name()}.rec")
 
 
 def is_optfl_result(prefix: str, file: Path) -> bool:
