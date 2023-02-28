@@ -51,7 +51,6 @@ from matplotlib.widgets import SpanSelector
 
 from modules.element import Element
 from modules.point import Point
-from modules.enums import SimulationType
 from modules.recoil_element import RecoilElement
 from modules.element_simulation import ElementSimulation
 from modules.simulation import Simulation
@@ -76,7 +75,7 @@ from widgets.simulation.recoil_element import RecoilElementWidget
 from widgets.base_tab import BaseTab
 from widgets.icon_manager import IconManager
 from modules.enums import SimulationType
-
+from modules.config_manager import ConfigManager
 
 class ElementManager:
     """A class that manipulates the elements of the simulation.
@@ -1326,6 +1325,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         gf.remove_files(rec_file, recoil_file, simu_file)
         if recoil_to_delete in self.individual_intervals:
             self.individual_intervals.pop(recoil_to_delete).remove()
+        config_manager = ConfigManager()
+        config_manager.save()
 
     def remove_current_element(self, ignore_dialog=False, ignore_selection=False):
         """Remove current element simulation.
