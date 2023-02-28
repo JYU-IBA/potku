@@ -72,6 +72,7 @@ from widgets.gui_utils import StatusBarHandler
 from widgets.icon_manager import IconManager
 from widgets.measurement.tab import MeasurementTabWidget
 from widgets.simulation.tab import SimulationTabWidget
+from modules.config_manager import ConfigManager
 
 
 class Potku(QtWidgets.QMainWindow):
@@ -1124,12 +1125,15 @@ class Potku(QtWidgets.QMainWindow):
             filepath_json = filepath.with_suffix(".mccfg")
             print(f'Simulation file: {filepath}')
             print(f'Alternative Simulation file: {filepath_json}')
+            config_manager = ConfigManager()
+            config_manager.set_config_file(filepath_json)
             if filepath_json.is_file():
-                print(f'Alternative exists!')
-                simulation_json = self.request.samples.simulations.add_simulation_json(
+                print(f'Alternative exists!') #simulation json -TL
+                simulation = self.request.samples.simulations.add_simulation_json(
                     sample, filepath_json, self.tab_id)
-            simulation = self.request.samples.simulations.add_simulation_file(
-                sample, filepath, self.tab_id)
+            else:
+                simulation = self.request.samples.simulations.add_simulation_file(
+                    sample, filepath, self.tab_id)
 
             if simulation is not None:
                 tab = SimulationTabWidget(self.request, self.tab_id, simulation,
