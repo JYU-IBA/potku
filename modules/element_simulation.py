@@ -209,7 +209,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             else:
                 prefix = self.name_prefix
 
-        #if save_on_creation:
+        #if save_on_creation: -TL
         if False:
             # Write .mcsimu file, recoil file and .profile file
             #self.to_file(Path(self.directory, f"{name}.mcsimu")) #TL
@@ -463,7 +463,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                     optimized_fluence = float(f.readline())
                 break
 
-        print(f'add simulation:\n{json.dumps(mcsimu, indent=4)}')
 
         return cls(
             directory=simulation_folder, request=request,
@@ -593,7 +592,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                     optimized_fluence = float(f.readline())
                 break
 
-        print(f'add simulation:\n{json.dumps(mcsimu, indent=4)}')
         #No save_on_creation -TL
         return cls(
             directory=simulation_folder, request=request,
@@ -682,7 +680,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 nothing is saved if no results exist)
         """
 
-        print(f"Save element-simulation {file_path}") # -TL
         config_manager = ConfigManager()
         config_manager.save()
 
