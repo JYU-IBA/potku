@@ -55,7 +55,6 @@ class Element(MCERDParameterContainer):
         self.isotope = isotope
         self.amount = amount
         self.RRectype = RRectype
-        print(f'init:RRectype = {self.RRectype}, symbol: {self.symbol}')
 
     @classmethod
     def from_string(cls, element_str):
