@@ -125,6 +125,7 @@ class Potku(QtWidgets.QMainWindow):
             self.open_new_measurement)
         self.actionImport_pelletron.triggered.connect(self.import_pelletron)
         self.actionBinary_data_lst.triggered.connect(self.import_binary)
+        self.actionMPA_3_lst.triggered.connect(self.import_MPA)
         self.action_manual.triggered.connect(self.__open_manual)
 
         self.actionSave_cuts.triggered.connect(
@@ -600,6 +601,18 @@ class Potku(QtWidgets.QMainWindow):
         """Import binary measurements into request.
 
         Import binary measurements from
+        """
+        if not self.request:
+            return
+        import_dialog = ImportDialogBinary(
+            self.request, self.icon_manager, self.statusbar, self)
+        if import_dialog.imported:
+            self.__remove_info_tab()
+
+    def import_MPA(self):
+        """Import MPA 3 measurements into request.
+
+        Import measurements from
         """
         if not self.request:
             return
