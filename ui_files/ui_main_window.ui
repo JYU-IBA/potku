@@ -539,7 +539,7 @@ simulation</string>
      <x>0</x>
      <y>0</y>
      <width>1467</width>
-     <height>25</height>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -552,6 +552,7 @@ simulation</string>
      </property>
      <addaction name="actionImport_pelletron"/>
      <addaction name="actionBinary_data_lst"/>
+     <addaction name="actionMPA_3_lst"/>
     </widget>
     <widget class="QMenu" name="menuOpen_recent">
      <property name="title">
@@ -798,6 +799,11 @@ simulation</string>
   <action name="actionRecentFile">
    <property name="text">
     <string>empty</string>
+   </property>
+  </action>
+  <action name="actionMPA_3_lst">
+   <property name="text">
+    <string>MPA 3 ... (.lst)</string>
    </property>
   </action>
  </widget>
