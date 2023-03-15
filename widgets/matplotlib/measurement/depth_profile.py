@@ -325,7 +325,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                 transform=self.axes.transAxes,
                 fontsize=11, fontfamily="monospace")
 
-        for handle in leg.legendHandles:
+        for handle in leg.legend_handles:
             handle.set_linewidth(3.0)
 
     def _fork_toolbar_buttons(self):
