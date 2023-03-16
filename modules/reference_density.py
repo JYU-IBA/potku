@@ -58,7 +58,10 @@ class ReferenceDensity:
             self.add_layer_density(layer)
             if self.total_thickness >= self.thickness_limit:
                 break
-        self.reference_density /= self.total_thickness
+        if self.total_thickness != 0.0:
+            self.reference_density /= self.total_thickness
+        else:
+            self.reference_density = 0.0
 
     def add_layer_density(self, layer):
         layer_density = 0.0
