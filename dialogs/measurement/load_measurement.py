@@ -129,7 +129,7 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
         self.filename = fdialogs.open_file_dialog(
             self, self.directory, "Select a measurement to load",
             "Raw Measurement (*.asc)")
-        self.pathLineEdit.setText(self.filename)
+        self.pathLineEdit.setText(str(self.filename))
 
     def __find_existing_sample(self):
         """

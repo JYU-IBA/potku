@@ -87,7 +87,10 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         self.parent.recoilListLayout.addWidget(widget)
 
         # TODO move these to parent
-        btn_txts = "First solution", "Median solution", "Last solution"
+        # TODO could check if simulation method is NSGAII or Linear
+        #   and choose the button texts based on that
+        # TODO also gray out Pareto front radio button for Linear
+        btn_txts = "Initial solution", "Middle solution", "Last solution"
         for t in btn_txts:
             radio_btn = QtWidgets.QRadioButton(t)
             radio_btn.setEnabled(False)

@@ -31,7 +31,6 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 __version__ = "2.0"
 
 import json
-import logging
 import time
 
 from collections import namedtuple
@@ -50,7 +49,7 @@ from .detector import Detector
 from .element_simulation import ElementSimulation
 from .run import Run
 from .target import Target
-from .ui_log_handlers import Logger
+from .ui_log_handlers import SimulationLogger
 
 
 class Simulations:
@@ -172,7 +171,7 @@ class Simulations:
                     simulation
             except Exception as e:
                 log = f"Something went wrong while adding a new simulation: {e}"
-                logging.getLogger("request").critical(log)
+                self.request.log_error(log)
         if simulation is not None:
             sample.simulations.simulations[tab_id] = simulation
         return simulation
@@ -199,7 +198,7 @@ class Simulations:
         self.simulations = remove_key(self.simulations, tab_id)
 
 
-class Simulation(Logger, ElementSimulationContainer, Serializable):
+class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
     """
     A Simulation class that handles information about one Simulation.
     """
@@ -245,7 +244,8 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             enable_logging: whether logging is enabled
         """
         # Run the base class initializer to establish logging
-        Logger.__init__(self, name, "Simulation", enable_logging=enable_logging)
+        SimulationLogger.__init__(
+            self, name, enable_logging=enable_logging, parent=request)
 
         self.tab_id = tab_id
         self.path = Path(path)
@@ -298,9 +298,8 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         """
         if not self.directory.exists():
             self.directory.mkdir(exist_ok=True)
-            log = f"Created a directory {self.directory}."
-            logging.getLogger("request").info(log)
-        self.set_loggers(self.directory, self.request.directory)
+            self.request.log(f"Created a directory {self.directory}.")
+        self.set_up_log_files(self.directory)
 
     def get_measurement_file(self) -> Path:
         """Returns the path to .measurement file that contains the settings
@@ -538,7 +537,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         for elem_sim in self.element_simulations:
             elem_sim.directory = new_dir
 
-        self.set_loggers(self.directory, self.request.directory)
+        self.set_up_log_files(self.directory)
 
     def get_running_simulations(self) -> List[ElementSimulation]:
         """Returns a list of currently running simulations.

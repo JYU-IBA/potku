@@ -25,7 +25,7 @@ __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 import unittest
-import rx
+import reactivex as rx
 import subprocess
 import time
 import tempfile
@@ -35,7 +35,7 @@ from pathlib import Path
 from modules.concurrency import CancellationToken
 import modules.mcerd as mcerd
 
-from tests.mock_objects import TestObserver
+from tests.mock_objects import MockObserver
 
 
 class TestParseOutput(unittest.TestCase):
@@ -101,7 +101,7 @@ class TestParseOutput(unittest.TestCase):
             "bar"
         ]
 
-        obs = TestObserver()
+        obs = MockObserver()
         rx.from_iterable(iter(output)).pipe(
             mcerd.MCERD.get_pipeline(100, "foo"),
         ).subscribe(obs)
@@ -185,7 +185,7 @@ class TestTimeoutCheck(unittest.TestCase):
         with subprocess.Popen(["sleep", "1"]) as proc:
             res = mcerd.MCERD.timeout_check(proc, 0.01, ct)
 
-            obs = TestObserver()
+            obs = MockObserver()
             res.subscribe(obs)
             time.sleep(DEFAULT_SLEEP_TIME)
 
@@ -202,7 +202,7 @@ class TestTimeoutCheck(unittest.TestCase):
         with subprocess.Popen(["sleep", "1"]) as proc:
             res = mcerd.MCERD.timeout_check(proc, 0.01, ct)
 
-            obs = TestObserver()
+            obs = MockObserver()
             res.subscribe(obs)
             time.sleep(DEFAULT_SLEEP_TIME)
 
@@ -214,7 +214,7 @@ class TestTimeoutCheck(unittest.TestCase):
                 ["echo", "hello"], stdout=subprocess.DEVNULL) as proc:
             res = mcerd.MCERD.timeout_check(proc, 0.01, ct)
 
-        obs = TestObserver()
+        obs = MockObserver()
         res.subscribe(obs)
         time.sleep(DEFAULT_SLEEP_TIME)
 
@@ -231,7 +231,7 @@ class TestTimeoutCheck(unittest.TestCase):
         with subprocess.Popen(["sleep", "1"]) as proc:
             res = mcerd.MCERD.timeout_check(proc, 0.1, ct)
 
-            obs = TestObserver()
+            obs = MockObserver()
             res.subscribe(obs)
 
             self.assertIsNone(proc.poll(), msg=FAILURE_MSG)
@@ -245,7 +245,7 @@ class TestCancellationCheck(unittest.TestCase):
         with subprocess.Popen(["sleep", "1"]) as proc:
             res = mcerd.MCERD.cancellation_check(proc, 0.01, ct)
 
-            obs = TestObserver()
+            obs = MockObserver()
             res.subscribe(obs)
             ct.request_cancellation()
 
@@ -262,7 +262,7 @@ class TestCancellationCheck(unittest.TestCase):
         with subprocess.Popen(["sleep", "0.1"]) as proc:
             res = mcerd.MCERD.cancellation_check(proc, 0.01, ct)
 
-            obs = TestObserver()
+            obs = MockObserver()
             res.subscribe(obs)
 
             time.sleep(0.2)
@@ -274,7 +274,7 @@ class TestCancellationCheck(unittest.TestCase):
         with subprocess.Popen(["sleep", "1"]) as proc:
             res = mcerd.MCERD.cancellation_check(proc, 0.01, ct)
 
-            obs = TestObserver()
+            obs = MockObserver()
             res.subscribe(obs)
 
             time.sleep(0.25)
@@ -290,7 +290,7 @@ class TestCancellationCheck(unittest.TestCase):
                 proc:
             res = mcerd.MCERD.cancellation_check(proc, 0.01, ct)
 
-        obs = TestObserver()
+        obs = MockObserver()
         res.subscribe(obs)
         ct.request_cancellation()
 
@@ -307,7 +307,7 @@ class TestCancellationCheck(unittest.TestCase):
         with subprocess.Popen(["sleep", "1"]) as proc:
             res = mcerd.MCERD.cancellation_check(proc, 0.05, ct)
 
-            obs = TestObserver()
+            obs = MockObserver()
             res.subscribe(obs)
             ct.request_cancellation()
 
@@ -319,7 +319,7 @@ class TestRunningCheck(unittest.TestCase):
     def test_running_check_produces_dicts_with_running_status(self):
         with subprocess.Popen(["sleep", "0.1"]) as proc:
             res = mcerd.MCERD.running_check(proc, 0.01, 0.01)
-            obs = TestObserver()
+            obs = MockObserver()
             res.subscribe(obs)
 
         time.sleep(0.05)

@@ -43,7 +43,7 @@ from dialogs.graph_settings import TofeGraphSettingsWidget
 from dialogs.measurement.depth_profile import DepthProfileWidget
 from dialogs.measurement.element_losses import ElementLossesWidget
 from dialogs.measurement.selection import SelectionSettingsDialog
-from dialogs.file_dialogs import open_file_dialog
+from dialogs.measurement.import_selection import SelectionDialog
 
 from matplotlib import cm
 from matplotlib.colors import LogNorm
@@ -55,11 +55,13 @@ from widgets.matplotlib.base import MatplotlibWidget
 from widgets.gui_utils import StatusBarHandler
 from widgets.matplotlib import mpl_utils
 
+import numpy as np
+from PIL import Image
 
 class MatplotlibHistogramWidget(MatplotlibWidget):
     """Matplotlib histogram widget, used to graph "bananas" (ToF-E).
     """
-    MAX_BIN_COUNT = 8000
+    MAX_BIN_COUNT = 10000
     selectionsChanged = QtCore.pyqtSignal("PyQt_PyObject")
     saveCuts = QtCore.pyqtSignal("PyQt_PyObject")
 
@@ -87,6 +89,10 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__icon_manager = icon_manager
         self.parent = parent
         self.statusbar = statusbar
+        
+        # Set default filename for saving figure
+        default_filename = "ToF-E_Histogram_" + measurement.name
+        self.canvas.get_default_filename = lambda: default_filename 
 
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
@@ -97,12 +103,24 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__x_data = [x[0] for x in self.measurement.data]
         self.__y_data = [x[1] for x in self.measurement.data]
 
+        self.__x_data_max = max(self.__x_data) # max x-value of data
+        self.__y_data_max = max(self.__y_data) # max y-value of data
+        self.__x_data_min = min(self.__x_data)  # min x-value of data
+        self.__y_data_min = min(self.__y_data)  # min y-value of data
+
+        # 2D histogram image and histogram
+        self.__2d_hist = None # 2D histogram
+        self.__2d_hist_im = None # image of histogram
+        self.__2d_hist_cx = None # x-compress value, used to trigger recomputing histogram
+        self.__2d_hist_cy = None # y-compress value, used to trigger recomputing histogram
+        self.__2d_hist_tr = False # histogram axis transposed, used to trigger recompute
+
         # Variables
         self.__inverted_Y = False
         self.__inverted_X = False
         self.__transposed = False
         self.__inited = False
-        self.__range_mode_automated = False
+        self.__range_mode_automated = -1 # set to -1 to trigger view update
 
         # Get settings from global settings
         self.__global_settings = self.main_frame.measurement.request\
@@ -145,6 +163,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 x_min, x_max, y_min, y_max = y_min, y_max, x_min, x_max
                 # Switch inverts
                 self.invert_X, self.invert_Y = self.invert_Y, self.invert_X
+                self.__inverted_X, self.__inverted_Y = self.__inverted_Y, self.__inverted_X
         if not self.transpose_axes and self.__transposed:
             self.__transposed = False
             self.measurement.selector.transpose(False)
@@ -155,6 +174,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             x_min, x_max, y_min, y_max = y_min, y_max, x_min, x_max
             # Switch inverts
             self.invert_X, self.invert_Y = self.invert_Y, self.invert_X
+            self.__inverted_X, self.__inverted_Y = self.__inverted_Y, self.__inverted_X
 
         # Clear old stuff
         self.axes.clear()
@@ -187,42 +207,45 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
         colormap = cm.get_cmap(self.color_scheme.value)
 
-        self.axes.hist2d(x_data,
-                         y_data,
-                         bins=bin_counts,
-                         norm=LogNorm(),
-                         range=axes_range,
-                         cmap=colormap)
+        # if changes in compress values or transpose, recompute 2d histogram and histogram image
+        if (self.__2d_hist_cx != self.compression_x) or \
+                (self.__2d_hist_cy != self.compression_y) or\
+                (self.transpose_axes != self.__2d_hist_tr):
+
+            self.__2d_hist_cx = self.compression_x
+            self.__2d_hist_cy = self.compression_y
+            self.__2d_hist_tr = self.transpose_axes
+
+            self.__x_data_max = max(x_data)  # max x-value of data
+            self.__y_data_max = max(y_data)  # max y-value of data
+            self.__x_data_min = min(x_data)  # min x-value of data
+            self.__y_data_min = min(y_data)  # min y-value of data
+
+            self.__2d_hist = np.histogram2d(y_data, x_data,
+                                            bins = (bin_counts[1], bin_counts[0]))
+
+            self.__2d_hist_im = Image.fromarray(np.uint8(255*self.__2d_hist[0]/np.amax(self.__2d_hist[0])))
+            self.__2d_hist = None # Free memory
+
+        self.axes.imshow(self.__2d_hist_im, norm = LogNorm(), cmap=self.color_scheme,
+                         extent=(self.__x_data_min, self.__x_data_max, self.__y_data_min, self.__y_data_max),
+                         origin='lower', interpolation='none', aspect='auto')
 
         self.__on_draw_legend()
 
-        if 0.09 < x_max < 1.01:  # This works..
-            x_min, x_max = self.axes.get_xlim()
-        if 0.09 < y_max < 1.01:  # or self.axes_range_mode
-            y_min, y_max = self.axes.get_ylim()
 
-        # Change zoom limits if compression factor was changed (or new graph).
-        if not self.__range_mode_automated and self.axes_range_mode == 0 \
-                or self.axes_range_mode == 1:
-            # self.__range_mode_automated and self.axes_range_mode == 1
-            tx_min, tx_max = self.axes.get_xlim()
-            ty_min, ty_max = self.axes.get_ylim()
-            # If user has zoomed the graph, change the home position to new max.
-            # Else reset the graph to new ranges and clear zoom levels.
-            if self.mpl_toolbar._views:
-                self.mpl_toolbar._views[0][0] = (tx_min, tx_max, ty_min, ty_max)
-            else:
-                x_min, x_max = tx_min, tx_max
-                y_min, y_max = ty_min, ty_max
-                self.mpl_toolbar.update()
-        self.__range_mode_automated = self.axes_range_mode == 0
-        # print(self.axes.get_xlim())
-        # Set limits accordingly
-        self.axes.set_ylim([y_min, y_max])
-        self.axes.set_xlim([x_min, x_max])
+        # Set view and set home view
+        if self.axes_range_mode == 0: # Automatic limits
+            self.axes.set_ylim(self.__y_data_min, self.__y_data_max)
+            self.axes.set_xlim(self.__x_data_min, self.__x_data_max)
+        else: # Manual limits
+            self.axes.set_ylim(self.axes_range[1])
+            self.axes.set_xlim(self.axes_range[0])
+
+        self.mpl_toolbar.update()
 
         self.measurement.draw_selection()
-
+        
         # Invert axis
         if self.invert_Y and not self.__inverted_Y:
             self.axes.set_ylim(self.axes.get_ylim()[::-1])
@@ -313,10 +336,13 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                                             element)
 
         # Sort legend text
+        global sel_text
         sel_text = []
+        global sel_points
         sel_points = []
 
         items = sorted(selection_legend.items(), key=lambda x: x[1][3])
+
         for item in items:
             # [0] is the key of the item.
             sel_text.append(item[1][0])
@@ -424,6 +450,19 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.elementSelectionDeleteButton.setToolTip("Delete all selections")
         self.mpl_toolbar.addWidget(self.elementSelectionDeleteButton)
 
+
+    def click_check(self, cursor_location):
+        import numpy as np
+        x_cut_coord = np.array(sel_points[0].get_xdata())
+        y_cut_coord = np.array(sel_points[0].get_ydata())
+
+        print(cursor_location)
+
+        idx_x = (np.abs(int(x_cut_coord[0]) - int(cursor_location[0]))).argmin()
+        idx_y = (np.abs(int(y_cut_coord[1]) - int(cursor_location[1]))).argmin()
+
+        chosen_point = [x_cut_coord[idx_x], y_cut_coord[idx_y]]
+
     def on_click(self, event):
         """On click event above graph.
 
@@ -458,6 +497,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         #        print("\t{0}".format(item))
         if event.button == 1:  # Left click
             if self.elementSelectionSelectButton.isChecked():
+                self.click_check(cursor_location)
                 if self.measurement.selection_select(cursor_location) == 1:
                     # self.elementSelectDeleteButton.setChecked(True)
                     self.elementSelectDeleteButton.setEnabled(True)
@@ -549,24 +589,23 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
     def load_selections(self):
         """Show dialog to load selections.
-        """
-        filename = open_file_dialog(self, self.measurement.directory,
-                                    "Load Element Selection",
-                                    "Selection file (*.selections)")
-        if filename:
-            sbh = StatusBarHandler(self.statusbar)
-            sbh.reporter.report(40)
+                """
 
-            self.measurement.load_selection(
-                filename, progress=sbh.reporter.get_sub_reporter(
-                    lambda x: 40 + 0.6 * x
-                ))
-            self.on_draw()
-            self.elementSelectionSelectButton.setEnabled(True)
+        dialog = SelectionDialog()
+        dialog.exec()
 
-            sbh.reporter.report(100)
+        sbh = StatusBarHandler(self.statusbar)
+        sbh.reporter.report(40)
+        self.measurement.load_chosen_selection(dialog.chosen_selections,
+                                               progress=
+                                               sbh.reporter.get_sub_reporter(
+                                                   lambda x: 40 + 0.6 * x))
+        self.on_draw()
+        self.elementSelectionSelectButton.setEnabled(True)
 
+        sbh.reporter.report(100)
         self.__emit_selections_changed()
+
 
     def save_cuts(self):
         """Save measurement cuts.
@@ -804,14 +843,15 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 if selection.point_inside(point):
                     points = selection.get_event_count()
                     in_selection = True
+                    element = selection.element
                     break
         if in_selection:
+            points_text = str(element) + ", points in selection: {0}".format(points)
             if self.mpl_toolbar.mode_tool:
                 str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
-                str_text = str_tool + "; points in selection: {0}".format(
-                    points)
+                str_text = str_tool + "; " + points_text
             else:
-                str_text = "points in selection: {0}".format(points)
+                str_text = points_text
             self.mpl_toolbar.mode = str_text
         else:
             if self.mpl_toolbar.mode_tool:

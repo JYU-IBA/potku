@@ -26,6 +26,7 @@
 /Sample-data
 /.idea
 /.settings
+.vscode
 /__pycache__
 /venv
 *.bak
@@ -52,6 +53,11 @@ Pipfile.lock
 /build
 
 # Directories used for bundling Mac version
-# (TODO remove these once Mac bundling is sorted out)
 /tk
 /tcl
+
+# Ignore hypothesis folder (in case it will be used in the future)
+.hypothesis
+
+# Visual Studio
+.vs

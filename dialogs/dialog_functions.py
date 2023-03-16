@@ -31,7 +31,6 @@ import itertools
 
 from collections import namedtuple
 from collections import defaultdict
-from typing import Union
 from typing import Iterable
 from typing import Callable
 from pathlib import Path
@@ -45,7 +44,6 @@ from modules.request import Request
 from modules.base import ElementSimulationContainer
 from modules.detector import Detector
 from modules.measurement import Measurement
-from modules.simulation import Simulation
 from modules.element_simulation import ElementSimulation
 
 from PyQt5 import QtWidgets
@@ -107,9 +105,29 @@ def _update_cuts(old_cut_files, directory):
                 old_cut_files[i] = Path(directory, file)
 
 
-def get_efficiency_text(tree: QtWidgets.QTreeWidget,
-                        detector: Detector,
-                        data_func=lambda x: x) -> str:
+def get_efficiency_text_cuts(cuts: Iterable[Path], detector: Detector) -> str:
+    """Returns a string representation of used efficiency files.
+
+    Args:
+        cuts: iterable that has the .cut files to match
+        detector: detector that has the efficiency files to be matched to
+            .cut files.
+
+    Return:
+        string
+    """
+    eff_files_used = detector.get_matching_efficiency_files(cuts)
+
+    if eff_files_used:
+        eff_file_txt = "\t\n".join(str(f) for f in eff_files_used)
+        return f"Efficiency files used:\t\n{eff_file_txt}"
+
+    return "No efficiency files."
+
+
+def get_efficiency_text_tree(tree: QtWidgets.QTreeWidget,
+                             detector: Detector,
+                             data_func=lambda x: x) -> str:
     """Returns a string representation of used efficiency files.
 
     Args:
@@ -119,17 +137,11 @@ def get_efficiency_text(tree: QtWidgets.QTreeWidget,
         data_func: optional function that determines how .cut files can be
             obtained from the tree
 
-    Return
+    Return:
         string
     """
     cuts = (data_func(data) for _, data in bnd.tree_iterator(tree))
-    eff_files_used = detector.get_matching_efficiency_files(cuts)
-
-    if eff_files_used:
-        eff_file_txt = "\t\n".join(str(f) for f in eff_files_used)
-        return f"Efficiency files used:\t\n{eff_file_txt}"
-
-    return "No efficiency files."
+    return get_efficiency_text_cuts(cuts, detector)
 
 
 def get_multi_efficiency_text(tree: QtWidgets.QTreeWidget,
@@ -145,7 +157,7 @@ def get_multi_efficiency_text(tree: QtWidgets.QTreeWidget,
         if detector in used_detectors:
             eff_txt = used_detectors[detector]
         else:
-            eff_txt = gf.lower_case_first(get_efficiency_text(
+            eff_txt = gf.lower_case_first(get_efficiency_text_tree(
                 tree, detector, data_func=data_func))
             used_detectors[detector] = eff_txt
         label_txt += f"{m.name} – {eff_txt}\n"
@@ -159,83 +171,30 @@ def delete_optim_espe(qdialog, elem_sim: ElementSimulation):
         delete_recoil_espe(qdialog.tab, opt_rec.get_full_name())
 
 
-def delete_recoil_espe(tab, recoil_name: str):
+def delete_recoil_espe(tab: "SimulationTabWidget", recoil_name: str):
     """Deletes recoil's energy spectra.
     """
-    for energy_spectra in tab.energy_spectrum_widgets:
+    # TODO make this a method of SimulationTabWidget
+    widgets = list(tab.energy_spectrum_widgets)
+    for energy_spectra in widgets:
         for element_path in energy_spectra.energy_spectrum_data:
             file_name = Path(element_path).name
             if file_name.startswith(recoil_name):
                 if file_name[len(recoil_name)] == ".":
-                    tab.del_widget(energy_spectra)
-                    tab.energy_spectrum_widgets.remove(energy_spectra)
-                    save_file_path = Path(tab.simulation.directory,
-                                          energy_spectra.save_file)
-                    try:
-                        save_file_path.unlink()
-                    except OSError:
-                        pass
+                    tab.remove_energy_spectrum_widget(energy_spectra)
                     break
 
 
-# TODO common base class for settings dialogs
-
-
-def update_detector_settings(entity: Union[Measurement, Simulation],
-                             detector_folder: Path, measurement_file: Path):
-    """
-
-    Args:
-        entity: either a Measurement or Simulation
-        detector_folder: path to the detector's folder,
-        measurement_file: path to .measurement file
-    """
-    # Create default Detector for Measurement
-    detector_file_path = Path(detector_folder, "Default.detector")
-    detector_folder.mkdir(exist_ok=True)
-
-    entity.detector = Detector(detector_file_path)
-    entity.detector.update_directories(detector_folder)
-
-    # Transfer the default detector efficiencies to new
-    # Detector
-    for eff_file in entity.request.default_detector.get_efficiency_files(
-            return_full_paths=True):
-        entity.detector.add_efficiency_file(eff_file)
-
-
-def update_tab(tab):
-    for energy_spectra in tab.energy_spectrum_widgets:
-        tab.del_widget(energy_spectra)
-        save_file_path = Path(tab.simulation.directory,
-                              energy_spectra.save_file)
-        if os.path.exists(save_file_path):
-            os.remove(save_file_path)
-    tab.energy_spectrum_widgets = []
-
-
-# TODO common base class for import dialogs
-
-
-def add_imported_files_to_tree(qdialog, files):
-    """
-
-    Args:
-        qdialog: import dialog
-        files: list of files
-    """
-    if not files:
-        return
+def add_imported_files_to_tree(
+        qdialog: QtWidgets.QDialog, files: Iterable[Path]) -> None:
     for file in files:
         if file in qdialog.files_added:
             continue
-        directory, filename = os.path.split(file)
-        name, unused_ext = os.path.splitext(filename)
-        item = QtWidgets.QTreeWidgetItem([name])
+        item = QtWidgets.QTreeWidgetItem([file.stem])
         item.file = file
-        item.name = name
-        item.filename = filename
-        item.directory = directory
+        item.name = file.stem
+        item.filename = file.name
+        item.directory = file.parent
         qdialog.files_added[file] = file
         qdialog.treeWidget.addTopLevelItem(item)
 
@@ -406,7 +365,7 @@ def delete_element_simulations(qdialog,
             pass
 
     if tab is not None:
-        update_tab(tab)
+        tab.remove_energy_spectrum_widgets()
 
     return True
 

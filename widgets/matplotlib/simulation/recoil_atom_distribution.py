@@ -174,24 +174,59 @@ class ElementManager:
             Created ElementSimulation
         """
         # TODO check that element does not exist
-        # Default points
+        
+        # There is no y_2 if there is only one layer
+        y_2 = None
+        # Set first point
         xs = [0.00]
-        ys = [1.0]
-
+        first_layer = self.parent.target.layers[0]
+        if element in first_layer.elements:
+            ys = [element.amount]
+        else: 
+            ys = [self.parent.get_minimum_concentration()]
+        
         # Make two points for each change between layers
+        layer_index = 0
         for layer in self.parent.target.layers:
-            x_1 = layer.start_depth + layer.thickness
-            y_1 = 1.0
+            # Set x-coordinates for the both points
+            x_1 = layer.start_depth + layer.thickness 
             xs.append(x_1)
+            x_2 = x_1 + self.parent.x_res
+            xs.append(x_2)
+            
+            # Set y-coordinate for the first point
+            for current_element in layer.elements:
+                if (current_element.symbol == element.symbol and 
+                        current_element.isotope == element.isotope):
+                    y_1 = current_element.amount
+                    break
+                else:
+                    y_1 = self.parent.get_minimum_concentration()
+                    
             ys.append(y_1)
 
-            x_2 = x_1 + self.parent.x_res
-            y_2 = 1.0
-            xs.append(x_2)
-            ys.append(y_2)
-
+            # Set y-coordinate for the second point if not in the last layer
+            if layer_index + 1 < len(self.parent.target.layers):
+                next_layer = self.parent.target.layers[layer_index+1]
+                current_symbol = element.symbol
+                current_isotope = element.isotope
+                
+                for next_element in next_layer.elements:
+                    if (next_element.symbol == current_symbol and
+                            next_element.isotope == current_isotope):
+                        y_2 = next_element.amount
+                        break
+                    else:
+                        y_2 = self.parent.get_minimum_concentration()  
+            
+            if y_2 is not None:
+                ys.append(y_2)
+            layer_index += 1
+            
+        # Removes last point from the list
+        if y_2 is not None:
+            ys.pop()
         xs.pop()
-        ys.pop()
 
         xys = list(zip(xs, ys))
         points = []
@@ -459,6 +494,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             lambda: self.add_element_with_dialog(**kwargs))
         self.parent.removePushButton.clicked.connect(
             self.remove_current_element)
+        self.parent.removeallPushButton.clicked.connect(
+            self.remove_all_elements)
 
         self.radios = QtWidgets.QButtonGroup(self)
         self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
@@ -525,13 +562,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # on the x axis)
         self.span_selector = SpanSelector(
             self.axes, self.on_span_select, "horizontal", useblit=True,
-            rectprops=dict(alpha=0.5, facecolor="red"), button=1,
-            span_stays=True, onmove_callback=self.on_span_motion)
+            props=dict(alpha=0.5, facecolor="red"), button=1,
+            interactive=True, onmove_callback=self.on_span_motion)
         self.span_selector.set_active(False)
 
         self.rectangle_selector = RectangleSelector(
-            self.axes, self.on_rectangle_select, useblit=True, drawtype="box",
-            rectprops=dict(alpha=0.5, facecolor="red"), button=3)
+            self.axes, self.on_rectangle_select, useblit=True,
+            props=dict(alpha=0.5, facecolor="red"), button=3)
 
         # Connections and setup
         self.canvas.mpl_connect("button_press_event", self.on_click)
@@ -1282,13 +1319,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if recoil_to_delete in self.individual_intervals:
             self.individual_intervals.pop(recoil_to_delete).remove()
 
-    def remove_current_element(self):
+    def remove_current_element(self, ignore_dialog=False, ignore_selection=False):
         """Remove current element simulation.
+        
+        Args:
+             ignore_dialog: A boolean determining if confirmation dialogs are skipped
+             ignore_selection: A boolean ignoring radio button selections
         """
         if self.current_element_simulation is None:
-            return
-        if not self.main_recoil_selected():
-            return
+            return    
+        if not ignore_selection:
+            if not self.main_recoil_selected():
+                return
 
         # Check if current element simulation is running
         if self.current_element_simulation.is_optimization_running() or \
@@ -1296,21 +1338,22 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             add = "\nAlso its simulation will be stopped."
         else:
             add = ""
-        # TODO use the function from dialog_functions in here
-        reply = QtWidgets.QMessageBox.question(
-            self.parent, "Confirmation",
-            "If you delete selected element simulation, all possible recoils "
-            f"connected to it will be also deleted.{add} "
-            f"This also applies to possible optimization.\n\n"
-            "Are you sure you want to delete selected element simulation?",
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-            QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-        if reply == QtWidgets.QMessageBox.No or reply == \
-                QtWidgets.QMessageBox.Cancel:
-            return  # If clicked Yes, then continue normally
-        element_simulation = self.element_manager \
-            .get_element_simulation_with_radio_button(
-                self.radios.checkedButton())
+            
+        # TODO use the function from dialog_functions in here        
+        if not ignore_dialog: 
+            reply = QtWidgets.QMessageBox.question(
+                self.parent, "Confirmation",
+                "If you delete selected element simulation, all possible recoils "
+                f"connected to it will be also deleted.{add} "
+                f"This also applies to possible optimization.\n\n"
+                "Are you sure you want to delete selected element simulation?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                return  # If clicked Yes, then continue normally
+
+        element_simulation = self.current_element_simulation
 
         # Stop simulation if running
         if add:
@@ -1351,10 +1394,48 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.parent.elementInfoWidget.hide()
         self.update_plot()
 
+    def remove_all_elements(self, export_dialog=False):
+        """Removes all element simulations
+        """
+        # Confirmation dialog
+        if not export_dialog:
+            reply = QtWidgets.QMessageBox.question(
+                self.parent, "Confirmation",
+                "If you delete all element simulations, all possible recoils "
+                f"connected to them will be deleted. "
+                f"Their simulations will be stopped. "
+                f"This also applies to possible optimizations.\n\n"
+                "Are you sure you want to delete all element simulations?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+        # Confirmation dialog when exporting elements
+        else:
+            reply = QtWidgets.QMessageBox.question(
+                self.parent, "Confirmation",
+                "Replace all existing element simulations? "
+                f"\n\nAll existing element simulations and all possible recoils "
+                f"connected to them will be deleted. "
+                f"Their simulations will be stopped. "
+                f"This also applies to possible optimizations.",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)        
+            
+        if reply == QtWidgets.QMessageBox.No or reply == \
+                QtWidgets.QMessageBox.Cancel:
+            return  # If clicked Yes, then continue normally
+            
+        element_simulations = self.element_manager.element_simulations
+        while len(element_simulations) >= 1:
+            for element_simulation in element_simulations:
+                self.current_element_simulation = element_simulations[0]
+                self.remove_current_element(ignore_dialog=True, ignore_selection=True)
+
     def export_elements(self, **kwargs):
         """Export elements from target layers into element simulations if they
         do not already exist.
         """
+        if len(self.element_manager.element_simulations) >= 1:
+            self.remove_all_elements(export_dialog=True)
         for layer in self.target.layers:
             for element in layer.elements:
                 if not self.element_manager.has_element(element):
@@ -1770,6 +1851,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def update_plot(self):
         """Updates marker and line data and redraws the plot.
         """
+        if hasattr(self.parent, 'recoil_distribution_widget'):
+            self.parent._save_target_and_recoils(True)
         if self.current_element_simulation is None:
             self.markers.set_visible(False)
             self.lines.set_visible(False)

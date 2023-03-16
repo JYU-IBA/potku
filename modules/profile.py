@@ -28,13 +28,16 @@ __author__ = "Tuomas Pitkänen"
 __version__ = "2.0"
 
 import json
-import logging
 import time
 
 from pathlib import Path
-from typing import Set
+from typing import Set, Optional
 
-from modules.base import AdjustableSettings, Serializable
+from .base import AdjustableSettings, Serializable
+from .ui_log_handlers import Logger
+
+REFERENCE_DENSITY = 4.98e22
+PROFILE_REFERENCE_DENSITY = 3.0
 
 
 # TODO: Create unit tests / copy unit tests from measurement
@@ -50,7 +53,7 @@ class Profile(AdjustableSettings, Serializable):
                 "channel_width", "number_of_splits", "normalization"
 
     def __init__(self, name="Default", description="",
-                 modification_time=None, reference_density=3.0,
+                 modification_time=None, reference_density=PROFILE_REFERENCE_DENSITY,
                  number_of_depth_steps=150, depth_step_for_stopping=10,
                  depth_step_for_output=10, depth_for_concentration_from=200,
                  depth_for_concentration_to=400, channel_width=0.025,
@@ -76,7 +79,10 @@ class Profile(AdjustableSettings, Serializable):
         self.normalization = normalization
 
     @classmethod
-    def from_file(cls, profile_file: Path) -> "Profile":
+    def from_file(
+            cls,
+            profile_file: Path,
+            logger: Optional[Logger] = None) -> "Profile":
         # TODO: Copy from measurement.from_file (lines 502 to 556)
         try:
             with profile_file.open("r") as prof_file:
@@ -93,12 +99,14 @@ class Profile(AdjustableSettings, Serializable):
             comp = profile["composition_changes"]
 
         except (OSError, KeyError, AttributeError, json.JSONDecodeError) as e:
-            logging.getLogger("request").error(
-                f"Failed to read settings from .profile file {profile_file}: {e}"
-            )
+            if logger is not None:
+                msg = f"Failed to read settings from .profile file " \
+                      f"{profile_file}: {e}"
+                logger.log_error(msg)
             # TODO: Initialize a request.default_profile elsewhere and
             #       use its values here, or just let it crash?
-            raise NotImplementedError("Error handling not implemented for .profile")
+            raise NotImplementedError(
+                "Error handling not implemented for .profile")
 
         return cls(channel_width=channel_width, **general, **depth, **comp)
 

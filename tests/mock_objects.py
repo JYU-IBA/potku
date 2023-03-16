@@ -27,7 +27,7 @@ __version__ = "2.0"
 
 import tempfile
 import random
-import rx
+import reactivex as rx
 import tests.utils as utils
 
 import modules.masses as masses
@@ -236,7 +236,7 @@ def get_selection() -> "MockSelection":
     return MockSelection()
 
 
-class TestObserver(Observer):
+class MockObserver(Observer):
     """Observer that appends messages it receives to its collections.
     """
     def __init__(self):

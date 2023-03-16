@@ -115,7 +115,6 @@ class TestRecoilParameters(unittest.TestCase):
             "cross_p": 0.9,
             "mut_p": 1.0,
             "check_time": 20,
-            "skip_simulation": False
         }
         fluence_expected = {
             "stop_percent": 0.7,
@@ -127,7 +126,8 @@ class TestRecoilParameters(unittest.TestCase):
             "dis_c": 20,
             "dis_m": 20,
             "check_max": 900,
-            "check_min": 600
+            "check_min": 600,
+            "skip_simulation": False
         }
         fluence_expected.update(common)
 
@@ -140,7 +140,8 @@ class TestRecoilParameters(unittest.TestCase):
             "recoil_type": "box",
             "optimization_type": OptimizationType.RECOIL,
             "check_max": 600,
-            "check_min": 0
+            "check_min": 0,
+            "skip_simulation": True
         }
         recoil_expected.update(common)
 

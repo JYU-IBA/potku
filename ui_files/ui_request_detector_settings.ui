@@ -82,8 +82,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>462</width>
-        <height>584</height>
+        <width>469</width>
+        <height>582</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -199,7 +199,7 @@
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>Type:</string>
+                 <string>Detector type:</string>
                 </property>
                </widget>
               </item>
@@ -218,21 +218,117 @@
                 </item>
                </widget>
               </item>
-              <item row="4" column="0">
-               <widget class="QLabel" name="label_3">
-                <property name="text">
-                 <string>Time res [ps]:</string>
+              <item row="4" column="0" colspan="2">
+               <widget class="QStackedWidget" name="resolutionStack">
+                <property name="enabled">
+                 <bool>true</bool>
                 </property>
-               </widget>
-              </item>
-              <item row="4" column="1">
-               <widget class="QDoubleSpinBox" name="timeResSpinBox">
-                <property name="decimals">
-                 <number>3</number>
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
                 </property>
-                <property name="maximum">
-                 <double>99999.990000000005239</double>
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>22</height>
+                 </size>
                 </property>
+                <property name="frameShape">
+                 <enum>QFrame::NoFrame</enum>
+                </property>
+                <property name="currentIndex">
+                 <number>1</number>
+                </property>
+                <widget class="QWidget" name="page_time">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>22</height>
+                  </size>
+                 </property>
+                 <widget class="QLabel" name="label_3">
+                  <property name="geometry">
+                   <rect>
+                    <x>0</x>
+                    <y>0</y>
+                    <width>100</width>
+                    <height>22</height>
+                   </rect>
+                  </property>
+                  <property name="text">
+                   <string>Time res [ps]:</string>
+                  </property>
+                 </widget>
+                 <widget class="QDoubleSpinBox" name="timeResSpinBox">
+                  <property name="geometry">
+                   <rect>
+                    <x>115</x>
+                    <y>0</y>
+                    <width>316</width>
+                    <height>22</height>
+                   </rect>
+                  </property>
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="decimals">
+                   <number>3</number>
+                  </property>
+                  <property name="maximum">
+                   <double>99999.990000000005239</double>
+                  </property>
+                 </widget>
+                 <zorder>timeResSpinBox</zorder>
+                 <zorder>label_3</zorder>
+                </widget>
+                <widget class="QWidget" name="page_energy">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>22</height>
+                  </size>
+                 </property>
+                 <widget class="QLabel" name="label_12">
+                  <property name="geometry">
+                   <rect>
+                    <x>0</x>
+                    <y>0</y>
+                    <width>100</width>
+                    <height>22</height>
+                   </rect>
+                  </property>
+                  <property name="text">
+                   <string>Energy res [kev]:</string>
+                  </property>
+                 </widget>
+                 <widget class="QDoubleSpinBox" name="energyResSpinBox">
+                  <property name="geometry">
+                   <rect>
+                    <x>115</x>
+                    <y>0</y>
+                    <width>311</width>
+                    <height>22</height>
+                   </rect>
+                  </property>
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="decimals">
+                   <number>3</number>
+                  </property>
+                  <property name="maximum">
+                   <double>99999.990000000005239</double>
+                  </property>
+                 </widget>
+                </widget>
                </widget>
               </item>
               <item row="5" column="0">
@@ -327,7 +423,7 @@
             </sizepolicy>
            </property>
            <property name="currentIndex">
-            <number>1</number>
+            <number>0</number>
            </property>
            <property name="usesScrollButtons">
             <bool>false</bool>
@@ -366,7 +462,7 @@ profiles correctly.</string>
                      <rect>
                       <x>0</x>
                       <y>0</y>
-                      <width>412</width>
+                      <width>419</width>
                       <height>154</height>
                      </rect>
                     </property>
@@ -481,6 +577,9 @@ T</string>
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
+                   <property name="toolTip">
+                    <string>File names must be in form symbol.eff or symbol-comments.eff, i.e. 1H-Jan2020.eff</string>
+                   </property>
                    <property name="text">
                     <string/>
                    </property>
@@ -504,6 +603,19 @@ T</string>
                    <property name="icon">
                     <iconset>
                      <normaloff>../ui_icons/reinhardt/edit_delete.svg</normaloff>../ui_icons/reinhardt/edit_delete.svg</iconset>
+                   </property>
+                  </widget>
+                 </item>
+                 <item alignment="Qt::AlignTop">
+                  <widget class="QPushButton" name="plotEfficiencyButton">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="text">
+                    <string>Plot efficiencies</string>
                    </property>
                   </widget>
                  </item>
@@ -571,6 +683,20 @@ T</string>
                    </property>
                   </widget>
                  </item>
+                 <item row="4" column="0">
+                  <widget class="QLabel" name="label_5">
+                   <property name="text">
+                    <string>Angle slope [rad/channel]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="0">
+                  <widget class="QLabel" name="label_6">
+                   <property name="text">
+                    <string>Angle offset [rad]</string>
+                   </property>
+                  </widget>
+                 </item>
                  <item row="3" column="1">
                   <widget class="QLineEdit" name="offsetLineEdit">
                    <property name="sizePolicy">
@@ -593,31 +719,50 @@ T</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="4" column="0">
-                  <widget class="QLabel" name="label_5">
-                   <property name="text">
-                    <string>Angle slope [rad/channel]</string>
+                 <item row="4" column="1">
+                  <widget class="QDoubleSpinBox" name="angleSlopeLineEdit">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                     <horstretch>3</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
                    </property>
-                  </widget>
-                 </item>
-                 <item row="5" column="0">
-                  <widget class="QLabel" name="label_6">
-                   <property name="text">
-                    <string>Angle offset [rad]</string>
+                   <property name="decimals">
+                    <number>2</number>
+                   </property>
+                   <property name="minimum">
+                    <double>0.000000000000000</double>
+                   </property>
+                   <property name="maximum">
+                    <double>9999.989999999999782</double>
+                   </property>
+                   <property name="singleStep">
+                    <double>0.100000000000000</double>
+                   </property>
+                   <property name="value">
+                    <double>0.000000000000000</double>
                    </property>
                   </widget>
                  </item>
                  <item row="5" column="1">
                   <widget class="QDoubleSpinBox" name="angleOffsetLineEdit">
-                   <property name="decimals">
-                    <number>5</number>
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                     <horstretch>3</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
                    </property>
-                  </widget>
-                 </item>
-                 <item row="4" column="1">
-                  <widget class="QDoubleSpinBox" name="angleSlopeLineEdit">
-                   <property name="decimals">
-                    <number>5</number>
+                   <property name="minimum">
+                    <double>0.000000000000000</double>
+                   </property>
+                   <property name="maximum">
+                    <double>9996.989999999999782</double>
+                   </property>
+                   <property name="singleStep">
+                    <double>0.100000000000000</double>
+                   </property>
+                   <property name="value">
+                    <double>0.000000000000000</double>
                    </property>
                   </widget>
                  </item>

@@ -30,43 +30,17 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli " \
              "Kaiponen \n Heta Rekilä \n Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
+import functools
 import gc
 import os
 import platform
 import shutil
 import subprocess
 import sys
-import functools
-
-import modules.general_functions as gf
-import dialogs.dialog_functions as df
-import widgets.input_validation as iv
-import widgets.gui_utils as gutils
-
 from datetime import datetime
 from datetime import timedelta
 from pathlib import Path
 from typing import Union
-
-from dialogs.about import AboutDialog
-from dialogs.global_settings import GlobalSettingsDialog
-from dialogs.measurement.import_binary import ImportDialogBinary
-from dialogs.measurement.import_measurement import ImportMeasurementsDialog
-from dialogs.measurement.load_measurement import LoadMeasurementDialog
-from dialogs.new_request import RequestNewDialog
-from dialogs.request_settings import RequestSettingsDialog
-from dialogs.simulation.new_simulation import SimulationNewDialog
-from dialogs.file_dialogs import open_file_dialog
-
-from widgets.gui_utils import StatusBarHandler
-from widgets.icon_manager import IconManager
-from widgets.base_tab import BaseTab
-
-from modules.global_settings import GlobalSettings
-from modules.measurement import Measurement
-from modules.request import Request
-from modules.simulation import Simulation
-from modules.selection import Selector
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -76,6 +50,27 @@ from PyQt5.QtWidgets import QAbstractItemView
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QTreeWidgetItem
 
+import modules.general_functions as gf
+import dialogs.dialog_functions as df
+import widgets.gui_utils as gutils
+import widgets.input_validation as iv
+from dialogs.about import AboutDialog
+from dialogs.file_dialogs import open_file_dialog
+from dialogs.global_settings import GlobalSettingsDialog
+from dialogs.measurement.import_binary import ImportDialogBinary
+from dialogs.measurement.import_measurement import ImportMeasurementsDialog
+from dialogs.measurement.load_measurement import LoadMeasurementDialog
+from dialogs.new_request import RequestNewDialog
+from dialogs.request_settings import RequestSettingsDialog
+from dialogs.simulation.new_simulation import SimulationNewDialog
+from modules.global_settings import GlobalSettings
+from modules.measurement import Measurement
+from modules.request import Request
+from modules.selection import Selector
+from modules.simulation import Simulation
+from widgets.base_tab import BaseTab
+from widgets.gui_utils import StatusBarHandler
+from widgets.icon_manager import IconManager
 from widgets.measurement.tab import MeasurementTabWidget
 from widgets.simulation.tab import SimulationTabWidget
 
@@ -95,6 +90,12 @@ class Potku(QtWidgets.QMainWindow):
         """
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_main_window.ui", self)
+
+        # Disable mouse wheel scrolling in all spin boxes and combo boxes as
+        # requested by a user (see comments in
+        # https://github.com/JYU-IBA/potku/issues/214).
+        gutils.disable_scrolling_in_spin_boxes()
+        gutils.disable_scrolling_in_combo_boxes()
 
         self.title = self.windowTitle()
         self.treeWidget.setHeaderLabel("")
@@ -333,8 +334,7 @@ class Potku(QtWidgets.QMainWindow):
 
             # Remove object from Sample
             clicked_item.parent().obj.remove_obj(clicked_item.obj)
-            clicked_item.obj.defaultlog.close()
-            clicked_item.obj.errorlog.close()
+            clicked_item.obj.close_log_files()
 
             # Remove object directory
             shutil.rmtree(clicked_item.obj.directory)
@@ -504,8 +504,7 @@ class Potku(QtWidgets.QMainWindow):
                 tab.tab_id)
             try:
                 # Close and remove logs
-                measurement.remove_and_close_log(measurement.defaultlog)
-                measurement.remove_and_close_log(measurement.errorlog)
+                measurement.close_log_files()
 
                 # Remove measurement's directory tree
                 shutil.rmtree(measurement.directory)
@@ -518,8 +517,8 @@ class Potku(QtWidgets.QMainWindow):
                     QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 # TODO check that this is the intented way of setting the
                 #  loggers in case something went wrong.
-                measurement.set_loggers(measurement.directory,
-                                        measurement.request.directory)
+                measurement.set_up_log_files(measurement.directory,
+                                             measurement.request.directory)
                 return
 
             self.request.samples.measurements.remove_by_tab_id(tab.tab_id)
@@ -583,7 +582,7 @@ class Potku(QtWidgets.QMainWindow):
             self.__change_tab_icon(clicked_item)
 
         except AttributeError as e:
-            print(e)    # TODO remove print
+            print(e)  # TODO remove print
         sbh.reporter.report(100)
 
     def import_pelletron(self):
@@ -709,15 +708,16 @@ class Potku(QtWidgets.QMainWindow):
         # TODO: regex check for directory. I.E. do not allow asd/asd
         if dialog.directory:
             self.__close_request()
-            title = "{0} - Request: {1}".format(self.title, dialog.name)
+            title = f"{self.title} - Request: {dialog.name}"
             self.setWindowTitle(title)
 
-            self.treeWidget.setHeaderLabel("Request: {0}".format(dialog.name))
+            self.treeWidget.setHeaderLabel(f"Request: {dialog.name}")
             self.__initialize_tree_view()
 
-            self.request = Request(dialog.directory, dialog.name, self.settings,
-                                   self.tab_widgets)
+            self.request = Request(
+                dialog.directory, dialog.name, self.settings, self.tab_widgets)
             self.settings.set_request_directory_last_open(dialog.directory)
+            self.request.log("Request created.")
             # Request made, close introduction tab
             self.__remove_introduction_tab()
             self.__open_info_tab()
@@ -790,9 +790,10 @@ class Potku(QtWidgets.QMainWindow):
                 self.request.directory, sample_item.obj.directory,
                 Simulation.DIRECTORY_PREFIX + "%02d" % serial_number + "-" +
                 dialog.name, f"{dialog.name}.simulation"), sample_item.obj,
-                load_data=True, progress=sbh.reporter.get_sub_reporter(
-                    lambda x: 0.9 * x
-                ))
+                             load_data=True,
+                             progress=sbh.reporter.get_sub_reporter(
+                                 lambda x: 0.9 * x
+                             ))
             self.__remove_info_tab()
 
             sbh.reporter.report(100)
@@ -972,7 +973,7 @@ class Potku(QtWidgets.QMainWindow):
                                          master_measurement_name))
                     elif tab_widget.obj in nonslaves or \
                             not master_measurement_name or type(
-                            tab_widget.obj) == Simulation:
+                        tab_widget.obj) == Simulation:
                         item.setText(0, tab_name)
                     else:
                         item.setText(0, "{0} (slave)".format(tab_name))
@@ -1168,6 +1169,7 @@ class Potku(QtWidgets.QMainWindow):
             # Clear the treewidget
             self.treeWidget.clear()
             self.tabs.clear()
+            self.request.close_log_files()
             self.request = None
             self.tab_widgets = {}
             self.tab_id = 0

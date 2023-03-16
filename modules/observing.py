@@ -28,7 +28,7 @@ __version__ = "2.0"
 import weakref
 import sys
 
-import rx.operators as ops
+from reactivex import operators as ops
 
 
 class ProgressReporter:
@@ -285,7 +285,7 @@ def reduce_while(reducer, start_from, end_at):
         start_from: function that takes an item and returns a boolean
         end_at: function that takes an item and returns a boolean
     """
-    return ops.pipe(
+    return ops.compose(
         _flag_start_end(start_from, end_at),
         ops.scan(lambda acc, x: (
             reducer(acc[0], x[0]) if acc[1] else x[0],

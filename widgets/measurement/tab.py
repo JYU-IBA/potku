@@ -30,11 +30,15 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import os
+from pathlib import Path
+from typing import Optional
+
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+from PyQt5 import uic
 
 import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
-
-from pathlib import Path
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.energy_spectrum import EnergySpectrumWidget
@@ -45,25 +49,28 @@ from dialogs.measurement.element_losses import ElementLossesWidget
 from dialogs.measurement.settings import MeasurementSettingsDialog
 
 from modules.element import Element
+from modules.enums import DepthProfileUnit
+from modules.general_functions import check_if_sum_in_directory_name
 from modules.measurement import Measurement
 
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
-from PyQt5 import uic
-
 from widgets.base_tab import BaseTab
-from widgets.measurement.tofe_histogram import TofeHistogramWidget
 from widgets.gui_utils import StatusBarHandler
+from widgets.icon_manager import IconManager
+from widgets.measurement.tofe_histogram import TofeHistogramWidget
 
 
-class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
+class MeasurementTabWidget(BaseTab):
     """Tab widget where measurement stuff is added.
     """
 
     issueMaster = QtCore.pyqtSignal()
 
-    def __init__(self, tab_id, measurement: Measurement, icon_manager,
-                 statusbar=None):
+    def __init__(
+            self,
+            tab_id: int,
+            measurement: Measurement,
+            icon_manager: IconManager,
+            statusbar: Optional[QtWidgets.QStatusBar] = None):
         """Init measurement tab class.
         Args:
             tab_id: An integer representing ID of the tabwidget.
@@ -71,12 +78,8 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             icon_manager: An iconmanager class object.
             statusbar: A QtGui.QMainWindow's QStatusBar.
         """
-        super().__init__()
+        super().__init__(measurement, tab_id, icon_manager, statusbar)
         uic.loadUi(gutils.get_ui_dir() / "ui_measurement_tab.ui", self)
-
-        self.tab_id = tab_id
-        self.obj = measurement
-        self.icon_manager = icon_manager
 
         # Various widgets that are shown in the tab. These will be populated
         # using the load_data method
@@ -84,8 +87,6 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         self.elemental_losses_widget = None
         self.energy_spectrum_widget = None
         self.depth_profile_widget = None
-        self.log = None
-        self.data_loaded = False
 
         self.saveCutsButton.clicked.connect(self.measurement_save_cuts)
         self.analyzeElementLossesButton.clicked.connect(
@@ -100,7 +101,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         # Enable master button
         self.toggle_master_button()
         self.set_icons()
-        self.statusbar = statusbar
+        BaseTab.check_default_settings(self)
 
     def get_default_widget(self):
         """Histogram will be the widget that gets activated when the tab
@@ -200,7 +201,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
     def make_depth_profile(self, directory: Path, name: str, serial_number_m:
                            int, sample_folder_name: str, progress=None):
         """Make depth profile from loaded lines from saved file.
-        
+
         Args:
             directory: A path to depth files directory.
             name: A string representing measurement's name.
@@ -230,9 +231,15 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             elements_string = lines[1].strip().split("\t")
             elements = [Element.from_string(element)
                         for element in elements_string]
-            x_unit = lines[3].strip()
+            try:
+                x_unit = DepthProfileUnit(lines[3].strip())
+            except ValueError:
+                x_unit = DepthProfileUnit.ATOMS_PER_SQUARE_CM
             line_zero = False
             line_scale = False
+            systerr = 0.0
+            used_eff = True
+            eff_files_str = None
             if len(lines) == 7:  # "Backwards compatibility"
                 line_zero = lines[4].strip() == "True"
                 line_scale = lines[5].strip() == "True"
@@ -242,9 +249,14 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             DepthProfileDialog.line_zero = line_zero
             DepthProfileDialog.line_scale = line_scale
             DepthProfileDialog.systerr = systerr
+            DepthProfileDialog.used_eff = used_eff
+            DepthProfileDialog.eff_files_str = eff_files_str
+
             self.depth_profile_widget = DepthProfileWidget(
                 self, output_dir, use_cuts, elements, x_unit, line_zero,
-                line_scale, systerr, progress=progress)
+                used_eff, line_scale, systerr, eff_files_str,
+                progress=progress
+                )
             icon = self.icon_manager.get_icon("depth_profile_icon_2_16.png")
             self.add_widget(self.depth_profile_widget, icon=icon)
         except Exception as e:
@@ -254,7 +266,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
     def make_elemental_losses(self, directory, name, serial_number,
                               old_sample_name, progress=None):
         """Make elemental losses from loaded lines from saved file.
-        
+
         Args:
             directory: A string representing directory.
             name: A string representing measurement's name.
@@ -300,7 +312,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
     def make_energy_spectrum(self, directory, name, serial_number,
                              old_sample_name):
         """Make energy spectrum from loaded lines from saved file.
-        
+
         Args:
             directory: A string representing directory.
             name: A string representing measurement's name.
@@ -325,8 +337,11 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             width = float(lines[1].strip())
             EnergySpectrumParamsDialog.bin_width = width
             EnergySpectrumParamsDialog.checked_cuts[m_name] = set(use_cuts)
+            is_measured_sum_spectrum_selected, _ = \
+                check_if_sum_in_directory_name(directory)
             self.energy_spectrum_widget = EnergySpectrumWidget(
                 self, spectrum_type=EnergySpectrumWidget.MEASUREMENT,
+                measured_sum_spectrum_is_selected=is_measured_sum_spectrum_selected,
                 use_cuts=use_cuts, bin_width=width)
             icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
             self.add_widget(self.energy_spectrum_widget, icon=icon)
@@ -344,7 +359,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
     def __open_settings(self):
         """Opens measurement settings dialog.
         """
-        MeasurementSettingsDialog(self.obj, self.icon_manager)
+        MeasurementSettingsDialog(self, self.obj, self.icon_manager)
 
     def open_depth_profile(self):
         """Opens depth profile dialog.
@@ -473,7 +488,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         """Enables save cuts button if the given selections list's lenght is
         not 0.
         Otherwise disable.
-        
+
         Args:
             selections: list of Selection objects
         """
@@ -526,6 +541,18 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
 
         if progress is not None:
             progress.report(100)
+
+    def check_default_settings_clicked(self) -> None:
+        """Gives an warning if the default settings are checked in the
+        settings tab.
+        """
+        if not self.obj.use_request_settings:
+            self.warning_text.setText("Not using request setting values ("
+                                      "default)")
+            self.warning_text.setStyleSheet("background-color: yellow")
+        else:
+            self.warning_text.setText("")
+            self.warning_text.setStyleSheet("")
 
 
 def rreplace(s, old, new, old_folder_prefix, new_folder_prefix,

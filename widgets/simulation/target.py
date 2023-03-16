@@ -132,7 +132,7 @@ class TargetWidget(QtWidgets.QWidget):
         self.targetRadioButton.setChecked(True)
         self.stackedWidget.setCurrentIndex(0)
 
-        self.saveButton.clicked.connect(self.__save_target_and_recoils)
+        self.saveButton.clicked.connect(self._save_target_and_recoils)
 
         self.del_points = None
 
@@ -200,10 +200,10 @@ class TargetWidget(QtWidgets.QWidget):
             if self.stop_saving:
                 break
             if self.target:
-                self.__save_target_and_recoils(True)
+                self._save_target_and_recoils(True)
             time.sleep(60)
 
-    def __save_target_and_recoils(self, thread=False):
+    def _save_target_and_recoils(self, thread=False):
         """
         Save target and element simulations.
 

@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 Created on 12.4.2018
 Updated on 17.12.2018
@@ -30,27 +29,26 @@ __version__ = "2.0"
 import copy
 import math
 import platform
-
-import widgets.input_validation as iv
-import widgets.binding as bnd
-import dialogs.file_dialogs as fdialogs
-import widgets.gui_utils as gutils
-
 from pathlib import Path
+from typing import List, Set
 
-from dialogs.measurement.calibration import CalibrationDialog
-from dialogs.simulation.foil import FoilDialog
-
-from modules.detector import Detector
-from modules.foil import CircularFoil
-from modules.request import Request
-from modules.enums import DetectorType
-
+from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
-from PyQt5 import QtCore
 
+import dialogs.file_dialogs as fdialogs
+import modules.general_functions as gf
+import widgets.binding as bnd
+import widgets.gui_utils as gutils
+import widgets.input_validation as iv
+from dialogs.measurement.calibration import CalibrationDialog
+from dialogs.simulation.foil import FoilDialog
+from modules.detector import Detector
+from modules.enums import DetectorType
+from modules.foil import CircularFoil
+from modules.request import Request
+from widgets.eff_plot import EfficiencyDialog
 from widgets.foil import FoilWidget
 from widgets.scientific_spinbox import ScientificSpinBox
 
@@ -68,12 +66,13 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
     modification_time = bnd.bind(
         "dateLabel", fget=bnd.unix_time_from_label, fset=bnd.unix_time_to_label)
     description = bnd.bind("descriptionLineEdit")
-    detector_type = bnd.bind("typeComboBox", track_change=True)
+    detector_type = bnd.bind("typeComboBox", track_change=False) # True
     angle_slope = bnd.bind("angleSlopeLineEdit", track_change=True)
     angle_offset = bnd.bind("angleOffsetLineEdit", track_change=True)
     tof_slope = bnd.bind("scientific_tof_slope", track_change=True)
     tof_offset = bnd.bind("scientific_tof_offset", track_change=True)
-    timeres = bnd.bind("timeResSpinBox", track_change=True)
+    timeres = bnd.bind("timeResSpinBox", track_change=False) # True
+    energyres = bnd.bind("energyResSpinBox", track_change=False)
     virtual_size = bnd.multi_bind(
         ("virtualSizeXSpinBox", "virtualSizeYSpinBox"), track_change=True
     )
@@ -115,6 +114,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
 
         self.addEfficiencyButton.clicked.connect(self.__add_efficiency)
         self.removeEfficiencyButton.clicked.connect(self.__remove_efficiency)
+        self.plotEfficiencyButton.clicked.connect(self.__plot_efficiency)
 
         self.efficiencyListWidget.itemSelectionChanged.connect(
             self._enable_remove_btn)
@@ -141,6 +141,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.timeResSpinBox.setLocale(locale)
         self.virtualSizeXSpinBox.setLocale(locale)
         self.virtualSizeYSpinBox.setLocale(locale)
+        self.angleSlopeLineEdit.setLocale(locale)
+        self.angleOffsetLineEdit.setLocale(locale)
 
         # Create scientific spinboxes for tof slope and tof offset
         self.formLayout_2.removeRow(self.slopeLineEdit)
@@ -159,12 +161,15 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             1, "ToF offset[s]:", self.scientific_tof_offset)
 
         if platform.system() == "Darwin":
-            self.scientific_tof_offset.scientificLineEdit.setFixedWidth(170)
-            self.scientific_tof_slope.scientificLineEdit.setFixedWidth(170)
+            self.scientific_tof_offset.setFixedWidth(170)
+            self.scientific_tof_slope.setFixedWidth(170)
 
         # Save as and load
         self.saveButton.clicked.connect(self.__save_file)
         self.loadButton.clicked.connect(self.__load_file)
+
+        self.resolutionStack.setCurrentIndex(self.typeComboBox.currentIndex())
+        self.typeComboBox.currentTextChanged.connect(self.detector_type_change)
 
         self.show_settings()
 
@@ -179,7 +184,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         file = fdialogs.open_file_dialog(
             self, self.request.default_folder, "Select detector file",
             "Detector File (*.detector)")
-        if not file:
+        if file is None:
             return
 
         temp_detector = Detector.from_file(file, self.request, False)
@@ -209,11 +214,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         file = fdialogs.save_file_dialog(
             self, self.request.default_folder, "Save detector file",
             "Detector File (*.detector)")
-        if not file:
+        if file is None:
             return
-        file = Path(file)
-        if file.suffix != ".detector":
-            file = Path(file.parent, f"{file.name}.detector")
+
+        file = file.with_suffix(".detector")
         if not self.some_values_changed():
             self.obj.to_file(file)
         else:
@@ -489,26 +493,42 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         eff_folder = gutils.get_potku_setting(
             DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
             self.request.default_folder)
-
-        new_eff_files = fdialogs.open_files_dialog(
+        selected_eff_files = fdialogs.open_files_dialog(
             self, eff_folder, "Select efficiency files",
             "Efficiency File (*.eff)")
-        if not new_eff_files:
+        if not selected_eff_files:
             return
-
-        used_eff_files = {
+        current_eff_files = {
             Detector.get_used_efficiency_file_name(f)
             for f in self.efficiency_files
         }
 
-        for eff_file in new_eff_files:
-            new_eff_file = Path(eff_file)
-            used_eff_file = Detector.get_used_efficiency_file_name(new_eff_file)
+        # Check which cut files are used in the current request and add them
+        # into the list
+        cuts_list = []
+        for key, value in \
+                self.request.samples.measurements.measurements.items():
+            c, _ = value.get_cut_files()
+            cuts_list.append(c)
 
-            if used_eff_file not in used_eff_files:
+        for eff_file_path in selected_eff_files:
+            current_eff_file = Detector.get_used_efficiency_file_name(
+                eff_file_path)
+            if current_eff_file not in current_eff_files:
                 try:
-                    self.obj.add_efficiency_file(new_eff_file)
-                    used_eff_files.add(used_eff_file)
+                    user_cancels = \
+                        self.__check_if_selected_elements_have_cut_files(
+                            cuts_list, current_eff_file, current_eff_files,
+                            eff_file_path)
+                    if user_cancels:  # Move to the next element
+                        break
+                    else:
+                        self.efficiency_files = self.obj.get_efficiency_files()
+                        # Store the folder where an eff-file was previously
+                        # fetched
+                        gutils.set_potku_setting(
+                            DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
+                            str(eff_file_path.parent))
                 except OSError as e:
                     QtWidgets.QMessageBox.critical(
                         self, "Error",
@@ -518,14 +538,75 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
                 QtWidgets.QMessageBox.critical(
                     self, "Error",
                     f"There already is an efficiency file for element "
-                    f"{used_eff_file.stem}.\n",
+                    f"{current_eff_file.stem}.\n",
                     QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
-        self.efficiency_files = self.obj.get_efficiency_files()
-        # Store the folder where we previously fetched an eff-file
-        gutils.set_potku_setting(
-            DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
-            str(new_eff_file.parent))
+    def __check_if_selected_elements_have_cut_files(self, cuts_list: List,
+                                                    current_eff_file: Path,
+                                                    current_eff_files: Set,
+                                                    eff_file_path: Path):
+        """
+        Check if the selected element on the GUI has cut files.
+
+        Args:
+            cuts_list: List of cut files
+            current_eff_file: Selected efficiency file
+            current_eff_files: Already selected efficiency files
+            eff_file_path: Selected efficiency file's path
+
+        Return:
+            False if there are not cut files and the user confirms the
+            selection.
+            True if if there are not cut files and the user cancels the
+            selection.
+        """
+
+        eff_files_elements = []
+        for cut in cuts_list:
+            for c in cut:
+                cut_element_str = c.name.split(".")[1]
+                if cut_element_str in current_eff_file.stem:
+                    eff_files_elements.append(cut_element_str)
+        if len(eff_files_elements) == 0:
+            reply = QtWidgets.QMessageBox.warning(
+                self, "Warning",
+                f"Selected element {eff_file_path.stem} "
+                f"does not have a cut file.\n"
+                f"Do you want to continue?",
+                QtWidgets.QMessageBox.Ok,
+                QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.Cancel:
+                return True
+            elif reply == QtWidgets.QMessageBox.Ok:
+                self.add_to_current_eff_files(eff_file_path,
+                                              current_eff_file,
+                                              current_eff_files)
+        self.add_to_current_eff_files(eff_file_path,
+                                      current_eff_file,
+                                      current_eff_files)
+
+    def add_to_current_eff_files(self, eff_file_path: Path,
+                                 current_eff_file: Path,
+                                 current_eff_files: Set):
+        """
+        Add the current efficiency file to the current efficiency files list.
+
+        Args:
+            eff_file_path: Selected efficiency file's path
+            current_eff_file: Selected efficiency file
+            current_eff_files: Already selected efficiency files
+
+        Return:
+            False because:
+                1) there are not cut files and the user confirms the
+                selection or
+                2) it is a basic efficiency file addition with the element
+                that has cut files
+        """
+
+        self.obj.add_efficiency_file(eff_file_path)
+        current_eff_files.add(current_eff_file)
+        return False
 
     def __remove_efficiency(self):
         """Removes efficiency files from detector's efficiency directory and
@@ -549,6 +630,14 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
 
             self.efficiency_files = self.obj.get_efficiency_files()
             self._enable_remove_btn()
+
+    def __plot_efficiency(self):
+        """
+        Open efficiency plot widget
+        """
+        eff_files = self.obj.get_efficiency_files(return_full_paths=True)
+        dialog = EfficiencyDialog(eff_files, self)
+        dialog.exec_()
 
     def __open_calibration_dialog(self):
         """
@@ -595,3 +684,6 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.foils_layout.removeWidget(foil_widget)
         foil_widget.deleteLater()
         self.calculate_distance()
+
+    def detector_type_change(self, value):
+        self.resolutionStack.setCurrentIndex(self.typeComboBox.currentIndex())

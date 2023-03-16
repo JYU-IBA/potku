@@ -46,6 +46,7 @@ from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 
+from math import isclose
 
 class LayerPropertiesDialog(QtWidgets.QDialog, bnd.PropertyTrackingWidget,
                             metaclass=gutils.QtABCMeta):
@@ -87,7 +88,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog, bnd.PropertyTrackingWidget,
         self.okButton.clicked.connect(self.__save_layer)
         self.cancelButton.clicked.connect(self.close)
 
-        self.thicknessEdit.setMinimum(0.01)
+        self.thicknessEdit.setMinimum(0.00)
         self.densityEdit.setMinimum(0.01)
 
         self.__original_properties = {}
@@ -174,15 +175,15 @@ class LayerPropertiesDialog(QtWidgets.QDialog, bnd.PropertyTrackingWidget,
             else:
                 help_sum += elem.amount
 
-        if help_sum != 1.0 and help_sum != 100.0:
+        if isclose(help_sum, 1.0, rel_tol=1e-6) or isclose(help_sum, 100.0, rel_tol=1e-6):
+            for widget in elem_widgets:
+                iv.set_input_field_white(widget.amount_spinbox)
+            self.amount_mismatch = False
+        else:
             for widget in elem_widgets:
                 iv.set_input_field_red(widget.amount_spinbox)
             settings_ok = False
             self.amount_mismatch = True
-        else:
-            for widget in elem_widgets:
-                iv.set_input_field_white(widget.amount_spinbox)
-            self.amount_mismatch = False
         self.fields_are_valid = settings_ok
 
     def elements_changed(self):
@@ -305,10 +306,16 @@ class ElementLayout(QtWidgets.QVBoxLayout):
             self.isotope_combobox.setFixedWidth(150)
 
         self.amount_spinbox = QtWidgets.QDoubleSpinBox()
-        self.amount_spinbox.setMinimum(0.001)
+
+        self.amount_spinbox.setMinimum(0.000)
         self.amount_spinbox.setMaximum(9999.00)
+
+        self.amount_spinbox.setMinimum(0.001)
+        self.amount_spinbox.setMaximum(1)
+
         self.amount_spinbox.setDecimals(3)
         self.amount_spinbox.setLocale(QLocale.c())
+        self.amount_spinbox.setFixedWidth(90)
 
         self.delete_button = QtWidgets.QPushButton("")
         self.delete_button.setIcon(icons.get_potku_icon("del.png"))
@@ -316,6 +323,15 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.delete_button.setFixedHeight(28)
 
         self.delete_button.clicked.connect(self.__delete_element_layout)
+     
+        self.sum_button = QtWidgets.QPushButton("")
+        self.sum_button.setText("Sum to 1")
+        self.sum_button.setFixedWidth(85)
+        self.sum_button.setFixedHeight(28)
+        self.sum_button.setToolTip("Sets the amount remaining from " \
+        "1 to the box")
+
+        self.sum_button.clicked.connect(self._sum_amount_to_one)
 
         self.isotope_info_label = QtWidgets.QLabel()
 
@@ -324,6 +340,7 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.horizontal_layout.addWidget(self.isotope_combobox)
         self.horizontal_layout.addWidget(self.amount_spinbox)
         self.horizontal_layout.addWidget(self.delete_button)
+        self.horizontal_layout.addWidget(self.sum_button)
 
         self.isotope_selection_widget = IsotopeSelectionWidget(
             self.element_button, self.isotope_combobox,
@@ -338,6 +355,32 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.addWidget(self.isotope_info_label)
         self.insertStretch(-1, 0)
 
+    def _sum_amount_to_one(self):
+        """Gets the sum of the amount of other elements and sets the
+        missing amount (from 1 or 100) to the spinbox
+        """     
+        # Get sum of all spinboxes
+        elem_widgets = self.dialog.get_element_widgets()
+        sum_of_spinboxes = 0
+        for widget in elem_widgets:
+            elem = widget.get_selected_element()
+            if elem is None:
+                return
+            sum_of_spinboxes += elem.amount
+        
+        # Get amount of self and remove it from the sum        
+        spinbox_value = self.amount_spinbox.value()
+        sum_of_other = sum_of_spinboxes - spinbox_value
+        
+        # Set amount so that the sum is 100%
+        if sum_of_other <= 1:
+            missing_amount = 1 - sum_of_other
+        else:
+            missing_amount = 100 - sum_of_other        
+        self.amount_spinbox.setValue(missing_amount)
+        
+        self.dialog._LayerPropertiesDialog__check_if_settings_ok()
+
     def __delete_element_layout(self):
         """Deletes element layout.
         """
@@ -345,6 +388,8 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.isotope_combobox.deleteLater()
         self.amount_spinbox.deleteLater()
         self.delete_button.deleteLater()
+        self.sum_button.deleteLater()
+        self.isotope_selection_widget._info_label.deleteLater()
         self.deleteLater()
 
     def get_selected_element(self) -> Element:

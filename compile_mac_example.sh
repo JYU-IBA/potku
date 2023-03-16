@@ -1,6 +1,8 @@
-# This is an almost complete for creating a package of Potku on Mac.
-# It is missing instructions for copying some files that are not automatically packaged.
-# See README.md for more instructions on those.
+# This is an example for creating a Potku bundle on Mac.
+
+########################################
+
+# Setting up a development environment:
 
 # Install xcode by typing `git` into terminal and following instructions
 git --version
@@ -35,23 +37,32 @@ exec "$SHELL"
 
 # Install Python 3.6.10 with shared-library for use with PyInstaller
 # https://stackoverflow.com/questions/58548730/how-to-use-pyinstaller-with-pipenv-pyenv
-env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.6.10
+env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.6.14
 eval "$(pyenv init -)"
 
 # Set Python version
-pyenv global 3.6.10
+pyenv global 3.6.14
 
-# Add data files required by Jibal
+# Clone Potku
+git clone --recursive https://github.com/JYU-IBA/potku.git
+cd potku
+
+# Add data files required by JIBAL.
+# The target directory doesn't exist before compiling JIBAL, so it needs to be created manually.
+mkdir external/share/jibal
 curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C external/share/jibal
 
+# (Copy other required files, see [README.md](README.md))
+
 # Create the Potku bundle
-# First run does not install dependencies for some reason
-pipenv run ./create_bundle.sh
+# If dependencies don't get installed, try running the command again.
 pipenv run ./create_bundle.sh
 
 ########################################
 
-# Add Tcl and Tk to distribution
+# Bundling Tcl and Tk to distribution:
+
+# Find PyInstaller location
 pipenv shell
 which pyinstaller
 

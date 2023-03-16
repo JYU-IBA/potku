@@ -90,7 +90,8 @@ class ElementWidget(QtWidgets.QWidget):
         self.radio_button = QtWidgets.QRadioButton()
 
         if element.isotope:
-            isotope_superscript = general.to_superscript(str(element.isotope))
+            isotope_superscript = general.digits_to_superscript(
+                str(element.isotope))
             button_text = isotope_superscript + " " + element.symbol
         else:
             button_text = element.symbol
@@ -116,8 +117,11 @@ class ElementWidget(QtWidgets.QWidget):
                                       QtWidgets.QSizePolicy.Fixed)
         settings_button.clicked.connect(
             lambda: self.open_element_simulation_settings(
-                settings_updated=settings_updated))
+                settings_updated=settings_updated,
+                settings_button=settings_button))
         settings_button.setToolTip("Edit element simulation settings")
+
+        self.update_settings_button(settings_button)
 
         add_recoil_button = QtWidgets.QPushButton()
         add_recoil_button.setIcon(icon_manager.get_icon("edit_add.svg"))
@@ -186,7 +190,8 @@ class ElementWidget(QtWidgets.QWidget):
         # Save recoil element
         recoil_element.to_file(self.element_simulation.directory)
 
-    def open_element_simulation_settings(self, settings_updated=None):
+    def open_element_simulation_settings(self, settings_updated=None,
+                                         settings_button=None):
         """
         Open element simulation settings.
         """
@@ -194,6 +199,8 @@ class ElementWidget(QtWidgets.QWidget):
         if settings_updated is not None:
             es.settings_updated.connect(settings_updated.emit)
         es.exec_()
+
+        self.update_settings_button(settings_button)
 
     def plot_spectrum(self, spectra_changed=None):
         """Plot an energy spectrum and show it in a widget.
@@ -212,7 +219,11 @@ class ElementWidget(QtWidgets.QWidget):
                 use_cuts=dialog.result_files,
                 bin_width=dialog.bin_width,
                 spectrum_type=EnergySpectrumWidget.SIMULATION,
-                spectra_changed=spectra_changed)
+                spectra_changed=spectra_changed,
+                simulated_sum_spectrum_is_selected=
+                dialog.simulated_sum_spectrum_is_selected,
+                measured_sum_spectrum_is_selected=
+                dialog.measured_sum_spectrum_is_selected)
 
             # Check all energy spectrum widgets, if one has the same
             # elements, delete it
@@ -238,3 +249,17 @@ class ElementWidget(QtWidgets.QWidget):
             elif not previous and energy_spectrum_widget is not None:
                 energy_spectrum_widget.save_to_file(measurement=False,
                                                     update=False)
+
+    def update_settings_button(self, settings_button):
+        """
+        Change a settings button's color (to yellow) when the user is not using
+        request settings values. Otherwise keep it uncolored.
+
+        Args:
+         settings_button: QtWidgets.QPushButton() that opens the element
+         (simulation) settings dialog.
+        """
+        if self.element_simulation.use_default_settings:
+            settings_button.setStyleSheet("")
+        else:
+            settings_button.setStyleSheet("background-color: yellow")

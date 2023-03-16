@@ -30,26 +30,23 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Juhani Sundell"
 __version__ = "2.0"
 
-import logging
-import subprocess
+import pathlib
 import platform
+import subprocess
+from pathlib import Path
+from typing import Dict, Union, List, Optional, Sequence, Tuple
 
 import numpy as np
 
-from pathlib import Path
-from typing import List
-from typing import Tuple
-from typing import Optional
-from typing import Sequence
-from typing import Dict
-
-from .observing import ProgressReporter
 from . import general_functions as gf
 from . import subprocess_utils as sutils
-from .parsing import ToFListParser
-from .measurement import Measurement
-from .element import Element
 from .base import Espe
+from .element import Element
+from .enums import SumSpectrumType
+from .measurement import Measurement
+from .observing import ProgressReporter
+from .parsing import ToFListParser
+from .ui_log_handlers import Logger
 
 TofListData = List[Tuple[float, float, float, int, float, str, float, int]]
 
@@ -59,6 +56,7 @@ TofListData = List[Tuple[float, float, float, int, float, str, float, int]]
 class EnergySpectrum:
     """Class for energy spectrum.
     """
+
     def __init__(
             self,
             measurement: Measurement,
@@ -159,9 +157,9 @@ class EnergySpectrum:
                 directory = None
 
             count = len(self._cut_files)
-            
+
             self._directory_es.mkdir(exist_ok=True)
-            
+
             for i, cut_file in enumerate(self._cut_files):
                 # TODO move cut file handling to cut_file module
                 filename_split = cut_file.name.split('.')
@@ -175,14 +173,14 @@ class EnergySpectrum:
 
                 cut_dict[key] = EnergySpectrum.tof_list(
                     cut_file, directory, no_foil=no_foil,
-                    logger_name=self._measurement.name,
+                    logger=self._measurement,
                     tof_in=tof_in, verbose=verbose)
 
                 if progress is not None:
                     progress.report(i / count * 90)
         except Exception as e:
             msg = f"Could not calculate Energy Spectrum: {e}."
-            logging.getLogger(self._measurement.name).error(msg)
+            self._measurement.log_error(msg)
         finally:
             if progress is not None:
                 progress.report(100)
@@ -193,7 +191,7 @@ class EnergySpectrum:
             cut_file: Path,
             directory: Optional[Path] = None,
             no_foil: bool = False,
-            logger_name: Optional[str] = None,
+            logger: Optional[Logger] = None,
             tof_in: Path = Path("tof.in"),
             verbose: bool = True) -> TofListData:
         """ToF_list
@@ -206,7 +204,7 @@ class EnergySpectrum:
                 directory.
             no_foil: whether foil thickness was used when .cut files were
                 generated. This affects the file path when saving output
-            logger_name: name of a logging entity
+            logger: optional Logger entity used for logging
             tof_in: path to tof_in_file
             verbose: whether tof_list's stderr is printed to console
 
@@ -242,8 +240,8 @@ class EnergySpectrum:
                 return tof_list_data
         except Exception as e:
             msg = f"Error in tof_list: {e}"
-            if logger_name is not None:
-                logging.getLogger(logger_name).error(msg)
+            if logger is not None:
+                logger.log_error(msg)
             else:
                 print(msg)
             return []
@@ -315,6 +313,7 @@ class EnergySpectrum:
         else:
             y_col = None
 
+        keys = []
         for key, tof_list_data in tof_listed_files.items():
             espe = gf.hist(
                 tof_list_data, col=2, weight_col=y_col,
@@ -324,6 +323,7 @@ class EnergySpectrum:
                 espes[key] = espe
                 continue
 
+            keys.append(key)
             espes[key] = EnergySpectrum.pad_with_zeroes(espe, spectrum_width)
 
             filename = EnergySpectrum.get_hist_file_name(
@@ -332,5 +332,94 @@ class EnergySpectrum:
             numpy_array = np.array(
                 espe, dtype=[("float", float), ("int", int)])
             np.savetxt(filename, numpy_array, delimiter=" ", fmt="%5.5f %6d")
-
         return espes
+
+
+class SumEnergySpectrum:
+    """Container class for a sum of energy spectra."""
+
+    def __init__(self, spectra: Dict[Path, Espe] = None,
+                 directory_es: Path = "",
+                 spectra_type: SumSpectrumType = "") -> None:
+        self.sum_spectrum_path: Optional[Path] = None
+        self.sum_spectrum: Optional[np.ndarray] = None
+        self._directory_es: Path = directory_es
+        self._spectrum_type = spectra_type
+        self._spectra: Dict[Path, Espe] = {}
+        self._sum_key = "SUM"
+        if spectra:
+            self.add_or_update_spectra(spectra)
+
+    @property
+    def spectra(self) -> Dict[Path, Espe]:
+        """Get a tracked spectra."""
+        # Read-only, use other methods to edit spectra
+        return self._spectra
+
+    @property
+    def sum_spectrum_key(self) -> Optional[str]:
+        """Get a tracked sum key"""
+        return self._sum_key
+
+    def _calculate_sum_spectrum(self) -> None:
+        """Calculates the sum spectrum"""
+        xs = []
+        ys = []
+        for i, spectrum in enumerate(self._spectra.values()):
+            xs.append(np.zeros(len(spectrum)))
+            ys.append(np.zeros(len(spectrum)))
+            for j, pair in enumerate(spectrum):
+                xs[i][j] += pair[0]
+                ys[i][j] += pair[1]
+        xs_flat = np.unique([item for sublist in xs for item in sublist])
+        ys_interpolated = []
+        for point, _ in enumerate(self._spectra.values()):
+            if xs_flat.size == 0 or xs[point].size == 0 or ys[point].size == 0:
+                continue
+            ys_interpolated.append(np.interp(xs_flat, xs[point], ys[point]))
+        y_sum_flat = np.sum(ys_interpolated, axis=0)
+        self.sum_spectrum = [tuple(pair) for pair in zip(xs_flat, y_sum_flat)]
+        self.sum_spectrum_to_file()
+
+    def sum_spectrum_to_file(self) -> None:
+        """Writes the sum spectrum to a file"""
+        if self.sum_spectrum_path is not None:
+            if (self.sum_spectrum_path is not None
+                    and self.sum_spectrum_path.exists()):
+                # Remove previous sum spectrum file
+                self.sum_spectrum_path.unlink()
+        if self.sum_spectrum_key == 'SUM':  # If it's already initialized
+            element = None
+            for key in self.spectra:
+                if not isinstance(key, pathlib.Path):
+                    if "." or "-" in key:
+                        element = key.split(".")[0]
+                        self._sum_key += "." + element
+                elif "." in key.stem:
+                    element = key.stem.split(".")[1]
+                    self._sum_key += "." + element
+                elif "-" in key.stem:
+                    element = key.stem.split("-")[0]
+                    self._sum_key += "." + element
+                else:
+                    raise ValueError(f"Unknown element_name format '{element}'")
+
+        sum_spectrum_np_array = np.array(self.sum_spectrum,
+                                         dtype=[("float", float), ("int", int)])
+        self.sum_spectrum_path = pathlib.Path(
+            self._directory_es) / f"{str.upper(self._spectrum_type)}_{self._sum_key}.hist"
+        np.savetxt(self.sum_spectrum_path, sum_spectrum_np_array,
+                   delimiter=" ", fmt="%5.5f %6d")
+
+    def add_or_update_spectra(self, spectra: Dict[Path, Espe]) -> None:
+        """Add or update specified spectra in the sum spectrum."""
+        for directory, points in spectra.items():
+            self._spectra[directory] = points
+        self._calculate_sum_spectrum()
+
+    def delete_spectra(self, spectra: Union[Sequence[Path], Dict[Path, Espe]]) \
+            -> None:
+        """Delete a specified spectra from the sum spectrum."""
+        for name in spectra:
+            del self._spectra[name]
+        self._calculate_sum_spectrum()

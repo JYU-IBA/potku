@@ -27,13 +27,13 @@ __version__ = "2.0"
 
 import unittest
 
-import rx
+import reactivex as rx
 import modules.observing as observing
 
 from modules.observing import Observable
 from modules.observing import Observer
 from modules.observing import ProgressReporter
-from tests.mock_objects import TestObserver
+from tests.mock_objects import MockObserver
 
 
 # Mock observable and observer
@@ -50,7 +50,7 @@ class TestObserving(unittest.TestCase):
 
         self.assertEqual(0, pub.get_observer_count())
 
-        sub = TestObserver()
+        sub = MockObserver()
         self.assertIsInstance(sub, Observer)
 
         pub.subscribe(sub)
@@ -81,7 +81,7 @@ class TestObserving(unittest.TestCase):
         """Tests that the publisher uses the correct callbacks to publish
         messages."""
         pub = Pub()
-        sub = TestObserver()
+        sub = MockObserver()
 
         pub.subscribe(sub)
 
@@ -106,8 +106,8 @@ class TestObserving(unittest.TestCase):
         pub1 = Pub()
         pub2 = Pub()
 
-        sub1 = TestObserver()
-        sub2 = TestObserver()
+        sub1 = MockObserver()
+        sub2 = MockObserver()
 
         # Subscriber can receive messages from multiple observables and
         # publisher can send messages to multiple subscribers
@@ -133,7 +133,7 @@ class TestObserving(unittest.TestCase):
         """Observers are weakly referenced so they should be removed when
         they no longer exist"""
         pub = Pub()
-        sub = TestObserver()
+        sub = MockObserver()
 
         pub.subscribe(sub)
         self.assertEqual(1, pub.get_observer_count())
@@ -151,7 +151,7 @@ class TestObserving(unittest.TestCase):
 
         # Also if the Sub is only initialized in the context of the subscribe
         # function, observer count stays at 0
-        pub.subscribe(TestObserver())
+        pub.subscribe(MockObserver())
         self.assertEqual(0, pub.get_observer_count())
 
     def test_unreferenceable(self):
@@ -319,7 +319,7 @@ class TestRxOps(unittest.TestCase):
 
     def assert_observed_data_ok(self, data, reduce_func, start_cond, end_cond,
                                 exp_nexts, exp_errs, exp_compl):
-        obs = TestObserver()
+        obs = MockObserver()
 
         stream = rx.from_iterable(data)
         stream.pipe(

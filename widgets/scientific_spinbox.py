@@ -27,27 +27,33 @@ __version__ = "2.0"
 
 import math
 import decimal
+from decimal import Decimal
+from typing import Union, Optional, Tuple
+from enum import IntEnum
+
+from PyQt5.QtWidgets import QDoubleSpinBox, QWidget
 
 import widgets.input_validation as iv
-import widgets.gui_utils as gutils
-
 from widgets.input_validation import ScientificValidator
 
-from decimal import Decimal
-from typing import Union
-from typing import Tuple
 
-from PyQt5 import QtWidgets
-from PyQt5 import uic
+class _StepDirection(IntEnum):
+    UP = 1
+    DOWN = -1
 
 
-class ScientificSpinBox(QtWidgets.QWidget):
+class ScientificSpinBox(QDoubleSpinBox):
     """
     Class for custom double spinbox that handles scientific notation.
     """
 
-    def __init__(self, value=0.0, minimum=0.0, maximum=math.inf,
-                 decimal_places=17, show_btns=True):
+    def __init__(
+            self,
+            value: float = 0.0,
+            minimum: float = 0.0,
+            maximum: float = math.inf,
+            decimal_places: int = 17,
+            parent: Optional[QWidget] = None) -> None:
         """
         Initializes the spinbox.
 
@@ -56,59 +62,85 @@ class ScientificSpinBox(QtWidgets.QWidget):
             minimum: minimum allowed value
             maximum: maximum allowed value
             decimal_places: maximum number of decimals to show
-            show_btns: Whether buttons that increase or decrease the value
-                are shown.
         """
-        super().__init__()
-        uic.loadUi(
-            gutils.get_ui_dir() / "ui_scientific_spinbox_widget.ui", self)
-        self._value = Decimal(str(value))
-        self.minimum = minimum
-        self.maximum = maximum
-        if decimal_places < 1:
-            self._decimal_places = 1
-        elif decimal_places > 17:
-            self._decimal_places = 17
-        else:
-            self._decimal_places = decimal_places
+        super().__init__(parent)
 
-        self.scientificLineEdit: QtWidgets.QLineEdit
+        line_edit = self.lineEdit()
         self._validator = ScientificValidator(
-            self.minimum, self.maximum, self._decimal_places, self,
-            accepted=lambda: iv.set_input_field_white(self.scientificLineEdit),
-            intermediate=lambda: iv.set_input_field_yellow(
-                self.scientificLineEdit),
-            invalid=lambda: iv.set_input_field_red(self.scientificLineEdit)
-            )
-        self.scientificLineEdit.setValidator(self._validator)
+            minimum,
+            maximum,
+            decimal_places,
+            self,
+            accepted=lambda: iv.set_input_field_white(line_edit),
+            intermediate=lambda: iv.set_input_field_yellow(line_edit),
+            invalid=lambda: iv.set_input_field_red(line_edit)
+        )
+        self.setRange(minimum, maximum)
+        self.setDecimals(decimal_places)
+        self.setValue(value)
 
-        self.set_value(self._value)
+        line_edit.textChanged.connect(self._update_value_from_text)
+        line_edit.setValidator(self._validator)
 
-        if show_btns:
-            self.upButton.clicked.connect(lambda *_: self._step_adjustment(
-                self._up_step))
-            self.downButton.clicked.connect(lambda *_: self._step_adjustment(
-                self._down_step))
-        else:
-            self.upButton.hide()
-            self.downButton.hide()
+    def setMinimum(self, minimum: float) -> None:
+        super(ScientificSpinBox, self).setMinimum(minimum)
+        self._update_validator()
 
-    def set_value(self, value: Union[float, Decimal]):
-        """Sets the value of the Spin box, provided that the given value is
-        valid.
+    def setMaximum(self, maximum: float) -> None:
+        super(ScientificSpinBox, self).setMaximum(maximum)
+        self._update_validator()
+
+    def setRange(self, minimum: float, maximum: float) -> None:
+        super(ScientificSpinBox, self).setRange(minimum, maximum)
+        self._update_validator()
+
+    def setDecimals(self, decimal_places: int) -> None:
+        super(ScientificSpinBox, self).setDecimals(decimal_places)
+        self._update_validator()
+
+    def _update_validator(self) -> None:
+        """Updates validator range with current minimum, maximum and decimal
+        places.
         """
-        if isinstance(value, Decimal):
-            value = value
+        self._validator.setRange(
+            self.minimum(), self.maximum(), self.decimals()
+        )
+
+    def stepBy(self, steps: int) -> None:
+        """Called whenever the user triggers a step. The steps parameter
+        indicates how many steps were taken.
+
+        Overrides QDoubleSpinBox.stepBy.
+        """
+        if steps > 0:
+            direction = _StepDirection.UP
         else:
-            value = Decimal(str(value))
+            direction = _StepDirection.DOWN
 
-        if value < self.minimum:
-            value = self.minimum
-        if value > self.maximum:
-            value = self.maximum
+        value = _cast_to_decimal(self.value())
+        for _ in range(abs(steps)):
+            value = ScientificSpinBox._step(value, direction)
 
-        self.scientificLineEdit.setText(
-            self._format_value(value, self._decimal_places))
+        self.setValue(value)
+
+    def textFromValue(self, value: float) -> str:
+        """Called whenever ScientificSpinBox needs to display the given value.
+        """
+        value = _cast_to_decimal(value)
+        return ScientificSpinBox._format_value(value, self.decimals())
+
+    def _update_value_from_text(self, input_text: str) -> None:
+        """Updates the value of this ScientificSpinBox based on the
+        text input. Input has to be a valid number between minimum
+        and maximum, otherwise the value is not updated.
+        """
+        try:
+            new_value = _cast_to_decimal(input_text)
+        except ValueError:
+            return
+
+        if self.minimum() <= new_value <= self.maximum():
+            self.setValue(new_value)
 
     @staticmethod
     def _format_value(value: Decimal, decimals: int) -> str:
@@ -117,42 +149,19 @@ class ScientificSpinBox(QtWidgets.QWidget):
         """
         if not value:
             return "0.0e+0"
+        elif value.is_nan() or value.is_infinite():
+            return str(value)
         s = f"{value:e}"
         v, m = s.split("e")
-        v = v[:decimals - 2].rstrip("0")
+        v = v[:decimals + 2].rstrip("0")
         if v.endswith("."):
             v = f"{v}0"
         elif "." not in v:
             v = f"{v}.0"
         return f"{v}e{m}"
 
-    def _step_adjustment(self, step_func: callable):
-        """Adjusts current value of the spinbox either up or down a step.
-        """
-        try:
-            cur_val = self._get_value()
-        except decimal.InvalidOperation:
-            return
-        new_value = step_func(cur_val)
-
-        self.set_value(new_value)
-
     @staticmethod
-    def _down_step(value: Decimal) -> Decimal:
-        """Returns a new value where the first decimal place of the given value
-        has been decremented by one (for example 1.0e10 -> 9.9e9).
-        """
-        return ScientificSpinBox._step(value, -1, (1, 0), (9, 9))
-
-    @staticmethod
-    def _up_step(value: Decimal) -> Decimal:
-        """Returns a new value where the first decimal place of the given value
-        has been incremented by one (for example 9.9e10 -> 1.0e11).
-        """
-        return ScientificSpinBox._step(value, 1, (9, 9), (1, 0))
-
-    @staticmethod
-    def _step(value: Decimal, coef: int, c1: Tuple, c2: Tuple):
+    def _step(value: Decimal, direction: _StepDirection) -> Decimal:
         """Helper function for incrementing and decrementing first decimal in
         scientific notation.
 
@@ -161,35 +170,47 @@ class ScientificSpinBox(QtWidgets.QWidget):
         addition or subtraction here would cause a too big of a gap in step
         size.
         """
-        # TODO this stuff could be done in the math_functions module
+        if value.is_infinite():
+            return value
+
+        step_from, step_to = _determine_step_threshold(value, direction)
+
         sign, digits, exp = value.as_tuple()
         padded_digits = *digits, 0, 0
-        if sign:
-            c1, c2 = c2, c1
 
-        if padded_digits[:2] == c1:
+        if padded_digits[:2] == step_from:
             # Handle special cases where incrementing or decrementing a decimal
             # causes a change in the exponent part.
-            digits = *c2, *digits[2:]
-            if sign:
-                coef *= -1
-            exp += coef * 1
-            return Decimal((sign, digits, exp))
-        diff_sign = 1 if coef < 0 else 0
+            new_digits = *step_to, *digits[2:]
+            if value < 0:
+                direction *= -1
+            exp += direction
+            if len(digits) == 1:
+                exp += direction
+            return Decimal((sign, new_digits, exp))
+        diff_sign = 0 if direction is _StepDirection.UP else 1
         diff = Decimal((diff_sign, (1, *(0 for _ in digits)), exp - 2))
         return value + diff
 
-    def get_value(self) -> float:
-        """Returns the value of the spinbox as a float.
-        """
+
+def _cast_to_decimal(value: Union[float, str, Decimal]) -> Decimal:
+    """Casts given value to Decimal. Raises ValueError if casting fails.
+    """
+    if not isinstance(value, Decimal):
         try:
-            return float(self._get_value())
+            value = Decimal(str(value))
         except decimal.InvalidOperation:
-            raise TypeError(f"Could not convert text into a number.")
+            raise ValueError(
+                f"Could not convert value '{value}' into a number.")
+    return value
 
-    def _get_value(self) -> Decimal:
-        """Returns the value of the spinbox as a Decimal. This is used
-        for internal handling of the value.
-        """
-        return Decimal(self.scientificLineEdit.text())
 
+def _determine_step_threshold(
+        value: Union[float, Decimal],
+        direction: _StepDirection) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+    is_step_up = direction == _StepDirection.UP
+    is_positive = value > 0
+
+    if (is_step_up and is_positive) or (not is_step_up and not is_positive):
+        return (9, 9), (1, 0)
+    return (1, 0), (9, 9)

@@ -84,7 +84,7 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
                                   PropertyBindingWidget,
                                   abc.ABC,
                                   metaclass=QtABCMeta):
-    """Abstract base class for recoil and fluence optimization parameter
+    """Abstract base class for NSGA-II recoil and fluence optimization parameter
     widgets.
     """
     # Common properties
@@ -111,6 +111,8 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
             kwargs: values to show in the widget
         """
         super().__init__()
+        self.optimize_by_area = False
+        self.radios = QtWidgets.QButtonGroup(self)
         uic.loadUi(ui_file, self)
 
         locale = QLocale.c()
@@ -120,6 +122,7 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
 
         self.skip_sim_chk_box.stateChanged.connect(self.enable_sim_params)
         self.set_properties(**kwargs)
+        self.enable_sim_params()
 
     def enable_sim_params(self, *_):
         """Either enables or disables simulation parameters depending on the
@@ -128,12 +131,36 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
         Args:
             *_: not used
         """
-        self.simGroupBox.setEnabled(not self.skip_simulation)
+        enable = not self.skip_simulation
+
+        self.processesSpinBox.setEnabled(enable)
+        self.percentDoubleSpinBox.setEnabled(enable)
+        self.timeSpinBox.setEnabled(enable)
+        self.minTimeEdit.setEnabled(enable)
+        self.maxTimeEdit.setEnabled(enable)
+
+    # TODO: Make this work the same way as the rest of the radio buttons
+    #  in Potku
+    def radio_buttons(self):
+        """Radio buttons for optimization parameters Sum and Area
+        """
+        self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
+            self.isChecked)
+        self.radios.addButton(self.areaRadioButton)
+        self.radios.addButton(self.sumRadioButton)
+
+    def isChecked(self, button, checked):
+        """Choose whether to optimize by Sum or Area
+        """
+        if checked and button.text() == 'Sum':
+            self.optimize_by_area = False
+        else:
+            self.optimize_by_area = True
 
 
 class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
     """
-    Class that handles the recoil optimization parameters' ui.
+    Class that handles NSGA-II recoil optimization parameters' ui.
     """
 
     # Recoil specific properties
@@ -143,6 +170,7 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
     lower_limits = bnd.multi_bind(
         ("lowerXDoubleSpinBox", "lowerYDoubleSpinBox")
     )
+
     # sol_size values are unique (5, 7, 9 or 11) so they can be used in
     # two-way binding
     sol_size = bnd.bind("recoilTypeComboBox", fget=sol_size_from_combobox,
@@ -162,7 +190,7 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
         """
         ui_file = gutils.get_ui_dir() / "ui_optimization_recoil_params.ui"
         super().__init__(ui_file, **kwargs)
-
+        self.radio_buttons()
         locale = QLocale.c()
         self.upperXDoubleSpinBox.setLocale(locale)
         self.lowerXDoubleSpinBox.setLocale(locale)
@@ -172,7 +200,7 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
 
 class OptimizationFluenceParameterWidget(OptimizationParameterWidget):
     """
-    Class that handles the fluence optimization parameters' ui.
+    Class that handles NSGA-II fluence optimization parameters' ui.
     """
 
     # Fluence specific properties
@@ -199,7 +227,8 @@ class OptimizationFluenceParameterWidget(OptimizationParameterWidget):
             kwargs: property values to be shown in the widget.
         """
         ui_file = gutils.get_ui_dir() / "ui_optimization_fluence_params.ui"
-        self.fluenceDoubleSpinBox = ScientificSpinBox(10e12)
         super().__init__(ui_file, **kwargs)
+        self.radio_buttons()
+        self.fluenceDoubleSpinBox = ScientificSpinBox(10e12)
         self.fluence_form_layout.addRow(
             "Upper limit", self.fluenceDoubleSpinBox)

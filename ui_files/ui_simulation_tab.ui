@@ -115,7 +115,7 @@
             <x>0</x>
             <y>0</y>
             <width>300</width>
-            <height>237</height>
+            <height>217</height>
            </rect>
           </property>
           <property name="sizePolicy">
@@ -133,6 +133,21 @@
              <property name="sizeConstraint">
               <enum>QLayout::SetDefaultConstraint</enum>
              </property>
+             <item>
+              <widget class="QLabel" name="warning_text">
+               <property name="font">
+                <font>
+                 <family>Segoe UI</family>
+                </font>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
              <item>
               <widget class="QCommandLinkButton" name="openSettingsButton">
                <property name="sizePolicy">

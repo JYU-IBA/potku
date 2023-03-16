@@ -31,6 +31,7 @@ import math
 import tests.mock_objects as mo
 
 from modules.depth_files import DepthProfileHandler
+from modules.enums import DepthProfileUnit
 from timeit import default_timer as timer
 
 
@@ -103,12 +104,14 @@ class TestDepthProfileHandling(unittest.TestCase):
         """Tests depth ranges with different depth units"""
         # First read files while using depth units other than nanometers
         self.handler.read_directory(
-            self.depth_dir, self.some_elements, depth_units="")
+            self.depth_dir, self.some_elements,
+            depth_units=DepthProfileUnit.ATOMS_PER_SQUARE_CM)
         fst_range = self.handler.get_depth_range()
 
         # Then read files using nanometers
         self.handler.read_directory(
-            self.depth_dir, self.some_elements, depth_units="nm")
+            self.depth_dir, self.some_elements,
+            depth_units=DepthProfileUnit.NM)
         snd_range = self.handler.get_depth_range()
 
         # First and second ranges are different and both are not
@@ -152,8 +155,7 @@ class TestDepthProfileHandling(unittest.TestCase):
         self.assertEqual(inf.currsize, 0)
         self.assertEqual(inf.maxsize, max_cache)
 
-        self.handler.read_directory(
-            self.depth_dir, self.all_elements, depth_units="nm")
+        self.handler.read_directory(self.depth_dir, self.all_elements)
         a, b = self.handler.get_depth_range()
 
         # First merge is called with same parameters for n times
@@ -208,8 +210,7 @@ class TestDepthProfileHandling(unittest.TestCase):
         # Caching means that same object is returned
         # This needs to be taken into consideration if caller needs to modify
         # the results
-        self.handler.read_directory(
-            self.depth_dir, self.some_elements, depth_units="nm")
+        self.handler.read_directory(self.depth_dir, self.some_elements)
 
         # Set initial ranges that fall within handlers depth range
         a, b = self.handler.get_depth_range()
@@ -233,8 +234,7 @@ class TestDepthProfileHandling(unittest.TestCase):
 
         # When a new ProfileHandler is created, new cache is also established
         new_dp = DepthProfileHandler()
-        new_dp.read_directory(
-            self.depth_dir, self.some_elements, depth_units="nm")
+        new_dp.read_directory(self.depth_dir, self.some_elements)
 
         m5 = new_dp.merge_profiles(a, b, method="abs_rel_abs")
         self.assertIsNot(m1, m5)

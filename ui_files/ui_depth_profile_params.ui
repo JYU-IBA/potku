@@ -19,7 +19,7 @@
      <item>
       <widget class="QTreeWidget" name="treeWidget">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -251,7 +251,7 @@
             <item>
              <widget class="QLabel" name="label_10">
               <property name="text">
-               <string>Number of depth steps:</string>
+               <string>Number of depth steps: </string>
               </property>
              </widget>
             </item>
@@ -305,6 +305,33 @@
            </layout>
           </item>
           <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_16">
+            <item>
+             <widget class="QLabel" name="label_warning_text">
+              <property name="toolTip">
+               <string>Efficiency files used to calculate Depth Profile. The folder in which efficiency files are looked for can be changed in global settings.</string>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_12">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
            <spacer name="verticalSpacer">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
@@ -329,7 +356,7 @@
      <item>
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>X axis units:</string>
+        <string>X axis units</string>
        </property>
       </widget>
      </item>
@@ -341,6 +368,9 @@
        <property name="checked">
         <bool>true</bool>
        </property>
+       <attribute name="buttonGroup">
+        <string notr="true">group_x_axis_units</string>
+       </attribute>
       </widget>
      </item>
      <item>
@@ -350,6 +380,26 @@
        </property>
        <property name="checked">
         <bool>false</bool>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">group_x_axis_units</string>
+       </attribute>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_reference_density">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Reference density [g/cm&lt;span style=&quot; vertical-align:super;&quot;&gt;3&lt;/span&gt;]&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDoubleSpinBox" name="sbox_reference_density">
+       <property name="minimum">
+        <double>0.010000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>9999.000000000000000</double>
        </property>
       </widget>
      </item>
@@ -379,6 +429,16 @@
     <widget class="QCheckBox" name="check_scaleline">
      <property name="text">
       <string>Show depth concentration scaling range</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="show_eff">
+     <property name="text">
+      <string>Show used efficiency files</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
@@ -464,4 +524,7 @@
  </widget>
  <resources/>
  <connections/>
+ <buttongroups>
+  <buttongroup name="group_x_axis_units"/>
+ </buttongroups>
 </ui>

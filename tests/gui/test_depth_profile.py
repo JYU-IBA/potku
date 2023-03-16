@@ -41,10 +41,10 @@ class TestDepthProfile(unittest.TestCase):
         parent.measurement = mo.get_measurement()
         parent.measurement.selector = Selector(
             parent.measurement, mo.get_global_settings().get_default_colors())
-        parent.icon_manager = Mock()
+        icon_manager = Mock()
         depth_dir, all_elems, _ = mo.get_sample_depth_files_and_elements()
         w = MatplotlibDepthProfileWidget(
-            parent, depth_dir, all_elems, {})
+            parent, depth_dir, all_elems, {}, icon_manager, {})
 
         w.close()
 

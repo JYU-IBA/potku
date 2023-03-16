@@ -39,7 +39,6 @@ import math
 import os
 import platform
 import subprocess
-import logging
 import functools
 
 from pathlib import Path
@@ -49,10 +48,12 @@ from typing import List
 from . import math_functions as mf
 from . import comparison as comp
 from . import general_functions as gf
+from .ui_log_handlers import Logger
 from .element import Element
 from .parsing import CSVParser
 from .measurement import Measurement
 from .observing import ProgressReporter
+from .enums import DepthProfileUnit
 
 
 class DepthFileGenerator:
@@ -253,7 +254,11 @@ class DepthProfile:
         return len(self.depths)
 
     @classmethod
-    def from_file(cls, file_path, element=None, depth_units="nm"):
+    def from_file(
+            cls,
+            file_path: Path,
+            element: Optional[Element] = None,
+            depth_units: DepthProfileUnit = DepthProfileUnit.NM) -> "DepthProfile":
         """Reads a depth profile from a file and returns it.
 
         Args:
@@ -266,7 +271,7 @@ class DepthProfile:
         Return:
             DepthProfile object
         """
-        if depth_units == "nm":
+        if depth_units == DepthProfileUnit.NM:
             x_column = 2
         else:
             x_column = 0
@@ -509,7 +514,12 @@ class DepthProfileHandler:
         self.__absolute_profiles = {}
         self.__relative_profiles = {}
 
-    def read_directory(self, directory_path, elements, depth_units="nm"):
+    def read_directory(
+            self,
+            directory_path: Path,
+            elements,
+            depth_units: DepthProfileUnit = DepthProfileUnit.NM,
+            logger: Optional[Logger] = None) -> None:
         """Reads depth files from the given directory that match the given
         set of elements and stores them internally as DepthProfiles.
 
@@ -521,12 +531,18 @@ class DepthProfileHandler:
             elements: collection of elements that will be matched to
                       depth files
             depth_units: unit in which depths are measured
+            logger: optional Logger entity used for logging
         """
         file_paths = get_depth_files(elements, directory_path)
-        self.read_files(file_paths, elements, depth_units=depth_units)
+        self.read_files(
+            file_paths, elements, depth_units=depth_units, logger=logger)
 
-    def read_files(self, file_paths, elements, depth_units="nm",
-                   logger_name=None):
+    def read_files(
+            self,
+            file_paths,
+            elements,
+            depth_units: DepthProfileUnit = DepthProfileUnit.NM,
+            logger: Optional[Logger] = None) -> None:
         """Reads depth files from given list of file paths that
         match the given set of elements.
 
@@ -537,8 +553,7 @@ class DepthProfileHandler:
             elements: collection of elements that will be matched to
                       depth files
             depth_units: unit in which depths are measured
-            logger_name: name of a Logger entity that will be used to create a
-                         log message if something goes wrong when reading files
+            logger: optional Logger entity used for logging
         """
         # Clear currently stored profiles and cache for merging
         self.merge_profiles.cache_clear()
@@ -561,11 +576,10 @@ class DepthProfileHandler:
                     depth_units=depth_units)
 
                 self.__absolute_profiles[profile.get_profile_name()] = profile
-
             except Exception as e:
-                if logger_name is not None:
-                    logging.getLogger(logger_name).info(
-                        f"Could not create depth profiled .depth file: {e}")
+                if logger is not None:
+                    msg = f"Could not create depth profiled .depth file: {e}"
+                    logger.log_error(msg)
 
     def get_depth_range(self):
         """Returns the minimum and maximum depth values in the total depth
