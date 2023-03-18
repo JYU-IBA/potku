@@ -57,6 +57,7 @@ from dialogs.about import AboutDialog
 from dialogs.file_dialogs import open_file_dialog
 from dialogs.global_settings import GlobalSettingsDialog
 from dialogs.measurement.import_binary import ImportDialogBinary
+from dialogs.measurement.import_mpa import ImportDialogMPA
 from dialogs.measurement.import_measurement import ImportMeasurementsDialog
 from dialogs.measurement.load_measurement import LoadMeasurementDialog
 from dialogs.new_request import RequestNewDialog
@@ -616,7 +617,7 @@ class Potku(QtWidgets.QMainWindow):
         """
         if not self.request:
             return
-        import_dialog = ImportDialogBinary(
+        import_dialog = ImportDialogMPA(
             self.request, self.icon_manager, self.statusbar, self)
         if import_dialog.imported:
             self.__remove_info_tab()
