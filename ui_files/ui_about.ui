@@ -75,7 +75,7 @@
           </font>
          </property>
          <property name="text">
-          <string>Version 2.0</string>
+          <string>Version 2.2</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -105,9 +105,9 @@
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>-53</y>
-          <width>459</width>
-          <height>598</height>
+          <y>0</y>
+          <width>461</width>
+          <height>566</height>
          </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -116,7 +116,7 @@
            <item>
             <widget class="QLabel" name="label_licence">
              <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:9pt; font-weight:600;&quot;&gt;Potku's Licence&lt;br/&gt;&lt;/span&gt;Licence GPL version 2.&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:9pt; font-weight:600;&quot;&gt;University of Jyväskylä&lt;br/&gt;&lt;/span&gt;30.3.2022&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:9pt; font-weight:600;&quot;&gt;Potku's Licence&lt;br/&gt;&lt;/span&gt;Licence GPL version 2.&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:9pt; font-weight:600;&quot;&gt;University of Jyväskylä&lt;br/&gt;&lt;/span&gt;22.3.2023&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
            </item>
@@ -206,7 +206,7 @@
                <item>
                 <widget class="QLabel" name="label_4">
                  <property name="text">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;Aleksi Kauppi&lt;br/&gt;Joonas Koponen&lt;br/&gt;Tuomas Pitkänen&lt;br/&gt;Juhani Sundell&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;Aleksi Kauppi&lt;br/&gt;Joonas Koponen&lt;br/&gt;Tuomas Pitkänen&lt;br/&gt;Juhani Sundell&lt;br/&gt;Timo Leppälä&lt;br/&gt;Liisa Miettinen&lt;br/&gt;Sami Voutilainen&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                 </widget>
                </item>
