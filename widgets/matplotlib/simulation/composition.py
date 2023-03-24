@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 3.1.2022
+Updated on 24.3.2023
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen, 2022 Joonas Kopoonen and Tuomas Pitkänen
+Sinikka Siironen, 2022 Joonas Kopoonen and Tuomas Pitkänen,
+2023 Sami Voutilainen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,17 +25,15 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen \n Joonas Koponen \n Tuomas Pitkänen"
+             "\n Sinikka Siironen \n Joonas Koponen \n Tuomas Pitkänen" \
+             "\n Sami Voutilainen"
 __version__ = "2.0"
-
-from typing import List
 
 import matplotlib
 import os
 import widgets
 
 import dialogs.dialog_functions as df
-from modules.reference_density import ReferenceDensity
 
 from widgets.matplotlib import mpl_utils
 from pathlib import Path
@@ -158,18 +157,15 @@ class _CompositionWidget(MatplotlibWidget):
         self.__layer_selector.set_visible(False)
         self.__layer_selector = None
         self.__selected_layer = None
-
         # Update layer start depths
         self.update_start_depths()
 
-        reference_density = ReferenceDensity(self.layers)
-        reference_density.update_reference_density()
+        self.simulation.reference_density.update_layers(self.layers)
 
-        if reference_density:
-            self.parent.referenceDensityLabel.setText(
-                f"Reference density: "
-                f"{reference_density.reference_density:1.2e} "
-                f"at./cm\xb3")
+        self.parent.referenceDensityLabel.setText(
+            f"Reference density: "
+            f"{self.simulation.reference_density.reference_density:1.2e} "
+            f"at./cm\xb3")
 
         # Update canvas
         self.__update_figure(zoom_to_bottom=True)
@@ -209,14 +205,12 @@ class _CompositionWidget(MatplotlibWidget):
                 if self.foil_behaviour:
                     zoom_to_bottom = True
 
-                reference_density = ReferenceDensity(self.layers)
-                reference_density.update_reference_density()
+                self.simulation.reference_density.update_layers(self.layers)
 
-                if reference_density:
-                    self.parent.referenceDensityLabel.setText(
-                        f"Reference density: "
-                        f"{reference_density.reference_density:1.2e} "
-                        f"at./cm\xb3")
+                self.parent.referenceDensityLabel.setText(
+                    f"Reference density: "
+                    f"{self.simulation.reference_density.reference_density:1.2e} "
+                    f"at./cm\xb3")
 
                 self.__update_figure(zoom_to_bottom=zoom_to_bottom)
 
@@ -376,14 +370,12 @@ class _CompositionWidget(MatplotlibWidget):
             self.__selected_layer = dialog.layer
             self.__update_figure(zoom_to_bottom=True)
 
-        reference_density = ReferenceDensity(self.layers)
-        reference_density.update_reference_density()
+        self.simulation.reference_density.update_layers(self.layers)
 
-        if reference_density:
-            self.parent.referenceDensityLabel.setText(
-                f"Reference density: "
-                f"{reference_density.reference_density:1.2e} "
-                f"at./cm\xb3")
+        self.parent.referenceDensityLabel.setText(
+            f"Reference density: "
+            f"{self.simulation.reference_density.reference_density:1.2e} "
+            f"at./cm\xb3")
 
         if type(self.parent) is widgets.simulation.target.TargetWidget:
             self.parent.recoilRadioButton.setEnabled(True)
