@@ -1,13 +1,13 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 8.2.2020
+Updated on 24.3.2023
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell, Tuomas Pitkänen
+Sinikka Siironen, 2020 Juhani Sundell, Tuomas Pitkänen, 2023 Sami Voutilainen
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
@@ -20,7 +20,8 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
+             "Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen \n" \
+             "Sami Voutilainen"
 __version__ = "2.0"
 
 import functools
@@ -40,8 +41,8 @@ from typing import Set
 from typing import Tuple
 from typing import Union
 
-import rx
-from rx import operators as ops
+import reactivex as rx
+from reactivex import operators as ops
 
 from . import file_paths as fp
 from . import general_functions as gf
@@ -277,7 +278,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             values = {
                 "name": new_name,
                 "description": recoil.description,
-                "reference_density": recoil.reference_density,
+                "reference_density": self.simulation.reference_density,
                 "color": recoil.color
             }
             self.update_recoil_element(recoil, values)
@@ -554,7 +555,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
               use_old_erd_files=True, optimization_type=None,
               ion_division=IonDivision.NONE,
               ct: Optional[CancellationToken] = None,
-              start_interval=5, status_check_interval=1,
+              start_interval=1, status_check_interval=1,
               **kwargs) -> Optional[rx.Observable]:
         """
         Start the simulation.
@@ -627,7 +628,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         self._cts.add(ct)
 
-        # New MCERD process is started every five seconds until number of
+        # New MCERD process is started every second until number of
         # processes is reached or cancellation has been requested.
         # Seed is incremented for each new process.
         return rx.timer(0, start_interval).pipe(
@@ -833,8 +834,10 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             ch: Optional[float] = None,
             fluence: Optional[float] = None,
             optimization_type: Optional[OptimizationType] = None,
-            write_to_file: bool = True) -> Tuple[List, Optional[Path]]:
+            write_to_file: bool = True,
+            remove_recoil_file: bool = False) -> Tuple[List, Optional[Path]]:
         """Calculate the energy spectrum from the MCERD result file.
+
         Args:
             recoil_element: Recoil element.
             verbose: In terminal (disabled by default).
@@ -842,6 +845,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             fluence: Fluence to use.
             optimization_type: Either recoil, fluence or None
             write_to_file: Whether spectrum is written to file
+            remove_recoil_file: Whether to remove temporary .recoil file
+                after getting the energy spectrum.
+
         Return:
             tuple consisting of spectrum data and espe file
         """
@@ -886,13 +892,17 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             detector=detector,
             target=self.simulation.target,
             ch=ch,
-            reference_density=recoil_element.reference_density,
+            reference_density=self.simulation.reference_density,
             fluence=used_fluence,
             erd_file=erd_file,
             output_file=output_file,
             recoil_file=recoil_file,
             verbose=verbose
         )
+
+        if remove_recoil_file:
+            recoil_file.unlink()
+
         # TODO returning espe_file is a bit pointless if write_to_file is
         #   False
         return spectrum, output_file
