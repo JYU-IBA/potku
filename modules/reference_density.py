@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 3.1.2022
-Updated on 16.3.2023
+Updated on 24.3.2023
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -31,49 +31,63 @@ from modules.general_functions import convert_amu_to_kg
 
 
 class ReferenceDensity:
-    """Recalculates the reference density when the user makes changes to the
-    layer properties on the target composition tab on the simulation side.
+    """Class handles the calculation of the mean number density of a target up
+    to the thickness limit.
     """
+
     def __init__(self, layers: List = None):
         """Initializes a ReferenceDensity object.
 
         Args:
-            layers: The reference density will be updated on these element
-            layers (such as Si, Au etc.)
+            layers: a list of layer objects.
         """
-
         self.layers = layers
         self.reference_density = 0.0
-        self.thickness_limit = 10.0
-        # Total thickness of the layers that are included in the calculation
+        self.thickness_limit = 10.0    # Limit up to which layers are included
         self.total_thickness = 0.0
 
+    def update_layers(self, layers):
+        """Updates the layers used in reference density calculation.
+
+        Args:
+            layers: a list of layer objects.
+        """
+        self.layers = layers
+        self.update_reference_density()
+
     def update_reference_density(self):
+        """Calculates a new reference_density value.
+        """
+        self.reference_density = 0.0
         if not self.layers:
             return
-            
+
         self.total_thickness = 0.0
         for layer in self.layers:
             self.add_layer_density(layer)
             if self.total_thickness >= self.thickness_limit:
                 break
-                
+
         if self.total_thickness != 0.0:
             self.reference_density /= self.total_thickness
         else:
             self.reference_density = 0.0
 
     def add_layer_density(self, layer):
-        layer_density = 0.0
-        
+        """Calculates and adds the number density of a single layer multiplied
+        by its thickness.
+        """
+        mean_atomic_mass = 0.0
+
         for element in layer.elements:
-            mass = element.get_mass() * element.amount
-            g_mass = convert_amu_to_kg(mass) * 1000
-            layer_density += (layer.density / g_mass)
-            
+            mean_atomic_mass += element.get_mass() * element.amount
+
+        mean_atomic_mass = convert_amu_to_kg(mean_atomic_mass) * 1000
+        layer_number_density = (layer.density / mean_atomic_mass)
+
         effective_thickness = layer.thickness
         if self.total_thickness + effective_thickness > self.thickness_limit:
             effective_thickness = self.thickness_limit - self.total_thickness
-            
-        self.reference_density += layer_density * effective_thickness
+
+        self.reference_density += layer_number_density * effective_thickness
         self.total_thickness += effective_thickness
