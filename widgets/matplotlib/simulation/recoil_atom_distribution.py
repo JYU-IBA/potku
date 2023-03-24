@@ -1,14 +1,14 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 27.5.2019
+Updated on 24.3.2023
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, 2023 Sami Voutilainen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
-             "Sinikka Siironen \n Juhani Sundell"
+             "Sinikka Siironen \n Juhani Sundell \n Sami Voutilainen"
 __version__ = "2.0"
 
 import matplotlib
@@ -562,13 +562,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # on the x axis)
         self.span_selector = SpanSelector(
             self.axes, self.on_span_select, "horizontal", useblit=True,
-            rectprops=dict(alpha=0.5, facecolor="red"), button=1,
-            span_stays=True, onmove_callback=self.on_span_motion)
+            props=dict(alpha=0.5, facecolor="red"), button=1,
+            interactive=True, onmove_callback=self.on_span_motion)
         self.span_selector.set_active(False)
 
         self.rectangle_selector = RectangleSelector(
-            self.axes, self.on_rectangle_select, useblit=True, drawtype="box",
-            rectprops=dict(alpha=0.5, facecolor="red"), button=3)
+            self.axes, self.on_rectangle_select, useblit=True,
+            props=dict(alpha=0.5, facecolor="red"), button=3)
 
         # Connections and setup
         self.canvas.mpl_connect("button_press_event", self.on_click)
@@ -1180,7 +1180,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             f"Name: {self.current_recoil_element.name}")
         self.parent.referenceDensityLabel.setText(
             f"Reference density: "
-            f"{self.current_recoil_element.reference_density:1.2e} at./cm\xb3"
+            f"{self.simulation.reference_density.reference_density:1.2e} at./cm\xb3"
         )
 
     def recoil_element_info_on_switch(self):
