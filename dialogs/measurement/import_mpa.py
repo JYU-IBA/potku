@@ -43,7 +43,6 @@ from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
-
 class ImportDialogMPA(QtWidgets.QDialog):
     """MPA measurement importing class.
     """
@@ -223,27 +222,70 @@ class ImportDialogMPA(QtWidgets.QDialog):
         numpy.savetxt(output_file, numpy_array, delimiter=" ", fmt="%d %d")
 
     def __import_files(self):
-        """Import MPA files.
+        """Import listed files with settings defined in the dialog.
         """
-        sbh = StatusBarHandler(self.__statusbar)
-        sbh.reporter.report(10)
+        sbh = StatusBarHandler(self.statusbar)
+        string_columns = []
+
+        for i in range(self.grid_column.rowCount()):
+            item = self.grid_column.itemAtPosition(i, 0)
+            if not item.isEmpty():
+                combo_widget = self.grid_column.itemAtPosition(i, 1).widget()
+                # combo_widget = combo_item
+                cur_index = combo_widget.currentIndex()
+                cur_text = combo_widget.currentText()
+                adc = int(re.sub(r"ADC ([0-9]+).*", r"\1", cur_text))
+                # + 1 since actual column, not index
+                column_index = adc * 2 + cur_index % 2 + 1
+                string_columns.append("${0}".format(column_index))
+        string_column = ",".join(string_columns)
 
         root = self.treeWidget.invisibleRootItem()
         root_child_count = root.childCount()
+        timing = dict()
+        for coinc_timing in self.__added_timings.values():
+            if coinc_timing.is_not_trigger:
+                timing[coinc_timing.adc] = (coinc_timing.low.value(),
+                                            coinc_timing.high.value())
+        start_time = timer()
 
+        sbh.reporter.report(10)
+
+        filename_list = []
         for i in range(root_child_count):
             item = root.child(i)
-            input_file = item.file
+            filename_list.append(item.filename)
 
             output_file = df.import_new_measurement(
                 self.request, self.parent, item)
-            self.__convert_file(input_file, output_file)
+            gf.lst2ascii(Path(item.file),
+                     output_file=output_file,
+                     skip_lines=self.spin_skiplines.value(),
+                     tablesize=10,
+                     trigger=self.spin_adctrigger.value(),
+                     adc_count=self.spin_adccount.value(),
+                     timing=timing,
+                     columns=string_column,
+                     nevents=self.spin_eventcount.value())
 
-            sbh.reporter.report(10 + (i + 1 / root_child_count) * 90)
+            sbh.reporter.report(10 + (i + 1) / root_child_count * 90)
+
+        filenames = ", ".join(filename_list)
+        elapsed = timer() - start_time
+        log = f"Imported measurements to request: {filenames}"
+        log_var = "Variables used: {0} {1} {2} {3} {4}".format(
+            "Skip lines: " + str(self.spin_skiplines.value()),
+            "ADC trigger: " + str(self.spin_adctrigger.value()),
+            "ADC count: " + str(self.spin_adccount.value()),
+            "Timing: " + str(timing),
+            "Event count: " + str(self.spin_eventcount.value()))
+        log_elapsed = f"Importing finished {elapsed} seconds"
+        self.request.log(log)
+        self.request.log(log_var)
+        self.request.log(log_elapsed)
 
         sbh.reporter.report(100)
         self.imported = True
-
         self.close()
 
     def __remove_selected(self):
