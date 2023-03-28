@@ -1,13 +1,10 @@
 # coding=utf-8
 """
-Created on 2020
-Updated on 3.1.2022
-
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2020 Juhani Sundell, 2022 Joonas Koponen and Tuomas Pitkänen
+Copyright (C) 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,7 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 
-__author__ = "Juhani Sundell \n Joonas Koponen \n Tuomas Pitkänen"
+__author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 import unittest
@@ -34,14 +31,11 @@ import modules.comparison as comp
 import random
 import time
 import tests.utils as utils
-import tests.mock_objects as mo
 
 from pathlib import Path
 
 from modules import general_functions as gf
 from modules.element import Element
-from modules.layer import Layer
-from modules.reference_density import ReferenceDensity
 
 _DIR_PATH = Path(
     utils.get_sample_data_dir(), "Ecaart-11-mini", "Tof-E_65-mini", "cuts"
@@ -104,9 +98,9 @@ class TestMatchingFunctions(unittest.TestCase):
             3: 4,
             5: 6
         }, {
-            1: 11,  # these values wont be found because
-            3: 12,  # the dict has the same keys as the
-            5: 13  # first dict
+            1: 11,      # these values wont be found because
+            3: 12,      # the dict has the same keys as the
+            5: 13       # first dict
         }, {
             7: 8,
             9: None
