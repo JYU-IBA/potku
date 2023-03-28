@@ -278,7 +278,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             values = {
                 "name": new_name,
                 "description": recoil.description,
-                "reference_density": self.simulation.reference_density,
+                "reference_density": self.simulation.reference_density.reference_density,
                 "color": recoil.color
             }
             self.update_recoil_element(recoil, values)
@@ -892,7 +892,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             detector=detector,
             target=self.simulation.target,
             ch=ch,
-            reference_density=self.simulation.reference_density,
+            reference_density=self.simulation.reference_density.reference_density,
             fluence=used_fluence,
             erd_file=erd_file,
             output_file=output_file,
