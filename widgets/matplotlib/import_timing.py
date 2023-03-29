@@ -77,7 +77,7 @@ class MatplotlibImportTimingWidget(MatplotlibWidget):
         self.axes.clear()
 
         self.axes.hist(self.data, 200, facecolor='green', histtype='stepfilled')
-        self.axes.set_yscale('log', nonposy='clip')
+        self.axes.set_yscale('log', nonpositive='clip')
 
         self.axes.set_xlabel("Timedifference (µs?)")
         self.axes.set_ylabel("Count (?)")
