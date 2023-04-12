@@ -326,47 +326,16 @@ def carbon_stopping(element, isotope, energy, carbon_thickness, carbon_density):
         print("No parameters to calculate carbon stopping energy.")
         return None
 
-def lst2ascii(input_file: Path, skip_lines: int, tablesize: int,
-          trigger: int, adc_count: int, timing: Dict[str, Tuple[int, int]],
-          output_file: Optional[Path] = None, columns: str = "$3,$5",
-          nevents: int = 0, timediff: bool = True, verbose: bool = True) -> \
+def lst2ascii(input_file: Path, output_file: Optional[Path] = None) -> \
         List[str]:
-    timings = (
-        (f"--low={key},{low}", f"--high={key},{high}")
-        for key, (low, high) in timing.items()
-    )
-    timings = [s for tpl in timings for s in tpl]
-
-    col_split = columns.split(',')
-    if not (all(col_split) and timings):
-        return []
-
-    if timediff:
-        timediff_str = "--timediff"
-    else:
-        timediff_str = ""
-
     bin_dir = get_bin_dir()
 
     if platform.system() != "Windows":
-        executable = "./coinc"
-        awk_cmd = "awk", f"{{print {columns}}}"
+        executable = "./lst2ascii"
     else:
+        #TODO: Configure lst2ascii.exe for Windows users
         executable = bin_dir / "coinc.exe"
-        awk_cmd = str(get_bin_dir() / "awk.exe"), f"{{print {columns}}}"
 
-    coinc_cmd = (
-        str(executable),
-        "--silent",
-        f"--skip={skip_lines}",
-        f"--tablesize={tablesize}",
-        f"--trigger={trigger}",
-        f"--nadc={adc_count}",
-        timediff_str,
-        *timings,
-        f"--nevents={nevents}",
-        str(input_file),
-    )
 def coinc(input_file: Path, skip_lines: int, tablesize: int,
           trigger: int, adc_count: int, timing: Dict[str, Tuple[int, int]],
           output_file: Optional[Path] = None, columns: str = "$3,$5",
@@ -448,7 +417,8 @@ def coinc(input_file: Path, skip_lines: int, tablesize: int,
                     awk_cmd, stdin=coinc_proc.stdout, **kwargs) as awk_proc:
                 data = sutils.process_output(awk_proc, file=output_file)
                 return data
-    except OSError:
+    except OSError as e:
+        print(e)
         return []
 
 
