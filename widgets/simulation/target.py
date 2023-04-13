@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.3.2018
-Updated on 27.11.2018
+Updated on 13.4.2023
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -106,8 +106,7 @@ class TargetWidget(QtWidgets.QWidget):
         icon_manager.set_icon(self.editPushButton, "edit.svg")
         self.editPushButton.setIconSize(QtCore.QSize(14, 14))
         self.editPushButton.setToolTip(
-            "Edit name, description and reference density "
-            "of this recoil element")
+            "Edit name, description and color of selected recoil element")
         self.recoilListWidget.hide()
         self.editLockPushButton.hide()
         self.elementInfoWidget.hide()
@@ -115,7 +114,8 @@ class TargetWidget(QtWidgets.QWidget):
         icon_manager.set_icon(self.editTargetInfoButton, "edit.svg")
         self.editTargetInfoButton.setIconSize(QtCore.QSize(14, 14))
         self.editTargetInfoButton.setToolTip(
-            "Edit name and description of the target")
+            "Edit reference density of the target")
+        self.targetNameLabel.hide()
 
         if platform.system() == "Darwin":
             self.percentButton.setText("Calculate\npercents")
