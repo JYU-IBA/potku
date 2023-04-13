@@ -1,14 +1,14 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 24.3.2023
+Updated on 29.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell, 2023 Sami Voutilainen
+Sinikka Siironen, 2020 Juhani Sundell
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -27,8 +27,7 @@ Simulation.py runs the MCERD simulation with a command file.
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen" \
-             "\n Sami Voutilainen"
+             "\n Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import json
@@ -51,7 +50,6 @@ from .element_simulation import ElementSimulation
 from .run import Run
 from .target import Target
 from .ui_log_handlers import SimulationLogger
-from .reference_density import ReferenceDensity
 
 
 class Simulations:
@@ -114,10 +112,8 @@ class Simulations:
             if target_file is not None:
                 target = Target.from_file(
                     target_file, sample.request)
-                reference_density = ReferenceDensity(target.layers)
             else:
                 target = None
-                reference_density = None
 
             if detector_file is not None:
                 detector = Detector.from_file(
@@ -128,8 +124,7 @@ class Simulations:
 
             simulation = Simulation.from_file(
                 sample.request, simulation_file, measurement_file=mesu_file,
-                sample=sample, target=target,
-                reference_density=reference_density, detector=detector)
+                sample=sample, target=target, detector=detector)
 
             serial_number = int(
                 simulation_folder.name[
@@ -209,7 +204,7 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
     """
     __slots__ = "path", "request", "simulation_file", "name", "tab_id", \
                 "description", "modification_time", "run", "detector", \
-                "target", "reference_density", "element_simulations", \
+                "target", "element_simulations", \
                 "serial_number", "directory", "measurement_setting_file_name", \
                 "measurement_setting_file_description", \
                 "sample", "use_request_settings"
@@ -222,7 +217,6 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
                  run: Optional[Run] = None,
                  detector: Optional[Detector] = None,
                  target: Optional[Target] = None,
-                 reference_density: Optional[ReferenceDensity] = None,
                  measurement_setting_file_name="",
                  measurement_setting_file_description="", sample=None,
                  use_request_settings=True,
@@ -239,7 +233,6 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             run: Run object.
             detector: Detector object.
             target: Target object.
-            reference_density: ReferenceDensity object.
             measurement_setting_file_name: Measurement settings file name.
             measurement_setting_file_description: Measurement settings file
             description.
@@ -293,12 +286,6 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             self.target = self.request.copy_default_target()
         else:
             self.target = target
-
-        if reference_density is None:
-            self.reference_density = ReferenceDensity(self.target.layers)
-        else:
-            self.reference_density = reference_density
-        self.reference_density.update_reference_density()
 
         self.serial_number = 0
 
@@ -429,9 +416,8 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
     @classmethod
     def from_file(cls, request: "Request", simulation_file: Path,
                   measurement_file: Optional[Path] = None,
-                  detector=None, target=None, reference_density=None,
-                  run=None, sample=None, save_on_creation=True,
-                  enable_logging=True) -> "Simulation":
+                  detector=None, target=None, run=None, sample=None,
+                  save_on_creation=True, enable_logging=True) -> "Simulation":
         """Initialize Simulation from a JSON file.
 
         Args:
@@ -440,7 +426,6 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             measurement_file: path to .measurement file
             detector: Detector used by this simulation
             target: Target used by this simulation
-            reference_density: ReferenceDensity object used by this simylation
             run: Run used by this simulation
             sample: Sample under which this simulation belongs to
             save_on_creation: whether Simulation object is saved to file
@@ -471,9 +456,8 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             general = {}
 
         return cls(
-            simulation_file, request, detector=detector, target=target,
-            reference_density=reference_density, run=run, sample=sample,
-            **simu_obj, save_on_creation=save_on_creation,
+            simulation_file, request, detector=detector, target=target, run=run,
+            sample=sample, **simu_obj, save_on_creation=save_on_creation,
             enable_logging=enable_logging, **general)
 
     def to_file(self, simulation_file: Optional[Path] = None,
