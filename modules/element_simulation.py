@@ -1,13 +1,13 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 24.3.2023
+Updated on 13.4.2023
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell, Tuomas Pitkänen, 2023 Sami Voutilainen
+Sinikka Siironen, 2020 Juhani Sundell, Tuomas Pitkänen
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
@@ -20,8 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen \n" \
-             "Sami Voutilainen"
+             "Sinikka Siironen \n Juhani Sundell \n Tuomas Pitkänen"
 __version__ = "2.0"
 
 import functools
@@ -278,7 +277,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             values = {
                 "name": new_name,
                 "description": recoil.description,
-                "reference_density": self.simulation.reference_density.reference_density,
+                "reference_density": self.simulation.target.reference_density.get_value(),
                 "color": recoil.color
             }
             self.update_recoil_element(recoil, values)
@@ -892,7 +891,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             detector=detector,
             target=self.simulation.target,
             ch=ch,
-            reference_density=self.simulation.reference_density.reference_density,
+            reference_density=self.simulation.target.reference_density.get_value(),
             fluence=used_fluence,
             erd_file=erd_file,
             output_file=output_file,
