@@ -1,14 +1,14 @@
 # coding=utf-8
 """
 Created on 27.3.2018
-Updated on 17.12.2018
+Updated on 13.4.2023
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2023 Sami Voutilainen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Sami Voutilainen"
 __version__ = "2.0"
 
 import json
@@ -38,6 +38,7 @@ from typing import List
 from .base import Serializable, AdjustableSettings
 from .element import Element
 from .layer import Layer
+from .reference_density import ReferenceDensity
 
 
 class Target(Serializable, AdjustableSettings):
@@ -46,12 +47,13 @@ class Target(Serializable, AdjustableSettings):
 
     __slots__ = "name", "modification_time", "description", "target_type", \
                 "image_size", "image_file", "scattering_element", "layers", \
-                "target_theta"
+                "target_theta", "reference_density"
 
     def __init__(self, name="Default", modification_time=None,
                  description="", target_type="AFM", image_size=(1024, 1024),
                  image_file="", scattering_element: Optional[Element] = None,
-                 target_theta=20.5, layers: Optional[List[Layer]] = None):
+                 target_theta=20.5, layers: Optional[List[Layer]] = None,
+                 reference_density: Optional[ReferenceDensity] = None):
         """Initialize a target.
 
         Args:
@@ -86,6 +88,11 @@ class Target(Serializable, AdjustableSettings):
         else:
             self.layers = layers
 
+        if reference_density is None:
+            self.reference_density = ReferenceDensity(self.layers)
+        else:
+            self.reference_density = reference_density
+
     @classmethod
     def from_file(cls, target_file_path: Path, request: "Request"):
         """Initialize target from a JSON file.
@@ -115,11 +122,15 @@ class Target(Serializable, AdjustableSettings):
             ]
             layers.append(Layer(**layer, elements=elements))
 
+        reference_density = ReferenceDensity(layers,
+                                             target.pop("manual_reference_density", 0.0),
+                                             target.pop("use_manual_reference_density", False))
+
         # Note: this way of using kwargs does make it harder to maintain
         # forward compatibility as there may be a need to add more fields
         # to the json file. This could be remedied by adding **kwargs to
         # the __init__ method.
-        return cls(**target, layers=layers)
+        return cls(**target, layers=layers, reference_density=reference_density)
 
     def to_file(self, target_file: Path):
         """Save target parameters into files.
@@ -139,7 +150,9 @@ class Target(Serializable, AdjustableSettings):
             "image_size": self.image_size,
             "image_file": self.image_file,
             "layers": [],
-            "target_theta": self.target_theta
+            "target_theta": self.target_theta,
+            "manual_reference_density": self.reference_density.manual_density,
+            "use_manual_reference_density": self.reference_density.use_user_value
         }
 
         for layer in self.layers:
@@ -162,7 +175,7 @@ class Target(Serializable, AdjustableSettings):
         return {
             "name", "modification_time", "description", "target_type",
             "image_size", "image_file", "scattering_element", "layers",
-            "target_theta"
+            "target_theta", "reference_density"
         }
 
     def copy_layers(self) -> List[Layer]:
