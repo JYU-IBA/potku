@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 3.5.2018
-Updated on 30.10.2018
+Updated on 13.4.2023
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -75,7 +75,7 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         self.tmp_color = QColor(self.recoil_element.color)
         self.colormap = colormap
 
-        value = self.recoil_element.reference_density
+        value = 0
         self.scientific_spinbox = ScientificSpinBox(
             value=value, minimum=0.01, maximum=9.99e23)
 
@@ -93,10 +93,6 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
 
         self.name = recoil_element.name
         self.description = recoil_element.description
-        self.formLayout.insertRow(
-            4,
-            QtWidgets.QLabel(r"Reference density [at./cm<sup>3</sup>]:"),
-            self.scientific_spinbox)
         self.formLayout.removeRow(self.widget)
 
         self.description = recoil_element.description
@@ -111,6 +107,8 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         self.infoGroupBox.setTitle(title)
 
         self.__set_color_button_color(self.recoil_element.element.symbol)
+
+        self.scientific_spinbox.hide()
 
         self.exec_()
 
@@ -131,7 +129,7 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         """Function for accepting the current settings and closing the dialog
         window.
         """
-        if not self.fields_are_valid or not self.__density_valid():
+        if not self.fields_are_valid:
             QtWidgets.QMessageBox.critical(
                 self, "Warning",
                 "Some of the setting values are invalid.\n"
