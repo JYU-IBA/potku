@@ -51,7 +51,7 @@ from matplotlib.colors import LogNorm
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
-from PyQt5.QtGui import QGuiApplication
+from PyQt5.QtGui import QGuiApplication, QKeySequence
 
 from widgets.matplotlib.base import MatplotlibWidget
 from widgets.gui_utils import StatusBarHandler
@@ -659,16 +659,26 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         action.triggered.connect(self.graph_settings_dialog)
         menu.addAction(action)
 
+
         if self.measurement.selector.selected_id != None:
             action = QtWidgets.QAction(self.tr("Selection settings..."), self)
             action.triggered.connect(self.selection_settings_dialog)
             menu.addAction(action)
+            menu.addSeparator()
             action = QtWidgets.QAction(self.tr("Copy selection"), self)
+            action.setShortcut(QKeySequence("Ctrl+C"))
+            action.triggered.connect(self.copy_selection)
+            menu.addAction(action)
+        else:
+            menu.addSeparator()
+            action = QtWidgets.QAction(self.tr("Copy all selections"), self)
+            action.setShortcut(QKeySequence("Ctrl+C"))
             action.triggered.connect(self.copy_selection)
             menu.addAction(action)
 
         if self.clipboard.text().split(":")[0] == "Potku_selection":
-            action = QtWidgets.QAction(self.tr("Paste selection"), self)
+            action = QtWidgets.QAction(self.tr("Paste selection(s)"), self)
+            action.setShortcut(QKeySequence("Ctrl+V"))
             action.triggered.connect(self.paste_selection)
             menu.addAction(action)
 
@@ -1065,13 +1075,27 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
     def copy_selection(self):
         selection_id = self.measurement.selector.selected_id
-        selection = self.measurement.selector.selections[selection_id]
-        transposed = self.measurement.selector.is_transposed
-        self.clipboard.setText(f"Potku_selection:{selection.save_string(transposed)}")
+        if selection_id != None:
+            selection = self.measurement.selector.selections[selection_id]
+            transposed = self.measurement.selector.is_transposed
+            self.clipboard.setText(f"Potku_selection:{selection.save_string(transposed)}")
+        else:
+            clipText = ""
+            for selection in self.measurement.selector.selections:
+                transposed = self.measurement.selector.is_transposed
+                clipText = clipText + f"Potku_selection:{selection.save_string(transposed)}\n"
+            self.clipboard.setText(clipText.strip("\n"))
+
+#    def copy_all_selections(self):
+#        clipText = ""
+#        for selection in self.measurement.selector.selections:
+#            transposed = self.measurement.selector.is_transposed
+#            clipText = clipText + f"Potku_selection:{selection.save_string(transposed)}\n"
+#        self.clipboard.setText(clipText.strip("\n"))
 
     def paste_selection(self):
-        string_data = self.clipboard.text().split(":")[1]
-        self.measurement.selector.selection_from_string(string_data)
+        for string_data in self.clipboard.text().split("\n"):
+            self.measurement.selector.selection_from_string(string_data.split(":")[1])
         self.measurement.selector.auto_save()
         self.__on_draw_legend()
         self.on_draw()
