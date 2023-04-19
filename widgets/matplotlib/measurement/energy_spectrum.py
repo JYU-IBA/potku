@@ -842,32 +842,42 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         spectrums_file = self.sum_spectra_directory / "espectra.hist"
         xs = set()
         y_values = []
-        for spectrum in self.simulation_energy.values():
-            x,y = zip(*spectrum)
-            xs.update(set(x))
-        for spectrum in self.measurement_energy.values():
-            x,y = zip(*spectrum)
-            xs.update(set(x))
+        if self.simulation_energy != []:
+            for spectrum in self.simulation_energy.values():
+                x,y = zip(*spectrum)
+                xs.update(set(x))
+
+        if self.measurement_energy != []:
+            for spectrum in self.measurement_energy.values():
+                x,y = zip(*spectrum)
+                xs.update(set(x))
 
         xs = list(xs)
         xs = sorted(xs)
 
-        for spectrum in self.simulation_energy.values():
-            x,y = zip(*spectrum)
-            new_y = [y[x.index(all_x)] if (all_x in x) else default_value for all_x in xs]
-            y_values.append(new_y)
+        if self.simulation_energy != []:
+            for spectrum in self.simulation_energy.values():
+                x,y = zip(*spectrum)
+                new_y = [y[x.index(all_x)] if (all_x in x) else default_value for all_x in xs]
+                y_values.append(new_y)
 
-        for spectrum in self.measurement_energy.values():
-            x,y = zip(*spectrum)
-            new_y = [y[x.index(all_x)] if (all_x in x) else default_value for all_x in xs]
-            y_values.append(new_y)
+        if self.measurement_energy != []:
+            for spectrum in self.measurement_energy.values():
+                x,y = zip(*spectrum)
+                new_y = [y[x.index(all_x)] if (all_x in x) else default_value for all_x in xs]
+                y_values.append(new_y)
 
         with open(spectrums_file, 'w') as file:
             file.write("#Energy")
-            for title in self.simulation_energy.keys():
-                file.write(f"{separator}{title.stem}")
-            for title in self.measurement_energy.keys():
-                file.write(f"{separator}{title.stem}")
+            if self.simulation_energy != []:
+                for title in self.simulation_energy.keys():
+                    file.write(f"{separator}{title.stem}")
+            if self.measurement_energy != []:
+                for title in self.measurement_energy.keys():
+                    if self.spectrum_type == 'measurement':
+                        file.write(f"{separator}{title}")
+                    else:
+                        file.write(f"{separator}{title.stem}")
             file.write("\n")
 
             file.write("#MeV")
