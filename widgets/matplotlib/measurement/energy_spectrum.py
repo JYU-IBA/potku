@@ -839,7 +839,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         """ Save plotted energy spectrums """
         separator = ';'
         default_value = 0.0
-        spectrums_file = self.sum_spectra_directory / "espectra.hist"
+        spectrums_file = self.sum_spectra_directory / "E-spectra.hist"
         xs = set()
         y_values = []
         if self.simulation_energy != []:
