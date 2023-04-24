@@ -328,6 +328,11 @@ def carbon_stopping(element, isotope, energy, carbon_thickness, carbon_density):
 
 def lst2ascii(input_file: Path, output_file: Optional[Path] = None) -> \
         List[str]:
+    """Call lst2ascii.c for converting .lst files to ASCII
+     Args:
+        input_file: Path to input file.
+        output_file: Path to output file.
+    """
     bin_dir = get_bin_dir()
 
     if platform.system() != "Windows":
