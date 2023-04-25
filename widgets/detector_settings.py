@@ -67,8 +67,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         "dateLabel", fget=bnd.unix_time_from_label, fset=bnd.unix_time_to_label)
     description = bnd.bind("descriptionLineEdit")
     detector_type = bnd.bind("typeComboBox", track_change=False) # True
-    angle_slope = bnd.bind("angleSlopeLineEdit", track_change=True)
-    angle_offset = bnd.bind("angleOffsetLineEdit", track_change=True)
+    #angle_slope = bnd.bind("angleSlopeLineEdit", track_change=True)
+    #angle_offset = bnd.bind("angleOffsetLineEdit", track_change=True)
+    angle_slope = bnd.bind("scientific_angle_slope", track_change=True)
+    angle_offset = bnd.bind("scientific_angle_offset", track_change=True)
     tof_slope = bnd.bind("scientific_tof_slope", track_change=True)
     tof_offset = bnd.bind("scientific_tof_offset", track_change=True)
     timeres = bnd.bind("timeResSpinBox", track_change=False) # True
@@ -147,6 +149,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         # Create scientific spinboxes for tof slope and tof offset
         self.formLayout_2.removeRow(self.slopeLineEdit)
         self.formLayout_2.removeRow(self.offsetLineEdit)
+        self.formLayout_2.removeRow(self.angleSlopeLineEdit)
+        self.formLayout_2.removeRow(self.angleOffsetLineEdit)
 
         self.scientific_tof_slope = ScientificSpinBox(
             minimum=-math.inf, maximum=math.inf
@@ -154,15 +158,30 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.scientific_tof_offset = ScientificSpinBox(
             minimum=-math.inf, maximum=math.inf
         )
+        self.scientific_angle_slope = ScientificSpinBox(
+            minimum=-math.inf, maximum=math.inf
+        )
+        self.scientific_angle_offset = ScientificSpinBox(
+            minimum=-math.inf, maximum=math.inf
+        )
+
+
 
         self.formLayout_2.insertRow(
             0, "ToF slope [s/channel]:", self.scientific_tof_slope)
         self.formLayout_2.insertRow(
             1, "ToF offset[s]:", self.scientific_tof_offset)
+        self.formLayout_2.insertRow(
+            2, "Angle slope [rad/channel]", self.scientific_angle_slope)
+        self.formLayout_2.insertRow(
+            3, "Angle offset [rad]", self.scientific_angle_offset)
 
         if platform.system() == "Darwin":
             self.scientific_tof_offset.setFixedWidth(170)
             self.scientific_tof_slope.setFixedWidth(170)
+            self.scientific_angle_offset.setFixedWidth(170)
+            self.scientific_angle_slope.setFixedWidth(170)
+
 
         # Save as and load
         self.saveButton.clicked.connect(self.__save_file)
