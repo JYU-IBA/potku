@@ -152,6 +152,14 @@ class SimulationType(str, Enum):
             return "recoil"
         return "scatter"
 
+    @classmethod
+    def fromStr(cls, inputStr: str) -> "SimulationType":
+        """Reads different types of simulation type and return SimulationType"""
+        if inputStr.upper() in {"ERD", "REC", "RECOIL"}:
+            return cls.ERD
+        if inputStr.upper() in {"RBS", "SCT", "SCATTER"}:
+            return cls.RBS
+        raise ValueError("Unknown input for SimulationType")
 
 @enum.unique
 class SimulationMode(str, Enum):

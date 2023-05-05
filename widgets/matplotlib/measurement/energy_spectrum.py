@@ -106,6 +106,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         self.measured_sum_spectrum = SumEnergySpectrum()
         self.simulated_sum_spectrum = SumEnergySpectrum()
+        self.sum_spectra_directory = sum_spectra_directory
 
         if self.spectrum_type == SpectrumTab.SIMULATION:
             # Simulated sum spectrum in Simulation tab
@@ -186,9 +187,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
             self.span_selector = SpanSelector(self.axes, self.on_span_select,
                                               'horizontal', useblit=True,
-                                              rectprops=dict(alpha=0.5,
+                                              props=dict(alpha=0.5,
                                                              facecolor='red'),
-                                              button=1, span_stays=True)
+                                              button=1, interactive=True)
             self.__used_recoils = self.__find_used_recoils()
 
         self.limits = {
@@ -219,6 +220,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         self.channel_width = channel_width
         self.on_draw()
+
+        self.save_spectrums()
 
     def closeEvent(self, evnt):
         """Disconnects the slot from the spectra_changed signal
@@ -347,30 +350,22 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         if xmin == xmax:  # Do nothing if graph is clicked
             return
 
-        # Limit files_to_draw to only two
+        if self.simulated_sum_spectrum_is_selected or self.measured_sum_spectrum_is_selected:
+            self.__check_draw_lines()
+            return
 
-        if self.simulated_sum_spectrum_is_selected:
-            simulation_drawn_lines = self.__draw_line(
-                self.simulation_energy_files_to_draw)
-            if len(simulation_drawn_lines) != 2:
-                self.__check_draw_lines()
-        if self.measured_sum_spectrum_is_selected:
-            measurement_drawn_lines = self.__draw_line(
-                self.meausrement_energy_files_to_draw)
-            if len(measurement_drawn_lines) != 2:
-                self.__check_draw_lines()
+        self.files_to_draw = self.simulation_energy_files_to_draw|self.measurement_energy_files_to_draw
+
+        drawn_lines = self.__draw_line(self.files_to_draw)
+
+        if len(drawn_lines) != 2:
+            self.__check_draw_lines()
+            return
+
         low_x = round(xmin, 3)
         high_x = round(xmax, 3)
         self.lines_of_area = []
-
-        # Find the min and max of the files
-        if self.simulated_sum_spectrum_is_selected:
-            low_x, high_x = self.__find_max_and_min(simulation_drawn_lines,
-                                                    low_x, high_x)
-
-        if self.measured_sum_spectrum_is_selected:
-            low_x, high_x = self.__find_max_and_min(measurement_drawn_lines,
-                                                    low_x, high_x)
+        low_x, high_x = self.__find_max_and_min(drawn_lines, low_x, high_x)
 
         ylim = self.axes.get_ylim()
         try:
@@ -416,9 +411,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 lowest = first
             if not highest:
                 highest = last
-            if first < lowest:
+            if first > lowest:
                 lowest = first
-            if highest < last:
+            if highest > last:
                 highest = last
 
         # Check that limits are not beyond files' min and max points
@@ -521,24 +516,14 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                     self.measurement_energy
 
             if self.spectrum_type == SpectrumTab.SIMULATION:
-                if self.simulated_sum_spectrum_is_selected and len(
-                        self.simulation_energy) \
-                        > 0:
-                    self.plot_energy_files(self.simulation_energy_files_to_draw,
-                                           x_min)
-                    self.plot_simulated_sum_spectrum()
-                if self.measured_sum_spectrum_is_selected and len(
-                        self.measurement_energy) \
-                        > 0:
-                    self.plot_energy_files(
-                        self.measurement_energy_files_to_draw, x_min)
-                    self.plot_measured_sum_spectrum()
-                if not self.simulated_sum_spectrum_is_selected and \
-                        not self.measured_sum_spectrum_is_selected:
-                    self.plot_energy_files(self.simulation_energy_files_to_draw,
-                                           x_min)
-                    self.plot_energy_files(
-                        self.measurement_energy_files_to_draw, x_min)
+                if len(self.simulation_energy) > 0:
+                    self.plot_energy_files(self.simulation_energy_files_to_draw, x_min)
+                    if self.simulated_sum_spectrum_is_selected:
+                        self.plot_simulated_sum_spectrum()
+                if len(self.measurement_energy) > 0:
+                    self.plot_energy_files(self.measurement_energy_files_to_draw, x_min)
+                    if self.measured_sum_spectrum_is_selected:
+                        self.plot_measured_sum_spectrum()
 
             if self.spectrum_type == SpectrumTab.MEASUREMENT:
                 if self.measured_sum_spectrum_is_selected and len(
@@ -850,6 +835,64 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.plots[self.measured_sum_spectrum.sum_spectrum_path]\
                 .set_data(data)
 
+    def save_spectrums(self):
+        """ Save plotted energy spectrums """
+        separator = ';'
+        default_value = 0.0
+        spectrums_file = self.sum_spectra_directory / "E-spectra.hist"
+        xs = set()
+        y_values = []
+        if self.simulation_energy != []:
+            for spectrum in self.simulation_energy.values():
+                x,y = zip(*spectrum)
+                xs.update(set(x))
+
+        if self.measurement_energy != []:
+            for spectrum in self.measurement_energy.values():
+                x,y = zip(*spectrum)
+                xs.update(set(x))
+
+        xs = list(xs)
+        xs = sorted(xs)
+
+        if self.simulation_energy != []:
+            for spectrum in self.simulation_energy.values():
+                x,y = zip(*spectrum)
+                new_y = [y[x.index(all_x)] if (all_x in x) else default_value for all_x in xs]
+                y_values.append(new_y)
+
+        if self.measurement_energy != []:
+            for spectrum in self.measurement_energy.values():
+                x,y = zip(*spectrum)
+                new_y = [y[x.index(all_x)] if (all_x in x) else default_value for all_x in xs]
+                y_values.append(new_y)
+
+        with open(spectrums_file, 'w') as file:
+            file.write("#Energy")
+            if self.simulation_energy != []:
+                for title in self.simulation_energy.keys():
+                    file.write(f"{separator}{title.stem}")
+            if self.measurement_energy != []:
+                for title in self.measurement_energy.keys():
+                    if self.spectrum_type == 'measurement':
+                        file.write(f"{separator}{title}")
+                    else:
+                        file.write(f"{separator}{title.stem}")
+            file.write("\n")
+
+            file.write("#MeV")
+            for _ in y_values:
+                file.write(f"{separator}Count")
+            file.write("\n")
+
+            for i,x in enumerate(xs):
+                file.write(f"{x}")
+                for y in y_values:
+                    if (y[i] != None):
+                        file.write(f"{separator}{y[i]}")
+                    else:
+                        file.write(f"{separator}")
+                file.write("\n")
 
 def get_axis_values(data):
     """Returns the x and y axis values from given data."""
@@ -1112,7 +1155,7 @@ class IgnoreMeasurementElements:
             else:
                 color = self.selection_colors[color_string]
 
-            if len(key) == 3:
+            if True: #len(key) == 3: # TODO: printing splits properly
                 label = r"$^{" + str(isotope) + "}$" + element + rbs_string
             else:
                 label = r"$^{" + str(isotope) + "}$" + element \

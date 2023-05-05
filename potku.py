@@ -73,6 +73,7 @@ from widgets.gui_utils import StatusBarHandler
 from widgets.icon_manager import IconManager
 from widgets.measurement.tab import MeasurementTabWidget
 from widgets.simulation.tab import SimulationTabWidget
+from modules.config_manager import ConfigManager
 
 
 class Potku(QtWidgets.QMainWindow):
@@ -150,7 +151,8 @@ class Potku(QtWidgets.QMainWindow):
 
         self.menuImport.setEnabled(False)
 
-        # Show or hide left panel depending on the previous usage
+        # by default show left panel when opening application
+        gutils.set_potku_setting("left_panel_shown", True)
         df.set_up_side_panel(self, "left_panel_shown", "left")
 
         # Set up simulation connections within UI
@@ -696,6 +698,7 @@ class Potku(QtWidgets.QMainWindow):
 
         if progress is not None:
             progress.report(100)
+    pass
 
     def make_new_request(self):
         """Opens a dialog for creating a new request.
@@ -1121,8 +1124,15 @@ class Potku(QtWidgets.QMainWindow):
             return measurement
 
         if tab_type == "simulation":
-            simulation = self.request.samples.simulations.add_simulation_file(
-                sample, filepath, self.tab_id)
+            filepath_json = filepath.with_suffix(".mccfg")
+            config_manager = ConfigManager()
+            config_manager.set_config_file(filepath_json)
+            if filepath_json.is_file():
+                simulation = self.request.samples.simulations.add_simulation_json(
+                    sample, filepath_json, self.tab_id)
+            else:
+                simulation = self.request.samples.simulations.add_simulation_file(
+                    sample, filepath, self.tab_id)
 
             if simulation is not None:
                 tab = SimulationTabWidget(self.request, self.tab_id, simulation,

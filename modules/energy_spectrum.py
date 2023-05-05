@@ -371,12 +371,16 @@ class SumEnergySpectrum:
             for j, pair in enumerate(spectrum):
                 xs[i][j] += pair[0]
                 ys[i][j] += pair[1]
+
+            xs[i] = np.append(xs[i], 2*xs[i][-1]-xs[i][-2])
+            ys[i] = np.append(ys[i], 0)
+
         xs_flat = np.unique([item for sublist in xs for item in sublist])
         ys_interpolated = []
         for point, _ in enumerate(self._spectra.values()):
             if xs_flat.size == 0 or xs[point].size == 0 or ys[point].size == 0:
                 continue
-            ys_interpolated.append(np.interp(xs_flat, xs[point], ys[point]))
+            ys_interpolated.append(np.interp(xs_flat, xs[point], ys[point], left = 0.0, right = 0.0))
         y_sum_flat = np.sum(ys_interpolated, axis=0)
         self.sum_spectrum = [tuple(pair) for pair in zip(xs_flat, y_sum_flat)]
         self.sum_spectrum_to_file()

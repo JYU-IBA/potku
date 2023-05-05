@@ -295,7 +295,8 @@ class TestSumSpectra(unittest.TestCase):
             '2.25000      8',
             '2.75000      3',
             '3.25000      6',
-            '3.75000      0'
+            '3.75000      0',
+            '4.25000      0'
         ]
 
     @property

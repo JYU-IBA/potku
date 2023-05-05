@@ -96,6 +96,12 @@ class ElementWidget(QtWidgets.QWidget):
         else:
             button_text = element.symbol
 
+        if element.RRectype == None:
+            #element.RRectype = str(element_simulation.simulation_type)
+            element.RRectype = str(self.recoil_element.get_simulation_type())
+        if str(element.RRectype) == "SCT" or element_simulation.simulation_type == "RBS":
+            button_text = button_text + "*"
+
         self.radio_button.setText(button_text)
 
         # Circle for showing the recoil color
@@ -161,10 +167,7 @@ class ElementWidget(QtWidgets.QWidget):
 
         color = self.element_simulation.get_main_recoil().color
 
-        if self.element_simulation.simulation_type == "ERD":
-            rec_type = "rec"
-        else:
-            rec_type = "sct"
+        rec_type = str(self.element_simulation.simulation_type).lower()
 
         recoil_element = RecoilElement(element, points, color, name,
                                        rec_type=rec_type)

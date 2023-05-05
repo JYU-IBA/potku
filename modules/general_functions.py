@@ -221,7 +221,7 @@ def hist(data, col=0, weight_col=None, width=1.0):
         while i < data_length and data_sliced[i][0] < a:
             b += data_sliced[i][1]
             i += 1
-        hist_list.append((a - (width / 2.0), b))
+        hist_list.append((a - width, b))
         a += width
 
     return hist_list

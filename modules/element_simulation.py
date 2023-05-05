@@ -61,6 +61,7 @@ from .mcerd import MCERD
 from .observing import Observable
 from .recoil_element import RecoilElement
 from .run import Run
+from .config_manager import ConfigManager
 
 # Mappings between the names of the MCERD parameters (keys) and
 # ElementSimulation attributes (values)
@@ -115,7 +116,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                  simulation_mode=SimulationMode.NARROW,
                  seed_number=101, minimum_energy=1.0, channel_width=0.025,
                  use_default_settings=True, optimization_recoils=None,
-                 optimized_fluence=None, save_on_creation=True):
+                 optimized_fluence=None, save_on_creation=True, recoils=None):
         """Initializes ElementSimulation. Most arguments are ignored if
         use_default_settings is True.
         Args:
@@ -164,7 +165,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             self.modification_time = modification_time
 
         self.recoil_elements = recoil_elements
-
         # TODO: Rename to use_request_settings
         self.use_default_settings = use_default_settings
         if self.use_default_settings:
@@ -185,7 +185,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
             self.clone_request_settings()
         else:
-            self.simulation_type = SimulationType(simulation_type.upper())
+            self.simulation_type = SimulationType.fromStr(simulation_type)
             self.simulation_mode = SimulationMode(simulation_mode.lower())
 
             self.number_of_ions = number_of_ions
@@ -209,12 +209,17 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             else:
                 prefix = self.name_prefix
 
-        if save_on_creation:
+        #if save_on_creation: -TL
+        if False:
             # Write .mcsimu file, recoil file and .profile file
-            self.to_file(Path(self.directory, f"{name}.mcsimu"))
+            #self.to_file(Path(self.directory, f"{name}.mcsimu")) #TL
 
             for recoil_element in self.recoil_elements:
                 recoil_element.to_file(self.directory)
+
+            #print(f'type: {recoil_element.type}, sim_type: {self.simulation_type}')
+            #self.simulation_type = SimulationType.fromStr(recoil_element.get_simulation_type())
+            #print(f'sim_type: {self.simulation_type}')
 
             self.profile_to_file(Path(self.directory, f"{prefix}.profile"))
 
@@ -303,23 +308,20 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             recoil_element: RecoilElement object to update.
             new_values: New values as a dictionary.
         """
-        old_name = recoil_element.get_full_name()
+        old_name = recoil_element.get_full_name_without_simtype()
 
         recoil_element.update(new_values)
 
         # Delete possible extra rec files.
         # TODO use name instead of startswith
         gf.remove_matching_files(
-            self.directory, exts={".rec", ".sct"},
+            self.directory, exts={".rec", ".sct", ".prof"},
             filter_func=lambda x: x.startswith(old_name))
 
         recoil_element.to_file(self.directory)
 
         if old_name != recoil_element.get_full_name():
-            if recoil_element.type == "rec":
-                recoil_suffix = ".recoil"
-            else:
-                recoil_suffix = ".scatter"
+            recoil_suffix = recoil_element.get_recoil_suffix()
             recoil_file = Path(self.directory, f"{old_name}.{recoil_suffix}")
             if recoil_file.exists():
                 new_name = recoil_element.get_full_name() + recoil_suffix
@@ -377,8 +379,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         mcsimu["modification_time"] = mcsimu.pop("modification_time_unix")
         mcsimu["use_default_settings"] = \
             mcsimu["use_default_settings"] == "True"
-        mcsimu["simulation_type"] = SimulationType(
-            mcsimu["simulation_type"].upper())
+        mcsimu["simulation_type"] = SimulationType.fromStr(
+            mcsimu["simulation_type"])
         mcsimu["simulation_mode"] = SimulationMode(
             mcsimu["simulation_mode"].lower())
 
@@ -417,35 +419,35 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         for r in (*files[".rec"], *files[".sct"]):
             if fp.is_recoil_file(prefix, r):
                 recoil = RecoilElement.from_file(r, rec_type=rec_type, **kwargs)
+                if SimulationType.fromStr(recoil.get_simulation_type()) == SimulationType.fromStr(rec_type):
+                    # Check if main recoil
+                    if recoil.name == main_recoil_name:
+                        main_recoil = recoil
 
-                # Check if main recoil
-                if recoil.name == main_recoil_name:
-                    main_recoil = recoil
+                    # Sort out optimization results
+                    # TODO main recoil cannot be opt_first? could change this
+                    #   to elif
+                    if fp.is_optfirst(prefix, r):
+                        optimized_recoils_dict[0] = recoil
+                    elif fp.is_optmed(prefix, r):
+                        optimized_recoils_dict[1] = recoil
+                    elif fp.is_optlast(prefix, r):
+                        optimized_recoils_dict[2] = recoil
 
-                # Sort out optimization results
-                # TODO main recoil cannot be opt_first? could change this
-                #   to elif
-                if fp.is_optfirst(prefix, r):
-                    optimized_recoils_dict[0] = recoil
-                elif fp.is_optmed(prefix, r):
-                    optimized_recoils_dict[1] = recoil
-                elif fp.is_optlast(prefix, r):
-                    optimized_recoils_dict[2] = recoil
-
-                else:
-                    # Find if file has a matching erd file
-                    # (=has been simulated)
-                    for erd_file in files[".erd"]:
-                        if fp.is_erd_file(recoil, erd_file):
-                            recoil_elements.appendleft(recoil)
-                            main_recoil = recoil
-                            break
                     else:
-                        # No matching erd file was found
-                        if recoil is main_recoil:
-                            recoil_elements.appendleft(recoil)
+                        # Find if file has a matching erd file
+                        # (=has been simulated)
+                        for erd_file in files[".erd"]:
+                            if fp.is_erd_file(recoil, erd_file):
+                                recoil_elements.appendleft(recoil)
+                                main_recoil = recoil
+                                break
                         else:
-                            recoil_elements.append(recoil)
+                            # No matching erd file was found
+                            if recoil is main_recoil:
+                                recoil_elements.appendleft(recoil)
+                            else:
+                                recoil_elements.append(recoil)
 
         # Sort optimized recoils into proper order
         optimized_recoils = [
@@ -461,12 +463,142 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                     optimized_fluence = float(f.readline())
                 break
 
+
         return cls(
             directory=simulation_folder, request=request,
             recoil_elements=list(recoil_elements), name_prefix=name_prefix,
             name=name, optimization_recoils=optimized_recoils,
             optimized_fluence=optimized_fluence, **kwargs, **mcsimu,
-            simulation=simulation, save_on_creation=save_on_creation)
+            simulation = simulation, save_on_creation = save_on_creation)
+
+    @classmethod
+    def from_json(cls, request: "Request", prefix: str, simulation_folder: Path,
+                  mcsimu, profile_file: Path,
+                  simulation: Optional["Simulation"] = None,
+                  save_on_creation=True) -> "ElementSimulation":
+        """Initialize ElementSimulation from JSON files.
+        Args:
+            request: Request that ElementSimulation belongs to.
+            prefix: String that is used to prefix ".rec" files of this
+                ElementSimulation.
+            simulation_folder: A file path to simulation folder that contains
+                files ending with ".rec".
+            mcsimu_file: A file path to JSON file containing the
+                simulation parameters.
+            profile_file: A file path to JSON file containing the
+                channel width.
+            simulation: parent Simulation object of this ElementSimulation
+            save_on_creation: whether ElementSimulation object is saved after
+                it has been initialized
+        Return:
+            ElementSimulation object
+        """
+
+        # Pop the recoil name so it can be converted to a RecoilElement
+        main_recoil_name = mcsimu.pop("main_recoil")
+
+        # Convert modification_time and use_default_settings to correct
+        # types
+        mcsimu["modification_time"] = mcsimu.pop("modification_time_unix")
+        mcsimu["use_default_settings"] = \
+            mcsimu["use_default_settings"] == "True"
+        mcsimu["simulation_type"] = SimulationType.fromStr(
+            mcsimu["simulation_type"])
+        mcsimu["simulation_mode"] = SimulationMode(
+            mcsimu["simulation_mode"].lower())
+
+        full_name = mcsimu.pop("name")
+        try:
+            name_prefix, name = full_name.split("-")
+        except ValueError:
+            name = full_name
+            name_prefix = ""
+
+        # Read channel width from .profile file.
+        # TODO: element simulations use a simplified .profile format.
+        #       Because of this, they cannot be loaded with
+        #       Profile.from_file. Unify them?
+        try:
+            with profile_file.open("r") as prof_file:
+                prof = json.load(prof_file)
+            kwargs = {
+                "channel_width": prof["energy_spectra"]["channel_width"]
+            }
+        except (json.JSONDecodeError, OSError, KeyError, AttributeError) as e:
+            msg = f"Failed to read data from element simulation .profile " \
+                  f"file {profile_file}: {e}."
+            request.log_error(msg)
+            kwargs = {}
+
+        rec_type = mcsimu["simulation_type"].get_recoil_type()
+
+        main_recoil = None
+        recoil_elements = deque()
+        optimized_recoils_dict = {}
+
+        files = gf.find_files_by_extension(
+            simulation_folder, ".recoil", ".erd", ".result", ".rec", ".sct")
+
+
+        for r in mcsimu["recoils"]:
+            recoil = RecoilElement.from_json(r, **kwargs)
+            #if SimulationType.fromStr(recoil.get_simulation_type()) == SimulationType.fromStr(rec_type):
+            # Check if main recoil
+            if recoil.name == main_recoil_name:
+                main_recoil = recoil
+                recoil_elements.appendleft(recoil)
+            else:
+                recoil_elements.append(recoil)
+
+            # Sort out optimization results
+            # TODO main recoil cannot be opt_first? could change this
+            #   to elif
+            # if fp.is_optfirst(prefix, r["name"]):
+            #     optimized_recoils_dict[0] = recoil
+            # elif fp.is_optmed(prefix, r["name"]):
+            #     optimized_recoils_dict[1] = recoil
+            # elif fp.is_optlast(prefix, r["name"]):
+            #     optimized_recoils_dict[2] = recoil
+            # if False:
+            #     pass
+            # else:
+            #     # Find if file has a matching erd file
+            #     # (=has been simulated)
+            #     for erd_file in files[".erd"]:
+            #         if fp.is_erd_file(recoil, erd_file):
+            #             recoil_elements.appendleft(recoil)
+            #             main_recoil = recoil
+            #             break
+            #         else:
+            #             # No matching erd file was found
+            #             if recoil is main_recoil:
+            #                 recoil_elements.appendleft(recoil)
+            #             else:
+            #                 recoil_elements.append(recoil)
+
+
+
+        # Sort optimized recoils into proper order
+        optimized_recoils = [
+            val for key, val
+            in sorted(optimized_recoils_dict.items())
+        ]
+
+        # Check if fluence has been optimized
+        optimized_fluence = None
+        for file in files[".result"]:
+            if fp.is_optfl_result(prefix, file):
+                with file.open("r") as f:
+                    optimized_fluence = float(f.readline())
+                break
+
+        #No save_on_creation -TL
+        return cls(
+            directory=simulation_folder, request=request,
+            recoil_elements=list(recoil_elements), name_prefix=name_prefix,
+            name=name, optimization_recoils=optimized_recoils,
+            optimized_fluence=optimized_fluence, **kwargs, **mcsimu,
+            simulation = simulation, save_on_creation = False)
 
     def get_full_name(self):
         """Returns the full name of the ElementSimulation object.
@@ -499,8 +631,40 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 self.minimum_main_scattering_angle,
             "minimum_energy": self.minimum_energy,
             "use_default_settings": str(self.use_default_settings),
-            "main_recoil": self.get_main_recoil().name
+            "main_recoil": self.get_main_recoil().get_name()
         }
+
+    def get_new_json_content(self) -> Dict:
+        """Returns a dictionary that represents the values of the
+        ElementSimulation in json format.
+        """
+        timestamp = time.time()
+
+        return {
+            "name": self.get_full_name(),
+            "description": self.description,
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
+                timestamp)),
+            "modification_time_unix": timestamp,
+            "simulation_type": self.simulation_type,
+            "simulation_mode": self.simulation_mode,
+            "number_of_ions": self.number_of_ions,
+            "number_of_preions": self.number_of_preions,
+            "seed_number": self.seed_number,
+            "number_of_recoils": self.number_of_recoils,
+            "number_of_scaling_ions": self.number_of_scaling_ions,
+            "minimum_scattering_angle": self.minimum_scattering_angle,
+            "minimum_main_scattering_angle":
+                self.minimum_main_scattering_angle,
+            "minimum_energy": self.minimum_energy,
+            "use_default_settings": str(self.use_default_settings),
+            "main_recoil": self.get_main_recoil().get_name(),
+            "recoils": [
+                    recoil.get_json_content()
+                for recoil in self.recoil_elements
+            ]
+        }
+
 
     def get_default_file_path(self) -> Path:
         """Returns a default file path that to_file uses.
@@ -515,14 +679,18 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             save_optim_results: whether to save optimization results or not (
                 nothing is saved if no results exist)
         """
-        # TODO call profile_to_file and recoil.to_file in here instead of having
-        #   the caller call each function separately
-        if file_path is None:
-            file_path = self.get_default_file_path()
+
+        config_manager = ConfigManager()
+        config_manager.save()
+
+        # # TODO call profile_to_file and recoil.to_file in here instead of having
+        # #   the caller call each function separately
+        # if file_path is None:
+        #     file_path = self.get_default_file_path()
         if save_optim_results:
             self.optimization_results_to_file()
-        with file_path.open("w") as file:
-            json.dump(self.get_json_content(), file, indent=4)
+        # with file_path.open("w") as file:
+        #     json.dump(self.get_json_content(), file, indent=4)
 
     def profile_to_file(self, file_path: Path):
         """Save profile settings (only channel width) to file.
@@ -761,8 +929,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         RecoilElements contains the given element.
         """
         # TODO can't ElementSimulation only have one type of element anyway?
-        t = element.symbol, element.isotope
-        return t in ((r.element.symbol, r.element.isotope)
+        t = element.symbol, element.isotope, element.RRectype
+        return t in ((r.element.symbol, r.element.isotope, r.element.RRectype)
                      for r in self.recoil_elements)
 
     def is_simulation_running(self) -> bool:
@@ -991,7 +1159,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         gf.remove_matching_files(
             self.directory,
-            exts={".recoil", ".erd", ".simu", ".scatter"},
+            exts={".recoil", ".erd", ".simu", ".scatter", ".prof"},
             filter_func=filter_func)
 
     def delete_all_files(self):
@@ -1000,7 +1168,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self.reset(remove_result_files=True)
         # FIXME also removes files that have the same prefix
         gf.remove_matching_files(
-            self.directory, exts={".mcsimu", ".rec", ".profile", ".sct"},
+            self.directory, exts={".mcsimu", ".rec", ".profile", ".sct", ".prof"},
             filter_func=lambda fn: fn.startswith(self.name_prefix)
         )
 
@@ -1161,3 +1329,143 @@ class ERDFileHandler:
         """Returns True if ERD files exist.
         """
         return any(self.__old_files) or any(self.__active_files)
+
+    @classmethod
+    def from_json(cls, mcsimu,
+                  simulation: Optional["Simulation"] = None,
+                  save_on_creation=True) -> "ElementSimulation":
+        """Initialize ElementSimulation from JSON files.
+        Args:
+            request: Request that ElementSimulation belongs to.
+            prefix: String that is used to prefix ".rec" files of this
+                ElementSimulation.
+            simulation_folder: A file path to simulation folder that contains
+                files ending with ".rec".
+            mcsimu_file: A file path to JSON file containing the
+                simulation parameters.
+            profile_file: A file path to JSON file containing the
+                channel width.
+            simulation: parent Simulation object of this ElementSimulation
+            save_on_creation: whether ElementSimulation object is saved after
+                it has been initialized
+        Return:
+            ElementSimulation object
+        """
+        # Pop the recoil name so it can be converted to a RecoilElement
+        main_recoil_name = mcsimu.pop("main_recoil")
+
+        # Convert modification_time and use_default_settings to correct
+        # types
+        mcsimu["modification_time"] = mcsimu.pop("modification_time_unix")
+        mcsimu["use_default_settings"] = \
+            mcsimu["use_default_settings"] == "True"
+        mcsimu["simulation_type"] = SimulationType.fromStr(
+            mcsimu["simulation_type"])
+        mcsimu["simulation_mode"] = SimulationMode(
+            mcsimu["simulation_mode"].lower())
+
+        full_name = mcsimu.pop("name")
+        try:
+            name_prefix, name = full_name.split("-")
+        except ValueError:
+            name = full_name
+            name_prefix = ""
+
+        # Read channel width from .profile file.
+        # TODO: element simulations use a simplified .profile format.
+        #       Because of this, they cannot be loaded with
+        #       Profile.from_file. Unify them?
+        try:
+            with profile_file.open("r") as prof_file:
+                prof = json.load(prof_file)
+            kwargs = {
+                "channel_width": prof["energy_spectra"]["channel_width"]
+            }
+        except (json.JSONDecodeError, OSError, KeyError, AttributeError) as e:
+            msg = f"Failed to read data from element simulation .profile " \
+                  f"file {profile_file}: {e}."
+            request.log_error(msg)
+            kwargs = {}
+
+        rec_type = mcsimu["simulation_type"].get_recoil_type()
+
+        main_recoil = None
+        recoil_elements = deque()
+        optimized_recoils_dict = {}
+
+        return cls(
+            directory=simulation_folder, request=request,
+            recoil_elements=list(recoil_elements), name_prefix=name_prefix,
+            name=name, optimization_recoils=optimized_recoils,
+            optimized_fluence=optimized_fluence, **kwargs, **mcsimu,
+            simulation = simulation, save_on_creation = save_on_creation)
+
+    @classmethod
+    def from_json_only(cls, mcsimu,
+                  simulation: Optional["Simulation"] = None,
+                  save_on_creation=True) -> "ElementSimulation":
+        """Initialize ElementSimulation from JSON files.
+        Args:
+            request: Request that ElementSimulation belongs to.
+            prefix: String that is used to prefix ".rec" files of this
+                ElementSimulation.
+            simulation_folder: A file path to simulation folder that contains
+                files ending with ".rec".
+            mcsimu_file: A file path to JSON file containing the
+                simulation parameters.
+            profile_file: A file path to JSON file containing the
+                channel width.
+            simulation: parent Simulation object of this ElementSimulation
+            save_on_creation: whether ElementSimulation object is saved after
+                it has been initialized
+        Return:
+            ElementSimulation object
+        """
+        # Pop the recoil name so it can be converted to a RecoilElement
+        main_recoil_name = mcsimu.pop("main_recoil")
+
+        # Convert modification_time and use_default_settings to correct
+        # types
+        mcsimu["modification_time"] = mcsimu.pop("modification_time_unix")
+        mcsimu["use_default_settings"] = \
+            mcsimu["use_default_settings"] == "True"
+        mcsimu["simulation_type"] = SimulationType.fromStr(
+            mcsimu["simulation_type"])
+        mcsimu["simulation_mode"] = SimulationMode(
+            mcsimu["simulation_mode"].lower())
+
+        full_name = mcsimu.pop("name")
+        try:
+            name_prefix, name = full_name.split("-")
+        except ValueError:
+            name = full_name
+            name_prefix = ""
+
+        # Read channel width from .profile file.
+        # TODO: element simulations use a simplified .profile format.
+        #       Because of this, they cannot be loaded with
+        #       Profile.from_file. Unify them?
+        try:
+            with profile_file.open("r") as prof_file:
+                prof = json.load(prof_file)
+            kwargs = {
+                "channel_width": prof["energy_spectra"]["channel_width"]
+            }
+        except (json.JSONDecodeError, OSError, KeyError, AttributeError) as e:
+            msg = f"Failed to read data from element simulation .profile " \
+                  f"file {profile_file}: {e}."
+            request.log_error(msg)
+            kwargs = {}
+
+        rec_type = mcsimu["simulation_type"].get_recoil_type()
+
+        main_recoil = None
+        recoil_elements = (recoil_element.from_json(r, **kwargs) for r in mcsimu["recoils"])
+        optimized_recoils_dict = {}
+
+        return cls(
+            directory=simulation_folder, request=request,
+            recoil_elements=list(recoil_elements), name_prefix=name_prefix,
+            name=name, optimization_recoils=optimized_recoils,
+            optimized_fluence=optimized_fluence, **kwargs, **mcsimu,
+            simulation = simulation, save_on_creation = save_on_creation)

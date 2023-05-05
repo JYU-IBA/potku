@@ -34,6 +34,7 @@ import widgets.gui_utils as gutils
 from PyQt5 import QtCore
 from PyQt5 import uic
 from PyQt5 import QtWidgets
+from PyQt5.QtGui import QKeySequence
 
 from widgets.matplotlib.measurement.tofe_histogram import \
     MatplotlibHistogramWidget
@@ -124,3 +125,8 @@ class TofeHistogramWidget(QtWidgets.QWidget):
         self.__sc_comp_dec.setKey(QtCore.Qt.Key_S)
         self.__sc_comp_dec.activated.connect(
             lambda: self.matplotlib.sc_comp_dec(2))
+        self.__copy_selection = QtWidgets.QShortcut(QKeySequence(QtCore.Qt.CTRL+QtCore.Qt.Key_C), self)
+        self.__copy_selection.activated.connect(self.matplotlib.copy_selection)
+        self.__paste_selection = QtWidgets.QShortcut(QKeySequence(QtCore.Qt.CTRL+QtCore.Qt.Key_V), self)
+        self.__paste_selection.activated.connect(self.matplotlib.paste_selection)
+

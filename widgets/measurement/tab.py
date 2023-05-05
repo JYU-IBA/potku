@@ -149,8 +149,8 @@ class MeasurementTabWidget(BaseTab):
         # Draw after giving axes -> selections set properly
         self.histogram.matplotlib.on_draw()
 
-        self.histogram.matplotlib.elementSelectionSelectButton.setEnabled(
-            not self.obj.selector.is_empty())
+        #self.histogram.matplotlib.elementSelectionSelectButton.setEnabled(
+        #   not self.obj.selector.is_empty()) # -TL
         self.add_widget(self.histogram, has_close_button=False)
         self.histogram.set_cut_button_enabled()
 
