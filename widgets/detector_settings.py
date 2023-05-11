@@ -261,6 +261,9 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         # Tof foils
         self.tof_foils = copy.deepcopy(self.obj.tof_foils)
 
+        self.scientific_tof_offset.setValue(float(self.obj.tof_offset))
+        self.scientific_tof_slope.setValue(float(self.obj.tof_slope))
+
     def update_settings(self):
         """Update detector settings.
         """
