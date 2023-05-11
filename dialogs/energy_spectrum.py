@@ -156,8 +156,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             self.pushButton_OK.clicked.connect(
                 lambda: self.__accept_params(
                     spectra_changed=spectra_changed,
-                    simulated_sum_spectrum_is_selected=self.simulated_sum_spectrum_is_selected,
-                    measured_sum_spectrum_is_selected=self.measured_sum_spectrum_is_selected
+                    simulated_sum_spectrum_is_selected=self.sum_spectrum_checkbox_simulation,
+                    measured_sum_spectrum_is_selected=self.sum_spectrum_checkbox_measurement
                 )
             )
 
@@ -172,6 +172,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 EnergySpectrumParamsDialog.checked_cuts[m_name]
 
             self.importPushButton.setVisible(False)
+            self.removePushButton.setVisible(False)
         else:
             EnergySpectrumParamsDialog.bin_width = \
                 self.element_simulation.channel_width
@@ -187,6 +188,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             self.pushButton_OK.clicked.connect(
                 self.__calculate_selected_spectra)
             self.importPushButton.clicked.connect(self.__import_external_file)
+            self.removePushButton.clicked.connect(self.__remove_external_files)
+
 
         self.used_bin_width = EnergySpectrumParamsDialog.bin_width
         # FIXME .eff files not shown in sim mode
@@ -428,7 +431,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         QtWidgets.QMessageBox.information(
             self, "Notice",
             "The external file needs to have the following format:\n\n"
-            "energy count\nenergy count\nenergy count\n...\n\n"
+            "energy[MeV] count[yield]\nenergy[MeV] count[yield]\nenergy[MeV] count[yield]\n...\n\n"
             "to match the simulation and measurement energy spectra files.",
             QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
         file_path = fdialogs.open_file_dialog(
@@ -459,6 +462,18 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         item.setCheckState(0, QtCore.Qt.Checked)
         self.external_tree_widget.addTopLevelItem(item)
 
+
+    def __remove_external_files(self):
+        """ Remove selected external file(s)
+        """
+        for file in self.external_files:
+            os.remove(file)
+        root = self.external_tree_widget.invisibleRootItem()
+        for i in reversed(range(root.childCount())):
+            if root.child(i).checkState(0) != 0:
+                root.removeChild(root.child(i))
+
+
     def __update_eff_files(self):
         """Update efficiency files to UI which are used.
         """
@@ -472,7 +487,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 data_func=lambda tpl: tpl[0])
         else:
             detector = self.measurement.get_detector_or_default()
-            label_txt = df.get_efficiency_text(self.treeWidget, detector)
+            label_txt = df.get_efficiency_text_tree(self.treeWidget, detector)
 
         self.label_efficiency_files.setText(label_txt)
 

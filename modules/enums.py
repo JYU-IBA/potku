@@ -31,6 +31,12 @@ from enum import Enum
 
 
 @enum.unique
+class OptimizationMethod(IntEnum):
+    NSGAII = 1
+    LINEAR = 2
+
+
+@enum.unique
 class OptimizationType(IntEnum):
     RECOIL = 1
     FLUENCE = 2
@@ -122,6 +128,7 @@ class IonDivision(IntEnum):
 @enum.unique
 class DetectorType(str, Enum):
     TOF = "TOF"
+    ENERGY = "Energy"
 
     def __str__(self):
         return self.value
@@ -145,6 +152,14 @@ class SimulationType(str, Enum):
             return "recoil"
         return "scatter"
 
+    @classmethod
+    def fromStr(cls, inputStr: str) -> "SimulationType":
+        """Reads different types of simulation type and return SimulationType"""
+        if inputStr.upper() in {"ERD", "REC", "RECOIL"}:
+            return cls.ERD
+        if inputStr.upper() in {"RBS", "SCT", "SCATTER"}:
+            return cls.RBS
+        raise ValueError("Unknown input for SimulationType")
 
 @enum.unique
 class SimulationMode(str, Enum):

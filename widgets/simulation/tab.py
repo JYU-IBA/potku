@@ -46,6 +46,7 @@ from dialogs.simulation.settings import SimulationSettingsDialog
 from modules.concurrency import CancellationToken
 from modules.element_simulation import ElementSimulation
 from modules.enums import OptimizationType
+from modules.general_functions import check_if_sum_in_directory_name
 from modules.global_settings import GlobalSettings
 from modules.observing import ProgressReporter
 from modules.request import Request
@@ -221,12 +222,18 @@ class SimulationTabWidget(BaseTab):
                     save_energy_spectrum = True
                 bin_width = float(lines[1].strip())
                 icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
+                is_measured_sum_spectrum_selected, \
+                is_simulated_sum_spectrum_selected = \
+                    check_if_sum_in_directory_name(file_path.parent)
                 energy_spectrum_widget = EnergySpectrumWidget(
                     self, "simulation",
                     use_cuts=used_files_confirmed,
                     bin_width=bin_width,
                     save_file_int=save_file_int,
-                    spectra_changed=spectra_changed)
+                    spectra_changed=spectra_changed,
+                    measured_sum_spectrum_is_selected=is_measured_sum_spectrum_selected,
+                    simulated_sum_spectrum_is_selected=is_simulated_sum_spectrum_selected,
+                )
                 self.energy_spectrum_widgets.append(energy_spectrum_widget)
                 self.add_widget(energy_spectrum_widget, icon=icon)
 

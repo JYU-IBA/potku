@@ -47,6 +47,8 @@ from pathlib import Path
 
 from .element import Element
 
+import math
+
 
 class AxesLimits:
     """
@@ -464,20 +466,7 @@ class Selector:
         try:
             with open(filename) as fp:
                 for line in fp:
-                    # ['ONone', '16', 'red', '3436, 2964, 4054;2376, 3964, 3914']
-                    split = line.strip().split("    ")
-                    sel = Selection(self.axes, self.element_colormap,
-                                    element_type=split[0],
-                                    element=split[1],
-                                    isotope=(split[2] if split[2] == ""
-                                             else int(split[2])),
-                                    weight_factor=float(split[3]),
-                                    scatter=split[4],
-                                    color=split[5],
-                                    points=split[6],
-                                    transposed=self.is_transposed,
-                                    measurement=self.measurement)
-                    self.selections.append(sel)
+                   self.selection_from_string(line)
             message = f"Selection file {filename} was read successfully!"
             self.measurement.log(message)
         except OSError as e:
@@ -487,10 +476,73 @@ class Selector:
             message = f"Could not read selection data from {filename}. " \
                       f"Reason: {e}. Check that the file contains valid data."
             self.measurement.log_error(message)
+        self.update_selections(progress)
+
+    def load_loop(self, chosen_selections, progress):
+        """Load selections from a file.
+
+        Loads chosen selections and updates the histogram with the selections.
+
+        Args:
+            chosen selections: All of the chosen selections
+            progress: ProgressReporter object.
+        """
+        try:
+            for line in chosen_selections:
+                self.selection_from_string(line)
+            message = f"Chosen selections were read successfully!"
+            self.measurement.log(message)
+            self.update_selections(progress)
+        except TypeError as e:
+            message = f"Could not read selections due to: {e}."
+            self.measurement.log_error(message)
+
+
+    def update_selections(self, progress=None):
+
         self.update_axes_limits()
         self.draw()  # Draw all selections
         self.auto_save()
         self.update_selection_points(progress=progress)
+
+    def selection_from_string(self, line):
+        # ['ONone', '16', 'red', '3436, 2964, 4054;2376, 3964, 3914']
+        split = line.strip().split("    ")
+        sel = Selection(self.axes, self.element_colormap,
+                        element_type=split[0],
+                        element=split[1],
+                        isotope=(split[2] if split[2] == ""
+                                 else int(split[2])),
+                        weight_factor=float(split[3]),
+                        scatter=split[4],
+                        color=split[5],
+                        points=split[6],
+                        transposed=self.is_transposed,
+                        measurement=self.measurement)
+        self.selections.append(sel)
+
+    def load_chosen(self, filename):
+        """Load selections from a file.
+
+        Args:
+            filename: String representing (full) path to selection file.
+
+        Returns:
+            elements: a list of elements in a selection
+            selection: All of the information in a selection
+        """
+        elements = []
+        selection = []
+        with open(filename) as fp:
+            for line in fp:
+                # ['ONone', '16', 'red', '3436, 2964, 4054;2376, 3964, 3914']
+                split = line.strip().split("    ")
+                sel = line
+                el = split[1]
+                elements.append(el)
+                selection.append(sel)
+
+        return elements, selection
 
     def update_axes_limits(self):
         """Update selector's axes limits based on all points in all selections.
@@ -522,8 +574,7 @@ class Selector:
         if not selection.is_closed:
             selection.events_counted = True
             return
-        for n in range(len(data)):
-            selection.point_inside(data[n])
+        selection.fast_points_inside(data)
         selection.events_counted = True
 
     def update_selection_points(self, progress=None):
@@ -537,12 +588,17 @@ class Selector:
             selection.events_counted = False
             selection.event_count = 0
 
-        for i, point in enumerate(data):
-            for selection in self.selections:
-                if selection.is_closed:
-                    selection.point_inside(point)
-            if progress is not None and i % 10_000 == 0:
-                progress.report(i / len(data) * 100)
+        # for i, point in enumerate(data):
+        #     for selection in self.selections:
+        #         if selection.is_closed:
+        #             selection.point_inside(point)
+        #     if progress is not None and i % 10_000 == 0:
+        #         progress.report(i / len(data) * 100)
+
+        for i, selection in enumerate(self.selections):
+            selection.fast_points_inside(data)
+            if progress is not None:
+                progress.report(i / len(self.selections) * 100)
 
         for selection in self.selections:
             selection.events_counted = True
@@ -613,6 +669,10 @@ class Selection:
         self.points = None
         self.axes = axes
         self.axes_limits = AxesLimits()
+
+        self.cached_points = []
+        self.cached_intersect_x = []
+        self.cached_intersect_x_max = []
 
         Selection.GLOBAL_ID += 1
 
@@ -891,3 +951,55 @@ class Selection:
         if inside and not self.events_counted:
             self.event_count += 1
         return inside
+
+    def calculate_intersect_values(self, poly):
+        """
+        pre-calculates selection intersect x-values
+        """
+        x_list = []
+        x_max_list = []
+        for i in range(8192):  # improve max size of list, either check data for real value or atleast make it a constant
+            x_list.append([])
+            x_max_list.append(-1)
+        n = len(poly)
+        p1x, p1y = poly[0]
+        for i in range(n + 1):
+            p2x, p2y = poly[i % n]
+            if p1y != p2y:
+                for i in range(math.ceil(min(p1y, p2y)), math.floor(max(p1y, p2y))):
+                    xinters = (i - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                    if x_list[i] == [9999999]:
+                        x_list[i] = [xinters]
+                    else:
+                        x_list[i].append(xinters)
+            p1x, p1y = p2x, p2y
+        for i in range(len(x_list)):
+            if x_list[i] != []:
+                x_list[i].sort(reverse=True)
+                x_max_list[i] = x_list[i][0]
+            if x_list[i] == []:
+                x_list[i] = [99999999]
+        return x_list, x_max_list
+
+    def fast_points_inside(self, points): #Check speed python list vs numpy array -TL
+        """
+        Faster algorithm testing which points are inside selection
+        Relies on data points being integers.
+        """
+        # check if cached intersect values are current
+        if self.cached_points != self.get_points():
+            self.cached_points = list(self.get_points())
+            self.cached_intersect_x, self.cached_intersect_x_max = self.calculate_intersect_values(self.cached_points)
+
+        # First test if points x-value is less then x_max then test how many polygon x_values point crosses
+
+        if self.__is_transposed:
+            points_inside = [[point[1],point[0],point[2]] for point in points if (point[1] < self.cached_intersect_x_max[point[0]]) and
+                             len([x for x in self.cached_intersect_x[point[0]] if x < point[1]]) % 2]
+        else:
+            points_inside = [point for point in points if (point[0] < self.cached_intersect_x_max[point[1]]) and
+                            len([x for x in self.cached_intersect_x[point[1]] if x < point[0]]) % 2]
+
+        self.event_count = len(points_inside) # update events_count
+
+        return points_inside

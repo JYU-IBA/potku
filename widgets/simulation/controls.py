@@ -33,7 +33,7 @@ import widgets.gui_utils as gutils
 import widgets.icon_manager as icons
 
 from typing import Optional
-from rx import operators as ops
+from reactivex import operators as ops
 
 from modules.element_simulation import SimulationState
 from modules.element_simulation import ElementSimulation

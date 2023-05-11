@@ -50,6 +50,7 @@ from PyQt5.QtWidgets import QAbstractItemView
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QTreeWidgetItem
 
+import modules.general_functions as gf
 import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
 import widgets.input_validation as iv
@@ -72,6 +73,7 @@ from widgets.gui_utils import StatusBarHandler
 from widgets.icon_manager import IconManager
 from widgets.measurement.tab import MeasurementTabWidget
 from widgets.simulation.tab import SimulationTabWidget
+from modules.config_manager import ConfigManager
 
 
 class Potku(QtWidgets.QMainWindow):
@@ -89,6 +91,12 @@ class Potku(QtWidgets.QMainWindow):
         """
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_main_window.ui", self)
+
+        # Disable mouse wheel scrolling in all spin boxes and combo boxes as
+        # requested by a user (see comments in
+        # https://github.com/JYU-IBA/potku/issues/214).
+        gutils.disable_scrolling_in_spin_boxes()
+        gutils.disable_scrolling_in_combo_boxes()
 
         self.title = self.windowTitle()
         self.treeWidget.setHeaderLabel("")
@@ -120,6 +128,7 @@ class Potku(QtWidgets.QMainWindow):
         self.actionImport_pelletron.triggered.connect(self.import_pelletron)
         self.actionBinary_data_lst.triggered.connect(self.import_binary)
         self.action_manual.triggered.connect(self.__open_manual)
+        self.actionDataHelp.triggered.connect(self.__open_data_help)
 
         self.actionSave_cuts.triggered.connect(
             self.current_measurement_save_cuts)
@@ -142,7 +151,8 @@ class Potku(QtWidgets.QMainWindow):
 
         self.menuImport.setEnabled(False)
 
-        # Show or hide left panel depending on the previous usage
+        # by default show left panel when opening application
+        gutils.set_potku_setting("left_panel_shown", True)
         df.set_up_side_panel(self, "left_panel_shown", "left")
 
         # Set up simulation connections within UI
@@ -688,6 +698,7 @@ class Potku(QtWidgets.QMainWindow):
 
         if progress is not None:
             progress.report(100)
+    pass
 
     def make_new_request(self):
         """Opens a dialog for creating a new request.
@@ -1113,8 +1124,15 @@ class Potku(QtWidgets.QMainWindow):
             return measurement
 
         if tab_type == "simulation":
-            simulation = self.request.samples.simulations.add_simulation_file(
-                sample, filepath, self.tab_id)
+            filepath_json = filepath.with_suffix(".mccfg")
+            config_manager = ConfigManager()
+            config_manager.set_config_file(filepath_json)
+            if filepath_json.is_file():
+                simulation = self.request.samples.simulations.add_simulation_json(
+                    sample, filepath_json, self.tab_id)
+            else:
+                simulation = self.request.samples.simulations.add_simulation_file(
+                    sample, filepath, self.tab_id)
 
             if simulation is not None:
                 tab = SimulationTabWidget(self.request, self.tab_id, simulation,
@@ -1465,22 +1483,36 @@ class Potku(QtWidgets.QMainWindow):
     def __open_manual(self):
         """Open user manual.
         """
+        manual_filename = gf.get_root_dir() / "documentation" / "Potku-User-Manual.pdf"
+        self.__open_file(manual_filename)        
+
+    def __open_data_help(self):
+        """Open data help file.
+        """        
+        data_help_filename = gf.get_root_dir() / "documentation" / "Potku_data_explained.pdf"
+        self.__open_file(data_help_filename)
+                
+    def __open_file(self, filepath):
+        """Opens file from filepath. 
+        
+        Args: 
+                filepath: Path of the file                
+        """
         # TODO changed the file path to point to the manual, I guess this needs
         #      to be updated in the .spec file too?
-        manual_filename = Path("documentation", "manual", "Potku-manual.pdf")
         used_os = platform.system()
         try:
             if used_os == "Windows":
-                os.startfile(manual_filename)
+                os.startfile(filepath)
             elif used_os == "Linux":
-                subprocess.call(("xdg-open", manual_filename))
+                subprocess.call(("xdg-open", filepath))
             elif used_os == "Darwin":
-                subprocess.call(("open", manual_filename))
+                subprocess.call(("open", filepath))
         except OSError:
             QtWidgets.QMessageBox.critical(
                 self, "Not found",
-                "There is no manual to be found!",
-                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+                "There is no file to be found!",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)                     
 
 
 def main():

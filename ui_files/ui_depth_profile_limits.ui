@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>208</width>
-    <height>111</height>
+    <width>218</width>
+    <height>114</height>
    </rect>
   </property>
   <property name="focusPolicy">
@@ -39,31 +39,28 @@
             </widget>
            </item>
            <item>
-            <widget class="QSpinBox" name="spinbox_limit_min">
+            <widget class="QDoubleSpinBox" name="spinbox_limit_min">
              <property name="minimum">
-              <number>-10000</number>
+              <double>-200.000000000000000</double>
              </property>
              <property name="maximum">
-              <number>100000</number>
+              <double>2000.000000000000000</double>
              </property>
              <property name="singleStep">
-              <number>10</number>
+              <double>1.000000000000000</double>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QSpinBox" name="spinbox_limit_max">
+            <widget class="QDoubleSpinBox" name="spinbox_limit_max">
              <property name="minimum">
-              <number>-10000</number>
+              <double>-200.000000000000000</double>
              </property>
              <property name="maximum">
-              <number>100000</number>
+              <double>2000.000000000000000</double>
              </property>
              <property name="singleStep">
-              <number>10</number>
-             </property>
-             <property name="value">
-              <number>1</number>
+              <double>1.000000000000000</double>
              </property>
             </widget>
            </item>

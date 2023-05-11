@@ -27,7 +27,7 @@ __version__ = "2.0"
 
 import tempfile
 import random
-import rx
+import reactivex as rx
 import tests.utils as utils
 
 import modules.masses as masses

@@ -25,7 +25,7 @@ __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 import unittest
-import rx
+import reactivex as rx
 import subprocess
 import time
 import tempfile

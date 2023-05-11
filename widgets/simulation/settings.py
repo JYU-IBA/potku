@@ -207,12 +207,12 @@ class SimulationSettingsWidget(QtWidgets.QWidget, PropertyTrackingWidget,
                 old_type = ".rec"
             for recoil in self.element_simulation.recoil_elements:
                 recoil.type = new_type
-                try:
-                    path_to_rec = Path(self.element_simulation.directory,
-                                       f"{recoil.get_full_name()}{old_type}")
-                    os.remove(path_to_rec)
-                except OSError:
-                    pass
+                # try:
+                #     path_to_rec = Path(self.element_simulation.directory,
+                #                        f"{recoil.get_full_name()}{old_type}")
+                #     os.remove(path_to_rec)
+                # except OSError:
+                #     pass
                 recoil.to_file(self.element_simulation.directory)
 
         self.element_simulation.set_settings(**params)

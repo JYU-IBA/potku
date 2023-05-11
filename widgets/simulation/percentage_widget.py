@@ -262,7 +262,10 @@ def label_to_percentage(instance, attr):
 
 def area_to_label(instance, attr, value):
     label = getattr(instance, attr)
-    label.setText(str(round(value, 4)))
+    if value < 100000:
+        label.setText(f"{value}")
+    else:
+        label.setText(f"{value:.4e}")
 
 
 def label_to_area(instance, attr):

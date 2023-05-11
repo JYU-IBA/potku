@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>429</width>
-    <height>279</height>
+    <width>452</width>
+    <height>292</height>
    </rect>
   </property>
   <property name="focusPolicy">
@@ -184,6 +184,18 @@
            </item>
            <item>
             <widget class="QSpinBox" name="spin_range_x_min">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>51</width>
+               <height>0</height>
+              </size>
+             </property>
              <property name="maximum">
               <number>16000</number>
              </property>
@@ -194,6 +206,18 @@
            </item>
            <item>
             <widget class="QSpinBox" name="spin_range_x_max">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>51</width>
+               <height>0</height>
+              </size>
+             </property>
              <property name="minimum">
               <number>1</number>
              </property>
@@ -221,6 +245,18 @@
            </item>
            <item>
             <widget class="QSpinBox" name="spin_range_y_min">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>51</width>
+               <height>0</height>
+              </size>
+             </property>
              <property name="maximum">
               <number>16000</number>
              </property>
@@ -231,6 +267,18 @@
            </item>
            <item>
             <widget class="QSpinBox" name="spin_range_y_max">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>51</width>
+               <height>0</height>
+              </size>
+             </property>
              <property name="minimum">
               <number>1</number>
              </property>

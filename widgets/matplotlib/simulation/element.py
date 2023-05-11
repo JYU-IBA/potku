@@ -96,6 +96,12 @@ class ElementWidget(QtWidgets.QWidget):
         else:
             button_text = element.symbol
 
+        if element.RRectype == None:
+            #element.RRectype = str(element_simulation.simulation_type)
+            element.RRectype = str(self.recoil_element.get_simulation_type())
+        if str(element.RRectype) == "SCT" or element_simulation.simulation_type == "RBS":
+            button_text = button_text + "*"
+
         self.radio_button.setText(button_text)
 
         # Circle for showing the recoil color
@@ -117,8 +123,11 @@ class ElementWidget(QtWidgets.QWidget):
                                       QtWidgets.QSizePolicy.Fixed)
         settings_button.clicked.connect(
             lambda: self.open_element_simulation_settings(
-                settings_updated=settings_updated))
+                settings_updated=settings_updated,
+                settings_button=settings_button))
         settings_button.setToolTip("Edit element simulation settings")
+
+        self.update_settings_button(settings_button)
 
         add_recoil_button = QtWidgets.QPushButton()
         add_recoil_button.setIcon(icon_manager.get_icon("edit_add.svg"))
@@ -158,10 +167,7 @@ class ElementWidget(QtWidgets.QWidget):
 
         color = self.element_simulation.get_main_recoil().color
 
-        if self.element_simulation.simulation_type == "ERD":
-            rec_type = "rec"
-        else:
-            rec_type = "sct"
+        rec_type = str(self.element_simulation.simulation_type).lower()
 
         recoil_element = RecoilElement(element, points, color, name,
                                        rec_type=rec_type)
@@ -187,7 +193,8 @@ class ElementWidget(QtWidgets.QWidget):
         # Save recoil element
         recoil_element.to_file(self.element_simulation.directory)
 
-    def open_element_simulation_settings(self, settings_updated=None):
+    def open_element_simulation_settings(self, settings_updated=None,
+                                         settings_button=None):
         """
         Open element simulation settings.
         """
@@ -195,6 +202,8 @@ class ElementWidget(QtWidgets.QWidget):
         if settings_updated is not None:
             es.settings_updated.connect(settings_updated.emit)
         es.exec_()
+
+        self.update_settings_button(settings_button)
 
     def plot_spectrum(self, spectra_changed=None):
         """Plot an energy spectrum and show it in a widget.
@@ -243,3 +252,17 @@ class ElementWidget(QtWidgets.QWidget):
             elif not previous and energy_spectrum_widget is not None:
                 energy_spectrum_widget.save_to_file(measurement=False,
                                                     update=False)
+
+    def update_settings_button(self, settings_button):
+        """
+        Change a settings button's color (to yellow) when the user is not using
+        request settings values. Otherwise keep it uncolored.
+
+        Args:
+         settings_button: QtWidgets.QPushButton() that opens the element
+         (simulation) settings dialog.
+        """
+        if self.element_simulation.use_default_settings:
+            settings_button.setStyleSheet("")
+        else:
+            settings_button.setStyleSheet("background-color: yellow")

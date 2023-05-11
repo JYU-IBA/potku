@@ -52,6 +52,8 @@ a = Analysis(
      pathex=[],
      binaries=bins,
      datas=[
+        ("documentation/Potku-User-Manual.pdf", "documentation/"),
+        ("documentation/Potku_data_explained.pdf", "documentation/"),
         ("external/bin/jibal.conf", "external/bin/"),
         ("external/share", "external/share"),
         ("ui_files", "ui_files"),

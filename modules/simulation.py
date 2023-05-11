@@ -50,6 +50,7 @@ from .element_simulation import ElementSimulation
 from .run import Run
 from .target import Target
 from .ui_log_handlers import SimulationLogger
+from .config_manager import ConfigManager
 
 
 class Simulations:
@@ -63,6 +64,7 @@ class Simulations:
         """
         self.request = request
         self.simulations = {}
+        self.sim_config = ConfigManager()
 
     def is_empty(self) -> bool:
         """Check if there are any simulations.
@@ -174,6 +176,9 @@ class Simulations:
                 self.request.log_error(log)
         if simulation is not None:
             sample.simulations.simulations[tab_id] = simulation
+        self.sim_config.set_simulation(simulation)
+        self.sim_config.read_simulation()
+        self.sim_config.save()
         return simulation
 
     def remove_obj(self, removed_obj: "Simulation"):
@@ -196,6 +201,106 @@ class Simulations:
             return r
 
         self.simulations = remove_key(self.simulations, tab_id)
+
+    def add_simulation_json(self, sample: "Sample", simulation_json,
+                            tab_id: int) -> Optional["Simulation"]:
+        """Add a new file to simulations.
+
+        Args:
+            sample: The sample under which the simulation is put.
+            simulation_file: Path of the .simulation file.
+            tab_id: Integer representing identifier for simulation's tab.
+
+        Return:
+            Returns new simulation or None if it wasn't added
+        """
+        simulation = None
+
+        simulation_folder = simulation_json.parent
+        directory_prefix = Simulation.DIRECTORY_PREFIX
+
+        with simulation_json.open("r") as file:
+            simu_obj = json.load(file)
+
+        self.sim_config.set_config_file(simulation_json)
+
+        # Create simulation from file
+        if simulation_json:
+            (target_file, mesu_file,
+             elem_sim_files, profile_files,
+             detector_file) = Simulation.find_simulation_files(
+                simulation_folder)
+
+            if target_file is not None:
+                target = Target.from_file(
+                    target_file, sample.request)
+            else:
+                target = None
+
+            if detector_file is not None:
+                detector = Detector.from_file(
+                    detector_file, sample.request, save_on_creation=False)
+                detector.update_directories(detector_file.parent)
+            else:
+                detector = None
+
+            simulation = Simulation.from_json(
+                sample.request, simulation_json, simu_obj, measurement_file=mesu_file,
+                sample=sample, target=target, detector=detector)
+
+            serial_number = int(
+                simulation_folder.name[
+                    len(directory_prefix):len(directory_prefix) + 2])
+            simulation.serial_number = serial_number
+            simulation.tab_id = tab_id
+
+            for mcsimu in simu_obj['element_simulations']:
+                element_str_with_name = mcsimu['name']
+
+                prefix, name = element_str_with_name.split("-")
+
+                profile_file = next(
+                    p for p in profile_files if p.name.startswith(prefix)
+                )
+
+                if profile_file is not None:
+                    # Create ElementSimulation from files
+                    element_simulation = ElementSimulation.from_json(
+                        self.request, prefix, simulation_folder,
+                        mcsimu, profile_file, simulation=simulation
+                    )
+                    # TODO need to check that element simulation can be added
+                    simulation.element_simulations.append(
+                        element_simulation)
+
+        # Create a new simulation
+        else:
+            # Not stripping the extension
+            simulation_name = simulation_file.stem
+            try:
+                keys = sample.simulations.simulations.keys()
+                for key in keys:
+                    if sample.simulations.simulations[key].directory == \
+                            simulation_name:
+                        return simulation  # simulation = None
+                simulation = Simulation(
+                    simulation_file, self.request, name=simulation_name,
+                    tab_id=tab_id, sample=sample)
+                serial_number = int(simulation_folder.name[len(
+                    directory_prefix):len(directory_prefix) + 2])
+                simulation.serial_number = serial_number
+                self.request.samples.simulations.simulations[tab_id] = \
+                    simulation
+            except Exception as e:
+                log = f"Something went wrong while adding a new simulation: {e}"
+                self.request.log_error(log)
+        if simulation is not None:
+            sample.simulations.simulations[tab_id] = simulation
+        #self.sim_config.read_simulation(simulation)
+        #self.sim_config.save()
+        self.sim_config.set_simulation(simulation)
+        return simulation
+
 
 
 class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
@@ -220,7 +325,8 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
                  measurement_setting_file_name="",
                  measurement_setting_file_description="", sample=None,
                  use_request_settings=True,
-                 save_on_creation=True, enable_logging=True):
+                 save_on_creation=True, enable_logging=True,
+                 element_simulations = None):
         """Initializes Simulation object.
 
         Args:
@@ -399,10 +505,7 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
         element_str = recoil_element.element.get_prefix()
         name = self.request.default_element_simulation.name
 
-        if recoil_element.type == "rec":
-            simulation_type = SimulationType.ERD
-        else:
-            simulation_type = SimulationType.RBS
+        simulation_type = SimulationType.fromStr(recoil_element.type)
 
         element_simulation = ElementSimulation(
             directory=self.directory, request=self.request, simulation=self,
@@ -470,56 +573,57 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             simulation_file: path to a .simulation file
             measurement_file: path to a .measurement_file
         """
-        if simulation_file is None:
-            simulation_file = self.path
 
-        time_stamp = time.time()
-        obj = {
-            "name": self.name,
-            "description": self.description,
-            "modification_time": time.strftime("%c %z %Z", time.localtime(
-                time_stamp)),
-            "modification_time_unix": time_stamp,
-            "use_request_settings": self.use_request_settings
-        }
-        with simulation_file.open("w") as file:
-            json.dump(obj, file, indent=4)
-
-        if not self.use_request_settings:
-            # Save measurement settings parameters.
-            if measurement_file is None:
-                measurement_file = self.get_measurement_file()
-
-            general_obj = {
-                "name": self.measurement_setting_file_name,
-                "description":
-                    self.measurement_setting_file_description,
-                "modification_time":
-                    time.strftime("%c %z %Z", time.localtime(time_stamp)),
-                "modification_time_unix": time_stamp,
-            }
-
-            if measurement_file.exists():
-                with measurement_file.open("r") as mesu:
-                    obj = json.load(mesu)
-                obj["general"] = general_obj
-            else:
-                obj = {
-                    "general": general_obj
-                }
-
-            # Write measurement settings to file
-            with measurement_file.open("w") as file:
-                json.dump(obj, file, indent=4)
-
-            # Save Run object to file
-            self.run.to_file(measurement_file)
-            # Save Detector object to file
-            self.detector.to_file(self.detector.path)
-
-            # Save Target object to file
-            target_file = Path(self.directory, f"{self.target.name}.target")
-            self.target.to_file(target_file)
+        # if simulation_file is None:
+        #     simulation_file = self.path
+        #
+        # time_stamp = time.time()
+        # obj = {
+        #     "name": self.name,
+        #     "description": self.description,
+        #     "modification_time": time.strftime("%c %z %Z", time.localtime(
+        #         time_stamp)),
+        #     "modification_time_unix": time_stamp,
+        #     "use_request_settings": self.use_request_settings
+        # }
+        # with simulation_file.open("w") as file:
+        #     json.dump(obj, file, indent=4)
+        #
+        # if not self.use_request_settings:
+        #     # Save measurement settings parameters.
+        #     if measurement_file is None:
+        #         measurement_file = self.get_measurement_file()
+        #
+        #     general_obj = {
+        #         "name": self.measurement_setting_file_name,
+        #         "description":
+        #             self.measurement_setting_file_description,
+        #         "modification_time":
+        #             time.strftime("%c %z %Z", time.localtime(time_stamp)),
+        #         "modification_time_unix": time_stamp,
+        #     }
+        #
+        #     if measurement_file.exists():
+        #         with measurement_file.open("r") as mesu:
+        #             obj = json.load(mesu)
+        #         obj["general"] = general_obj
+        #     else:
+        #         obj = {
+        #             "general": general_obj
+        #         }
+        #
+        #     # Write measurement settings to file
+        #     with measurement_file.open("w") as file:
+        #         json.dump(obj, file, indent=4)
+        #
+        #     # Save Run object to file
+        #     self.run.to_file(measurement_file)
+        #     # Save Detector object to file
+        #     self.detector.to_file(self.detector.path)
+        #
+        #     # Save Target object to file
+        #     target_file = Path(self.directory, f"{self.target.name}.target")
+        #     self.target.to_file(target_file)
 
     def update_directory_references(self, new_dir: Path):
         """Update simulation's directory references.
@@ -591,3 +695,111 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
         # The simulation's layers (main content) are saved in target.
         # Overwriting them with request's values is not acceptable.
         self.target.target_theta = self.request.default_target.target_theta
+
+    def get_json_content(self):
+        time_stamp = time.time()
+        obj = {
+            "name": self.name,
+            "description": self.description,
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
+                time_stamp)),
+            "modification_time_unix": time_stamp,
+            "use_request_settings": self.use_request_settings,
+            "element_simulations": [
+                                simulation.get_new_json_content()
+                                for simulation in self.element_simulations
+            ],
+        }
+        return obj
+
+    @classmethod
+    def from_json(cls, request: "Request", simulation_json_file, simu_obj,
+                  measurement_file: Optional[Path] = None,
+                  detector=None, target=None, run=None, sample=None,
+                  save_on_creation=True, enable_logging=True) -> "Simulation":
+        """Initialize Simulation from a JSON.
+
+        Args:
+            request: Request which the Simulation belongs to.
+            simu_ocj: simulation json
+            measurement_file: path to .measurement file
+            detector: Detector used by this simulation
+            target: Target used by this simulation
+            run: Run used by this simulation
+            sample: Sample under which this simulation belongs to
+            save_on_creation: whether Simulation object is saved to file
+                after initialization
+            enable_logging: whether logging is enabled
+        """
+
+        # Overwrite the human readable time stamp with unix time stamp, as
+        # that is what the Simulation object uses internally
+        simu_obj["modification_time"] = simu_obj.pop("modification_time_unix")
+
+        if measurement_file is not None:
+            run = Run.from_file(measurement_file)
+            with measurement_file.open("r") as mesu_f:
+                mesu_settings = json.load(mesu_f)
+
+            try:
+                general = {
+                    "measurement_setting_file_name": mesu_settings["name"],
+                    "measurement_setting_file_description": mesu_settings[
+                        "description"]
+                }
+            except KeyError:
+                general = {}
+        else:
+            general = {}
+
+        #not saving on creation -TL
+        return cls(
+            simulation_json_file, request, detector=detector, target=target, run=run,
+            sample=sample, **simu_obj, save_on_creation=False,
+            enable_logging=enable_logging, **general)
+
+    @classmethod
+    def from_manager(cls, request: "Request", simulation_json_file, simu_obj,
+                  measurement_file: Optional[Path] = None,
+                  detector=None, target=None, run=None, sample=None,
+                  save_on_creation=True, enable_logging=True) -> "Simulation":
+        """Initialize Simulation from a JSON.
+
+        Args:
+            request: Request which the Simulation belongs to.
+            simu_ocj: simulation json
+            measurement_file: path to .measurement file
+            detector: Detector used by this simulation
+            target: Target used by this simulation
+            run: Run used by this simulation
+            sample: Sample under which this simulation belongs to
+            save_on_creation: whether Simulation object is saved to file
+                after initialization
+            enable_logging: whether logging is enabled
+        """
+
+        # Overwrite the human readable time stamp with unix time stamp, as
+        # that is what the Simulation object uses internally
+        simu_obj["modification_time"] = simu_obj.pop("modification_time_unix")
+
+        if measurement_file is not None:
+            run = Run.from_file(measurement_file)
+            with measurement_file.open("r") as mesu_f:
+                mesu_settings = json.load(mesu_f)
+
+            try:
+                general = {
+                    "measurement_setting_file_name": mesu_settings["name"],
+                    "measurement_setting_file_description": mesu_settings[
+                        "description"]
+                }
+            except KeyError:
+                general = {}
+        else:
+            general = {}
+
+        # not saving on creation -TL
+        return cls(
+            simulation_json_file, request, detector=detector, target=target, run=run,
+            sample=sample, **simu_obj, save_on_creation=False,
+            enable_logging=enable_logging, **general)

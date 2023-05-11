@@ -120,7 +120,7 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
             True or False.
         """
         try:
-            self.scientific_spinbox.get_value()
+            self.scientific_spinbox.value()
             return True
         except TypeError:
             return False

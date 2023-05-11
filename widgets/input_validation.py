@@ -33,86 +33,32 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli " \
 __version__ = "2.0"
 
 import re
+from typing import Optional, Callable, Tuple
 
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui
 from PyQt5 import QtCore
 
 
-class InputValidator(QtGui.QValidator):
-    """Validator to check the validity of user inputs.
-    
-    Accepts double values with scientific notation (i.e. 0.232, 12.5e-12) and
-    turns empty input to 0.0 and commas (,) to points (.).
-    """
-    def __init__(self, double):
-        """Initiates the class.
-
-        Args:
-            double: Whether to validate for double or int.
-        """
-        super().__init__()
-
-        if double:
-            self.float_re_1 = re.compile(
-                r'(-?\d+(((\.\d+)|\d*)[eE]?[+-]?\d*))|(-?)')
-            self.float_re_2 = re.compile(r'(-?\d+\.$)')
-            self.float_re_4 = re.compile(r'(-?\d+\.$)')
-            self.float_re_3 = re.compile(r'(.*[^eE][+-].*)')
-        else:
-            self.float_re_1 = re.compile(r'(-?\d+([eE]?[+-]?\d*))|(-?)')
-            self.float_re_2 = re.compile(r'(-?\d+$)')
-            self.float_re_4 = re.compile(r'(-?\d+\.$)')
-            self.float_re_3 = re.compile(r'(.*[^eE][+-].*)')
-
-    def validate(self, input_value, pos):
-        """Validates the given input. Overrides the QDoubleValidator's validate 
-        function.
-        
-        Args:
-            input_value: User given string to be validated.
-            pos: Cursor position (if required).
-        """
-        new_result_2 = None
-        match_2 = re.match(self.float_re_3, input_value)
-        if match_2:
-            new_result = input_value[1:].replace("-", "")
-            new_result_2 = input_value[0] + new_result.replace("+", "")
-            if "e+" in input_value and "e+" not in new_result_2:
-                nr = new_result_2[1:].replace("e", "e+")
-                new_result_2 = input_value[0] + nr
-            elif "e-" in input_value and "e-" not in new_result_2:
-                nr = new_result_2[1:].replace("e", "e-")
-                new_result_2 = input_value[0] + nr
-
-        if new_result_2:
-            inp = new_result_2
-        else:
-            inp = input_value
-
-        match = re.match(self.float_re_2, inp)
-        if match:
-            return match.group(0)
-        else:
-            if len(inp) > 1 and inp[len(inp) - 1] == 'e':
-                match = re.match(self.float_re_4, inp[:len(inp) - 1])
-                if match:
-                    return match.group(0)
-            match = re.match(self.float_re_1, inp)
-            if match:
-                return match.group(0)
-            else:
-                return ""
-
-
 class ScientificValidator(QtGui.QDoubleValidator):
     """Validator for scientific notation.
     """
-    def __init__(self, *args, accepted=None, intermediate=None, invalid=None):
+    def __init__(
+            self,
+            minimum: float,
+            maximum: float,
+            decimal_places: int,
+            parent: Optional[QtWidgets.QWidget] = None,
+            accepted: Optional[Callable[[], None]] = None,
+            intermediate: Optional[Callable[[], None]] = None,
+            invalid: Optional[Callable[[], None]] = None):
         """Initializes a new ScientificValidator.
 
         Args:
-            *args: positional arguments passed down to QDoubleValidator
+            minimum: minimum allowed value
+            maximum: maximum allowed value
+            decimal_places: decimal places allowed
+            parent: parent QWidget for this validator
             accepted: function that is called if validation result is
                 QDoubleValidator.Acceptable
             intermediate: function that is called if validation result is
@@ -120,14 +66,17 @@ class ScientificValidator(QtGui.QDoubleValidator):
             invalid: function that is called if validation result is
                 QDoubleValidator.Invalid
         """
-        super().__init__(*args)
+        super().__init__(minimum, maximum, decimal_places, parent=parent)
         self.setNotation(QtGui.QDoubleValidator.ScientificNotation)
         self.setLocale(QtCore.QLocale.c())
         self._accepted = accepted
         self._intermediate = intermediate
         self._invalid = invalid
 
-    def validate(self, value: str, position: int):
+    def validate(
+            self,
+            value: str,
+            position: int) -> Tuple[QtGui.QDoubleValidator.State, str, int]:
         """Overrides QDoubleValidator's validate method.
         """
         state, inp, pos = super().validate(value, position)
@@ -172,7 +121,7 @@ def set_input_field_red(input_field: QtWidgets.QWidget):
     Args:
         input_field: Qt widget that supports Qt Style Sheets.
     """
-    input_field.setStyleSheet("background-color: %s" % "#f6989d")
+    input_field.setStyleSheet("background-color: #f6989d")
 
 
 def set_input_field_white(input_field: QtWidgets.QWidget):
@@ -181,7 +130,14 @@ def set_input_field_white(input_field: QtWidgets.QWidget):
     Args:
         input_field: Qt widget that supports Qt Style Sheets.
     """
-    input_field.setStyleSheet("background-color: %s" % "#ffffff")
+    if input_field.styleSheet():
+        # Only set background white if style sheet has already
+        # been defined, otherwise use default style. This fixes
+        # an issue where ScientificSpinBoxes may appear smaller
+        # than regular spin boxes on Windows.
+        # FIXME this is a quick hack. There is probably a better
+        #   way to do this.
+        input_field.setStyleSheet("background-color: #ffffff")
 
 
 def set_input_field_yellow(input_field: QtWidgets.QWidget):
@@ -190,7 +146,7 @@ def set_input_field_yellow(input_field: QtWidgets.QWidget):
     Args:
         input_field: Qt widget that supports Qt Style Sheets.
     """
-    input_field.setStyleSheet("background-color: %s" % "#ebde34")
+    input_field.setStyleSheet("background-color: #ebde34")
 
 
 def validate_text_input(text, regex):

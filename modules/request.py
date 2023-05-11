@@ -52,6 +52,7 @@ from .target import Target
 from .recoil_element import RecoilElement
 from .global_settings import GlobalSettings
 from .observing import ProgressReporter
+from .config_manager import ConfigManager
 
 
 class Request(ElementSimulationContainer, RequestLogger):

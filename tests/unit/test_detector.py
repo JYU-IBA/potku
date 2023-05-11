@@ -66,7 +66,7 @@ class TestBeam(unittest.TestCase):
         self.assertEqual(
             ["Detector type: TOF",
              "Detector angle: 41",
-             "Virtual detector size: 2.0 5.0",
+             "Virtual detector size: 7.0 7.0",
              "Timing detector numbers: 1 2"],
             self.det.get_mcerd_params()
         )

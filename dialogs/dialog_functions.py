@@ -105,9 +105,29 @@ def _update_cuts(old_cut_files, directory):
                 old_cut_files[i] = Path(directory, file)
 
 
-def get_efficiency_text(tree: QtWidgets.QTreeWidget,
-                        detector: Detector,
-                        data_func=lambda x: x) -> str:
+def get_efficiency_text_cuts(cuts: Iterable[Path], detector: Detector) -> str:
+    """Returns a string representation of used efficiency files.
+
+    Args:
+        cuts: iterable that has the .cut files to match
+        detector: detector that has the efficiency files to be matched to
+            .cut files.
+
+    Return:
+        string
+    """
+    eff_files_used = detector.get_matching_efficiency_files(cuts)
+
+    if eff_files_used:
+        eff_file_txt = "\t\n".join(str(f) for f in eff_files_used)
+        return f"Efficiency files used:\t\n{eff_file_txt}"
+
+    return "No efficiency files."
+
+
+def get_efficiency_text_tree(tree: QtWidgets.QTreeWidget,
+                             detector: Detector,
+                             data_func=lambda x: x) -> str:
     """Returns a string representation of used efficiency files.
 
     Args:
@@ -117,17 +137,11 @@ def get_efficiency_text(tree: QtWidgets.QTreeWidget,
         data_func: optional function that determines how .cut files can be
             obtained from the tree
 
-    Return
+    Return:
         string
     """
     cuts = (data_func(data) for _, data in bnd.tree_iterator(tree))
-    eff_files_used = detector.get_matching_efficiency_files(cuts)
-
-    if eff_files_used:
-        eff_file_txt = "\t\n".join(str(f) for f in eff_files_used)
-        return f"Efficiency files used:\t\n{eff_file_txt}"
-
-    return "No efficiency files."
+    return get_efficiency_text_cuts(cuts, detector)
 
 
 def get_multi_efficiency_text(tree: QtWidgets.QTreeWidget,
@@ -143,7 +157,7 @@ def get_multi_efficiency_text(tree: QtWidgets.QTreeWidget,
         if detector in used_detectors:
             eff_txt = used_detectors[detector]
         else:
-            eff_txt = gf.lower_case_first(get_efficiency_text(
+            eff_txt = gf.lower_case_first(get_efficiency_text_tree(
                 tree, detector, data_func=data_func))
             used_detectors[detector] = eff_txt
         label_txt += f"{m.name} – {eff_txt}\n"

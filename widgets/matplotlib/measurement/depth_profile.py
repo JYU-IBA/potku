@@ -30,7 +30,7 @@ depth profile graph.
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n" \
-             "Juhani Sundell \n Aleksi Kauppi"
+             "Juhani Sundell \n Aleksi Kauppi \n Timo Leppälä"
 __version__ = "2.0"
 
 from pathlib import Path
@@ -190,7 +190,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         """Show numeric limits dialog and update graph if new limits are set.
         """
         lim_a, lim_b = self._limit_lines.get_range()
-        limit_dialog = NumericLimitsDialog(lim_a, lim_b)
+        lim_min, lim_max = self.axes.get_xlim()
+        limit_dialog = NumericLimitsDialog(lim_a, lim_b, lim_min, lim_max)
 
         if not limit_dialog.exec_():
             return
@@ -324,7 +325,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                 transform=self.axes.transAxes,
                 fontsize=11, fontfamily="monospace")
 
-        for handle in leg.legendHandles:
+        for handle in leg.legend_handles:
             handle.set_linewidth(3.0)
 
     def _fork_toolbar_buttons(self):

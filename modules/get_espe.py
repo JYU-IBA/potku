@@ -7,7 +7,7 @@ visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, 2021 Joonas Koponen and Tuomas Pitkänen
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
@@ -20,7 +20,8 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen \n Juhani Sundell"
+             "Sinikka Siironen \n Juhani Sundell \n Joonas Koponen \n Tuomas " \
+             "Pitkänen "
 __version__ = "2.0"
 
 import glob
@@ -41,20 +42,22 @@ from .target import Target
 
 from modules.global_settings import GlobalSettings
 
+
 class GetEspe:
     """Class for handling calling the external program get_espe to generate
     energy spectra coordinates.
     """
     __slots__ = "recoil_file", "beam_ion", "energy", "theta", \
                 "channel_width", "fluence", "timeres", "density", \
-                "solid", "erd_file", "tangle", "toflen", "_output_parser"
+                "solid", "erd_file", "tangle", "toflen", "_output_parser", \
+                "eres", "dtype"
 
     def __init__(self, beam_ion: str, energy: float, theta: float,
                  tangle: float, toflen: float, solid: float,
                  recoil_file: Path, erd_file: Path,
-                 reference_density: Optional[float] = None,
+                 reference_density: float = None,
                  ch: float = 0.025, fluence: float = 5.00e+11,
-                 timeres: float = 250.0):
+                 timeres: float = 250.0, eres: float = 25.0, dtype: str = "TOF"):
         """Initializes the GetEspe class.
         Args:
             beam_ion: mass number and the chemical symbol of the primary ion
@@ -79,7 +82,9 @@ class GetEspe:
         self.channel_width = ch
         self.fluence = fluence
         self.timeres = timeres
-        
+        self.dtype = dtype
+        self.eres = eres
+
         if reference_density is None:
             self.density = GlobalSettings().get_default_reference_density()
         else:
@@ -117,6 +122,8 @@ class GetEspe:
             toflen=detector.calculate_tof_length(),
             solid=detector.calculate_solid(),
             tangle=target.target_theta,
+            dtype=detector.detector_type,
+            eres=detector.energyres,
             **kwargs)
         return get_espe.run(output_file=output_file, verbose=verbose)
 
@@ -217,18 +224,34 @@ class GetEspe:
         else:
             executable = "./get_espe"
 
-        return (
-            executable,
-            "-beam", self.beam_ion,
-            "-energy", str(self.energy),
-            "-theta", str(self.theta),
-            "-tangle", str(self.tangle),
-            "-timeres", str(self.timeres),
-            "-toflen", str(self.toflen),
-            "-solid", str(self.solid),
-            "-dose", str(self.fluence),
-            "-avemass",
-            "-density", str(self.density),
-            "-ch", str(self.channel_width),
-            "-dist", str(self.recoil_file),
-        )
+        if self.dtype == "TOF":
+            return (
+                executable,
+                "-beam", self.beam_ion,
+                "-energy", str(self.energy),
+                "-theta", str(self.theta),
+                "-tangle", str(self.tangle),
+                "-timeres", str(self.timeres),
+                "-toflen", str(self.toflen),
+                "-solid", str(self.solid),
+                "-dose", str(self.fluence),
+                "-avemass",
+                "-density", str(self.density),
+                "-ch", str(self.channel_width),
+                "-dist", str(self.recoil_file),
+            )
+        if self.dtype == "Energy":
+            return (
+                executable,
+                "-beam", self.beam_ion,
+                "-energy", str(self.energy),
+                "-theta", str(self.theta),
+                "-tangle", str(self.tangle),
+                "-eres", str(self.eres),
+                "-solid", str(self.solid),
+                "-dose", str(self.fluence),
+                "-avemass",
+                "-density", str(self.density),
+                "-ch", str(self.channel_width),
+                "-dist", str(self.recoil_file),
+            )

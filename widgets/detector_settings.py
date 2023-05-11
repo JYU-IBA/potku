@@ -66,12 +66,13 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
     modification_time = bnd.bind(
         "dateLabel", fget=bnd.unix_time_from_label, fset=bnd.unix_time_to_label)
     description = bnd.bind("descriptionLineEdit")
-    detector_type = bnd.bind("typeComboBox", track_change=True)
-    angle_slope = bnd.bind("angleSlopeLineEdit", track_change=True)
-    angle_offset = bnd.bind("angleOffsetLineEdit", track_change=True)
+    detector_type = bnd.bind("typeComboBox", track_change=False) # True
+    angle_slope = bnd.bind("scientific_angle_slope", track_change=True)
+    angle_offset = bnd.bind("scientific_angle_offset", track_change=True)
     tof_slope = bnd.bind("scientific_tof_slope", track_change=True)
     tof_offset = bnd.bind("scientific_tof_offset", track_change=True)
-    timeres = bnd.bind("timeResSpinBox", track_change=True)
+    timeres = bnd.bind("timeResSpinBox", track_change=False) # True
+    energyres = bnd.bind("energyResSpinBox", track_change=False)
     virtual_size = bnd.multi_bind(
         ("virtualSizeXSpinBox", "virtualSizeYSpinBox"), track_change=True
     )
@@ -146,6 +147,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         # Create scientific spinboxes for tof slope and tof offset
         self.formLayout_2.removeRow(self.slopeLineEdit)
         self.formLayout_2.removeRow(self.offsetLineEdit)
+        self.formLayout_2.removeRow(self.angleSlopeLineEdit)
+        self.formLayout_2.removeRow(self.angleOffsetLineEdit)
 
         self.scientific_tof_slope = ScientificSpinBox(
             minimum=-math.inf, maximum=math.inf
@@ -153,19 +156,37 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.scientific_tof_offset = ScientificSpinBox(
             minimum=-math.inf, maximum=math.inf
         )
+        self.scientific_angle_slope = ScientificSpinBox(
+            minimum=-math.inf, maximum=math.inf
+        )
+        self.scientific_angle_offset = ScientificSpinBox(
+            minimum=-math.inf, maximum=math.inf
+        )
+
+
 
         self.formLayout_2.insertRow(
             0, "ToF slope [s/channel]:", self.scientific_tof_slope)
         self.formLayout_2.insertRow(
             1, "ToF offset[s]:", self.scientific_tof_offset)
+        self.formLayout_2.insertRow(
+            2, "Angle slope [rad/channel]", self.scientific_angle_slope)
+        self.formLayout_2.insertRow(
+            3, "Angle offset [rad]", self.scientific_angle_offset)
 
         if platform.system() == "Darwin":
-            self.scientific_tof_offset.scientificLineEdit.setFixedWidth(170)
-            self.scientific_tof_slope.scientificLineEdit.setFixedWidth(170)
+            self.scientific_tof_offset.setFixedWidth(170)
+            self.scientific_tof_slope.setFixedWidth(170)
+            self.scientific_angle_offset.setFixedWidth(170)
+            self.scientific_angle_slope.setFixedWidth(170)
+
 
         # Save as and load
         self.saveButton.clicked.connect(self.__save_file)
         self.loadButton.clicked.connect(self.__load_file)
+
+        self.resolutionStack.setCurrentIndex(self.typeComboBox.currentIndex())
+        self.typeComboBox.currentTextChanged.connect(self.detector_type_change)
 
         self.show_settings()
 
@@ -631,16 +652,9 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         """
         Open efficiency plot widget
         """
-        self.eff_folder = gutils.get_potku_setting(
-            DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
-            self.request.default_folder)
-        self.efficiency_files = self.obj.get_efficiency_files()
-        self.efficiency_files_list = []
-        for file in self.efficiency_files:
-            file_name = gf.get_root_dir() / self.eff_folder / str(
-                self.efficiency_files[self.efficiency_files.index(file)])
-            self.efficiency_files_list.append(file_name)
-        EfficiencyDialog(self.efficiency_files_list, self)
+        eff_files = self.obj.get_efficiency_files(return_full_paths=True)
+        dialog = EfficiencyDialog(eff_files, self)
+        dialog.exec_()
 
     def __open_calibration_dialog(self):
         """
@@ -687,3 +701,6 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.foils_layout.removeWidget(foil_widget)
         foil_widget.deleteLater()
         self.calculate_distance()
+
+    def detector_type_change(self, value):
+        self.resolutionStack.setCurrentIndex(self.typeComboBox.currentIndex())
