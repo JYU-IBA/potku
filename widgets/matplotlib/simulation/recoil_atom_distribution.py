@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 27.5.2019
+Updated on 13.4.2023
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1178,11 +1178,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """Update recoil element info labels.
         """
         self.parent.nameLabel.setText(
-            f"Name: {self.current_recoil_element.name}")
-        self.parent.referenceDensityLabel.setText(
-            f"Reference density: "
-            f"{self.current_recoil_element.reference_density:1.2e} at./cm\xb3"
-        )
+            f"Element: {self.current_recoil_element.get_full_name()}")
 
     def recoil_element_info_on_switch(self):
         """Show recoil element info on switch.
@@ -2483,7 +2479,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.canvas.draw_idle()
 
         return area
-
 
     def on_rectangle_select(self, eclick, erelease):
         """Select multiple points.

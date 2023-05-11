@@ -1,14 +1,14 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 27.5.2019
+Updated on 13.4.2023
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
 Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
-Sinikka Siironen
+Sinikka Siironen, 2023 Sami Voutilainen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen"
+             "\n Sinikka Siironen \n Sami Voutilainen"
 __version__ = "2.0"
 
 import matplotlib
@@ -158,6 +158,10 @@ class _CompositionWidget(MatplotlibWidget):
         # Update layer start depths
         self.update_start_depths()
 
+        self.simulation.target.reference_density.update_layers(self.layers)
+
+        self.update_target_info_labels()
+
         # Update canvas
         self.__update_figure(zoom_to_bottom=True)
 
@@ -195,6 +199,11 @@ class _CompositionWidget(MatplotlibWidget):
 
                 if self.foil_behaviour:
                     zoom_to_bottom = True
+
+                self.simulation.target.reference_density.update_layers(
+                    self.layers)
+
+                self.update_target_info_labels()
 
                 self.__update_figure(zoom_to_bottom=zoom_to_bottom)
 
@@ -241,6 +250,14 @@ class _CompositionWidget(MatplotlibWidget):
         for layer in self.layers:
             layer.start_depth = depth
             depth += layer.thickness
+
+    def update_target_info_labels(self):
+        """Update recoil element info labels.
+        """
+        self.parent.referenceDensityLabel.setText(
+            f"Reference density: "
+            f"{self.simulation.target.reference_density.get_value():1.2e} at./cm\xb3"
+        )
 
     def __toggle_tool_drag(self):
         """Toggles the drag tool."""
@@ -353,6 +370,10 @@ class _CompositionWidget(MatplotlibWidget):
             self.update_start_depths()
             self.__selected_layer = dialog.layer
             self.__update_figure(zoom_to_bottom=True)
+
+        self.simulation.target.reference_density.update_layers(self.layers)
+
+        self.update_target_info_labels()
 
         if type(self.parent) is widgets.simulation.target.TargetWidget:
             self.parent.recoilRadioButton.setEnabled(True)
@@ -484,6 +505,8 @@ class TargetCompositionWidget(_CompositionWidget):
 
         self.parent.editTargetInfoButton.clicked.connect(self.edit_target_info)
         self.layers_changed.connect(self._save_target)
+        self.update_target_info_button()
+        self.update_target_info_labels()
 
     def edit_target_info(self):
         """
@@ -498,6 +521,12 @@ class TargetCompositionWidget(_CompositionWidget):
             self.target.name = dialog.name
             self.target.description = dialog.description
             self.parent.targetNameLabel.setText(self.target.name)
+            self.target.reference_density.use_user_value = dialog.use_user_value
+            if dialog.use_user_value:
+                self.target.reference_density.manual_density = \
+                    dialog.manual_value
+            self.update_target_info_labels()
+            self.update_target_info_button()
             self._save_target()
 
     def _save_target(self):
@@ -506,6 +535,15 @@ class TargetCompositionWidget(_CompositionWidget):
         target_path = Path(self.simulation.directory,
                            f"{self.target.name}.target")
         self.target.to_file(target_path)
+
+    def update_target_info_button(self):
+        """Changes target info button's color to yellow when using manual
+        reference density values. Otherwise keep it uncolored.
+        """
+        if self.simulation.target.reference_density.use_user_value:
+            self.parent.editTargetInfoButton.setStyleSheet("background-color: yellow")
+        else:
+            self.parent.editTargetInfoButton.setStyleSheet("")
 
 
 class FoilCompositionWidget(_CompositionWidget):

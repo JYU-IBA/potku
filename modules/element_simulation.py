@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 8.2.2020
+Updated on 13.4.2023
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
@@ -282,7 +282,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             values = {
                 "name": new_name,
                 "description": recoil.description,
-                "reference_density": recoil.reference_density,
+                "reference_density": self.simulation.target.reference_density.get_value(),
                 "color": recoil.color
             }
             self.update_recoil_element(recoil, values)
@@ -1059,7 +1059,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             detector=detector,
             target=self.simulation.target,
             ch=ch,
-            reference_density=recoil_element.reference_density,
+            reference_density=self.simulation.target.reference_density.get_value(),
             fluence=used_fluence,
             erd_file=erd_file,
             output_file=output_file,

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 2.7.2018
-Updated on 28.8.2018
+Updated on 13.4.2023
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -85,7 +85,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
 
         # TODO full name takes a bit too much room. They layout could use
         #   some fixing.
-        self.radio_button.setText(self.recoil_element.get_full_name())
+        self.radio_button.setText(self.recoil_element.name)
         self.radio_button.setMaximumWidth(85)
 
         # Circle for showing the recoil color
@@ -133,7 +133,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
     def _set_name(self, _, rec_elem):
         if rec_elem is self.recoil_element:
             self.radio_button.setText(
-                self.recoil_element.get_full_name())
+                self.recoil_element.name)
 
     def plot_spectrum(self, spectra_changed=None):
         """Plot an energy spectrum and show it in a widget.

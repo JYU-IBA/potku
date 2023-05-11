@@ -187,9 +187,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
             self.span_selector = SpanSelector(self.axes, self.on_span_select,
                                               'horizontal', useblit=True,
-                                              props=dict(alpha=0.5,
-                                                             facecolor='red'),
-                                              button=1, interactive=True)
+                                              button=1)
             self.__used_recoils = self.__find_used_recoils()
 
         self.limits = {
