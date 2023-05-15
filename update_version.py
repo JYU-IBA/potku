@@ -143,7 +143,7 @@ def update_version_number(current_version_number: list[int]):
 
     Returns: an updated version number as a list of ints.
     """
-    new_version_number = current_version_number
+    new_version_number = current_version_number.copy()
     input_accepted = False
     used_semantic_levels = []
     for i in range(version_number_levels):
