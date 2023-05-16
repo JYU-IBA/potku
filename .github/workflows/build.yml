@@ -1,0 +1,24 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  
+jobs:
+  build:
+    name: build external executables
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+        
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build submodules for ${{ matrix.os }}
+      
+      - name: run windows script
+        if: ${{ matrix.os }} == 'windows-latest'
+        run: ${{runner.workspace}}/build.bat
+        
+      - name: run linux script
+        if: ${{ matrix.os }} == 'ubuntu-latest'
+        run: ${{runner.workspace}}/build.sh
