@@ -7,6 +7,7 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
           - windows-latest
@@ -26,5 +27,5 @@ jobs:
       - name: Archive build
         uses: actions/upload-artifact@v3
         with:
-          name: build-artifact
+          name: build-artifact-${{ matrix.os }}
           path: ${{runner.workspace}}/external/bin
