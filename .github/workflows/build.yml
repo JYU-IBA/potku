@@ -15,11 +15,11 @@ jobs:
       - name: run windows script
         if: ${{ matrix.os }} == 'windows-latest'
         run: |
-          ${{runner.workspace}}\build.bat
+          ${{runner.workspace}}\potku\build.bat
           shell: cmd
       - name: run linux script
         if: ${{ matrix.os }} == 'ubuntu-latest'
-        run: ${{runner.workspace}}\build.sh
+        run: ${{runner.workspace}}\potku\build.sh
       - name: Archive build
         uses: actions/upload-artifact@v3
         with:
