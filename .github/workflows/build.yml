@@ -1,9 +1,10 @@
+name: Build
+
 on:
   workflow_dispatch:
-name: Build
+
 jobs:
   build:
-    name: build external executables
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -11,7 +12,6 @@ jobs:
           - windows-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build submodules for ${{ matrix.os }}
       - name: run windows script
         if: ${{ matrix.os }} == 'windows-latest'
         run: ${{runner.workspace}}/build.bat
@@ -22,4 +22,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: build-artifact
-          path: ${{runner.workspace}}/build
+          path: ${{runner.workspace}}/external/bin
