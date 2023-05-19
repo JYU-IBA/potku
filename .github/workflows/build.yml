@@ -16,14 +16,14 @@ jobs:
         with:
           submodules: recursive
       - name: run windows script
-        if: ${{ matrix.os }} == 'windows-latest'
+        if: matrix.os == 'windows-latest'
         run: |
           ${{runner.workspace}}\potku\build.bat
       - name: run linux script
-        if: ${{ matrix.os }} == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get install -y libgsl27 libgsl-dev
-          ${{runner.workspace}}\potku\build.sh
+          ${{runner.workspace}}/potku/build.sh
       - name: Archive build
         uses: actions/upload-artifact@v3
         with:
