@@ -35,4 +35,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: build-artifact-${{ matrix.os }}
-          path: ${{runner.workspace}}/potku/external/lib
+          path: ${{runner.workspace}}/potku/external/bin
