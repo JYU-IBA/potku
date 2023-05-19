@@ -29,10 +29,10 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: build-artifact-${{ matrix.os }}
-          path: ${{runner.workspace}}/external/bin
+          path: ${{runner.workspace}}/potku/external/bin
       - name: Archive linux build
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v3
         with:
           name: build-artifact-${{ matrix.os }}
-          path: ${{runner.workspace}}/external/lib
+          path: ${{runner.workspace}}/potku/external/lib
