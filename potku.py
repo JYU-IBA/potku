@@ -98,6 +98,7 @@ class Potku(QtWidgets.QMainWindow):
         gutils.disable_scrolling_in_spin_boxes()
         gutils.disable_scrolling_in_combo_boxes()
 
+        self.setWindowTitle(f'Potku {gf.get_version_number()}')
         self.title = self.windowTitle()
         self.treeWidget.setHeaderLabel("")
 

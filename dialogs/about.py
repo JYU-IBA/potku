@@ -61,6 +61,9 @@ class AboutDialog(QtWidgets.QDialog):
             self.picture.size(), QtCore.Qt.KeepAspectRatio)
         self.picture.setPixmap(scaled_pixmap)
 
+        version_number = gf.get_version_number()
+        self.label_2.setText(version_number)
+
         self.x = 0
         self.y = 2
         self.z = 3

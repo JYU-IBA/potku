@@ -34,6 +34,7 @@ __version__ = "2.0"
 import bisect
 import hashlib
 import os
+import pathlib
 import platform
 import shutil
 import subprocess
@@ -679,3 +680,18 @@ def check_if_sum_in_directory_name(directory):
             if entry.name.startswith("SIMULATED_SUM"):
                 simulated_sum_found = True
     return measured_sum_found, simulated_sum_found
+
+
+def get_version_number():
+
+    root_dir = get_root_dir()
+    version_file_path = pathlib.Path.joinpath(root_dir, r'version.txt')
+    version_number = '0.0.0'
+    try:
+        version_file = open(version_file_path, 'r')
+        version_number = version_file.read()
+        version_file.close()
+    except FileNotFoundError:
+        return version_number
+
+    return version_number
