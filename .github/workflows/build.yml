@@ -2,23 +2,46 @@ name: Build
 
 on:
   workflow_dispatch:
-  
+
 jobs:
   build:
-    name: build external executables
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [windows-latest]
-        
+        os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v3
-      - name: Build submodules for ${{ matrix.os }}
-      
+      - name: checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
       - name: run windows script
-        if: ${{ matrix.os }} == 'windows-latest'
-        run: ${{runner.workspace}}/build.bat
-        
+        if: matrix.os == 'windows-latest'
+        run: |
+          ${{runner.workspace}}\potku\build.bat
       - name: run linux script
-        if: ${{ matrix.os }} == 'ubuntu-latest'
-        run: ${{runner.workspace}}/build.sh
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get install -y libgsl27 libgsl-dev
+          ${{runner.workspace}}/potku/build.sh
+          cd ${{runner.workspace}}/potku
+          curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C external/share/jibal
+      - name: build Potku
+        run: |
+          cd ${{runner.workspace}}/potku
+          pipenv install
+          pipenv shell
+          pip install pyinstaller
+          pyinstaller potku.spec
+      - name: Archive windows build
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifact-${{ matrix.os }}
+          path: ${{runner.workspace}}/potku/external/bin
+      - name: Archive linux build
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifact-${{ matrix.os }}
+          path: ${{runner.workspace}}/potku/dist
