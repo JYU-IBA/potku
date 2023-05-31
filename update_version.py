@@ -206,7 +206,7 @@ def release_process():
     continue_response = input().casefold()
     if continue_response == 'y':
         save_version_number(new_version_string)
-        git_bump_and_tag(current_version_string)
+        git_bump_and_tag(new_version_string)
     else:
         print('Version number bump cancelled.')
 
