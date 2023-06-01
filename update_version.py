@@ -66,8 +66,7 @@ def git_bump_and_tag(version_string: str):
     if push_response == 'y':
 
         subprocess.run(["git", "push", "origin",
-                        f"bump_version_{version_string}", version_string],
-                       cwd=root_directory)
+                        f"bump_version_{version_string}"], cwd=root_directory)
 
         subprocess.run(["gh", "pr", "create", "-B", "master", "-t", f"Version bump to {version_string}", "-b", "Version bump via script."], cwd=root_directory)
 
