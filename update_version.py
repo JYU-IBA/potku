@@ -38,7 +38,7 @@ def git_bump_and_tag(version_string: str):
         version_string: string representation of the new version number.
     """
     git_create_branch = subprocess.run(["git", "checkout", "-b",
-                                        f'bump_version_{version_string}'],
+                                        f"bump_version_{version_string}"],
                                        capture_output=True,
                                        cwd=root_directory)
     ret_branch = git_create_branch.stdout.decode('UTF-8')
@@ -47,7 +47,7 @@ def git_bump_and_tag(version_string: str):
     subprocess.run(["git", "add", version_file_path])
 
     git_commit_process = subprocess.run(["git", "commit", "-m",
-                                         f'Bump version to {version_string}'],
+                                         f"Bump version to {version_string}"],
                                         capture_output=True,
                                         cwd=root_directory)
     ret_commit = git_commit_process.stdout.decode('UTF-8')
@@ -66,7 +66,7 @@ def git_bump_and_tag(version_string: str):
     if push_response == 'y':
 
         subprocess.run(["git", "push", "origin",
-                        f'bump_version_{version_string}', version_string],
+                        f"bump_version_{version_string}", version_string],
                        cwd=root_directory)
 
         subprocess.run(["gh", "pr", "create", "-B", "master", "-t", f"Version bump to {version_string}", "-b", "Version bump via script."], cwd=root_directory)
