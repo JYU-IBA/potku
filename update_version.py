@@ -24,6 +24,7 @@ def get_github_status():
         return True
 
     print("There are uncommitted differences, cannot proceed.")
+
     print(ret)
 
     return False
@@ -36,6 +37,13 @@ def git_bump_and_tag(version_string: str):
     Args:
         version_string: string representation of the new version number.
     """
+    git_create_branch = subprocess.run(["git", "checkout", "-b",
+                                        f'bump_version_{version_string}'],
+                                       capture_output=True,
+                                       cwd=root_directory)
+    ret_branch = git_create_branch.stdout.decode('UTF-8')
+    print(ret_branch)
+
     subprocess.run(["git", "add", version_file_path])
 
     git_commit_process = subprocess.run(["git", "commit", "-m",
@@ -45,21 +53,31 @@ def git_bump_and_tag(version_string: str):
     ret_commit = git_commit_process.stdout.decode('UTF-8')
     print(ret_commit)
 
+    '''
     git_tag_process = subprocess.run(["git", "tag", version_string],
                                      capture_output=True,
                                      cwd=root_directory)
     ret_tag = git_tag_process.stdout.decode('UTF-8')
     print(ret_tag)
+    '''
 
-    print('Ready to push. Do you want me to push to origin:master now y/n?')
+    print('Ready to push. Do you want me to push to the new branch now y/n?')
     push_response = input().casefold()
     if push_response == 'y':
 
-        subprocess.run(["git", "push", "origin", "master", version_string],
+        subprocess.run(["git", "push", "origin",
+                        f'Bump version to {version_string}', version_string],
                        cwd=root_directory)
-        print('Done pushing.')
+
+        subprocess.run(["gh", "pr", "create", "-B", "master", "-t", f"Version bump to {version_string}", "-b", "Version bump via script."], cwd=root_directory)
+
+        print('Done creating PR.')
+
+        subprocess.run(["git", "checkout", "master"], cwd=root_directory)
+        print('Changed back to master.')
+        subprocess.run(["git", "branch", "--delete", f'bump_version_{version_string}'], cwd=root_directory)
     else:
-        print('Remember to push the tag.')
+        print('Remember to push the branch and open PR.')
 
     return
 
