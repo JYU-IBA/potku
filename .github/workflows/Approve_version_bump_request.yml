@@ -1,0 +1,30 @@
+name: Approve version bump pull request
+
+on:
+  pull_request:
+    types:
+      - opened
+    branches:
+      - 'bump_version**'
+    paths:
+      - 'version.txt'
+      
+jobs:
+  autoapprove:
+    name: Auto approve a PR from a bump_version branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto approve
+        uses: hmarr/auto-approve-action@v2.0.0
+        with: 
+          github-token: ${{ secrets.GITHUB_ACTIONS_TOKEN }}
+  automerge:
+    name: Auto merge after approval
+    needs: autoapprove
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto merge
+        uses: pascalgn/automerge-action@135f0bdb927d9807b5446f7ca9ecc2c51de03c4a
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_ACTIONS_TOKEN }}
+          MERGE_METHOD: rebase
