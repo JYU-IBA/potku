@@ -4,10 +4,6 @@ on:
   pull_request:
     types:
       - opened
-    branches:
-      - 'bump_version**'
-    paths:
-      - 'version.txt'
       
 jobs:
   autoapprove:
