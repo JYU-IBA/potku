@@ -38,12 +38,14 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
+      - name: Read version file
+        id: getversion
+        run: echo "version=$(cat version)" >> $GITHUB_OUTPUT
       - name: git commands
         run: |
           cd ${{runner.workspace}}/potku
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
-          version_number = $(<version.txt)
-          git tag -a $version_number -m "Automatic tag for version $version_number"
-          git push origin $version_number
+          git tag -a ${{ steps.getversion.outputs.version }} -m "Automatic tag for version ${{ steps.getversion.outputs.version }}"
+          git push origin ${{ steps.getversion.outputs.version }}
     
