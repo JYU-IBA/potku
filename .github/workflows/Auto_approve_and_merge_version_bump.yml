@@ -16,3 +16,14 @@ jobs:
         uses: hmarr/auto-approve-action@v3
         with: 
           github-token: ${{ secrets.GITHUB_TOKEN }}
+  automerge:
+    name: Auto merge after approval
+    needs: autoapprove
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto merge
+        uses: pascalgn/automerge-action@v0.15.6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MERGE_METHOD: "merge"
+          MERGE_LABELS: "automerge"
