@@ -29,10 +29,10 @@ jobs:
       - name: build Potku
         run: |
           cd ${{runner.workspace}}/potku
+          pip install pipenv
           pipenv install
-          pipenv shell
-          pip install pyinstaller
-          pyinstaller potku.spec
+          pipenv run install pyinstaller
+          pipenv run pyinstaller potku.spec
       - name: Archive windows build
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v3
