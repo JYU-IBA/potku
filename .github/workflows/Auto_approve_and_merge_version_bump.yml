@@ -7,7 +7,7 @@ on:
       
 jobs:
   autoapprove:
-    name: Auto approve a PR from a bump_version branch
+    name: Auto approve PR from bump_version
     if: startsWith(github.head_ref, 'bump_version')
     runs-on: ubuntu-latest
     permissions:
@@ -29,3 +29,21 @@ jobs:
           MERGE_METHOD: "merge"
           MERGE_LABELS: ""
           MERGE_DELETE_BRANCH: "true"
+  autotag:
+    name: Tag master
+    needs: automerge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: git commands
+        run: |
+          cd ${{runner.workspace}}/potku
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          version_number = $(cat version.txt)
+          git tag -a $version_number -m "Automatic tag for version $version_number"
+          git push origin $version_number
+    
