@@ -68,13 +68,17 @@ def git_bump_and_tag(version_string: str):
         subprocess.run(["git", "push", "origin",
                         f"bump_version_{version_string}"], cwd=root_directory)
 
-        subprocess.run(["gh", "pr", "create", "-B", "master", "-t", f"Version bump to {version_string}", "-b", "Version bump via script."], cwd=root_directory)
+        subprocess.run(["gh", "pr", "create", "-B", "master", "-t",
+                        f"Version bump to {version_string}", "-b",
+                        "Version bump via script."], cwd=root_directory)
 
         print('Done creating PR.')
 
         subprocess.run(["git", "checkout", "master"], cwd=root_directory)
         print('Changed back to master.')
-        subprocess.run(["git", "branch", "--delete", f'bump_version_{version_string}'], cwd=root_directory)
+
+        subprocess.run(["git", "branch", "-D",
+                        f'bump_version_{version_string}'], cwd=root_directory)
     else:
         print('Remember to push the branch and open PR.')
 
