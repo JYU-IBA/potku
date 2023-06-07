@@ -40,7 +40,9 @@ jobs:
           submodules: recursive
       - name: Read version file
         id: getversion
-        run: echo "version=$(cat version)" >> $GITHUB_OUTPUT
+        run: |
+          cd ${{runner.workspace}}/potku
+          echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
       - name: git commands
         run: |
           cd ${{runner.workspace}}/potku
