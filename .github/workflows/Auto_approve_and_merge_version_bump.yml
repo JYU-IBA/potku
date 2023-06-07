@@ -8,6 +8,7 @@ on:
 jobs:
   autoapprove:
     name: Auto approve a PR from a bump_version branch
+    if: startsWith(github.head_ref, 'bump_version')
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
