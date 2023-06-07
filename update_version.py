@@ -32,8 +32,10 @@ def get_github_status():
 
 def git_bump_and_tag(version_string: str):
     """
-    Commit changed version.txt file and create a lightweight tag based on the
-    new version number. Additionally, push to origin:master if user wants to.
+    Creates a new branch for bumping the version number, commits the updated
+    version number.txt, pushes to the new branch, creates a pull request and
+    checks out back into master and deletes the newly created local branch for
+    the version bump.
     Args:
         version_string: string representation of the new version number.
     """
@@ -53,14 +55,6 @@ def git_bump_and_tag(version_string: str):
     ret_commit = git_commit_process.stdout.decode('UTF-8')
     print(ret_commit)
 
-    '''
-    git_tag_process = subprocess.run(["git", "tag", version_string],
-                                     capture_output=True,
-                                     cwd=root_directory)
-    ret_tag = git_tag_process.stdout.decode('UTF-8')
-    print(ret_tag)
-    '''
-
     print(f'Pushing to a new branch: bump_version_{version_string}')
 
     subprocess.run(["git", "push", "origin",
@@ -70,10 +64,9 @@ def git_bump_and_tag(version_string: str):
                     f"Version bump to {version_string}", "-b",
                     "Version bump via script."], cwd=root_directory)
 
-    print('Done creating PR.')
+    print('Done creating a pull request.')
 
     subprocess.run(["git", "checkout", "master"], cwd=root_directory)
-    print('Changed back to master.')
 
     subprocess.run(["git", "branch", "-D",
                     f'bump_version_{version_string}'], cwd=root_directory)
