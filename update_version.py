@@ -68,7 +68,7 @@ def git_bump_and_tag(version_string: str):
         subprocess.run(["git", "push", "origin",
                         f"bump_version_{version_string}"], cwd=root_directory)
 
-        subprocess.run(["gh", "pr", "create", "-B", "master", "-t", f"Version bump to {version_string}", "-b", "Version bump via script."], cwd=root_directory)
+        subprocess.run(["gh", "pr", "create", "-B", "master", "-t", f"Version bump to {version_string}", "-b", "Version bump via script.", "-l", "automerge"], cwd=root_directory)
 
         print('Done creating PR.')
 
