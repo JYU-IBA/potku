@@ -61,26 +61,22 @@ def git_bump_and_tag(version_string: str):
     print(ret_tag)
     '''
 
-    print('Ready to push. Do you want me to push to the new branch now y/n?')
-    push_response = input().casefold()
-    if push_response == 'y':
+    print(f'Pushing to a new branch: bump_version_{version_string}')
 
-        subprocess.run(["git", "push", "origin",
-                        f"bump_version_{version_string}"], cwd=root_directory)
+    subprocess.run(["git", "push", "origin",
+                    f"bump_version_{version_string}"], cwd=root_directory)
 
-        subprocess.run(["gh", "pr", "create", "-B", "master", "-t",
-                        f"Version bump to {version_string}", "-b",
-                        "Version bump via script."], cwd=root_directory)
+    subprocess.run(["gh", "pr", "create", "-B", "master", "-t",
+                    f"Version bump to {version_string}", "-b",
+                    "Version bump via script."], cwd=root_directory)
 
-        print('Done creating PR.')
+    print('Done creating PR.')
 
-        subprocess.run(["git", "checkout", "master"], cwd=root_directory)
-        print('Changed back to master.')
+    subprocess.run(["git", "checkout", "master"], cwd=root_directory)
+    print('Changed back to master.')
 
-        subprocess.run(["git", "branch", "-D",
-                        f'bump_version_{version_string}'], cwd=root_directory)
-    else:
-        print('Remember to push the branch and open PR.')
+    subprocess.run(["git", "branch", "-D",
+                    f'bump_version_{version_string}'], cwd=root_directory)
 
     return
 
@@ -223,7 +219,7 @@ def release_process():
         return
 
     print(f'New version number would be {new_version_string}')
-    print('Continue with this number y/n?')
+    print('Continue with this number y/n? Last chance to cancel.')
     continue_response = input().casefold()
     if continue_response == 'y':
         save_version_number(new_version_string)
