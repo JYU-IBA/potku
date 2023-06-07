@@ -43,7 +43,7 @@ jobs:
           cd ${{runner.workspace}}/potku
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
-          version_number = $(cat version.txt)
+          version_number = $(<version.txt)
           git tag -a $version_number -m "Automatic tag for version $version_number"
           git push origin $version_number
     
