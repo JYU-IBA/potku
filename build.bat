@@ -12,7 +12,7 @@ make
 
 cd submodules\jibal\
 
-del /q build\CMakeCache.txt
+@REM del /q build\CMakeCache.txt
 mkdir build
 cd build
 cmake -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%EXT_DIR% .. || EXIT /b 1
