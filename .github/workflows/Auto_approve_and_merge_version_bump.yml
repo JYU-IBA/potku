@@ -26,7 +26,7 @@ jobs:
           echo "diff=$(git diff master github.head_ref --name-only)" >> $GITHUB_OUTPUT
       - name: Compare diff
         id: compare
-        if: ${{ steps.getdiff.outputs.diff == "version.txt" }}
+        if: steps.getdiff.outputs.diff == 'version.txt'
         run: |
           echo "verification_passed=true" >> $GITHUB_OUTPUT
           
@@ -38,7 +38,7 @@ jobs:
       VERIFICATION_PASSED: ${{ needs.verification.outputs.verification_passed }}
     permissions:
       pull-requests: write
-    if: ${{ VERIFICATION_PASSED == "true" }}
+    if: VERIFICATION_PASSED == 'true'
     steps:
       - name: Auto approve
         uses: hmarr/auto-approve-action@v3
