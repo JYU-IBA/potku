@@ -30,7 +30,7 @@ def get_github_status():
     return False
 
 
-def git_bump_and_tag(version_string: str):
+def git_bump_and_pr(version_string: str):
     """
     Creates a new branch for bumping the version number, commits the updated
     version number.txt, pushes to the new branch, creates a pull request and
@@ -187,11 +187,40 @@ def update_version_number(current_version_number: list[int]):
     return new_version_number
 
 
+def check_gh_cli_installation():
+    """
+    Checks if GitHub CLI is installed by running gh version command.
+    """
+    gh_version_process = subprocess.run(["gh", "version"], capture_output=True, cwd=root_directory)
+    ret_gh = gh_version_process.stdout.decode('UTF-8')
+    if "gh version" in ret_gh:
+        return True
+    return False
+
+
+def check_git_installation():
+    """
+    Checks if Git is installed by running git version command.
+    """
+    git_version_process = subprocess.run(["git", "version"], capture_output=True, cwd=root_directory)
+    ret_git = git_version_process.stdout.decode('UTF-8')
+    if "git version" in ret_git:
+        return True
+    return False
+
+
 def release_process():
     """
     Function that manages the whole process of updating the version number.
     Returns:
     """
+    if check_git_installation() is False:
+        print("Git not installed. Install Git first. Aborting process.")
+        return
+    if check_gh_cli_installation() is False:
+        print("GitHub CLI not installed. Install GitHub CLI first. "
+              "Aborting process.")
+
     current_version_string = get_version_number()
     current_version_number = parse_version_number(current_version_string)
     if current_version_number is None:
@@ -216,7 +245,7 @@ def release_process():
     continue_response = input().casefold()
     if continue_response == 'y':
         save_version_number(new_version_string)
-        git_bump_and_tag(new_version_string)
+        git_bump_and_pr(new_version_string)
     else:
         print('Version number bump cancelled.')
 
