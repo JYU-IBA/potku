@@ -34,13 +34,11 @@ jobs:
     name: Auto approve PR from bump_version
     needs: verification
     runs-on: ubuntu-latest
-    env:
-      VERIFICATION_PASSED: ${{ needs.verification.outputs.verification_passed }}
     permissions:
       pull-requests: write
     steps:
       - name: Auto approve
-        if: VERIFICATION_PASSED == 'true'
+        if: needs.verification.outputs.verification_passed == 'true'
         uses: hmarr/auto-approve-action@v3
         with: 
           github-token: ${{ secrets.GITHUB_TOKEN }}
