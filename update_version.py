@@ -190,6 +190,7 @@ def update_version_number(current_version_number: list[int]):
 def check_gh_cli_installation():
     """
     Checks if GitHub CLI is installed by running gh version command.
+    Returns: bool, True if installation is found, false if not found.
     """
     gh_version_process = subprocess.run(["gh", "version"], capture_output=True, cwd=root_directory)
     ret_gh = gh_version_process.stdout.decode('UTF-8')
@@ -201,6 +202,7 @@ def check_gh_cli_installation():
 def check_git_installation():
     """
     Checks if Git is installed by running git version command.
+    Returns: bool, True if installation is found, false if not found.
     """
     git_version_process = subprocess.run(["git", "version"], capture_output=True, cwd=root_directory)
     ret_git = git_version_process.stdout.decode('UTF-8')
@@ -209,7 +211,7 @@ def check_git_installation():
     return False
 
 
-def release_process():
+def version_bump_process():
     """
     Function that manages the whole process of updating the version number.
     Returns:
@@ -253,4 +255,4 @@ def release_process():
 
 
 if __name__ == "__main__":
-    release_process()
+    version_bump_process()
