@@ -6,17 +6,45 @@ on:
       - opened
       
 jobs:
-  autoapprove:
-    name: Auto approve PR from bump_version
+
+  verification:
+    name: Verify branch and only version.txt changed
     if: startsWith(github.head_ref, 'bump_version')
     runs-on: ubuntu-latest
+    outputs:
+      verification_passed: ${{ steps.compare.outputs.verification_passed }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+        with:
+          ref: github.head_ref
+          submodules: recursive
+      - name: Get diff of head to master
+        id: getdiff
+        run: |
+          cd ${{runner.workspace}}/potku
+          echo "diff=$(git diff master github.head_ref --name-only)" >> $GITHUB_OUTPUT
+      - name: Compare diff
+        id: compare
+        if: steps.getdiff.outputs.diff == "version.txt"
+        run: |
+          echo "verification_passed=true" >> $GITHUB_OUTPUT
+          
+  autoapprove:
+    name: Auto approve PR from bump_version
+    needs: verification
+    runs-on: ubuntu-latest
+    env:
+      VERIFICATION_PASSED: ${{ needs.verification.outputs.verification_passed }}
     permissions:
       pull-requests: write
+    if: VERIFICATION_PASSED == "true"
     steps:
       - name: Auto approve
         uses: hmarr/auto-approve-action@v3
         with: 
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          
   automerge:
     name: Auto merge after approval
     needs: autoapprove
@@ -29,6 +57,7 @@ jobs:
           MERGE_METHOD: "merge"
           MERGE_LABELS: ""
           MERGE_DELETE_BRANCH: "true"
+          
   autotag:
     name: Tag master
     needs: automerge
@@ -49,7 +78,6 @@ jobs:
           cd ${{runner.workspace}}/potku
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
-          echo "${{ steps.getversion.outputs.version }}"
           git tag -a "${{ steps.getversion.outputs.version }}" -m "Automatic tag for version ${{ steps.getversion.outputs.version }}"
           git push origin "${{ steps.getversion.outputs.version }}"
     
