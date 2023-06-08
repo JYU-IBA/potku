@@ -38,9 +38,9 @@ jobs:
       VERIFICATION_PASSED: ${{ needs.verification.outputs.verification_passed }}
     permissions:
       pull-requests: write
-    if: $VERIFICATION_PASSED == 'true'
     steps:
       - name: Auto approve
+        if: $VERIFICATION_PASSED == 'true'
         uses: hmarr/auto-approve-action@v3
         with: 
           github-token: ${{ secrets.GITHUB_TOKEN }}
