@@ -6,8 +6,8 @@ on:
       - opened
       
 jobs:
-
-  verification:
+  
+  branch_verification:
     name: Verify branch and only version.txt changed
     if: startsWith(github.head_ref, 'bump_version')
     runs-on: ubuntu-latest
@@ -18,33 +18,38 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 2
+      - name: Verify user
+        id: check_user
+        uses: actions-cool/check-user-permission@v2.2.0
+        with:
+          require: 'write'
       - name: Get diff of head to master
-        id: getdiff
+        id: get_diff
         uses: tj-actions/changed-files@v36
       - name: Compare diff
         id: compare
-        if: steps.getdiff.outputs.all_changed_files == 'version.txt'
+        if: (steps.get_diff.outputs.all_changed_files == 'version.txt' && steps.check_user.outputs.check-result == 'true')
         run: |
           echo "verification_passed=true" >> $GITHUB_OUTPUT
           
-  autoapprove:
+  auto_approve:
     name: Auto approve PR from bump_version
-    needs: verification
+    needs: branch_verification
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
-    if: needs.verification.outputs.verification_passed == 'true'
+    if: needs.branch_verification.outputs.verification_passed == 'true'
     steps:
       - name: Auto approve
         uses: hmarr/auto-approve-action@v3
         with: 
           github-token: ${{ secrets.GITHUB_TOKEN }}
           
-  automerge:
+  auto_merge:
     name: Auto merge after approval
-    needs: [verification, autoapprove]
+    needs: [branch_verification, auto_approve]
     runs-on: ubuntu-latest
-    if: needs.verification.outputs.verification_passed == 'true'
+    if: needs.branch_verification.outputs.verification_passed == 'true'
     steps:
       - name: Auto merge
         uses: pascalgn/automerge-action@v0.15.6
@@ -54,11 +59,11 @@ jobs:
           MERGE_LABELS: ""
           MERGE_DELETE_BRANCH: "true"
           
-  autotag:
+  auto_tag:
     name: Tag master
-    needs: [verification, autoapprove, automerge]
+    needs: [branch_verification, auto_approve, auto_merge]
     runs-on: ubuntu-latest
-    if: needs.verification.outputs.verification_passed == 'true'
+    if: needs.branch_verification.outputs.verification_passed == 'true'
     steps:
       - name: Git checkout
         uses: actions/checkout@v3
