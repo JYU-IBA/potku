@@ -24,6 +24,7 @@ jobs:
         run: |
           cd ${{runner.workspace}}/potku
           echo "diff=git diff $github.base_ref $github.head_ref --name-only" >> $GITHUB_OUTPUT
+          echo "$diff"
       - name: Compare diff
         id: compare
         if: steps.getdiff.outputs.diff == 'version.txt'
@@ -36,17 +37,18 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
+    if: needs.verification.outputs.verification_passed == 'true'
     steps:
       - name: Auto approve
-        if: needs.verification.outputs.verification_passed == 'true'
         uses: hmarr/auto-approve-action@v3
         with: 
           github-token: ${{ secrets.GITHUB_TOKEN }}
           
   automerge:
     name: Auto merge after approval
-    needs: autoapprove
+    needs: [verification, autoapprove]
     runs-on: ubuntu-latest
+    if: needs.verification.outputs.verification_passed == 'true'
     steps:
       - name: Auto merge
         uses: pascalgn/automerge-action@v0.15.6
@@ -58,8 +60,9 @@ jobs:
           
   autotag:
     name: Tag master
-    needs: automerge
+    needs: [verification, autoapprove, automerge]
     runs-on: ubuntu-latest
+    if: needs.verification.outputs.verification_passed == 'true'
     steps:
       - name: Git checkout
         uses: actions/checkout@v3
