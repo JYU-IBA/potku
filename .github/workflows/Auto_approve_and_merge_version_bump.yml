@@ -29,7 +29,8 @@ jobs:
       - name: Compare diff
         id: compare
         if: |
-          steps.get_diff.outputs.all_changed_files == 'version.txt'
+          steps.get_diff.outputs.all_changed_files == 'version.txt' &&
+          steps.check_user.outputs.require-result == 'true'
         run: |
           echo "verification_passed=true" >> $GITHUB_OUTPUT
           
