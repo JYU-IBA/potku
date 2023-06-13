@@ -28,7 +28,9 @@ jobs:
         uses: tj-actions/changed-files@v36
       - name: Compare diff
         id: compare
-        if: (steps.get_diff.outputs.all_changed_files == 'version.txt' && steps.check_user.outputs.check-result == 'true')
+        if: |
+          steps.get_diff.outputs.all_changed_files == 'version.txt' &&
+          steps.check_user.outputs.check-result == 'true')
         run: |
           echo "verification_passed=true" >> $GITHUB_OUTPUT
           
