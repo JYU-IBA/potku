@@ -16,10 +16,10 @@ jobs:
     steps:
       - name: Get diff of head to master
         id: getdiff
-        uses: jitterbit/get-changed-files@v1
+        uses: tj-actions/changed-files@v36
       - name: Compare diff
         id: compare
-        if: steps.getdiff.outputs.all == 'version.txt'
+        if: steps.getdiff.outputs.all_changed_files == 'version.txt'
         run: |
           echo "verification_passed=true" >> $GITHUB_OUTPUT
           
