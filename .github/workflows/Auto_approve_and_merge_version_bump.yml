@@ -14,20 +14,12 @@ jobs:
     outputs:
       verification_passed: ${{ steps.compare.outputs.verification_passed }}
     steps:
-      - name: Git checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.head_ref }}
-          submodules: recursive
       - name: Get diff of head to master
         id: getdiff
-        run: |
-          cd ${{runner.workspace}}/potku
-          echo "diff=git diff $github.base_ref $github.head_ref --name-only" >> $GITHUB_OUTPUT
-          echo "$diff"
+        uses: jitterbit/get-changed-files@v1
       - name: Compare diff
         id: compare
-        if: steps.getdiff.outputs.diff == 'version.txt'
+        if: steps.getdiff.outputs.all == 'version.txt'
         run: |
           echo "verification_passed=true" >> $GITHUB_OUTPUT
           
