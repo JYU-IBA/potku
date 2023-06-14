@@ -88,7 +88,7 @@ jobs:
         id: getversion
         run: |
           cd ${{runner.workspace}}/potku
-          echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
+          echo "version=$(awk 'NR==1' version.txt)" >> $GITHUB_OUTPUT
       - name: git commands
         run: |
           cd ${{runner.workspace}}/potku
