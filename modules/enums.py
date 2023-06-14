@@ -141,8 +141,8 @@ class SimulationType(str, Enum):
 
     def __str__(self):
         if self is SimulationType.ERD:
-            return "REC"
-        return "SCT"
+            return "Recoil"
+        return "Scatter"
 
     def get_recoil_type(self):
         return str(self).lower()
