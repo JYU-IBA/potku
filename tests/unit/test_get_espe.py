@@ -73,7 +73,7 @@ class TestGetCommand(unittest.TestCase):
 class TestReadEspeFile(unittest.TestCase):
     def test_read_espe_file_returns_expected_data(self):
         spectrum = GetEspe.read_espe_file(_EXPECTED_SPECTRUM_FILE)
-        self.assertEqual(96, len(spectrum))
+        self.assertEqual(97, len(spectrum))
         for fst, snd in zip(spectrum[:-1], spectrum[1:]):
             # x values are in ascending order
             self.assertLess(fst[0], snd[0])
