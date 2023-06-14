@@ -62,7 +62,7 @@ class TestSimulationSettingsWidget(unittest.TestCase):
         self.assertEqual("foo", sim_widget.nameLineEdit.text())
         self.assertEqual("bar",
                          sim_widget.descriptionPlainTextEdit.toPlainText())
-        self.assertEqual("REC",
+        self.assertEqual("Recoil",
                          sim_widget.typeOfSimulationComboBox.currentText())
         self.assertEqual("Narrow", sim_widget.modeComboBox.currentText())
         self.assertTrue(42, sim_widget.seedSpinBox.value())
@@ -77,7 +77,7 @@ class TestSimulationSettingsWidget(unittest.TestCase):
             7.5, sim_widget.minimumScatterAngleDoubleSpinBox.value())
 
         sim_widget.simulation_type = SimulationType.RBS
-        self.assertEqual("SCT",
+        self.assertEqual("Scatter",
                          sim_widget.typeOfSimulationComboBox.currentText())
 
     @patch("os.remove")
