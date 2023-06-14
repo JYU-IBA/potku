@@ -101,7 +101,7 @@ def save_version_number(version_string: str):
     Args:
         version_string: the version number to be saved as a string.
     """
-    version_date = date.today()
+    version_date = date.today().isoformat()
     version_file = open(version_file_path, "w")
     version_file.writelines([version_string, version_date])
     version_file.close()
