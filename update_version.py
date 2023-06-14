@@ -1,5 +1,6 @@
 import subprocess
 import os
+from datetime import date
 
 root_directory = os.path.dirname(os.path.realpath(__file__))
 version_file_path = os.path.join(root_directory, "./version.txt")
@@ -81,10 +82,14 @@ def get_version_number():
     """
     try:
         version_file = open(version_file_path, "r")
-        version_number_str = version_file.read()
+        version_contents = version_file.read().splitlines()
+        version_number_str = version_contents[0]
         version_file.close()
     except FileNotFoundError:
-        print('Version.txt not found!')
+        print('version.txt not found!')
+        return None
+    except IndexError:
+        print('Unexpected things in version.txt!')
         return None
 
     return version_number_str
@@ -92,12 +97,13 @@ def get_version_number():
 
 def save_version_number(version_string: str):
     """
-    Save version number to the version.txt file.
+    Save version number and date of version to the version.txt file
     Args:
         version_string: the version number to be saved as a string.
     """
+    version_date = date.today()
     version_file = open(version_file_path, "w")
-    version_file.write(version_string)
+    version_file.writelines([version_string, version_date])
     version_file.close()
 
     return
