@@ -62,8 +62,9 @@ class AboutDialog(QtWidgets.QDialog):
         self.picture.setPixmap(scaled_pixmap)
 
         version_number, version_date = gf.get_version_number_and_date()
+        year, month, day = version_date.split('-')
         self.label_version.setText(f'Version {version_number}')
-        self.label_date.setText(version_date)
+        self.label_date.setText(f'{day}.{month}.{year}')
 
         self.x = 0
         self.y = 2
