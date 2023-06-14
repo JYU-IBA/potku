@@ -682,16 +682,27 @@ def check_if_sum_in_directory_name(directory):
     return measured_sum_found, simulated_sum_found
 
 
-def get_version_number():
+def get_version_number_and_date():
+    """
+    Returns Potku's version number and date of the version from version.txt
 
+    Return:
+        version_number: semantic version number
+        version_date: dd.mm.yyyy format date of the version
+    """
     root_dir = get_root_dir()
     version_file_path = pathlib.Path.joinpath(root_dir, r'version.txt')
-    version_number = '0.0.0'
+    version_number = '2.0'
+    version_date = '31.12.2022'
     try:
         version_file = open(version_file_path, 'r')
-        version_number = version_file.read()
+        version_file_content = version_file.read().splitlines()
+        version_number = version_file_content[0]
+        version_date = version_file_content[1]
         version_file.close()
     except FileNotFoundError:
-        return version_number
+        return version_number, version_date
+    except IndexError:
+        return version_number, version_date
 
-    return version_number
+    return version_number, version_date

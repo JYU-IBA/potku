@@ -68,7 +68,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="label_2">
+        <widget class="QLabel" name="label_version">
          <property name="font">
           <font>
            <pointsize>14</pointsize>
@@ -107,16 +107,37 @@
           <x>0</x>
           <y>0</y>
           <width>461</width>
-          <height>566</height>
+          <height>572</height>
          </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_3">
-           <item>
+           <item alignment="Qt::AlignHCenter">
+            <widget class="QLabel" name="label_licence_title">
+             <property name="text">
+              <string>&lt;span style=&quot; font-size:9pt; font-weight:600;&quot;&gt;Potku's Licence&lt;br/&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item alignment="Qt::AlignHCenter">
             <widget class="QLabel" name="label_licence">
              <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:9pt; font-weight:600;&quot;&gt;Potku's Licence&lt;br/&gt;&lt;/span&gt;Licence GPL version 2.&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:9pt; font-weight:600;&quot;&gt;University of Jyväskylä&lt;br/&gt;&lt;/span&gt;22.3.2023&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>Licence GPL version 2.</string>
+             </property>
+            </widget>
+           </item>
+           <item alignment="Qt::AlignHCenter">
+            <widget class="QLabel" name="label_organization">
+             <property name="text">
+              <string>&lt;span style=&quot; font-size:9pt; font-weight:600;&quot;&gt;University of Jyväskylä&lt;br/&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item alignment="Qt::AlignHCenter">
+            <widget class="QLabel" name="label_date">
+             <property name="text">
+              <string>23.3.2023</string>
              </property>
             </widget>
            </item>
