@@ -103,7 +103,7 @@ def save_version_number(version_string: str):
     """
     version_date = date.today().isoformat()
     version_file = open(version_file_path, "w")
-    version_file.writelines([version_string, version_date])
+    version_file.writelines([f'{version_string}\n', version_date])
     version_file.close()
 
     return
