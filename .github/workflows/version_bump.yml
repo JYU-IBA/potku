@@ -11,7 +11,7 @@ jobs:
   # This job checks if only version.txt changed and pull request
   # creator has write permission.
   branch_verification:
-    name: Verify branch and only version.txt changed
+    name: Verify user and changes
     if: startsWith(github.head_ref, 'bump_version')
     runs-on: ubuntu-latest
     outputs:
@@ -43,7 +43,7 @@ jobs:
   # If branch_verification job returns true then the pull request
   # is automatically approved by github-actions-bot.
   auto_approve:
-    name: Auto approve PR from bump_version
+    name: Auto approve
     needs: branch_verification
     runs-on: ubuntu-latest
     permissions:
@@ -58,7 +58,7 @@ jobs:
   # Automatically merge the approved version bump pull request. Version
   # bump branch is automatically deleted after merging.
   auto_merge:
-    name: Auto merge after approval
+    name: Auto merge
     needs: [branch_verification, auto_approve]
     runs-on: ubuntu-latest
     if: needs.branch_verification.outputs.verification_passed == 'true'
@@ -74,7 +74,7 @@ jobs:
   # Automatically create an annotated tag of master branch after
   # merging version bump pull request.
   auto_tag:
-    name: Tag master
+    name: Auto tag
     needs: [branch_verification, auto_approve, auto_merge]
     runs-on: ubuntu-latest
     if: needs.branch_verification.outputs.verification_passed == 'true'
