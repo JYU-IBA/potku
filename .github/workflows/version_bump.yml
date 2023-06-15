@@ -48,7 +48,7 @@ jobs:
     if: needs.branch_verification.outputs.files_ok == 'true'
     runs-on: ubuntu-latest
     outputs:
-      verification_passed: ${{ steps.check_content.outputs.content_ok }}
+      content_ok: ${{ steps.check_content.outputs.content_ok }}
       version_number: ${{ steps.get_content.outputs.version }}
       version_date: ${{ steps.get_content.outputs.date }}
     steps:
