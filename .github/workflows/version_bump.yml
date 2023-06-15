@@ -52,12 +52,10 @@ jobs:
       version_number: ${{ steps.get_content.outputs.version }}
       version_date: ${{ steps.get_content.outputs.date }}
     steps:
-      - name: Git checkout
+      - name: Git checkout head
         uses: actions/checkout@v3
         with:
-          fetch-depth: 2
-      - name: Chekout head
-        run: git checkout HEAD^
+          ref: ${{ github.event.pull_request.head.ref }}
       - name: Read version file
         id: get_content
         run: |
