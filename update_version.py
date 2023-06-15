@@ -1,10 +1,19 @@
+"""
+Script for updating the version number stored in version.txt and pushing the
+update to origin/master via a pull request. update_version.py and version.txt
+must be in the root of the repository. Git and GitHub CLI must be installed to
+run the script properly. Script saves the new version number on the first row
+of version.txt and the date of the new version on the second row.
+"""
 import subprocess
 import os
 from datetime import date
 
 root_directory = os.path.dirname(os.path.realpath(__file__))
 version_file_path = os.path.join(root_directory, "./version.txt")
+# Hard scripted semantic level names
 semantic_levels = ['major', 'minor', 'patch']
+# Number of semantic levels desired to use
 version_number_levels = 2
 
 
@@ -198,7 +207,9 @@ def check_gh_cli_installation():
     Checks if GitHub CLI is installed by running gh version command.
     Returns: bool, True if installation is found, false if not found.
     """
-    gh_version_process = subprocess.run(["gh", "version"], capture_output=True, cwd=root_directory)
+    gh_version_process = subprocess.run(["gh", "version"],
+                                        capture_output=True,
+                                        cwd=root_directory)
     ret_gh = gh_version_process.stdout.decode('UTF-8')
     if "gh version" in ret_gh:
         return True
@@ -210,7 +221,9 @@ def check_git_installation():
     Checks if Git is installed by running git version command.
     Returns: bool, True if installation is found, false if not found.
     """
-    git_version_process = subprocess.run(["git", "version"], capture_output=True, cwd=root_directory)
+    git_version_process = subprocess.run(["git", "version"],
+                                         capture_output=True,
+                                         cwd=root_directory)
     ret_git = git_version_process.stdout.decode('UTF-8')
     if "git version" in ret_git:
         return True
