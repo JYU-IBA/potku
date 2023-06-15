@@ -46,15 +46,15 @@ jobs:
       
   # Check the contents of version.txt
   content_verification:
-      name: Verify version.txt content
-      needs: branch_verification
-      if: needs.branch_verification.outputs.files_ok == 'true'
-      runs-on: ubuntu-latest
-      outputs:
-        verification_passed: ${{ steps.check_content.outputs.content_ok }}
-        version_number: ${{ steps.get_content.outputs.version }}
-        version_date: ${{ steps.get_content.outputs.date }}
-      steps:
+    name: Verify version.txt content
+    needs: branch_verification
+    if: needs.branch_verification.outputs.files_ok == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      verification_passed: ${{ steps.check_content.outputs.content_ok }}
+      version_number: ${{ steps.get_content.outputs.version }}
+      version_date: ${{ steps.get_content.outputs.date }}
+    steps:
       - name: Git checkout
         uses: actions/checkout@v3
         with:
