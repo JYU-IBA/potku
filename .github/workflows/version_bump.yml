@@ -130,10 +130,12 @@ jobs:
           ref: master
           submodules: recursive
       - name: git commands
+        env: 
+          VERSION: ${{ needs.content_verification.outputs.version_number }}
         run: |
           cd ${{runner.workspace}}/potku
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
-          git tag -a ${{ needs.content_verification.version_number }} -m "Automatic tag for version ${{ needs.content_verification.version_number }}"
-          git push origin "${{ needs.content_verification.version_number }}"
+          git tag -a "${{ VERSION }}" -m "Automatic tag for version ${{ VERSION }}"
+          git push origin "${{ VERSION }}"
     
