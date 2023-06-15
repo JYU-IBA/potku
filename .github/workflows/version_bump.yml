@@ -76,7 +76,7 @@ jobs:
       - name: Verify file content
         id: check_content
         if: |
-          steps.match_content.outputs.version_match == 'true'
+          steps.match_content.outputs.version_match == 'true' &&
           steps.match_content.outputs.date_match == 'true'
         run: |
           echo "content_ok=true" >> $GITHUB_OUTPUT
@@ -90,7 +90,7 @@ jobs:
     permissions:
       pull-requests: write
     if: |
-      needs.branch_verification.outputs.files_ok == 'true'
+      needs.branch_verification.outputs.files_ok == 'true' &&
       needs.content_verification.outputs.content_ok == 'true'
     steps:
       - name: Auto approve
@@ -105,7 +105,7 @@ jobs:
     needs: [branch_verification, content_verification, auto_approve]
     runs-on: ubuntu-latest
     if: |
-      needs.branch_verification.outputs.files_ok == 'true'
+      needs.branch_verification.outputs.files_ok == 'true' &&
       needs.content_verification.outputs.content_ok == 'true'
     steps:
       - name: Auto merge
@@ -123,7 +123,7 @@ jobs:
     needs: [branch_verification, content_verification, auto_approve, auto_merge]
     runs-on: ubuntu-latest
     if: |
-      needs.branch_verification.outputs.files_ok == 'true'
+      needs.branch_verification.outputs.files_ok == 'true' &&
       needs.content_verification.outputs.content_ok == 'true'
     steps:
       - name: Git checkout
