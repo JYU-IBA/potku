@@ -64,6 +64,9 @@ jobs:
           echo "date=$(awk 'NR==2' version.txt)" >> $GITHUB_OUTPUT
       - name: Match file content
         id: match_content
+        if: $
+          steps.get_content.outputs.version != "" &&
+          steps.get_content.outputs.date != ""
         run: |
           if [[ ${{ steps.get_content.outputs.version }} =~ ^[0-9]+\.[0-9]+$ ]]; then
             echo "version_match=true" >> $GITHUB_OUTPUT
