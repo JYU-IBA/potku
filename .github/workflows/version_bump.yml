@@ -16,9 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       files_ok: ${{ steps.changed_files.outputs.files_ok }}
-      verification_passed: ${{ steps.content_ok.outputs.verification_passed }}
-      version_number: ${{ steps.get_content.outputs.version }}
-      version_date: ${{ steps.get_content.outputs.date }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v3
