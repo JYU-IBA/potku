@@ -73,7 +73,8 @@ def git_bump_and_pr(version_string: str):
     subprocess.run(["gh", "pr", "create", "-B", "master", "-t",
                     f"Version bump to {version_string}", "-b",
                     "Version bump via script."], cwd=root_directory,
-                   stdout=subprocess.DEVNULL)
+                   stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL)
 
     print('Done creating a pull request.')
 
