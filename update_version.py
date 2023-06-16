@@ -243,6 +243,9 @@ def version_bump_process():
               "Aborting process.")
 
     current_version_string = get_version_number()
+    if current_version_string is None:
+        print('Aborting process.')
+        return
     current_version_number = parse_version_number(current_version_string)
     if current_version_number is None:
         print('Aborting process.')
@@ -262,13 +265,19 @@ def version_bump_process():
         return
 
     print(f'New version number would be {new_version_string}')
-    print('Continue with this number y/n? Last chance to cancel.')
-    continue_response = input().casefold()
-    if continue_response == 'y':
-        save_version_number(new_version_string)
-        git_bump_and_pr(new_version_string)
-    else:
-        print('Version number bump cancelled.')
+    input_accepted = False
+    while not input_accepted:
+        print('Continue with this number y/n? Last chance to cancel.')
+        continue_response = input().casefold()
+        if continue_response == 'y':
+            save_version_number(new_version_string)
+            git_bump_and_pr(new_version_string)
+            input_accepted = True
+        elif continue_response == 'n':
+            print('Version number bump cancelled.')
+            input_accepted = True
+        else:
+            print('Please enter y to proceed or n to cancel.')
 
     return
 
