@@ -65,14 +65,15 @@ def git_bump_and_pr(version_string: str):
     ret_commit = git_commit_process.stdout.decode('UTF-8')
     print(ret_commit)
 
-    print(f'Pushing to a new branch: bump_version_{version_string}')
+    print(f'Pushing a new branch: bump_version_{version_string}')
 
     subprocess.run(["git", "push", "origin",
                     f"bump_version_{version_string}"], cwd=root_directory)
 
     subprocess.run(["gh", "pr", "create", "-B", "master", "-t",
                     f"Version bump to {version_string}", "-b",
-                    "Version bump via script."], cwd=root_directory)
+                    "Version bump via script."], cwd=root_directory,
+                   stdout=subprocess.DEVNULL)
 
     print('Done creating a pull request.')
 
