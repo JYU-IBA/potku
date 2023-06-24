@@ -228,6 +228,9 @@ def version_bump_process():
     Function that manages the whole process of updating the version number.
     Returns:
     """
+    print('This script is intended only for Potku devs to initiate an automatic'
+          'version number bump.')
+
     if check_git_installation() is False:
         print("Git not installed. Install Git first. Aborting process.")
         return
