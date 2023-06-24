@@ -7,9 +7,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
-Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen
+Copyright (C) 2023 Sami Voutilainen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -30,10 +28,10 @@ __version__ = "2.0"
 
 """
 Script for updating the version number stored in version.txt and pushing the
-update to origin/master via a pull request. bump_version.py and version.txt
-must be in the root of the repository. Git and GitHub CLI must be installed to
-run the script. Script saves the new version number on the first row of
-version.txt and the date of the new version on the second row.
+update to origin/master via a pull request. version.txt must be in the root of
+the repository. Git and GitHub CLI must be installed to run the script. Script
+saves the new version number on the first row of version.txt and the date of the
+new version on the second row.
 """
 import subprocess
 import os
@@ -176,7 +174,7 @@ def input_new_version():
     hardcoded semantic level to bump the respective level, or their own version
     number. User can also cancel by entering 'c'.
 
-    Returns: an updated version number as a list of ints.
+    Returns: a user-entered version string that has passed the regex check.
     """
     new_version_number = None
     input_accepted = False
