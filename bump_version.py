@@ -263,7 +263,7 @@ def version_bump_process():
             git_bump_and_pr(new_version_string)
             input_accepted = True
         elif continue_response == 'n':
-            print('Version number bump cancelled.')
+            print('Version bump cancelled.')
             input_accepted = True
         else:
             print('Please enter y to proceed or n to cancel.')
