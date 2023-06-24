@@ -1,20 +1,53 @@
+# coding=utf-8
+"""
+Created on 12.5.2013
+Updated on 1.6.2018
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
+"""
+
+__author__ = "Sami Voutilainen"
+__version__ = "2.0"
+
 """
 Script for updating the version number stored in version.txt and pushing the
-update to origin/master via a pull request. update_version.py and version.txt
+update to origin/master via a pull request. bump_version.py and version.txt
 must be in the root of the repository. Git and GitHub CLI must be installed to
-run the script properly. Script saves the new version number on the first row
-of version.txt and the date of the new version on the second row.
+run the script. Script saves the new version number on the first row of
+version.txt and the date of the new version on the second row.
 """
 import subprocess
 import os
 from datetime import date
+import re
 
 root_directory = os.path.dirname(os.path.realpath(__file__))
 version_file_path = os.path.join(root_directory, "./version.txt")
-# Hard scripted semantic level names
-semantic_levels = ['major', 'minor', 'patch']
-# Number of semantic levels desired to use
-version_number_levels = 2
+version_pattern = r'^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.' \
+                  r'(?P<patch>0|[1-9]\d*)' \
+                  r'(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)' \
+                  r'(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))' \
+                  r'?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+' \
+                  r'(?:\.[0-9a-zA-Z-]+)*))?$'
 
 
 def get_github_status():
@@ -86,7 +119,7 @@ def git_bump_and_pr(version_string: str):
     return
 
 
-def get_version_number():
+def get_version():
     """
     Get version number from the version.txt file.
     Returns: version number as a string or None if problems are encountered.
@@ -106,7 +139,7 @@ def get_version_number():
     return version_number_str
 
 
-def save_version_number(version_string: str):
+def save_version(version_string: str):
     """
     Save version number and date of version to the version.txt file
     Args:
@@ -120,86 +153,44 @@ def save_version_number(version_string: str):
     return
 
 
-def parse_version_number(version_number_str: str):
+def verify_version(version_number_str: str):
     """
-    Parse version number from a string.
+    Verify version number from a string.
     Args:
-        version_number_str: string representing the version number. Should be in
-    the format of semantic version numbers with desired number of levels.
+        version_number_str: string representing the semantic version number.
 
-    Returns: the parsed version number as a list of ints, or None if parsing is
-        not successful.
+    Returns: Bool whether the version number is valid or not.
     """
-    parsing_successful = True
-    version_number_split = version_number_str.split('.')
-    version_number = []
+    match = re.match(version_pattern, version_number_str)
 
-    if len(version_number_split) > version_number_levels:
-        print('Too many separators in version number!')
-        parsing_successful = False
+    if match:
 
-    if len(version_number_split) < version_number_levels:
-        print('Too few separators in version number!')
-        parsing_successful = False
+        return True
 
-    for element in version_number_split:
-        try:
-            version_number.append(int(element))
-        except ValueError:
-            print('There is something unexpected in the version number!')
-            parsing_successful = False
-
-    for element in version_number:
-        if element < 0:
-            print('No negative numbers in version number!')
-            parsing_successful = False
-
-    if not parsing_successful:
-        return None
-
-    return version_number
+    return False
 
 
-def update_version_number(current_version_number: list[int]):
+def input_new_version():
     """
     Updates the version number based on user input. User can either input a
     hardcoded semantic level to bump the respective level, or their own version
     number. User can also cancel by entering 'c'.
-    Args:
-        current_version_number: current version number as a list of ints.
 
     Returns: an updated version number as a list of ints.
     """
-    new_version_number = current_version_number.copy()
+    new_version_number = None
     input_accepted = False
-    used_semantic_levels = []
-    for i in range(version_number_levels):
-        used_semantic_levels.append(semantic_levels[i])
 
     while not input_accepted:
 
-        print('Enter either ' + ', '.join(used_semantic_levels) +
-              ' to bump the respective semantic level, or enter your own '
-              'version number. Enter c to cancel.')
+        print('Enter a new version number or c to cancel.')
         text_input = input().casefold()
         if text_input == 'c':
             input_accepted = True
 
-        bump_level_found = False
-        for i, semantic_level in enumerate(used_semantic_levels):
-            if text_input == semantic_level:
-                new_version_number[i] += 1
-                bump_level_found = True
-                input_accepted = True
-                continue
-            if bump_level_found:
-                new_version_number[i] = 0
-
-        if not bump_level_found and not input_accepted:
-            parsed_version_number = parse_version_number(text_input)
-            if parsed_version_number is not None:
-                new_version_number = parsed_version_number
-                input_accepted = True
+        if verify_version(text_input):
+            new_version_number = text_input
+            input_accepted = True
 
     return new_version_number
 
@@ -244,35 +235,31 @@ def version_bump_process():
         print("GitHub CLI not installed. Install GitHub CLI first. "
               "Aborting process.")
 
-    current_version_string = get_version_number()
+    current_version_string = get_version()
     if current_version_string is None:
         print('Aborting process.')
         return
-    current_version_number = parse_version_number(current_version_string)
-    if current_version_number is None:
-        print('Aborting process.')
-        return
 
-    print(f'Current version number is {current_version_string}')
+    print(f'Current version is {current_version_string}')
 
     working_tree_is_clean = get_github_status()
     if not working_tree_is_clean:
         return
 
-    new_version_number = update_version_number(current_version_number)
-    new_version_string = '.'.join(str(x) for x in new_version_number)
+    new_version_string = input_new_version()
 
-    if new_version_number == current_version_number:
-        print('Version number bump cancelled.')
+    if new_version_string == current_version_string:
+        print('New version is the same as the previous. Aborting process.')
         return
 
     print(f'New version number would be {new_version_string}')
+
     input_accepted = False
     while not input_accepted:
         print('Continue with this number y/n? Last chance to cancel.')
         continue_response = input().casefold()
         if continue_response == 'y':
-            save_version_number(new_version_string)
+            save_version(new_version_string)
             git_bump_and_pr(new_version_string)
             input_accepted = True
         elif continue_response == 'n':
