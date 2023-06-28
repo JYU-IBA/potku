@@ -3,23 +3,7 @@ name: Build
 on:
   workflow_dispatch:
 
-jobs:
-  build_windows:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
-      - name: run windows script
-        run: |
-          ${{runner.workspace}}\potku\build.bat
-      - name: Archive windows build
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-artifact-windows
-          path: ${{runner.workspace}}/potku/external/bin
-          
+jobs:  
   build_linux:
     runs-on: ubuntu-latest
     steps:
@@ -38,7 +22,7 @@ jobs:
         cd ${{runner.workspace}}/potku
         pip install pipenv
         pipenv install
-        pipenv run install pyinstaller
+        pipenv run pip install pyinstaller
         pipenv run pyinstaller potku.spec
     - name: Archive linux build
       uses: actions/upload-artifact@v3
