@@ -4,44 +4,40 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
+  build_windows:
+    runs-on: windows-latest
     steps:
-      - name: checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v3
         with:
           submodules: recursive
       - name: run windows script
-        if: matrix.os == 'windows-latest'
         run: |
           ${{runner.workspace}}\potku\build.bat
-      - name: run linux script
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get install -y libgsl27 libgsl-dev
-          ${{runner.workspace}}/potku/build.sh
-          cd ${{runner.workspace}}/potku
-          curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C external/share/jibal
-      - name: build Potku
-        run: |
-          cd ${{runner.workspace}}/potku
-          pip install pipenv
-          pipenv install
-          pipenv run install pyinstaller
-          pipenv run pyinstaller potku.spec
       - name: Archive windows build
-        if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v3
         with:
-          name: build-artifact-${{ matrix.os }}
+          name: build-artifact-windows
           path: ${{runner.workspace}}/potku/external/bin
-      - name: Archive linux build
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-artifact-${{ matrix.os }}
-          path: ${{runner.workspace}}/potku/dist
+          
+  build_linux:
+    runs-on: ubuntu-latest
+    steps:
+    - name: run linux script
+      run: |
+        sudo apt-get install -y libgsl27 libgsl-dev
+        ${{runner.workspace}}/potku/build.sh
+        cd ${{runner.workspace}}/potku
+        curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C external/share/jibal
+    - name: build Potku
+      run: |
+        cd ${{runner.workspace}}/potku
+        pip install pipenv
+        pipenv install
+        pipenv run install pyinstaller
+        pipenv run pyinstaller potku.spec
+    - name: Archive linux build
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifact-linux
+        path: ${{runner.workspace}}/potku/dist
