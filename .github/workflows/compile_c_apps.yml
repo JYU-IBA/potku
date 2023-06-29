@@ -39,7 +39,7 @@ jobs:
         token: ${{ github.token }}
     - name: run windows script
       run: |
-          ${{runner.workspace}}\potku\build.bat ${{ runner.workspace }}\vcpkg\scripts\buildsystems\vcpkg.cmake
+          ${{runner.workspace}}\potku\build.bat ${{ runner.workspace }}\potku\vcpkg\scripts\buildsystems\vcpkg.cmake
     - name: Archive windows build
       uses: actions/upload-artifact@v3
       with:
