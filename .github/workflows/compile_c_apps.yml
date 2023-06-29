@@ -1,30 +1,48 @@
-name: Build
+name: Compile_C
 
 on:
   workflow_dispatch:
 
 jobs:  
+  build_linux:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Build linux executables
+      run: |
+        sudo apt-get install -y libgsl27 libgsl-dev
+        ${{runner.workspace}}/potku/build.sh
+    - name: Archive linux executables
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifact-linux
+        path: ${{runner.workspace}}/potku/external/bin
+        
   build_windows:
     runs-on: windows-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
-      - name: vcpkg build
-        uses: johnwason/vcpkg-action@v5
-        id: vcpkg
-        with:
-          pkgs: gsl getopt
-          triplet: x64-windows-release
-          cache-key: windows
-          revision: master
-          token: ${{ github.token }}
-      - name: run windows script
-        run: |
-          ${{runner.workspace}}\potku\build.bat ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
-      - name: Archive windows build
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-artifact-windows
-          path: ${{runner.workspace}}/potku/external/bin
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: vcpkg build
+      uses: johnwason/vcpkg-action@v5
+      id: vcpkg
+      with:
+        pkgs: gsl getopt
+        triplet: x64-windows-release
+        cache-key: windows
+        revision: master
+        token: ${{ github.token }}
+    - name: run windows script
+      run: |
+          ${{runner.workspace}}\potku\build.bat ${{ runner.workspace }}\vcpkg\scripts\buildsystems\vcpkg.cmake
+    - name: Archive windows build
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifact-windows
+        path: ${{runner.workspace}}/potku/external/bin
+        
