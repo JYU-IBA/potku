@@ -24,10 +24,6 @@ jobs:
   build_windows:
     runs-on: windows-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        submodules: recursive
     - name: vcpkg build
       uses: johnwason/vcpkg-action@v5
       id: vcpkg
@@ -37,9 +33,16 @@ jobs:
         cache-key: windows
         revision: master
         token: ${{ github.token }}
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Set environment variables
+      run: |
+        setx VCPKG_ROOT "${{ github.workspace }}\vcpkg"
     - name: run windows script
       run: |
-          ${{runner.workspace}}\potku\build.bat ${{ runner.workspace }}\potku\vcpkg\scripts\buildsystems\vcpkg.cmake
+        ${{runner.workspace}}\potku\build.bat
     - name: Archive windows build
       uses: actions/upload-artifact@v3
       with:
