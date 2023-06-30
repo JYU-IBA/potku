@@ -36,6 +36,12 @@ jobs:
         cache-key: windows
         revision: master
         token: ${{ github.token }}
+    - name: VCPKG check
+      run: |
+        @echo on
+        cd ${{runner.workspace}}
+        cd ../
+        tree /f
     - name: Checkout repository
       uses: actions/checkout@v3
       with:
