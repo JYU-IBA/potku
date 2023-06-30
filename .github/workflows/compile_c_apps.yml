@@ -27,6 +27,14 @@ jobs:
       run:
         shell: cmd
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Move potku
+      run: |
+        mkdir ${{runner.workspace}}\repo
+        move ${{runner.workspace}}\potku ${{runner.workspace}}\repo
     - name: vcpkg build
       uses: johnwason/vcpkg-action@v5
       id: vcpkg
@@ -36,30 +44,23 @@ jobs:
         cache-key: windows
         revision: master
         token: ${{ github.token }}
-    - name: VCPKG check
+    - name: Dir check
       run: |
         @echo on
         cd ${{runner.workspace}}
         cd ../
         tree /f
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        submodules: recursive
     - name: Set environment variables
       run: |
         @echo on
         setx VCPKG_ROOT "${{ github.workspace }}\vcpkg"
         setx VCPKG_DEFAULT_TRIPLET "x64-windows"
-        cd ${{runner.workspace}}
-        cd ../
-        tree /f
     - name: run windows script
       run: |
-        ${{runner.workspace}}\potku\build.bat
+        ${{runner.workspace}}\repo\build.bat
     - name: Archive windows build
       uses: actions/upload-artifact@v3
       with:
         name: build-artifact-windows
-        path: ${{runner.workspace}}/potku/external/bin
+        path: ${{runner.workspace}}\repo\external\bin
         
