@@ -46,6 +46,7 @@ jobs:
         setx VCPKG_DEFAULT_TRIPLET "x64-windows"
     - name: run windows script
       run: |
+        @echo on
         echo %VCPKG_ROOT%
         IF EXIST ${{ github.workspace }}\potku\vcpkg\scripts\buildsystems\vcpkg.cmake echo TOOLCHAIN EXISTS
         ${{runner.workspace}}\potku\build.bat
