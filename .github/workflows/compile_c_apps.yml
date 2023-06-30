@@ -46,6 +46,7 @@ jobs:
         setx VCPKG_ROOT "${{ github.workspace }}\vcpkg"
         setx VCPKG_DEFAULT_TRIPLET "x64-windows"
         cd ${{runner.workspace}}
+        cd ../
         tree /f
     - name: run windows script
       run: |
