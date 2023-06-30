@@ -42,13 +42,13 @@ jobs:
         submodules: recursive
     - name: Set environment variables
       run: |
+        @echo on
         setx VCPKG_ROOT "${{ github.workspace }}\vcpkg"
         setx VCPKG_DEFAULT_TRIPLET "x64-windows"
+        cd ${{runner.workspace}}
+        tree /f
     - name: run windows script
       run: |
-        @echo on
-        echo %VCPKG_ROOT%
-        IF EXIST ${{ github.workspace }}\potku\vcpkg\scripts\buildsystems\vcpkg.cmake echo TOOLCHAIN EXISTS
         ${{runner.workspace}}\potku\build.bat
     - name: Archive windows build
       uses: actions/upload-artifact@v3
