@@ -50,7 +50,7 @@ jobs:
     - name: run windows script
       run: |
         cd ${{runner.workspace}}\potku\repo
-        build.bat ${{ runner.workspace }}\potku\repo\vcpkg\scripts\buildsystems\vcpkg.cmake
+        build.bat ${{ runner.workspace }}\potku\vcpkg\scripts\buildsystems\vcpkg.cmake
     - name: Archive windows build
       uses: actions/upload-artifact@v3
       with:
