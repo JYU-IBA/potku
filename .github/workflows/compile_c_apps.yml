@@ -26,9 +26,9 @@ jobs:
         token: ${{ github.token }}
     - name: Set environment + run script
       run: |
-        C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat
-        setx VCPKG_ROOT ${{ runner.workspace }}\potku\vcpkg
-        setx VCPKG_DEFAULT_TRIPLET x64-windows
+        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        set VCPKG_ROOT ${{ runner.workspace }}\potku\vcpkg
+        set VCPKG_DEFAULT_TRIPLET x64-windows
         cd ${{runner.workspace}}\potku\repo
         build.bat
     - name: Archive windows build
