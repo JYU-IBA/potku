@@ -25,8 +25,8 @@ jobs:
         token: ${{ github.token }}
     - name: Set environment variables
       run: |
-        setx VCPKG_ROOT=${{ runner.workspace }}\potku\vcpkg
-        setx VCPKG_DEFAULT_TRIPLET=x64-windows
+        setx VCPKG_ROOT ${{ runner.workspace }}\potku\vcpkg
+        setx VCPKG_DEFAULT_TRIPLET x64-windows
     - name: run windows script
       run: |
         cd ${{runner.workspace}}\potku\repo
