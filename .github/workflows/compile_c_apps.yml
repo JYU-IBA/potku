@@ -50,7 +50,7 @@ jobs:
     - name: Set environment variables
       run: |
         @echo on
-        setx VCPKG_ROOT "${{ github.workspace }}\potku\vcpkg"
+        setx VCPKG_ROOT "${{ runner.workspace }}\potku\vcpkg"
         setx VCPKG_DEFAULT_TRIPLET "x64-windows"
     - name: run windows script
       run: |
