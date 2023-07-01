@@ -21,15 +21,11 @@ jobs:
         cache-key: windows
         revision: master
         token: ${{ github.token }}
-    - name: Set up native tools CMD
-      uses: ilammy/msvc-dev-cmd@v1
-    - name: Set environment variables
+    - name: Set environment + run script
       run: |
+        call C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat
         setx VCPKG_ROOT ${{ runner.workspace }}\potku\vcpkg
         setx VCPKG_DEFAULT_TRIPLET x64-windows
-    - name: run windows script
-      run: |
-        cd ${{runner.workspace}}\potku\repo
         cd ${{runner.workspace}}\potku\repo
         build.bat
     - name: Archive windows build
