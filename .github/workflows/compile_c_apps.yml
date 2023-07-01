@@ -30,6 +30,7 @@ jobs:
     - name: run windows script
       run: |
         cd ${{runner.workspace}}\potku\repo
+        cd ${{runner.workspace}}\potku\repo
         build.bat
     - name: Archive windows build
       uses: actions/upload-artifact@v3
