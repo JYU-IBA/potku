@@ -47,10 +47,15 @@ jobs:
         cd ${{runner.workspace}}
         cd ../
         tree /f
+    - name: Set environment variables
+      run: |
+        @echo on
+        setx VCPKG_ROOT "${{ github.workspace }}\potku\vcpkg"
+        setx VCPKG_DEFAULT_TRIPLET "x64-windows"
     - name: run windows script
       run: |
         cd ${{runner.workspace}}\potku\repo
-        build.bat ${{ runner.workspace }}\potku\vcpkg\scripts\buildsystems\vcpkg.cmake
+        build.bat
     - name: Archive windows build
       uses: actions/upload-artifact@v3
       with:
