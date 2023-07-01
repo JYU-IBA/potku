@@ -7,8 +7,6 @@ jobs:
   build_windows:
     runs-on: windows-latest
     steps:
-    - name: Set up native tools CMD
-      uses: ilammy/msvc-dev-cmd@v1
     - name: Checkout repository
       uses: actions/checkout@v3
       with:
@@ -23,6 +21,8 @@ jobs:
         cache-key: windows
         revision: master
         token: ${{ github.token }}
+    - name: Set up native tools CMD
+      uses: ilammy/msvc-dev-cmd@v1
     - name: Set environment variables
       run: |
         setx VCPKG_ROOT ${{ runner.workspace }}\potku\vcpkg
