@@ -54,7 +54,8 @@ jobs:
         setx VCPKG_DEFAULT_TRIPLET "x64-windows"
     - name: run windows script
       run: |
-        ${{runner.workspace}}\potku\repo\build.bat
+        cd ${{runner.workspace}}\potku\repo
+        build.bat
     - name: Archive windows build
       uses: actions/upload-artifact@v3
       with:
