@@ -12,9 +12,10 @@ jobs:
         with:
           submodules: recursive
       - name: Download C artifact
-        uses: actions/download-artifact@v3
+        uses: dawidd6/action-download-artifact@v2
         with:
           name: build-artifact-windows
+          workflow: compile_c_apps.yml
           path: ${{runner.workspace}}/potku/external/bin
       - name: Package Potku
         run: |
@@ -38,9 +39,10 @@ jobs:
         with:
           submodules: recursive
       - name: Download C artifact
-        uses: actions/download-artifact@v3
+        uses: dawidd6/action-download-artifact@v2
         with:
           name: build-artifact-linux
+          workflow: compile_c_apps.yml
           path: ${{runner.workspace}}/potku/external/bin
       - name: Collect external files
         run: |
