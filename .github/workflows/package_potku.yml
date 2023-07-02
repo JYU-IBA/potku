@@ -10,11 +10,6 @@ jobs:
       run:
         shell: cmd
     steps:
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v4
-        with:
-          # Semantic version range syntax or exact version of a Python version
-          python-version: '3.10'
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
@@ -25,6 +20,11 @@ jobs:
           name: build-artifact-windows
           workflow: compile_c_apps.yml
           path: ${{runner.workspace}}/potku/external/bin
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          # Semantic version range syntax or exact version of a Python version
+          python-version: '3.10'
       - name: Package Potku
         run: |
           cd ${{runner.workspace}}/potku
@@ -52,6 +52,9 @@ jobs:
           name: build-artifact-linux
           workflow: compile_c_apps.yml
           path: ${{runner.workspace}}/potku/external/bin
+      - name: check dirs
+        run: |
+          sudo tree -a
       - name: Collect external files
         run: |
           curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C ${{runner.workspace}}/potku/external/share/jibal
