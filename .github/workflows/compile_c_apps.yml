@@ -3,7 +3,24 @@ name: Compile_C
 on:
   workflow_dispatch:
 
-jobs:   
+jobs:
+  build_linux:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Build linux executables
+      run: |
+        sudo apt-get install -y libgsl27 libgsl-dev
+        ${{runner.workspace}}/potku/build.sh
+    - name: Archive linux executables
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifact-linux
+        path: ${{runner.workspace}}/potku/external/bin
+  
   build_windows:
     runs-on: windows-latest
     defaults:
@@ -24,14 +41,14 @@ jobs:
         cache-key: windows
         revision: master
         token: ${{ github.token }}
-    - name: Set environment + run script
+    - name: Set environment + build executables
       run: |
         call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         set VCPKG_ROOT ${{ runner.workspace }}\potku\vcpkg
         set VCPKG_DEFAULT_TRIPLET x64-windows
         cd ${{runner.workspace}}\potku\repo
         build.bat ${{ runner.workspace }}\potku\vcpkg\scripts\buildsystems\vcpkg.cmake
-    - name: Archive windows build
+    - name: Archive windows executables
       uses: actions/upload-artifact@v3
       with:
         name: build-artifact-windows
