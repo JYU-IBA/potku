@@ -30,7 +30,7 @@ jobs:
         set VCPKG_ROOT ${{ runner.workspace }}\potku\vcpkg
         set VCPKG_DEFAULT_TRIPLET x64-windows
         cd ${{runner.workspace}}\potku\repo
-        build.bat
+        build.bat ${{ runner.workspace }}\potku\vcpkg\scripts\buildsystems\vcpkg.cmake
     - name: Archive windows build
       uses: actions/upload-artifact@v3
       with:
