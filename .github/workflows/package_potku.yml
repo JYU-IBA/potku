@@ -68,20 +68,18 @@ jobs:
           name: build-artifact-linux
           workflow: compile_c_apps.yml
           path: ${{runner.workspace}}/potku/external
-      - name: check dirs
-        run: |
-          cd ${{runner.workspace}}
-          sudo tree -a
       - name: Collect external files
         run: |
           mkdir -p ${{runner.workspace}}/potku/external/share/jibal
           curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C ${{runner.workspace}}/potku/external/share/jibal
           cd ${{runner.workspace}}/potku/external/share
           curl https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/release_versions/potku_mac_20220331.zip/@@download/file/potku_mac_20220331.zip -o potku.zip
-          tar -xf potku.zip -C ${{runner.workspace}}/potku/external/share potku/external/share/srim2013.tot
-          mv ${{runner.workspace}}/potku/external/share/potku/external/share/srim2013.tot ${{runner.workspace}}/potku/external/share
-          rm -r potku
+          unzip potku.zip 'potku/external/share/srim2013.tot' -d ${{runner.workspace}}/potku/external/share
           rm potku.zip
+      - name: check dirs
+        run: |
+          cd ${{runner.workspace}}
+          sudo tree -a      
       - name: Package Potku
         run: |
           cd ${{runner.workspace}}/potku
