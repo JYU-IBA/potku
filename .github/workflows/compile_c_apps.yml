@@ -15,6 +15,10 @@ jobs:
       run: |
         sudo apt-get install -y libgsl27 libgsl-dev
         ${{runner.workspace}}/potku/build.sh
+    - name: check dirs
+      run: |
+        cd ${{runner.workspace}}
+        sudo tree -a
     - name: Archive linux executables
       uses: actions/upload-artifact@v3
       with:
