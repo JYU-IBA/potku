@@ -22,8 +22,9 @@ jobs:
           path: ${{runner.workspace}}/potku/external/bin
       - name: Collect external files
         run: |
-          mkdir -p ${{runner.workspace}}/potku/external/share/jibal
-          curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C ${{runner.workspace}}/potku/external/share/jibal
+          mkdir ${{runner.workspace}}\potku\external\share\jibal
+          curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C ${{runner.workspace}}\potku\external\share\jibal
+          curl -L https://gnuwin32.sourceforge.net/downlinks/gawk-bin-zip.php -o gawk.zip && expand gawk.zip -F:awk.exe ${{runner.workspace}}\potku\external\bin
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
@@ -69,7 +70,7 @@ jobs:
           cd ${{runner.workspace}}/potku
           pip install pipenv
           pipenv install
-          pipenv run install pyinstaller
+          pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
       - name: Archive Linux build
         uses: actions/upload-artifact@v3
