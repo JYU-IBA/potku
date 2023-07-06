@@ -21,7 +21,7 @@ jobs:
         brew install cmake
         brew install gsl
         cd ${{runner.workspace}}/potku
-        build.sh
+        ./build.sh
     - name: Archive macos executables
       uses: actions/upload-artifact@v3
       with:
