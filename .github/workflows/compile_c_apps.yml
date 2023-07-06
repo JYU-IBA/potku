@@ -1,62 +1,30 @@
-name: Compile_C
+name: Compile C apps
 
 on:
   workflow_dispatch:
 
 jobs:
-  build_linux:
-    runs-on: ubuntu-latest
+  build_macos:
+    runs-on: macos-latest
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
       with:
         submodules: recursive
-    - name: Build linux executables
-      run: |
-        sudo apt-get install -y libgsl27 libgsl-dev
-        ${{runner.workspace}}/potku/build.sh
     - name: check dirs
       run: |
         cd ${{runner.workspace}}
         sudo tree -a
-    - name: Archive linux executables
+    - name: Build macos executables
+      run: |
+        brew install cmake
+        brew install gsl
+        cd ${{runner.workspace}}/potku
+        build.sh
+    - name: Archive macos executables
       uses: actions/upload-artifact@v3
       with:
-        name: build-artifact-linux
+        name: build-artifact-macos
         path: |
           ${{runner.workspace}}/potku/external/bin
-          ${{runner.workspace}}/potku/external/lib
-  
-  build_windows:
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: cmd
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        submodules: recursive
-        path: repo
-    - name: vcpkg build
-      uses: johnwason/vcpkg-action@v5
-      id: vcpkg
-      with:
-        pkgs: gsl getopt
-        triplet: x64-windows
-        cache-key: windows
-        revision: master
-        token: ${{ github.token }}
-    - name: Set environment + build executables
-      run: |
-        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-        set VCPKG_ROOT ${{ runner.workspace }}\potku\vcpkg
-        set VCPKG_DEFAULT_TRIPLET x64-windows
-        cd ${{runner.workspace}}\potku\repo
-        build.bat ${{ runner.workspace }}\potku\vcpkg\scripts\buildsystems\vcpkg.cmake
-    - name: Archive windows executables
-      uses: actions/upload-artifact@v3
-      with:
-        name: build-artifact-windows
-        path: ${{runner.workspace}}\potku\repo\external\bin
         
