@@ -30,6 +30,9 @@ jobs:
           move ${{runner.workspace}}\potku\external\bin\bin\awk.exe ${{runner.workspace}}\potku\external\bin
           rmdir bin
           del gawk.zip
+          curl https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/release_versions/potku_mac_20220331.zip/@@download/file/potku_mac_20220331.zip -o potku.zip
+          tar -xf potku.zip -C ${{runner.workspace}}\potku\external\share potku/external/share/srim2013.tot
+          del potku.zip
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
@@ -61,7 +64,7 @@ jobs:
         with:
           name: build-artifact-linux
           workflow: compile_c_apps.yml
-          path: ${{runner.workspace}}/potku/external/bin
+          path: ${{runner.workspace}}/potku/external
       - name: check dirs
         run: |
           cd ${{runner.workspace}}
@@ -69,7 +72,6 @@ jobs:
       - name: Collect external files
         run: |
           mkdir -p ${{runner.workspace}}/potku/external/share/jibal
-          mkdir -p ${{runner.workspace}}/potku/external/lib
           curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C ${{runner.workspace}}/potku/external/share/jibal
       - name: Package Potku
         run: |
