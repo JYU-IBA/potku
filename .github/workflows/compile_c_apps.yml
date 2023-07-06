@@ -23,7 +23,9 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: build-artifact-linux
-        path: ${{runner.workspace}}/potku/external/bin
+        path: |
+          ${{runner.workspace}}/potku/external/bin
+          ${{runner.workspace}}/potku/external/lib
   
   build_windows:
     runs-on: windows-latest
