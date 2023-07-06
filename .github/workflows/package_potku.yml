@@ -24,8 +24,8 @@ jobs:
         run: |
           mkdir ${{runner.workspace}}\potku\external\share\jibal
           curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C ${{runner.workspace}}\potku\external\share\jibal
-          curl -L https://gnuwin32.sourceforge.net/downlinks/gawk-bin-zip.php -o gawk.zip && tar -xf gawk.zip -C ${{runner.workspace}}\potku\external\bin
           cd ${{runner.workspace}}\potku\external\bin
+          curl -L https://gnuwin32.sourceforge.net/downlinks/gawk-bin-zip.php -o gawk.zip
           tar -xf gawk.zip -C ${{runner.workspace}}\potku\external\bin bin/awk.exe
           move ${{runner.workspace}}\potku\external\bin\bin\awk.exe ${{runner.workspace}}\potku\external\bin
           rmdir bin
@@ -69,6 +69,7 @@ jobs:
       - name: Collect external files
         run: |
           mkdir -p ${{runner.workspace}}/potku/external/share/jibal
+          mkdir -p ${{runner.workspace}}/potku/external/lib
           curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C ${{runner.workspace}}/potku/external/share/jibal
       - name: Package Potku
         run: |
