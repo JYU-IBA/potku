@@ -30,7 +30,7 @@ jobs:
           cd ${{runner.workspace}}/potku
           pip install pipenv
           pipenv install
-          pipenv run install pyinstaller
+          pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
       - name: Archive Windows build
         uses: actions/upload-artifact@v3
@@ -54,6 +54,7 @@ jobs:
           path: ${{runner.workspace}}/potku/external/bin
       - name: check dirs
         run: |
+          cd ${{runner.workspace}}
           sudo tree -a
       - name: Collect external files
         run: |
