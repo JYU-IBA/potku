@@ -24,8 +24,11 @@ jobs:
         run: |
           mkdir ${{runner.workspace}}\potku\external\share\jibal
           curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C ${{runner.workspace}}\potku\external\share\jibal
-          curl -L https://gnuwin32.sourceforge.net/downlinks/gawk-bin-zip.php -o gawk.zip && expand gawk.zip -F:bin/awk.exe ${{runner.workspace}}\potku\external\bin
+          curl -L https://gnuwin32.sourceforge.net/downlinks/gawk-bin-zip.php -o gawk.zip && tar -xf gawk.zip -C ${{runner.workspace}}\potku\external\bin
           cd ${{runner.workspace}}\potku\external\bin
+          tar -xf gawk.zip -C ${{runner.workspace}}\potku\external\bin
+          move ${{runner.workspace}}\potku\external\bin\bin\awk.exe ${{runner.workspace}}\potku\external\bin
+          rmdir bin
           del gawk.zip
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
