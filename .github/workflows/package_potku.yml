@@ -75,11 +75,9 @@ jobs:
           cd ${{runner.workspace}}/potku/external/share
           curl https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/release_versions/potku_mac_20220331.zip/@@download/file/potku_mac_20220331.zip -o potku.zip
           unzip potku.zip 'potku/external/share/srim2013.tot' -d ${{runner.workspace}}/potku/external/share
-          rm potku.zip
-      - name: check dirs
-        run: |
-          cd ${{runner.workspace}}
-          sudo tree -a      
+          mv ${{runner.workspace}}/potku/external/share/potku/external/share/srim2013.tot ${{runner.workspace}}/potku/external/share/srim2013.tot
+          rm -r potku
+          rm potku.zip 
       - name: Package Potku
         run: |
           cd ${{runner.workspace}}/potku
