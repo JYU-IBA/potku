@@ -13,8 +13,9 @@ jobs:
         submodules: recursive
     - name: check dirs
       run: |
+        brew install tree
         cd ${{runner.workspace}}
-        sudo tree -a
+        tree -a
     - name: Build macos executables
       run: |
         brew install cmake
