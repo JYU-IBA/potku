@@ -4,11 +4,9 @@ on:
   workflow_dispatch:
 
 jobs:  
-  package_windows:
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: cmd
+
+  package_macos:
+    runs-on: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -17,25 +15,19 @@ jobs:
       - name: Download C artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          name: build-artifact-windows
+          name: c-apps-macos
           workflow: compile_c_apps.yml
-          path: ${{runner.workspace}}/potku/external/bin
+          path: ${{runner.workspace}}/potku/external
       - name: Collect external files
         run: |
-          mkdir ${{runner.workspace}}\potku\external\share\jibal
-          curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C ${{runner.workspace}}\potku\external\share\jibal
-          cd ${{runner.workspace}}\potku\external\bin
-          curl -L https://gnuwin32.sourceforge.net/downlinks/gawk-bin-zip.php -o gawk.zip
-          tar -xf gawk.zip -C ${{runner.workspace}}\potku\external\bin bin/awk.exe
-          move ${{runner.workspace}}\potku\external\bin\bin\awk.exe ${{runner.workspace}}\potku\external\bin
-          rmdir bin
-          del gawk.zip
-          cd ${{runner.workspace}}\potku\external\share
+          mkdir -p ${{runner.workspace}}/potku/external/share/jibal
+          curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C ${{runner.workspace}}/potku/external/share/jibal
+          cd ${{runner.workspace}}/potku/external/share
           curl https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/release_versions/potku_mac_20220331.zip/@@download/file/potku_mac_20220331.zip -o potku.zip
-          tar -xf potku.zip -C ${{runner.workspace}}\potku\external\share potku/external/share/srim2013.tot
-          move ${{runner.workspace}}\potku\external\share\potku\external\share\srim2013.tot ${{runner.workspace}}\potku\external\share
-          rmdir potku
-          del potku.zip
+          unzip potku.zip 'potku/external/share/srim2013.tot' -d ${{runner.workspace}}/potku/external/share
+          mv ${{runner.workspace}}/potku/external/share/potku/external/share/srim2013.tot ${{runner.workspace}}/potku/external/share/srim2013.tot
+          rm -r potku
+          rm potku.zip
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
@@ -48,45 +40,8 @@ jobs:
           pipenv install
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
-      - name: Archive Windows build
+      - name: Archive MacOS build
         uses: actions/upload-artifact@v3
         with:
-          name: Potku-windows
-          path: ${{runner.workspace}}/potku/dist
-      
-          
-  package_linux:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
-      - name: Download C artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          name: build-artifact-linux
-          workflow: compile_c_apps.yml
-          path: ${{runner.workspace}}/potku/external
-      - name: Collect external files
-        run: |
-          mkdir -p ${{runner.workspace}}/potku/external/share/jibal
-          curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C ${{runner.workspace}}/potku/external/share/jibal
-          cd ${{runner.workspace}}/potku/external/share
-          curl https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/release_versions/potku_mac_20220331.zip/@@download/file/potku_mac_20220331.zip -o potku.zip
-          unzip potku.zip 'potku/external/share/srim2013.tot' -d ${{runner.workspace}}/potku/external/share
-          mv ${{runner.workspace}}/potku/external/share/potku/external/share/srim2013.tot ${{runner.workspace}}/potku/external/share/srim2013.tot
-          rm -r potku
-          rm potku.zip 
-      - name: Package Potku
-        run: |
-          cd ${{runner.workspace}}/potku
-          pip install pipenv
-          pipenv install
-          pipenv run pip install pyinstaller
-          pipenv run pyinstaller potku.spec
-      - name: Archive Linux build
-        uses: actions/upload-artifact@v3
-        with:
-          name: Potku-Linux
+          name: Potku-MacOS
           path: ${{runner.workspace}}/potku/dist
