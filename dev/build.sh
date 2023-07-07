@@ -13,8 +13,8 @@ fi
 
 cd external
 
-make clean
-make
+sudo make clean
+sudo make
 
 cd submodules/jibal/
 
@@ -26,8 +26,8 @@ if [ -z "$1" ]; then
 else
     cmake -DCMAKE_TOOLCHAIN_FILE=$1 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$EXT_DIR" -DCMAKE_INSTALL_PREFIX="$EXT_DIR" -DCMAKE_INSTALL_RPATH="$EXT_DIR/lib" ../
 fi
-make
-make install
+sudo make
+sudo make install
 
 cd ../../mcerd
 rm build/CMakeCache.txt && echo Removed MCERD cache file
@@ -38,5 +38,5 @@ if [ -z "$1" ]; then
 else
     cmake -DCMAKE_TOOLCHAIN_FILE=$1 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$EXT_DIR" -DCMAKE_INSTALL_PREFIX="$EXT_DIR" -DCMAKE_INSTALL_RPATH="$EXT_DIR/lib" ../
 fi
-make
-make install
+sudo make
+sudo make install
