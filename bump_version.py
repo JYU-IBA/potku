@@ -1,7 +1,7 @@
 # coding=utf-8
 """
-Created on 12.5.2013
-Updated on 1.6.2018
+Created on 15.5.2023
+Updated on 7.7.2023
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
