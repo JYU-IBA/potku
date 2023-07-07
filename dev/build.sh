@@ -1,8 +1,8 @@
 #!/bin/bash
 
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-cd ../
-ROOT_DIR = "$PWD"
+cd "$CUR_DIR/.."
+ROOT_DIR="$PWD"
 EXT_DIR="$ROOT_DIR/external"
 
 if [ -z "$1" ]; then
