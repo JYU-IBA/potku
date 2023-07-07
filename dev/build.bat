@@ -1,6 +1,8 @@
 @echo off
 set CUR_DIR=%cd%
-set EXT_DIR=%CUR_DIR%\external
+cd ..\
+set ROOT_DIR=%cd%
+set EXT_DIR=%ROOT_DIR%\external
 
 @REM TODO take cmake option -G as command line parameter.
 

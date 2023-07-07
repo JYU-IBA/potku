@@ -14,7 +14,8 @@ jobs:
     - name: Build linux executables
       run: |
         sudo apt-get install -y libgsl27 libgsl-dev
-        ${{runner.workspace}}/potku/build.sh
+        cd ${{runner.workspace}}/potku/dev
+        ./build.sh
     - name: Archive linux executables
       uses: actions/upload-artifact@v3
       with:
@@ -48,7 +49,7 @@ jobs:
         call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         set VCPKG_ROOT ${{ runner.workspace }}\potku\vcpkg
         set VCPKG_DEFAULT_TRIPLET x64-windows
-        cd ${{runner.workspace}}\potku\repo
+        cd ${{runner.workspace}}\potku\repo\dev
         build.bat ${{ runner.workspace }}\potku\vcpkg\scripts\buildsystems\vcpkg.cmake
     - name: Archive windows executables
       uses: actions/upload-artifact@v3
@@ -63,11 +64,11 @@ jobs:
       uses: actions/checkout@v3
       with:
         submodules: recursive
-    - name: Build macos executables
+    - name: Build MacOS executables
       run: |
         brew install cmake
         brew install gsl
-        cd ${{runner.workspace}}/potku
+        cd ${{runner.workspace}}/potku/dev
         ./build.sh
     - name: Archive macos executables
       uses: actions/upload-artifact@v3

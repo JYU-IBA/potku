@@ -688,12 +688,12 @@ def get_version_number_and_date():
 
     Return:
         version_number: semantic version number
-        version_date: dd.mm.yyyy format date of the version
+        version_date: yyyy-mm-dd format date of the version
     """
     root_dir = get_root_dir()
     version_file_path = pathlib.Path.joinpath(root_dir, r'version.txt')
     version_number = '2.0'
-    version_date = '31.12.2022'
+    version_date = '2022-12-31'
     try:
         version_file = open(version_file_path, 'r')
         version_file_content = version_file.read().splitlines()

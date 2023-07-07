@@ -1,7 +1,9 @@
 #!/bin/bash
 
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-EXT_DIR=$CUR_DIR/external
+cd ../
+ROOT_DIR = "$PWD"
+EXT_DIR="$ROOT_DIR/external"
 
 if [ -z "$1" ]; then
     echo "Using default toolchain file."

@@ -25,7 +25,7 @@ Ready to run binary packages are available are available on the
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
     
-Please refer to the [full license](LICENSE) for details.
+Please refer to the [full license](../LICENSE) for details.
 
 # Getting started with development
 
@@ -93,7 +93,7 @@ vcpkg.exe install gsl:x64-windows getopt:x64-windows
 
 as instructed.
 
-For make and gcc see [c_for_windows_example.md](c_for_windows_example.md) for an example on how to set up the rest of the C environment .
+For make and gcc see [c_for_windows_example.md](dev/c_for_windows_example.md) for an example on how to set up the rest of the C environment .
 
 To compile the programs, run
 
