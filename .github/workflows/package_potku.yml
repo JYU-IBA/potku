@@ -2,10 +2,10 @@ name: Package Potku
 
 on:
   push:
-    branches: 
-      - master
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'
+    branches: 
+      - master
 
 jobs:
   create_release:
