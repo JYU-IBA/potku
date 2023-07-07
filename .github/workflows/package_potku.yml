@@ -12,14 +12,21 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+      - name: Read version file
+        id: get_content
+        run: |
+          cd ${{runner.workspace}}/potku
+          echo "version=$(awk 'NR==1' version.txt)" >> $GITHUB_OUTPUT
       - name: Create release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Potku ${{ github.ref }}
+          tag_name: ${{ steps.get_content.outputs.version }}
+          release_name: Potku ${{ steps.get_content.outputs.version }}
           draft: false
           prerelease: false
   
