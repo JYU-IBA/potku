@@ -104,14 +104,14 @@ coll = COLLECT(
     name="potku"
 )
 
-if system == "Darwin":
-    app = BUNDLE(
-        coll,
-        name="potku.app",
-        icon=icon,
-        bundle_identifier=None,
-        info_plist={
-            'NSPrincipalClass': 'NSApplication',
-            'NSAppleScriptEnabled': False
-        },
-    )
+#if system == "Darwin":
+#    app = BUNDLE(
+#        coll,
+#        name="potku.app",
+#        icon=icon,
+#        bundle_identifier=None,
+#        info_plist={
+#            'NSPrincipalClass': 'NSApplication',
+#            'NSAppleScriptEnabled': False
+#        },
+#    )
