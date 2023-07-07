@@ -67,6 +67,13 @@ jobs:
           pipenv install
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
+      - name: Create archive
+        uses: thedoctor0/zip-release@0.7.1
+        with:
+          type: 'zip'
+          filename: 'Potku-Windows.zip'
+          directory: ${{runner.workspace}}/potku/dist
+          path: potku
       - name: Upload Windows build to release
         uses: actions/upload-release-asset@v1
         env:
@@ -114,6 +121,13 @@ jobs:
           pipenv install
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
+      - name: Create archive
+        uses: thedoctor0/zip-release@0.7.1
+        with:
+          type: 'zip'
+          filename: 'Potku-Linux.zip'
+          directory: ${{runner.workspace}}/potku/dist
+          path: potku
       - name: Upload Linux build to release
         uses: actions/upload-release-asset@v1
         env:
@@ -160,6 +174,13 @@ jobs:
           pipenv install
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
+      - name: Create archive
+        uses: thedoctor0/zip-release@0.7.1
+        with:
+          type: 'zip'
+          filename: 'Potku-MacOS.zip'
+          directory: ${{runner.workspace}}/potku/dist
+          path: potku
       - name: Upload MacOS build to release
         uses: actions/upload-release-asset@v1
         env:
