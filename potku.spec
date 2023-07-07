@@ -59,7 +59,7 @@ a = Analysis(
         ("ui_files", "ui_files"),
         ("ui_icons", "ui_icons"),
         ("images", "images"),
-        ("version.txt", "version.txt"),
+        ("version.txt", "./"),
         *extras
      ],
      hiddenimports=[
