@@ -137,6 +137,6 @@ jobs:
           cd ${{runner.workspace}}/potku
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
-          git tag -a "${{ needs.content_verification.outputs.version_number}}" -m "Automatic tag for version ${{ needs.content_verification.outputs.version_number}}"
-          git push origin "${{ needs.content_verification.outputs.version_number}}"
+          git tag -a ${{ needs.content_verification.outputs.version_number}} -m "Automatic tag for version ${{ needs.content_verification.outputs.version_number}}"
+          git push origin ${{ needs.content_verification.outputs.version_number}}
     
