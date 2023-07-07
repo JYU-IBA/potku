@@ -1,10 +1,31 @@
 name: Package Potku
 
 on:
-  workflow_dispatch:
+  push:
+    branches: 
+      - master
+    tags:
+      - '*'
 
-jobs:  
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Potku ${{ github.ref }}
+          draft: false
+          prerelease: false
+  
   package_windows:
+    needs: create_release
     runs-on: windows-latest
     defaults:
       run:
@@ -48,15 +69,20 @@ jobs:
           pipenv install
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
-      - name: Archive Windows build
-        uses: actions/upload-artifact@v3
+      - name: Upload Windows build to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: Potku-windows
-          path: ${{runner.workspace}}/potku/dist
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ${{runner.workspace}}/potku/dist
+          asset_name: Potku-Windows.zip
+          asset_content_type: application/zip
       
           
   package_linux:
     runs-on: ubuntu-latest
+    needs: create_release
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -78,6 +104,11 @@ jobs:
           mv ${{runner.workspace}}/potku/external/share/potku/external/share/srim2013.tot ${{runner.workspace}}/potku/external/share/srim2013.tot
           rm -r potku
           rm potku.zip 
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          # Semantic version range syntax or exact version of a Python version
+          python-version: '3.10'
       - name: Package Potku
         run: |
           cd ${{runner.workspace}}/potku
@@ -85,14 +116,19 @@ jobs:
           pipenv install
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
-      - name: Archive Linux build
-        uses: actions/upload-artifact@v3
+      - name: Upload Linux build to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: Potku-Linux
-          path: ${{runner.workspace}}/potku/dist
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ${{runner.workspace}}/potku/dist
+          asset_name: Potku-Linux.zip
+          asset_content_type: application/zip
   
   package_macos:
     runs-on: macos-latest
+    needs: create_release
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -126,8 +162,12 @@ jobs:
           pipenv install
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
-      - name: Archive MacOS build
-        uses: actions/upload-artifact@v3
+      - name: Upload MacOS build to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: Potku-MacOS
-          path: ${{runner.workspace}}/potku/dist
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ${{runner.workspace}}/potku/dist
+          asset_name: Potku-MacOS.zip
+          asset_content_type: application/zip
