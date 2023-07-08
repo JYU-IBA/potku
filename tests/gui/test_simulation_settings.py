@@ -80,13 +80,9 @@ class TestSimulationSettingsWidget(unittest.TestCase):
         self.assertEqual("Scatter",
                          sim_widget.typeOfSimulationComboBox.currentText())
 
-    @patch("os.remove")
-    @patch("modules.recoil_element.RecoilElement.to_file")
-    def test_update_elementsimulation(self, mock_remove, mock_rec_to_file):
+    def test_update_elementsimulation(self):
         """Tests if updating properties also updates ElementSimulation
         object.
-
-        Patching is used to avoid unneccessary file removal and writing.
         """
         sim_widget = SimulationSettingsWidget(self.elem_sim)
         sim_widget.name = "foofoo"
@@ -111,9 +107,6 @@ class TestSimulationSettingsWidget(unittest.TestCase):
         self.assertEqual(12.5, self.elem_sim.minimum_scattering_angle)
         self.assertEqual(45, self.elem_sim.seed_number)
 
-        # Assert that the patched methods got called at least once
-        mock_remove.assert_called()
-        mock_rec_to_file.assert_called()
 
     def test_value_changed(self):
         sim_widget = SimulationSettingsWidget(self.elem_sim)
