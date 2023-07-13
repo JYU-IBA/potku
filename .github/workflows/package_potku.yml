@@ -118,8 +118,8 @@ jobs:
           cd ${{runner.workspace}}/potku/external/share
           curl https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/release_versions/potku_mac_20220331.zip/@@download/file/potku_mac_20220331.zip -o potku.zip
           unzip potku.zip 'potku/external/share/srim2013.tot' -d ${{runner.workspace}}/potku/external/share
-          unzip potku.zip 'potku/external/share/jibal/abundances.dat' -d ${{runner.workspace}}/potku/external/share/jibal
-          unzip potku.zip 'potku/external/share/jibal/masses.dat' -d ${{runner.workspace}}/potku/external/share/jibal
+          unzip potku.zip 'potku/external/share/jibal/abundances.dat' -d ${{runner.workspace}}/potku/external/share
+          unzip potku.zip 'potku/external/share/jibal/masses.dat' -d ${{runner.workspace}}/potku/external/share
           mv ${{runner.workspace}}/potku/external/share/potku/external/share/srim2013.tot ${{runner.workspace}}/potku/external/share/srim2013.tot
           mv ${{runner.workspace}}/potku/external/share/potku/external/share/jibal/abundances.dat ${{runner.workspace}}/potku/external/share/jibal/abundances.dat
           mv ${{runner.workspace}}/potku/external/share/potku/external/share/jibal/masses.dat ${{runner.workspace}}/potku/external/share/jibal/masses.dat
@@ -175,8 +175,8 @@ jobs:
           cd ${{runner.workspace}}/potku/external/share
           curl https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/release_versions/potku_mac_20220331.zip/@@download/file/potku_mac_20220331.zip -o potku.zip
           unzip potku.zip 'potku/external/share/srim2013.tot' -d ${{runner.workspace}}/potku/external/share
-          unzip potku.zip 'potku/external/share/jibal/abundances.dat' -d ${{runner.workspace}}/potku/external/share/jibal
-          unzip potku.zip 'potku/external/share/jibal/masses.dat' -d ${{runner.workspace}}/potku/external/share/jibal
+          unzip potku.zip 'potku/external/share/jibal/abundances.dat' -d ${{runner.workspace}}/potku/external/share
+          unzip potku.zip 'potku/external/share/jibal/masses.dat' -d ${{runner.workspace}}/potku/external/share
           mv ${{runner.workspace}}/potku/external/share/potku/external/share/srim2013.tot ${{runner.workspace}}/potku/external/share/srim2013.tot
           mv ${{runner.workspace}}/potku/external/share/potku/external/share/jibal/abundances.dat ${{runner.workspace}}/potku/external/share/jibal/abundances.dat
           mv ${{runner.workspace}}/potku/external/share/potku/external/share/jibal/masses.dat ${{runner.workspace}}/potku/external/share/jibal/masses.dat
