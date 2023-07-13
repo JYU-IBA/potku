@@ -10,7 +10,7 @@ the number crunching, written in C. Some of these software are in separate
 submodules, please see the instructions below if you want to run the
 development version.
 
-Ready to run binary packages are available are available on the 
+Ready to run binary packages are available on the releases page of this repository. Additionally older binary packages are available on the
 [official website](https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/).
 
     Copyright (C) 2013-2021 Potku developers
@@ -29,7 +29,7 @@ Please refer to the [full license](../LICENSE) for details.
 
 # Getting started with development
 
-First step is to install the latest version of Python 3.6.x along with pip package installer. Make 
+First step is to install the latest version of Python 3.10.x along with pip package installer. Make 
 sure the paths of the executables are added to your PATH environment variable. Then install Pipenv:
  
 ````
@@ -71,7 +71,7 @@ must be installed:
 ### Linux and macOS
 
 Install cmake and gsl using the package manager of your distribution or 
-homebrew. Then run
+homebrew. Then run the following shell script in `potku/dev` directory
 
 ````
 $ ./build.sh
@@ -101,7 +101,7 @@ To compile the programs, run
 $ build.bat
 ````
 
-in the `potku/` root directory 
+in the `potku/dev` directory 
 
 If you get errors in the build, try different command prompt ie. x64 Native Tools Command Prompt as an administrator.
 
