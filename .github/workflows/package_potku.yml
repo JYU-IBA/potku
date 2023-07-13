@@ -46,7 +46,7 @@ jobs:
         with:
           name: c-apps-windows
           workflow: compile_c_apps.yml
-          path: ${{runner.workspace}}/potku/external/bin
+          path: ${{runner.workspace}}/potku/external
       - name: Collect external files
         run: |
           mkdir ${{runner.workspace}}\potku\external\share\jibal
