@@ -28,7 +28,7 @@ along with this program (file named 'LICENCE').
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli " \
              "Rahkonen \n Miika Raunio \n" \
              "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen \n Juhani Sundell"
+             "\n Sinikka Siironen \n Juhani Sundell \n Timo Leppälä"
 __version__ = "2.0"
 
 import bisect
@@ -679,3 +679,17 @@ def check_if_sum_in_directory_name(directory):
             if entry.name.startswith("SIMULATED_SUM"):
                 simulated_sum_found = True
     return measured_sum_found, simulated_sum_found
+
+def check_max_path_length(root_path = os.getcwd()):
+    longest_size = 0
+    longest_path = None
+    for root, dirs, files in os.walk(root_path, topdown=False):
+        for name in files:
+            if len(os.path.join(root, name)) > longest_size:
+                longest_size = len(os.path.join(root, name))
+                longest_path = os.path.join(root, name)
+        for name in dirs:
+            if len(os.path.join(root, name)) > longest_size:
+                longest_size = len(os.path.join(root, name))
+                longest_path = os.path.join(root, name)
+    return longest_size, longest_path

@@ -640,6 +640,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         """
         timestamp = time.time()
 
+        self.optimization_results_to_file()
+
         return {
             "name": self.get_full_name(),
             "description": self.description,

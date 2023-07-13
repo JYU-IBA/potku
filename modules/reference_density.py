@@ -114,7 +114,11 @@ class ReferenceDensity:
             mean_atomic_mass += element.get_mass() * element.amount
 
         mean_atomic_mass = convert_amu_to_kg(mean_atomic_mass) * 1000
-        layer_number_density = (layer.density / mean_atomic_mass)
+
+        if mean_atomic_mass == 0.0:
+            layer_number_density = 0.0
+        else:
+            layer_number_density = (layer.density / mean_atomic_mass)
 
         effective_thickness = layer.thickness
         if self._total_thickness + effective_thickness > self.thickness_limit:
@@ -122,3 +126,7 @@ class ReferenceDensity:
 
         self.dynamic_density += layer_number_density * effective_thickness
         self._total_thickness += effective_thickness
+
+    def __str__(self):
+        return f'ReferenceDensity(dynamic_density={self.dynamic_density}, ' \
+               f'use_user_value={self.use_user_value})'

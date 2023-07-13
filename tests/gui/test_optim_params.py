@@ -44,7 +44,7 @@ class TestRecoilParameters(unittest.TestCase):
             check_max=100.7, upper_limits=(1, 2))
         self.assertEqual(1, widget.upperXDoubleSpinBox.value())
         self.assertEqual(2, widget.upperYDoubleSpinBox.value())
-        self.assertEqual(QTime(0, 1, 40), widget.maxTimeEdit.time())
+        self.assertEqual(QTime(0, 10), widget.maxTimeEdit.time())
 
     def test_recoil_combobox(self):
         # Tests for recoil combobox that has custom binding functions

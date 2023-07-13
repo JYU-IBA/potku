@@ -555,11 +555,11 @@ class TestElementSimulation(unittest.TestCase):
                 name_prefix=prefix, save_on_creation=True,
                 optimized_fluence=5e12,
                 optimization_recoils=[o_re_first, o_re_med, o_re_last])
-            es1.to_file(save_optim_results=True)
+            json1 = es1.get_new_json_content()
 
             mcsimu = es1.get_default_file_path()
-            es2 = ElementSimulation.from_file(
-                mo.get_request(), prefix, tmp_dir, mcsimu_file=mcsimu,
+            es2 = ElementSimulation.from_json(
+                mo.get_request(), prefix, tmp_dir, mcsimu=json1,
                 profile_file=None, simulation=mo.get_simulation(),
                 save_on_creation=False
             )

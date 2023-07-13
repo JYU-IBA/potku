@@ -113,8 +113,8 @@ class TestSimulationEnums(unittest.TestCase):
         self.assertEqual("Narrow", str(SimulationMode.NARROW))
         self.assertEqual("Wide", str(SimulationMode.WIDE))
 
-        self.assertEqual("SCT", str(SimulationType("RBS")))
-        self.assertEqual("REC", str(SimulationType("ERD")))
+        self.assertEqual("Scatter", str(SimulationType("RBS")))
+        self.assertEqual("Recoil", str(SimulationType("ERD")))
 
 
 class TestTofeColors(unittest.TestCase):

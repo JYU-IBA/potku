@@ -46,7 +46,7 @@ from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QAbstractItemView
+from PyQt5.QtWidgets import QAbstractItemView, QMessageBox
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QTreeWidgetItem
 
@@ -921,6 +921,16 @@ class Potku(QtWidgets.QMainWindow):
             )
             self.remove_from_recent_files(file)
             return
+
+        # Checks for maximum path length. If too long some files might not be reachable
+        if (gf.check_max_path_length()[0] > 240):
+            msgBox = QMessageBox()
+            msgBox.setIcon(QMessageBox.Information)
+            msgBox.setText( f"Longest path is now {gf.check_max_path_length()[0]} characters long.\n"
+                            f"There might be problems if Windows maximum path length (256) is exceeded")
+            msgBox.setWindowTitle("Path length warning")
+            msgBox.setStandardButtons(QMessageBox.Ok)
+            msgBox.exec()
 
         sbh = StatusBarHandler(self.statusbar)
         self.__close_request()
