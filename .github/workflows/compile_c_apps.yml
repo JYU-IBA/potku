@@ -36,7 +36,9 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: c-apps-windows
-        path: ${{runner.workspace}}\potku\repo\external\bin
+        path: |
+          ${{runner.workspace}}\potku\repo\external\bin
+          ${{runner.workspace}}\potku\repo\external\share\jibal
 
   build_linux:
     runs-on: ubuntu-latest
@@ -57,6 +59,7 @@ jobs:
         path: |
           ${{runner.workspace}}/potku/external/bin
           ${{runner.workspace}}/potku/external/lib
+          ${{runner.workspace}}/potku/repo/external/share/jibal
   
   build_macos:
     runs-on: macos-latest
@@ -78,4 +81,5 @@ jobs:
         path: |
           ${{runner.workspace}}/potku/external/bin
           ${{runner.workspace}}/potku/external/lib
+          ${{runner.workspace}}/potku/repo/external/share/jibal
         
