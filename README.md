@@ -71,7 +71,7 @@ must be installed:
 ### Linux and macOS
 
 Install cmake and gsl using the package manager of your distribution or 
-homebrew. Then run the following shell script in `potku/dev` directory
+homebrew. Then run the following shell script in `dev` directory
 
 ````
 $ ./build.sh
@@ -101,7 +101,7 @@ To compile the programs, run
 $ build.bat
 ````
 
-in the `potku/dev` directory 
+in the `dev` directory 
 
 If you get errors in the build, try different command prompt ie. x64 Native Tools Command Prompt as an administrator.
 
@@ -160,7 +160,7 @@ $ python -m unittest discover
 
 Potku can be packaged into a standalone executable using [PyInstaller](https://www.pyinstaller.org/). 
 Make sure you have compiled potku with `build` successfully and added the needed data files and awk before the packaging.
-For quick deployment, run these commands:
+For quick deployment, run these commands in the root directory:
 ````
 $ pipenv install (if the virtual environment has not already been created)
 $ pipenv shell
@@ -170,7 +170,7 @@ $ pyinstaller potku.spec
 This creates a `dist/potku` folder which contains the executable and all 
 necessary libraries.
 
-For a more comprehensive packaging process, run the `create_bundle` script. 
+For a more comprehensive packaging process, run the `create_bundle` script in `dev`. 
 This script compiles all external programs, installs and updates Python 
 dependencies, runs tests and compresses the `dist/potku` folder into a .zip 
 archive.
@@ -184,6 +184,12 @@ or
 `````
 $ pipenv run ./create_bundle.sh
 `````
+
+## Automatic packaging and version numbering
+
+Additionally Potku can be packaged automatically for Windows, Linux and macOS on GitHub servers by bumping its version. Running `bump_version.py` in `dev` on a terminal
+prompts the user for a new version number. The script requires Git and GitHub CLI to use. Entering a valid version number initiates a chain of GitHub Actions workflows to bump the version number, give master branch a new tag on GitHub and create
+a release to which the newly packaged Potku binaries will be uploaded. Potku follows semantic version numbering.
 
 ## Code style
 
