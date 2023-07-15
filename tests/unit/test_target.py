@@ -59,6 +59,7 @@ class TestTarget(unittest.TestCase):
             self.assertEqual(t.target_theta, t2.target_theta)
             self.assertEqual(t.target_type, t2.target_type)
             self.assertEqual(t.scattering_element, t2.scattering_element)
+            self.assertEqual(str(t.reference_density), str(t2.reference_density))
 
     def test_adjustable_settings(self):
         target = mo.get_target()
@@ -74,7 +75,8 @@ class TestTarget(unittest.TestCase):
             ],
             "image_file": "",
             "layers": [],
-            "target_theta": 30
+            "target_theta": 30,
+            'reference_density': "reference_density(dynamic_density=0.0)"
         }
         self.assertNotEqual(kwargs, target.get_settings())
         target.set_settings(**kwargs)
