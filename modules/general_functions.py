@@ -36,6 +36,7 @@ import hashlib
 import os
 import pathlib
 import platform
+import re
 import shutil
 import subprocess
 import tempfile
@@ -692,17 +693,24 @@ def get_version_number_and_date():
     """
     root_dir = get_root_dir()
     version_file_path = pathlib.Path.joinpath(root_dir, r'version.txt')
-    version_number = '2.0'
-    version_date = '2022-12-31'
+    fallback_version_number = '2.0'
+    fallback_version_date = '2022-12-31'
     try:
         version_file = open(version_file_path, 'r')
         version_file_content = version_file.read().splitlines()
         version_number = version_file_content[0]
         version_date = version_file_content[1]
         version_file.close()
-    except FileNotFoundError:
-        return version_number, version_date
-    except IndexError:
-        return version_number, version_date
 
-    return version_number, version_date
+    except FileNotFoundError:
+        return fallback_version_number, fallback_version_date
+    except IndexError:
+        return fallback_version_number, fallback_version_date
+
+    # Check date format
+    date_pattern = re.compile(r"\d{4}-\d{2}-\d{2}")
+    if re.match(date_pattern, version_date):
+        return version_number, version_date
+    else:
+        return fallback_version_number, fallback_version_date
+
