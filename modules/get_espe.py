@@ -48,16 +48,17 @@ class GetEspe:
     energy spectra coordinates.
     """
     __slots__ = "recoil_file", "beam_ion", "energy", "theta", \
-                "channel_width", "fluence", "timeres", "density", \
-                "solid", "erd_file", "tangle", "toflen", "_output_parser", \
-                "eres", "dtype"
+        "channel_width", "fluence", "timeres", "density", \
+        "solid", "erd_file", "tangle", "toflen", "_output_parser", \
+        "eres", "dtype"
 
     def __init__(self, beam_ion: str, energy: float, theta: float,
                  tangle: float, toflen: float, solid: float,
                  recoil_file: Path, erd_file: Path,
-                 reference_density: float = None,
+                 reference_density: float = GlobalSettings.DEFAULT_REF_DENSITY,
                  ch: float = 0.025, fluence: float = 5.00e+11,
-                 timeres: float = 250.0, eres: float = 25.0, dtype: str = "TOF"):
+                 timeres: float = 250.0, eres: float = 25.0,
+                 dtype: str = "TOF"):
         """Initializes the GetEspe class.
         Args:
             beam_ion: mass number and the chemical symbol of the primary ion
@@ -84,12 +85,8 @@ class GetEspe:
         self.timeres = timeres
         self.dtype = dtype
         self.eres = eres
+        self.density = reference_density
 
-        if reference_density is None:
-            self.density = GlobalSettings().get_default_reference_density()
-        else:
-            self.density = reference_density
-        
         self.solid = solid
         self.recoil_file = recoil_file
         self.erd_file = erd_file
@@ -162,7 +159,6 @@ class GetEspe:
                 espe_cmd, cwd=bin_dir, stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE, universal_newlines=True,
                 stderr=stderr) as espe_process:
-
             with espe_process.stdin as stdin:
                 for line in self.read_erd_files():
                     stdin.write(line)
