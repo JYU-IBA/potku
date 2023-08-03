@@ -2,11 +2,31 @@ name: Compile C apps
 
 on:
   workflow_dispatch:
-
+  workflow_run:
+    workflows: ["Bump version"]
+    types:
+      - completed
+  
 jobs:
+  check_artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check C artifact
+        run: |
+          # This script checks if any artifacts exist in the repository for the current branch
+          # Replace 'main' with your desired branch name if you want to check for other branches
+          if git ls-tree -r origin/main | grep -q '.github/workflows/artifacts'; then
+            echo "Artifacts exist."
+            echo "::set-output name=has_artifacts::true"
+          else
+            echo "No artifacts found."
+            echo "::set-output name=has_artifacts::false"
+          fi
 
   build_windows:
     runs-on: windows-latest
+    needs: check_artifacts
+    if: needs.check_artifacts.outputs.has_artifacts == 'false'
     defaults:
       run:
         shell: cmd
@@ -40,6 +60,8 @@ jobs:
 
   build_linux:
     runs-on: ubuntu-latest
+    needs: check_artifacts
+    if: needs.check_artifacts.outputs.has_artifacts == 'false'
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -60,6 +82,8 @@ jobs:
   
   build_macos:
     runs-on: macos-latest
+    needs: check_artifacts
+    if: needs.check_artifacts.outputs.has_artifacts == 'false'
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
