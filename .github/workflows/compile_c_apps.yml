@@ -24,6 +24,7 @@ jobs:
           path: ${{runner.workspace}}/artifact
           skip_unpack: true
           if_no_artifact_found: ignore
+          search_artifacts: true
       - name: Check C artifact
         id: check_artifacts
         run: |
