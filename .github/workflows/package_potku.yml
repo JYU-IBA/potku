@@ -2,7 +2,7 @@ name: Package Potku
 
 on:
   workflow_run:
-    workflows: ["Bump version"]
+    workflows: ["Compile C apps"]
     types:
       - completed
 
@@ -47,6 +47,7 @@ jobs:
           name: c-apps-windows
           workflow: compile_c_apps.yml
           path: ${{runner.workspace}}/potku/external/bin
+          search_artifacts: true
       - name: Collect external files
         run: |
           mkdir ${{runner.workspace}}\potku\external\share\jibal
@@ -111,6 +112,7 @@ jobs:
           name: c-apps-linux
           workflow: compile_c_apps.yml
           path: ${{runner.workspace}}/potku/external
+          search_artifacts: true
       - name: Collect external files
         run: |
           mkdir -p ${{runner.workspace}}/potku/external/share/jibal
@@ -168,6 +170,7 @@ jobs:
           name: c-apps-macos
           workflow: compile_c_apps.yml
           path: ${{runner.workspace}}/potku/external
+          search_artifacts: true
       - name: Collect external files
         run: |
           mkdir -p ${{runner.workspace}}/potku/external/share/jibal
