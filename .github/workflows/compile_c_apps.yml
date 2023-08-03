@@ -10,23 +10,33 @@ on:
 jobs:
   check_artifacts:
     runs-on: ubuntu-latest
+    outputs:
+      artifact_exists: ${{ steps.check_artifacts.outputs.artifact_exists }}
     steps:
-      - name: Check C artifact
+      - name: Make directory
         run: |
-          # This script checks if any artifacts exist in the repository for the current branch
-          # Replace 'main' with your desired branch name if you want to check for other branches
-          if git ls-tree -r origin/main | grep -q '.github/workflows/artifacts'; then
-            echo "Artifacts exist."
-            echo "::set-output name=has_artifacts::true"
+          mkdir -p ${{runner.workspace}}/artifact
+      - name: Download C artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          name: c-apps-windows
+          workflow: compile_c_apps.yml
+          path: ${{runner.workspace}}/artifact
+          skip_unpack: true
+          if_no_artifact_found: ignore
+      - name: Check C artifact
+        id: check_artifacts
+        run: |
+          if [ -e ${{runner.workspace}}/artifact/c-apps-windows.zip ]; then
+            echo "artifact_exists=true" >> $GITHUB_OUTPUT
           else
-            echo "No artifacts found."
-            echo "::set-output name=has_artifacts::false"
+            echo "artifact_exists=false" >> $GITHUB_OUTPUT
           fi
 
   build_windows:
     runs-on: windows-latest
     needs: check_artifacts
-    if: needs.check_artifacts.outputs.has_artifacts == 'false'
+    if: needs.check_artifacts.outputs.artifact_exists == 'false'
     defaults:
       run:
         shell: cmd
@@ -61,7 +71,7 @@ jobs:
   build_linux:
     runs-on: ubuntu-latest
     needs: check_artifacts
-    if: needs.check_artifacts.outputs.has_artifacts == 'false'
+    if: needs.check_artifacts.outputs.artifact_exists == 'false'
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -83,7 +93,7 @@ jobs:
   build_macos:
     runs-on: macos-latest
     needs: check_artifacts
-    if: needs.check_artifacts.outputs.has_artifacts == 'false'
+    if: needs.check_artifacts.outputs.artifact_exists == 'false'
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
