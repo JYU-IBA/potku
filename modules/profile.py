@@ -36,7 +36,6 @@ from typing import Set, Optional
 from .base import AdjustableSettings, Serializable
 from .ui_log_handlers import Logger
 
-REFERENCE_DENSITY = 4.98e22
 PROFILE_REFERENCE_DENSITY = 3.0
 
 

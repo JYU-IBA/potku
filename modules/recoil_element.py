@@ -48,7 +48,6 @@ from .point import Point
 from .parsing import CSVParser
 
 from modules.global_settings import GlobalSettings
-from .profile import REFERENCE_DENSITY
 
 from .enums import SimulationType
 
@@ -60,8 +59,8 @@ class RecoilElement(MCERDParameterContainer, Serializable):
     def __init__(self, element: Element, points: List[Point], color="red",
                  name="Default", rec_type=SimulationType.ERD,
                  description="These are default recoil settings.",
-                 reference_density=REFERENCE_DENSITY, modification_time=None,
-                 channel_width=None):
+                 reference_density=GlobalSettings.DEFAULT_REF_DENSITY,
+                 modification_time=None, channel_width=None):
         """Inits recoil element.
 
         Args:
@@ -79,11 +78,7 @@ class RecoilElement(MCERDParameterContainer, Serializable):
         self.prefix = element.get_prefix()
         self.description = description
         self.type = rec_type
-        
-        if reference_density is None:
-            self.reference_density = GlobalSettings().get_default_reference_density()
-        else:
-            self.reference_density = reference_density
+        self.reference_density = reference_density
             
         self.channel_width = channel_width
 
