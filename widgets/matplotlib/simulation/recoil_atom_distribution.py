@@ -1357,14 +1357,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Stop simulation if running
         if add:
             self.current_element_simulation.stop()
-            # Remove possible other recoil elements
-            for recoil_elem in element_simulation.recoil_elements:
-                if recoil_elem is element_simulation.get_main_recoil():
-                    continue
-                self.remove_recoil_element(recoil_elem.widgets[0],
-                                           element_simulation, recoil_elem)
-                # Delete energy spectra that use recoil
-                df.delete_recoil_espe(self.tab, recoil_elem.get_full_name())
+        # Remove possible other recoil elements
+        while len(element_simulation.recoil_elements) > 1:
+            recoil_elem = element_simulation.recoil_elements[-1]
+            self.remove_recoil_element(recoil_elem.widgets[0],
+                                       element_simulation, recoil_elem)
+            # Delete energy spectra that use recoil
+            df.delete_recoil_espe(self.tab, recoil_elem.get_full_name())
 
         # Remove recoil lines
         for recoil in element_simulation.recoil_elements:
