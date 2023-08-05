@@ -250,6 +250,10 @@ def version_bump_process():
 
     new_version_string = input_new_version()
 
+    if new_version_string is None:
+        print('Version bump process cancelled.')
+        return
+
     if new_version_string == current_version_string:
         print('New version is the same as the previous. Aborting process.')
         return
