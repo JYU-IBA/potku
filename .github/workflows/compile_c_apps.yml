@@ -39,6 +39,7 @@ jobs:
       - name: Get latest tag
         id: latest_tag
         run: |
+          cd ${{runner.workspace}}/potku
           git_output=$(git rev-list --tags --max-count=1) 
           echo "commit_id=$git_output" >> $GITHUB_OUTPUT
       - name: Get diff between latest tag and master
