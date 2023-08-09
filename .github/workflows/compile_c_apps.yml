@@ -38,18 +38,18 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Get latest tag
+      - name: Get second-to-latest tag
         id: latest_tag
         run: |
           cd ${{runner.workspace}}/potku
-          git_output=$(git rev-list --tags --max-count=1) || exit 1
-          echo "commit_id=$git_output" >> $GITHUB_OUTPUT
-          echo "Latest tag commit ID: $git_output"
+          git_output=$(git tag --sort=-creatordate | awk 'NR==2') || exit 1
+          echo "tag_id=$git_output" >> $GITHUB_OUTPUT
+          echo "Second to latest tag commit ID: $git_output"
       - name: Get diff between latest tag and master
         id: get_diff
         run: |
           cd ${{runner.workspace}}/potku
-          diff=$(git diff ${{steps.latest_tag.outputs.commit_id}} master -- external)
+          diff=$(git diff ${{steps.latest_tag.outputs.tag_id}} master -- external)
           if [ -z "$diff"]; then
             echo "ext_changed=false" >> $GITHUB_OUTPUT
           else
