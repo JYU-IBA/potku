@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       artifact_exists: ${{ steps.check_artifacts.outputs.artifact_exists }}
+      ext_changed: ${{ steps.get_diff.outputs.ext_changed }}
     steps:
       - name: Make directory
         run: |
@@ -33,11 +34,29 @@ jobs:
           else
             echo "artifact_exists=false" >> $GITHUB_OUTPUT
           fi
+      - name: Checkout master
+        uses: actions/checkout@v3
+      - name: Get latest tag
+        id: latest_tag
+        run: |
+          commit_id=$(git ls-remote --tags --sort=-committerdate | head -1 | awk '{print $1}') 
+          echo "commit_id" >> $GITHUB_OUTPUT
+      - name: Get diff between latest tag and master
+        id: get_diff
+        run: |
+          diff=$(git diff ${{ steps.latest_tag.outputs.commit_id }} master -- external)
+          if [ -z "$diff"]; then
+            echo "ext_changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "ext_changed=true" >> $GITHUB_OUTPUT
+          fi   
 
   build_windows:
     runs-on: windows-latest
     needs: check_artifacts
-    if: needs.check_artifacts.outputs.artifact_exists == 'false'
+    if: |
+      needs.check_artifacts.outputs.artifact_exists == 'false' ||
+      needs.check_artifacts.outputs.ext_changed == 'true'
     defaults:
       run:
         shell: cmd
@@ -72,7 +91,9 @@ jobs:
   build_linux:
     runs-on: ubuntu-latest
     needs: check_artifacts
-    if: needs.check_artifacts.outputs.artifact_exists == 'false'
+    if: |
+      needs.check_artifacts.outputs.artifact_exists == 'false' ||
+      needs.check_artifacts.outputs.ext_changed == 'true'
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -94,7 +115,9 @@ jobs:
   build_macos:
     runs-on: macos-latest
     needs: check_artifacts
-    if: needs.check_artifacts.outputs.artifact_exists == 'false'
+    if: |
+      needs.check_artifacts.outputs.artifact_exists == 'false' ||
+      needs.check_artifacts.outputs.ext_changed == 'true'
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
