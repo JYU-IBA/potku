@@ -36,6 +36,8 @@ jobs:
           fi
       - name: Checkout master
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Get latest tag
         id: latest_tag
         run: |
