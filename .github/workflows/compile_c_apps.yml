@@ -39,12 +39,12 @@ jobs:
       - name: Get latest tag
         id: latest_tag
         run: |
-          git_output=$(git ls-remote --tags --sort=-committerdate | head -1 | awk '{print $1}') 
+          git_output=$(git rev-list --tags --max-count=1) 
           echo "commit_id=$git_output" >> $GITHUB_OUTPUT
       - name: Get diff between latest tag and master
         id: get_diff
         run: |
-          diff=$(git diff ${{ steps.latest_tag.outputs.commit_id }} master -- external)
+          diff=$(git diff ${{steps.latest_tag.outputs.commit_id}} master -- external)
           if [ -z "$diff"]; then
             echo "ext_changed=false" >> $GITHUB_OUTPUT
           else
