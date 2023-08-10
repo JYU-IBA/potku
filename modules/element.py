@@ -41,7 +41,7 @@ class Element(MCERDParameterContainer):
     """
     Element class that handles information about one element.
     """
-    def __init__(self, symbol, isotope=None, amount=0.0, RRectype=None):
+    def __init__(self, symbol, isotope=None, amount=0.0, RRectype="REC"):
         """Initializes an element object.
         Args:
               symbol: Two letter symbol of the element. E.g. 'He' for Helium.
