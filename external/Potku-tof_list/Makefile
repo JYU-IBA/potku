@@ -1,5 +1,4 @@
 
-#Test comment
 INSTALLDIR = ../bin
 DATADIR    = ../share
 LIBDIR     = ../lib
