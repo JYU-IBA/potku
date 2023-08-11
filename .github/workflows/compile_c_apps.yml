@@ -33,6 +33,7 @@ jobs:
       - name: Checkout master
         uses: actions/checkout@v3
         with:
+          ref: master
           fetch-depth: 0
       - name: Get second-to-latest tag
         id: latest_tag
