@@ -1,10 +1,7 @@
 name: Package Potku
 
 on:
-  workflow_run:
-    workflows: ["Compile C apps"]
-    types:
-      - completed
+  workflow_call:
 
 jobs:
   create_release:
