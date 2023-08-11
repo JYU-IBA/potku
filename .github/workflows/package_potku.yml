@@ -107,7 +107,7 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           name: c-apps-linux
-          workflow: compile_c_apps.yml
+          workflow: version_bump.yml
           path: ${{runner.workspace}}/potku/external
           search_artifacts: true
       - name: Collect external files
@@ -165,7 +165,7 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           name: c-apps-macos
-          workflow: compile_c_apps.yml
+          workflow: version_bump.yml
           path: ${{runner.workspace}}/potku/external
           search_artifacts: true
       - name: Collect external files
