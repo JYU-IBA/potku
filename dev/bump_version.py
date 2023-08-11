@@ -129,6 +129,7 @@ def version_not_taken(version_text):
                               cwd=root_directory)
     tag_list = git_tags.stdout.decode('UTF-8').splitlines()
     if version_text in tag_list:
+        print("Version number is already taken!")
         return False
     return True
 
