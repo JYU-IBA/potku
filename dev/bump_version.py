@@ -118,6 +118,21 @@ def git_bump_and_pr(version_string: str):
     return
 
 
+def version_not_taken(version_text):
+    """
+    Checks if the inputted version number is already taken or not
+    Args:
+        version_text: user inputted version string
+    Returns: bool whether the version number is already taken or not
+    """
+    git_tags = subprocess.run(["git", "tag"], capture_output=True,
+                              cwd=root_directory)
+    tag_list = git_tags.stdout.decode('UTF-8').splitlines()
+    if version_text in tag_list:
+        return False
+    return True
+
+
 def get_version():
     """
     Get version number from the version.txt file.
@@ -187,7 +202,7 @@ def input_new_version():
         if text_input == 'c':
             input_accepted = True
 
-        if verify_version(text_input):
+        if verify_version(text_input) and version_not_taken(text_input):
             new_version_number = text_input
             input_accepted = True
 
