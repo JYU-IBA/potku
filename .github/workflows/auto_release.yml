@@ -1,0 +1,11 @@
+name: Auto release
+
+on:
+  pull_request:
+    types:
+      - opened
+      
+  branch_verification:
+    name: Verify user and changes
+    if: startsWith(github.head_ref, 'bump_version')
+    runs-on: ubuntu-latest
