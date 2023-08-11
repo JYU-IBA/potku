@@ -1,11 +1,7 @@
 name: Compile C apps
 
 on:
-  workflow_dispatch:
-  workflow_run:
-    workflows: ["Bump version"]
-    types:
-      - completed
+  workflow_call:
   
 jobs:
   check_artifacts:
