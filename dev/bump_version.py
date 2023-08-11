@@ -129,7 +129,7 @@ def version_not_taken(version_text):
                               cwd=root_directory)
     tag_list = git_tags.stdout.decode('UTF-8').splitlines()
     if version_text in tag_list:
-        print("Version number is already taken!")
+        print("Version number is already taken on GitHub!")
         return False
     return True
 
@@ -268,10 +268,6 @@ def version_bump_process():
 
     if new_version_string is None:
         print('Version bump process cancelled.')
-        return
-
-    if new_version_string == current_version_string:
-        print('New version is the same as the previous. Aborting process.')
         return
 
     print(f'New version number would be {new_version_string}')
