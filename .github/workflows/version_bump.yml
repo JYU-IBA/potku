@@ -139,7 +139,8 @@ jobs:
           git config user.email "<>"
           git tag -a ${{ needs.content_verification.outputs.version_number}} -m "Automatic tag for version ${{ needs.content_verification.outputs.version_number}}"
           git push origin ${{ needs.content_verification.outputs.version_number}}
-          
+  
+  # Building the C apps is run as a sub workflow in here.
   build_c:
     name: Build C apps
     needs: [branch_verification, content_verification, auto_approve, auto_merge, auto_tag]
@@ -148,6 +149,7 @@ jobs:
       needs.content_verification.outputs.content_ok == 'true'
     uses: ./.github/workflows/compile_c_apps.yml
   
+  # Packaging Potku is run as a sub workflow in here.
   package_Potku:
     name: Package Potku
     needs: [branch_verification, content_verification, auto_approve, auto_merge, auto_tag, build_c]
