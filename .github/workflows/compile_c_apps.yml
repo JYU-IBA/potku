@@ -1,3 +1,4 @@
+# Intended to run as a sub-workflow in version_bump.yml
 name: Compile C apps
 
 on:
