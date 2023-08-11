@@ -1,3 +1,4 @@
+# Intended to run as a sub-workflow inside bump_version.yml.
 name: Package Potku
 
 on:
