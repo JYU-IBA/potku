@@ -139,4 +139,20 @@ jobs:
           git config user.email "<>"
           git tag -a ${{ needs.content_verification.outputs.version_number}} -m "Automatic tag for version ${{ needs.content_verification.outputs.version_number}}"
           git push origin ${{ needs.content_verification.outputs.version_number}}
+          
+  build_c:
+    name: Build C apps
+    needs: [branch_verification, content_verification, auto_approve, auto_merge, auto_tag]
+    if: |
+      needs.branch_verification.outputs.files_ok == 'true' &&
+      needs.content_verification.outputs.content_ok == 'true'
+    uses: ./.github/workflows/compile_c_apps.yml
+  
+  package_Potku:
+    name: Package Potku
+    needs: [branch_verification, content_verification, auto_approve, auto_merge, auto_tag, build_c]
+    if: |
+      needs.branch_verification.outputs.files_ok == 'true' &&
+      needs.content_verification.outputs.content_ok == 'true'
+    uses: ./.github/workflows/package_potku.yml
     
