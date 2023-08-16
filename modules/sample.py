@@ -225,7 +225,7 @@ class Sample:
                         directory[len(name_prefix):len(name_prefix) + 2])
                     for file in os.listdir(Path(
                             self.request.directory, self.directory, directory)):
-                        if file.endswith(".simulation"):
+                        if file.endswith(".mccfg"):
                             all_simulations.append(Path(
                                 self.request.directory, self.directory,
                                 directory, file))
