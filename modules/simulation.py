@@ -574,56 +574,56 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             measurement_file: path to a .measurement_file
         """
 
-        # if simulation_file is None:
-        #     simulation_file = self.path
-        #
-        # time_stamp = time.time()
-        # obj = {
-        #     "name": self.name,
-        #     "description": self.description,
-        #     "modification_time": time.strftime("%c %z %Z", time.localtime(
-        #         time_stamp)),
-        #     "modification_time_unix": time_stamp,
-        #     "use_request_settings": self.use_request_settings
-        # }
-        # with simulation_file.open("w") as file:
-        #     json.dump(obj, file, indent=4)
-        #
-        # if not self.use_request_settings:
-        #     # Save measurement settings parameters.
-        #     if measurement_file is None:
-        #         measurement_file = self.get_measurement_file()
-        #
-        #     general_obj = {
-        #         "name": self.measurement_setting_file_name,
-        #         "description":
-        #             self.measurement_setting_file_description,
-        #         "modification_time":
-        #             time.strftime("%c %z %Z", time.localtime(time_stamp)),
-        #         "modification_time_unix": time_stamp,
-        #     }
-        #
-        #     if measurement_file.exists():
-        #         with measurement_file.open("r") as mesu:
-        #             obj = json.load(mesu)
-        #         obj["general"] = general_obj
-        #     else:
-        #         obj = {
-        #             "general": general_obj
-        #         }
-        #
-        #     # Write measurement settings to file
-        #     with measurement_file.open("w") as file:
-        #         json.dump(obj, file, indent=4)
-        #
-        #     # Save Run object to file
-        #     self.run.to_file(measurement_file)
-        #     # Save Detector object to file
-        #     self.detector.to_file(self.detector.path)
-        #
-        #     # Save Target object to file
-        #     target_file = Path(self.directory, f"{self.target.name}.target")
-        #     self.target.to_file(target_file)
+    #    if simulation_file is None:
+    #        simulation_file = self.path
+    #
+    #    time_stamp = time.time()
+    #    obj = {
+    #        "name": self.name,
+    #        "description": self.description,
+    #        "modification_time": time.strftime("%c %z %Z", time.localtime(
+    #            time_stamp)),
+    #        "modification_time_unix": time_stamp,
+    #        "use_request_settings": self.use_request_settings
+    #    }
+    #    with simulation_file.open("w") as file:
+    #        json.dump(obj, file, indent=4)
+    #
+    #    if not self.use_request_settings:
+    #        # Save measurement settings parameters.
+    #        if measurement_file is None:
+    #            measurement_file = self.get_measurement_file()
+    #
+    #        general_obj = {
+    #            "name": self.measurement_setting_file_name,
+    #            "description":
+    #                self.measurement_setting_file_description,
+    #            "modification_time":
+    #                time.strftime("%c %z %Z", time.localtime(time_stamp)),
+    #            "modification_time_unix": time_stamp,
+    #        }
+    #
+    #        if measurement_file.exists():
+    #            with measurement_file.open("r") as mesu:
+    #                obj = json.load(mesu)
+    #            obj["general"] = general_obj
+    #        else:
+    #            obj = {
+    #                "general": general_obj
+    #            }
+    #
+    #        # Write measurement settings to file
+    #        with measurement_file.open("w") as file:
+    #            json.dump(obj, file, indent=4)
+    #
+    #        # Save Run object to file
+    #        self.run.to_file(measurement_file)
+    #        # Save Detector object to file
+    #        self.detector.to_file(self.detector.path)
+    #
+    #        # Save Target object to file
+    #        target_file = Path(self.directory, f"{self.target.name}.target")
+    #        self.target.to_file(target_file)
 
     def update_directory_references(self, new_dir: Path):
         """Update simulation's directory references.

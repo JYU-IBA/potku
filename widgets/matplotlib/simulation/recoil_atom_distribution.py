@@ -1439,6 +1439,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 if not self.element_manager.has_element(element):
                     color = self.colormap[element.symbol]
                     self.add_element(element, color=color, **kwargs)
+        # Saving here prevents issues with mismatching data files
+        self.parent._save_target_and_recoils(True)
 
     def on_draw(self):
         """Draw method for matplotlib.
