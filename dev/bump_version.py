@@ -26,6 +26,11 @@ along with this program (file named 'LICENCE').
 __author__ = "Sami Voutilainen"
 __version__ = "2.0"
 
+import subprocess
+import os
+from datetime import date
+import re
+
 """
 Script for updating the version number stored in version.txt and pushing the
 update to origin/master via a pull request. version.txt must be in the root of
@@ -33,10 +38,6 @@ the repository. Git and GitHub CLI must be installed to run the script. Script
 saves the new version number on the first row of version.txt and the date of the
 new version on the second row.
 """
-import subprocess
-import os
-from datetime import date
-import re
 
 dev_directory = os.path.dirname(os.path.realpath(__file__))
 root_directory = os.path.dirname(dev_directory)
