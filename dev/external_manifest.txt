@@ -1,0 +1,15 @@
+{"file_path": "external/bin/awk.exe", "date": "18/08/2023 11:51:51", "hash": "d97fb11ee1d2f13b9661f180a680b3edc43882c9a998222a8e579129d838138d", "link": "1Z5j1Fze5p3uoW3X77Bee9gQRnXmTuCar"}
+{"file_path": "external/share/jibal/abundances.dat", "date": "18/08/2023 11:51:51", "hash": "1837ae3faea83c7b85737fb7fbb4020af5db16273697fc28c02abe53bcb9a8d2", "link": "1D1GQTX82zlaXLF8y_AkBr-Cyxz1qY8jl"}
+{"file_path": "external/share/jibal/assignments.txt", "date": "18/08/2023 11:51:51", "hash": "9fa76952023a1b03b4955217a44740dd0a3971ba75fb50b3b94658343fb54905", "link": "14LcC-Rtku1LeaQNr39K4bFHMsotXUifG"}
+{"file_path": "external/share/jibal/bohr.stg", "date": "18/08/2023 11:51:51", "hash": "4dbdc668cc7f1f29e70104a202909fa82e0730918ba792bddf06abaa5fb0ce30", "link": "1yT3B50xYE0XV67un7xTxyxIjMW4JjS6K"}
+{"file_path": "external/share/jibal/chu.stg", "date": "18/08/2023 11:51:51", "hash": "c5d2368217db7fcdd7a105398e88a0dc8cc1c3ad1227d72ce9183d2348439090", "link": "1S7IX4RE5B8tpkdYeer2jSpow_PYVsIpC"}
+{"file_path": "external/share/jibal/dpass.ele", "date": "18/08/2023 11:51:51", "hash": "4abe3882bebfa15fa0224ed6feacbcda4252bd1a649fdf0e5c48aee0184d5e2d", "link": "199lzcujOBYmJ_LmoRIYkTqvetZmXsrUA"}
+{"file_path": "external/share/jibal/files.txt", "date": "18/08/2023 11:51:51", "hash": "fc2763b4bb5f5febeb9e64710b861f1d19b4f5941929cbec41969d1f3d826a87", "link": "1buDgiKzJvi4coGuHu4Ysvu4ZRr1QIJlf"}
+{"file_path": "external/share/jibal/masses.dat", "date": "18/08/2023 11:51:51", "hash": "01f76ff5782551528516d61c36f03ea5b615b8905b39cc1aa221bba1a1444fb1", "link": "1hOOT42NyoFygAyMvROtEpXyhsavrLTDi"}
+{"file_path": "external/share/jibal/README.txt", "date": "24/08/2023 13:46:11", "hash": "ba53a5352ee5c5962d711c8ab4583e946caf4b226bde184fa3afaa1e93e2e693", "link": "None"}
+{"file_path": "external/share/jibal/srim2013.ele", "date": "18/08/2023 11:51:51", "hash": "0051243245453bc89e9965522c809329d0f24a1dd80c1a722b54dfa476298e7f", "link": "1OkqOPpokxT-iSQWIjVGkgcLh_TClKCNW"}
+{"file_path": "external/share/jibal/yang.stg", "date": "18/08/2023 11:51:51", "hash": "2b382302f9a5fefc93e44a2b4cb440110ce3338558ad4c157e7975471ace0b76", "link": "1YiojuaoLfhWVMrw_CjZA9ngUHg8-SeS8"}
+{"file_path": "external/share/masses.dat", "date": "18/08/2023 11:51:51", "hash": "312f8008baff60a63af35ee66f9ad74da3cf0f1d5bd74061ee67f4819c4a15dc", "link": "1JSVnjhBCOwADBtjGT2xECB_SZqD34eb-"}
+{"file_path": "external/share/reee.txt", "date": "24/08/2023 13:46:11", "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "link": "None"}
+{"file_path": "external/share/srim2013.tot", "date": "18/08/2023 11:51:51", "hash": "ece64e96b8374fdb1b5091634054f81fc4ca9883a35c1d6703e3e39854ea9422", "link": "1Gr5KocThlje9Bfu4Wi5lvBFHRkrtf_ns"}
+{"file_path": "external/share/stoppings.txt", "date": "24/08/2023 13:44:04", "hash": "d1b976b2449ace3506b6065057cefa3ffca3317a280834282ae13d4005eb2169", "link": "1iv-ImrURv_nSUyIwmiXXSVoqlRwmD-41"}
