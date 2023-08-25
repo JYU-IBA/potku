@@ -57,7 +57,7 @@ jobs:
           pip install pipenv
           pipenv install
           cd ${{runner.workspace}}/potku/dev
-          pipenv run external_file_manager.py fetch
+          pipenv run python external_file_manager.py fetch
           cd ${{runner.workspace}}/potku
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
@@ -100,12 +100,13 @@ jobs:
           # Semantic version range syntax or exact version of a Python version
           python-version: '3.10'
       - name: Collect external files and package Potku
+        id: package
         run: |
           cd ${{runner.workspace}}/potku
           pip install pipenv
           pipenv install
           cd ${{runner.workspace}}/potku/dev
-          pipenv run external_file_manager.py fetch
+          fails=$(pipenv run python external_file_manager.py fetch)
           cd ${{runner.workspace}}/potku
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
@@ -147,12 +148,13 @@ jobs:
           # Semantic version range syntax or exact version of a Python version
           python-version: '3.10'
       - name: Collect external files and package Potku
+        id: package
         run: |
           cd ${{runner.workspace}}/potku
           pip install pipenv
           pipenv install
           cd ${{runner.workspace}}/potku/dev
-          pipenv run external_file_manager.py fetch
+          fails=$(pipenv run python external_file_manager.py fetch)
           cd ${{runner.workspace}}/potku
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
