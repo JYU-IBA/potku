@@ -33,6 +33,7 @@ import platform
 import requests
 import time
 import zipfile
+import shutil
 
 from pathlib import Path
 from datetime import datetime
@@ -133,19 +134,20 @@ def calculate_sha256(absolute_path: Path) -> str:
     return sha256.hexdigest()
 
 
-def create_local_manifest(git_data_list: List[dict]) -> List[dict]:
+def create_local_manifest(git_manifest: List[dict]) -> List[dict]:
     """
     Creates a manifest for the locally found files in ./external/share dir and
     in the case of Windows awk.exe in .external/bin dir. Also copies over any
-    existing links from an existing external_manifest.txt file.
+    existing links from an existing external_manifest.txt file. Copies awk.exe
+    over on non-Windows systems.
     Args:
-        git_data_list: list of the dictionaries that represent each file in the
+        git_manifest: list of the dictionaries that represent each file in the
             existing external_manifest.txt file.
 
     Returns: list of dictionaries representing a manifest formed from local
         files.
     """
-    local_data_list = []
+    local_manifest = []
     list_of_local_files = list_share_files()
 
     for local_file in list_of_local_files:
@@ -154,7 +156,7 @@ def create_local_manifest(git_data_list: List[dict]) -> List[dict]:
         local_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         local_link = "None"
 
-        for git_entry in git_data_list:
+        for git_entry in git_manifest:
             if git_entry["file_path"] == local_file:
                 local_link = git_entry["link"]
                 break
@@ -165,9 +167,15 @@ def create_local_manifest(git_data_list: List[dict]) -> List[dict]:
             "hash": local_hash,
             "link": local_link
         }
-        local_data_list.append(local_dict)
+        local_manifest.append(local_dict)
 
-    return local_data_list
+    # Copy awk.exe to local manifest on non-Windows systems.
+    if platform.system() != "Windows":
+        for git_entry in git_manifest:
+            if "awk.exe" in str(git_entry["file_path"]):
+                local_manifest.append(git_entry)
+
+    return local_manifest
 
 
 def compare_manifests(git_manifest: List[dict], local_manifest: List[dict]) -> List[List[dict]]:
@@ -298,6 +306,9 @@ def fetch_files(manifest: List[dict], verbose: Optional[bool] = False) -> int:
         attempts = 0
         download_success = False
         path = temp_directory.joinpath(entry["file_path"])
+        # Skip awk.exe for non-Windows systems.
+        if "awk.exe" in str(path) and platform.system() != "Windows":
+            continue
 
         while attempts < download_retries+1:
 
@@ -312,10 +323,17 @@ def fetch_files(manifest: List[dict], verbose: Optional[bool] = False) -> int:
 
         if download_success:
             final_path = root_directory.joinpath(entry["file_path"])
+            final_path.parent.mkdir(parents=True, exist_ok=True)
+            if final_path.is_file():
+                final_path.unlink()
             path.rename(final_path)
 
         if not download_success:
             failed_downloads += 1
+
+    # Remove temp dir if all downloads are ok.
+    if failed_downloads == 0 and temp_directory.exists():
+        shutil.rmtree(temp_directory)
 
     if verbose:
         if failed_downloads == 1:
@@ -336,7 +354,7 @@ def update_git_manifest(git_manifest: List[dict],
     Args:
         git_manifest: list of dictionaries representing the file on the Git
             synced manifest.
-        out_of_sync list of dictionaries representing the files that exist both
+        out_of_sync: list of dictionaries representing the files that exist both
             locally and on Git, but are out of sync.
         only_local: optional list of dictionaries representing files found only
             locally.
@@ -363,10 +381,11 @@ def print_commands() -> None:
     """
     print("Enter one of the following:")
     print("1: to fetch absent and out of sync files.")
-    print("2: to update manifest file with local out of sync files.")
-    print("3: to update manifest file with all local files.")
-    print("4: to create an entirely new manifest file.")
-    print("5: to cancel process. ")
+    print("2: to force download all files.")
+    print("3: to update manifest file with local out of sync files.")
+    print("4: to update manifest file with all local files.")
+    print("5: to create an entirely new manifest file.")
+    print("6: to cancel process.")
 
     return
 
@@ -377,8 +396,14 @@ def manage_files() -> None:
     files and the manifest file based on simple user inputs.
     """
     git_manifest = read_manifest_file()
+    if not git_manifest:
+        print("Problem with external_manifest.txt! Aborting.")
+        return
     local_manifest = create_local_manifest(git_manifest)
     only_on_git, only_local, out_of_sync = compare_manifests(git_manifest, local_manifest)
+
+    if not only_local and not only_on_git and not out_of_sync:
+        print("Everything is in sync.")
 
     if only_on_git:
         print("Only on git")
@@ -408,24 +433,28 @@ def manage_files() -> None:
             print("Local files synced to Git manifest.")
         elif response == "2":
             input_accepted = True
+            fetch_files(git_manifest, True)
+            print("All files downloaded.")
+        elif response == "3":
+            input_accepted = True
             updated_manifest = update_git_manifest(git_manifest, out_of_sync)
             save_manifest_file(updated_manifest, manifest_file_path)
             print("Remember to upload new versions of files to Drive and to "
                   "commit and push the updated manifest file.")
-        elif response == "3":
+        elif response == "4":
             input_accepted = True
             updated_manifest = update_git_manifest(git_manifest, out_of_sync, only_local)
             save_manifest_file(updated_manifest, manifest_file_path)
             print("Remember to upload new versions of files to Drive, add "
                   "links for entirely new files and to commit and push the new "
                   "manifest file.")
-        elif response == "4":
+        elif response == "5":
             input_accepted = True
             save_manifest_file(local_manifest, manifest_file_path)
             print("Remember to upload new versions of files to Drive, add "
                   "links for entirely new files and to commit and push the new "
                   "manifest file.")
-        elif response == "5":
+        elif response == "6":
             input_accepted = True
             print("Operation cancelled.")
         else:
@@ -439,10 +468,13 @@ def quick_download() -> int:
     A function to just download and overwrite all files quickly without any
     interactivity.
 
-    Returns: the number of failed downloads.
+    Returns: the number of failed downloads or 1 if external_manifest.txt has
+        problems.
     """
 
     git_manifest = read_manifest_file()
+    if not git_manifest:
+        return 1
     failed_downloads = fetch_files(git_manifest, False)
 
     return failed_downloads
