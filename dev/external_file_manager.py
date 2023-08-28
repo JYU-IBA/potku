@@ -81,7 +81,7 @@ def download_file(file_id: str, destination: Path, verbose: Optional[bool] = Fal
         verbose: whether to enable or disable printing
     """
 
-    URL = f"https://drive.google.com/uc?export=download&id={file_id}"
+    URL = f"http://dl.dropboxusercontent.com/scl/fi/{file_id}"
 
     session = requests.Session()
     response = session.get(URL, stream=True)
@@ -320,6 +320,7 @@ def fetch_files(manifest: List[dict], verbose: Optional[bool] = False) -> int:
                 if temp_hash == entry["hash"]:
                     download_success = True
                     break
+                attempts += 1
 
         if download_success:
             final_path = root_directory.joinpath(entry["file_path"])
