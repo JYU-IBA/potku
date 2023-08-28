@@ -114,6 +114,7 @@ jobs:
           if [ $fails != 0]; then
             echo "$fails external files failed to download."
             exit 1
+          fi
           cd ${{runner.workspace}}/potku
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
@@ -165,6 +166,7 @@ jobs:
           if [ $fails != 0]; then
             echo "$fails external files failed to download."
             exit 1
+          fi
           cd ${{runner.workspace}}/potku
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
