@@ -111,7 +111,7 @@ jobs:
           pipenv install
           cd ${{runner.workspace}}/potku/dev
           fails=$(pipenv run python external_file_manager.py fetch)
-          if [ $fails != 0]; then
+          if [ "$fails" -ne 0 ]; then
             echo "$fails external files failed to download."
             exit 1
           fi
@@ -163,7 +163,7 @@ jobs:
           pipenv install
           cd ${{runner.workspace}}/potku/dev
           fails=$(pipenv run python external_file_manager.py fetch)
-          if [ $fails != 0]; then
+          if [ "$fails" -ne 0 ]; then
             echo "$fails external files failed to download."
             exit 1
           fi
