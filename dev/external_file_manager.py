@@ -68,7 +68,7 @@ share_directory = root_directory.joinpath(r"external/share")
 bin_directory = root_directory.joinpath(r"external/bin")
 temp_directory = root_directory.joinpath(r"external/temp")
 manifest_file_path = dev_directory.joinpath(r"./external_manifest.txt")
-download_retries = 3
+download_retries = 1
 
 
 def download_file(file_id: str, destination: Path, verbose: Optional[bool] = False) -> int:
