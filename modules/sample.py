@@ -206,10 +206,10 @@ class Sample:
         return all_measurements
 
     def get_simulation_files(self) -> List[Path]:
-        """Get .simulation files inside simulation directories.
+        """Get .simulation or .mccfg files inside simulation directories.
 
         Return:
-            A list of full paths to .simulation files.
+            A list of full paths to .simulation or .mccfg files.
         """
         all_simulations = []    # TODO refactor
         name_prefix = Simulation.DIRECTORY_PREFIX
@@ -225,10 +225,11 @@ class Sample:
                         directory[len(name_prefix):len(name_prefix) + 2])
                     for file in os.listdir(Path(
                             self.request.directory, self.directory, directory)):
-                        if file.endswith(".mccfg"):
+                        if file.endswith(".mccfg") or file.endswith(".simulation"):
                             all_simulations.append(Path(
                                 self.request.directory, self.directory,
                                 directory, file))
+                            break
                 except ValueError:
                     # Couldn't add simulation directory because the number
                     # could not be read
