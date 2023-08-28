@@ -1095,7 +1095,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
     def paste_selection(self):
         for string_data in self.clipboard.text().split("\n"):
-            self.measurement.selector.selection_from_string(string_data.split(":")[1])
+            if string_data.split(":")[0] == "Potku_selection":
+                self.measurement.selector.selection_from_string(string_data.split(":")[1])
         self.measurement.selector.auto_save()
         self.__on_draw_legend()
         self.on_draw()
+        self.__emit_selections_changed()
