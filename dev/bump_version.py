@@ -66,6 +66,17 @@ def get_github_status():
         print("Working tree is clean, ready to proceed.")
         return True
 
+    number_of_submodules = 0
+    number_of_lines = 0
+    for line in ret:
+        number_of_lines += 1
+        if r"external/submodules" in line:
+            number_of_submodules += 1
+
+    if number_of_submodules == number_of_lines:
+        print("Working tree is clean, ready to proceed.")
+        return True
+
     print("There are uncommitted differences, cannot proceed.")
 
     print(ret)
