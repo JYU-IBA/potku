@@ -57,7 +57,11 @@ jobs:
           pip install pipenv
           pipenv install
           cd ${{runner.workspace}}/potku/dev
-          pipenv run python external_file_manager.py fetch
+          for /f %%A in ('pipenv run python external_file_manager.py fetch') do set "fails=%%A"
+          if "%fails%" neq "0" (
+            echo %fails% external files failed to download.
+            exit /b 1
+          )
           cd ${{runner.workspace}}/potku
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
@@ -107,6 +111,9 @@ jobs:
           pipenv install
           cd ${{runner.workspace}}/potku/dev
           fails=$(pipenv run python external_file_manager.py fetch)
+          if [ $fails != 0]; then
+            echo "$fails external files failed to download."
+            exit 1
           cd ${{runner.workspace}}/potku
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
@@ -155,6 +162,9 @@ jobs:
           pipenv install
           cd ${{runner.workspace}}/potku/dev
           fails=$(pipenv run python external_file_manager.py fetch)
+          if [ $fails != 0]; then
+            echo "$fails external files failed to download."
+            exit 1
           cd ${{runner.workspace}}/potku
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
