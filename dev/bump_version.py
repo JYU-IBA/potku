@@ -68,6 +68,7 @@ def get_github_status():
 
     number_of_submodules = 0
     number_of_lines = 0
+    ret = ret.splitlines()
     for line in ret:
         number_of_lines += 1
         if r"external/submodules" in line:
