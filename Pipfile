@@ -13,6 +13,7 @@ wheel = "0.37.1"
 reactivex = "4.0.2"
 Pillow = "9.1.1"
 hypothesis = "6.47.0"
+requests = "2.31.0"
 
 [dev-packages]
 pypiwin32 = {sys_platform = "== 'win32'"}
