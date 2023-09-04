@@ -371,18 +371,33 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         with mcsimu_file.open("r") as mcsimu_file:
             mcsimu = json.load(mcsimu_file)
 
+        if 'use_request_settings' in mcsimu:
+            del mcsimu['use_request_settings']
+
         # Pop the recoil name so it can be converted to a RecoilElement
-        main_recoil_name = mcsimu.pop("main_recoil")
+        if "main_recoil" in mcsimu:
+            main_recoil_name = mcsimu.pop("main_recoil")
+        else:
+            main_recoil_name = None
 
         # Convert modification_time and use_default_settings to correct
         # types
         mcsimu["modification_time"] = mcsimu.pop("modification_time_unix")
-        mcsimu["use_default_settings"] = \
-            mcsimu["use_default_settings"] == "True"
-        mcsimu["simulation_type"] = SimulationType.fromStr(
-            mcsimu["simulation_type"])
-        mcsimu["simulation_mode"] = SimulationMode(
-            mcsimu["simulation_mode"].lower())
+        if "use_default_settings" in mcsimu:
+            mcsimu["use_default_settings"] = \
+                mcsimu["use_default_settings"] == "True"
+        else:
+            mcsimu["use_default_settings"] = True
+
+        if "simulation_type" in mcsimu:
+            mcsimu["simulation_type"] = SimulationType.fromStr(mcsimu["simulation_type"])
+        else:
+            mcsimu["simulation_type"] = SimulationType.fromStr("recoil")
+
+        if "simulation_mode" in mcsimu:
+            mcsimu["simulation_mode"] = SimulationMode(mcsimu["simulation_mode"].lower())
+        else:
+            mcsimu["simulation_mode"] = SimulationMode("narrow")
 
         full_name = mcsimu.pop("name")
         try:
@@ -495,7 +510,13 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         """
 
         # Pop the recoil name so it can be converted to a RecoilElement
-        main_recoil_name = mcsimu.pop("main_recoil")
+        if "main_recoil" in mcsimu:
+            main_recoil_name = mcsimu.pop("main_recoil")
+        else:
+            main_recoil_name = None
+
+        if "use_request_settings" in mcsimu:
+            del mcsimu["use_request_settings"]
 
         # Convert modification_time and use_default_settings to correct
         # types
@@ -691,8 +712,10 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         #     file_path = self.get_default_file_path()
         if save_optim_results:
             self.optimization_results_to_file()
-        # with file_path.open("w") as file:
-        #     json.dump(self.get_json_content(), file, indent=4)
+        if self.request.default_folder == file_path.parent:
+            if file_path.suffix == '.mcsimu':
+                with file_path.open("w") as file:
+                    json.dump(self.get_json_content(), file, indent=4)
 
     def profile_to_file(self, file_path: Path):
         """Save profile settings (only channel width) to file.

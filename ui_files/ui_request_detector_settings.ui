@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>482</width>
+    <width>576</width>
     <height>638</height>
    </rect>
   </property>
@@ -82,8 +82,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>469</width>
-        <height>582</height>
+        <width>556</width>
+        <height>586</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -423,7 +423,7 @@
             </sizepolicy>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>2</number>
            </property>
            <property name="usesScrollButtons">
             <bool>false</bool>
@@ -462,7 +462,7 @@ profiles correctly.</string>
                      <rect>
                       <x>0</x>
                       <y>0</y>
-                      <width>419</width>
+                      <width>506</width>
                       <height>154</height>
                      </rect>
                     </property>
@@ -683,20 +683,6 @@ T</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="4" column="0">
-                  <widget class="QLabel" name="label_5">
-                   <property name="text">
-                    <string>Angle slope [rad/channel]</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="5" column="0">
-                  <widget class="QLabel" name="label_6">
-                   <property name="text">
-                    <string>Angle offset [rad]</string>
-                   </property>
-                  </widget>
-                 </item>
                  <item row="3" column="1">
                   <widget class="QLineEdit" name="offsetLineEdit">
                    <property name="sizePolicy">
@@ -719,7 +705,43 @@ T</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="4" column="1">
+                 <item row="6" column="0">
+                  <widget class="QLabel" name="label_6">
+                   <property name="text">
+                    <string>Angle offset [channel]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="6" column="1">
+                  <widget class="QDoubleSpinBox" name="angleOffsetLineEdit">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                     <horstretch>3</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="minimum">
+                    <double>0.000000000000000</double>
+                   </property>
+                   <property name="maximum">
+                    <double>9996.989999999999782</double>
+                   </property>
+                   <property name="singleStep">
+                    <double>0.100000000000000</double>
+                   </property>
+                   <property name="value">
+                    <double>0.000000000000000</double>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="0">
+                  <widget class="QLabel" name="label_5">
+                   <property name="text">
+                    <string>Angle slope [rad/channel]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="1">
                   <widget class="QDoubleSpinBox" name="angleSlopeLineEdit">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -744,40 +766,25 @@ T</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="5" column="1">
-                  <widget class="QDoubleSpinBox" name="angleOffsetLineEdit">
+                 <item row="4" column="0" colspan="2">
+                  <widget class="QPushButton" name="executeTofCalibrationButton">
                    <property name="sizePolicy">
-                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                     <horstretch>3</horstretch>
+                    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
-                   <property name="minimum">
-                    <double>0.000000000000000</double>
-                   </property>
-                   <property name="maximum">
-                    <double>9996.989999999999782</double>
-                   </property>
-                   <property name="singleStep">
-                    <double>0.100000000000000</double>
-                   </property>
-                   <property name="value">
-                    <double>0.000000000000000</double>
+                   <property name="text">
+                    <string>Execute... (please re-save cuts first if you have made changes to beam settings)</string>
                    </property>
                   </widget>
                  </item>
                 </layout>
                </item>
                <item>
-                <widget class="QPushButton" name="executeCalibrationButton">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
+                <widget class="QPushButton" name="executeAngleCalibrationButton">
                  <property name="text">
-                  <string>Execute... (please re-save cuts first if you have made changes to beam settings)</string>
+                  <string>Angle calibration</string>
                  </property>
                 </widget>
                </item>

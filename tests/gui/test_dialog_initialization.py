@@ -33,7 +33,7 @@ from unittest.mock import patch
 
 from dialogs.measurement.element_losses import ElementLossesDialog
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
-from dialogs.measurement.calibration import CalibrationDialog
+from dialogs.measurement.tof_calibration import TofCalibrationDialog
 from dialogs.simulation.optimization import OptimizationDialog
 from modules.enums import SpectrumTab
 
@@ -49,7 +49,7 @@ class TestDialogInitialization(unittest.TestCase):
         e = ElementLossesDialog(Mock(), mo.get_measurement())
         e.close()
 
-        c = CalibrationDialog(
+        c = TofCalibrationDialog(
             [mo.get_measurement()], mo.get_detector(), mo.get_run())
         c.close()
 
