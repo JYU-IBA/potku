@@ -42,7 +42,8 @@ import modules.general_functions as gf
 import widgets.binding as bnd
 import widgets.gui_utils as gutils
 import widgets.input_validation as iv
-from dialogs.measurement.calibration import CalibrationDialog
+from dialogs.measurement.tof_calibration import TofCalibrationDialog
+from dialogs.measurement.angle_calibration import AngleCalibrationDialog
 from dialogs.simulation.foil import FoilDialog
 from modules.detector import Detector
 from modules.enums import DetectorType
@@ -122,9 +123,13 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
 
         # Calibration settings
         # TODO: Require saving affected cuts if beam setting has been changed
-        self.executeCalibrationButton.clicked.connect(
+        self.executeTofCalibrationButton.clicked.connect(
             self.__open_calibration_dialog)
-        self.executeCalibrationButton.setEnabled(
+        self.executeTofCalibrationButton.setEnabled(
+            not self.request.samples.measurements.is_empty())
+        self.executeAngleCalibrationButton.clicked.connect(
+            self.__open_angle_calibration_dialog)
+        self.executeAngleCalibrationButton.setEnabled(
             not self.request.samples.measurements.is_empty())
 
         gutils.fill_combobox(self.typeComboBox, DetectorType)
@@ -170,9 +175,9 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.formLayout_2.insertRow(
             1, "ToF offset[s]:", self.scientific_tof_offset)
         self.formLayout_2.insertRow(
-            2, "Angle slope [rad/channel]", self.scientific_angle_slope)
+            -1, "Angle slope [rad/channel]", self.scientific_angle_slope)
         self.formLayout_2.insertRow(
-            3, "Angle offset [rad]", self.scientific_angle_offset)
+            -1, "Angle offset [rad]", self.scientific_angle_offset)
 
         if platform.system() == "Darwin":
             self.scientific_tof_offset.setFixedWidth(170)
@@ -263,6 +268,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
 
         self.scientific_tof_offset.setValue(float(self.obj.tof_offset))
         self.scientific_tof_slope.setValue(float(self.obj.tof_slope))
+        self.scientific_angle_slope.setValue(float(self.obj.angle_slope))
+        self.scientific_angle_offset.setValue(float(self.obj.angle_offset))
 
     def update_settings(self):
         """Update detector settings.
@@ -666,7 +673,17 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         measurements = [self.request.samples.measurements.get_key_value(key)
                         for key in
                         self.request.samples.measurements.measurements]
-        CalibrationDialog(measurements, self.obj, self.run, self)
+        TofCalibrationDialog(measurements, self.obj, self.run, self)
+
+    def __open_angle_calibration_dialog(self):
+        """
+        Open the angleCalibrationDialog.
+        """
+        measurements = [self.request.samples.measurements.get_key_value(key)
+                        for key in
+                        self.request.samples.measurements.measurements]
+        AngleCalibrationDialog(measurements, self.obj, self.run, self)
+
 
     def calculate_distance(self):
         """

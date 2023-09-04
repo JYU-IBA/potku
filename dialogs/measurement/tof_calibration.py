@@ -51,7 +51,7 @@ from widgets.matplotlib.calibration.linear_fitting \
     import MatplotlibCalibrationLinearFittingWidget
 
 
-class CalibrationDialog(QtWidgets.QDialog):
+class TofCalibrationDialog(QtWidgets.QDialog):
     """A dialog for the time of flight calibration
     """
     bin_width = bnd.bind("binWidthSpinBox")
@@ -71,7 +71,7 @@ class CalibrationDialog(QtWidgets.QDialog):
             parent_settings_widget: A widget this dialog was opened from.
         """
         super().__init__()
-        uic.loadUi(gutils.get_ui_dir() / "ui_calibration_dialog.ui", self)
+        uic.loadUi(gutils.get_ui_dir() / "ui_tof_calibration_dialog.ui", self)
 
         self.measurements = measurements
         self.run = run
