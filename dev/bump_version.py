@@ -64,6 +64,13 @@ def get_github_status():
     ret = git_status_process.stdout.decode('UTF-8')
     if not ret:
         print("Working tree is clean, ready to proceed.")
+        git_checkout_master = subprocess.run(["git", "checkout", "master"],
+                                             capture_output=True,
+                                             cwd=root_directory)
+
+        git_pull_origin_master = subprocess.run(["git", "pull", "origin", "master"],
+                                                capture_output=True,
+                                                cwd=root_directory)
         return True
 
     print("There are uncommitted differences, cannot proceed.")
@@ -254,15 +261,14 @@ def version_bump_process():
         print("GitHub CLI not installed. Install GitHub CLI first. "
               "Aborting process.")
 
-    current_version_string = get_version()
-    if current_version_string is None:
-        print('Aborting process.')
-        return
-
-    print(f'Current version is {current_version_string}')
-
     working_tree_is_clean = get_github_status()
     if not working_tree_is_clean:
+        return
+
+    current_version_string = get_version()
+    print(f'Current version is {current_version_string}')
+    if current_version_string is None:
+        print('Aborting process.')
         return
 
     new_version_string = input_new_version()
