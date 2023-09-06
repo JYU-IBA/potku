@@ -79,8 +79,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ${{runner.workspace}}/potku/dist/Potku-Windows.zip
-          asset_name: Potku-Windows.zip
+          asset_path: ${{runner.workspace}}/potku/dist/Potku-${{ needs.create_release.outputs.version }}-Windows.zip
+          asset_name: Potku-${{ needs.create_release.outputs.version }}-Windows.zip
           asset_content_type: application/zip
       
           
@@ -132,8 +132,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ${{runner.workspace}}/potku/dist/Potku-Linux.zip
-          asset_name: Potku-Linux.zip
+          asset_path: ${{runner.workspace}}/potku/dist/Potku-${{ needs.create_release.outputs.version }}-Linux.zip
+          asset_name: Potku-${{ needs.create_release.outputs.version }}-Linux.zip
           asset_content_type: application/zip
   
   package_macos:
@@ -184,6 +184,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ${{runner.workspace}}/potku/dist/Potku-macOS.zip
-          asset_name: Potku-macOS.zip
+          asset_path: ${{runner.workspace}}/potku/dist/Potku-${{ needs.create_release.outputs.version }}-macOS.zip
+          asset_name: Potku-${{ needs.create_release.outputs.version }}-macOS.zip
           asset_content_type: application/zip
