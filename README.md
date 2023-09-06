@@ -112,8 +112,8 @@ In case of warnings but no errors, try running the build again.
 
 ## Data files
 
-JIBAL requires additional data files, which can be downloaded from
-[here](http://users.jyu.fi/~jaakjuli/jibal/data/). 
+JIBAL and Potku require additional data files. These can be either downloaded manually from
+[here](http://users.jyu.fi/~jaakjuli/jibal/data/) or you can use the ``external_file_manager.py`` in `dev` to download the files.
 These files need to be extracted to ``external/share/jibal``. You can run the 
 following command from the root folder of the repository to download and 
 extract the files. (note: `curl` is not installed by default on all windows versions)
@@ -187,9 +187,16 @@ $ pipenv run ./create_bundle.sh
 
 ## Automatic packaging and version numbering
 
-Additionally Potku can be packaged automatically for Windows, Linux and macOS on GitHub servers by bumping its version. Running `bump_version.py` in `dev` on a terminal
+Potku can be packaged automatically for Windows, Linux and macOS on GitHub servers by bumping its version. Running `bump_version.py` in `dev` on a terminal
 prompts the user for a new version number. The script requires Git and GitHub CLI to use. Entering a valid version number initiates a chain of GitHub Actions workflows to bump the version number, give master branch a new tag on GitHub and create
-a release to which the newly packaged Potku binaries will be uploaded. Potku follows semantic version numbering.
+a release to which the newly packaged Potku binaries will be uploaded. Potku follows semantic version numbering. More in `dev/Automatic_packaging_README.md`.
+
+## External file manager
+
+In the ``dev`` directory a Python script `external_file_manager.py` paired with a manifest of external files `external_manifest.txt` can be used to manage Potku's external files.
+The script can be used to get external files by fetching any absent and out of sync files or force downloading all files. Additionally, the script can be used to update the manifest
+with local out of sync files or all local files. Finally, the script can be used to create an entirely new manifest based on the external files in ``external/share``. More in
+`dev/Automatic_packaging_README.md`.
 
 ## Code style
 
