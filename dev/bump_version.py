@@ -68,6 +68,8 @@ def get_github_status():
                                              capture_output=True,
                                              cwd=root_directory)
 
+        print("Checked out master.")
+
         git_pull_origin_master = subprocess.run(["git", "pull", "origin", "master"],
                                                 capture_output=True,
                                                 cwd=root_directory)
