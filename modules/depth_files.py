@@ -99,29 +99,9 @@ class DepthFileGenerator:
         bin_dir = gf.get_bin_dir()
         tof, erd = self.get_command()
         # Pipe the output from tof_list to erd_depth
-        tof_process = subprocess.Popen(tof, cwd=bin_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        tof_stdout, tof_stderr = tof_process.communicate()
-
-        eff_filename = None
-        used_eff_files = []
-        used_eff_filename = self._output_path.parents[0] / 'used_eff_files.txt'
-        lines = tof_stderr.decode().split('\n')
-        for n, _ in enumerate(lines):
-            if lines[n][0:22] == "Used efficiency file: ":
-                eff_filename = lines[n][22:].replace('\\','/').split('/')[-1]
-                if lines[n+1].split()[0] == "Got":
-                    used_eff_files.append(eff_filename)
-        try:
-            with open(used_eff_filename, "w") as f:
-                f.write("Efficiency files used:\n")
-                for line in used_eff_files:
-                    f.write(line)
-                    f.write("\n")
-        except Exception as e:
-            print(f"Error: {e}")
-
+        tof_process = subprocess.Popen(tof, cwd=bin_dir, stdout=subprocess.PIPE)
         ret = subprocess.run(
-            erd, cwd=bin_dir, input=tof_stdout).returncode
+            erd, cwd=bin_dir, stdin=tof_process.stdout).returncode
         if ret != 0:
             print(f"tof_list|erd_depth pipeline returned an error code: {ret}")
 
