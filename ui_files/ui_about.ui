@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>500</width>
-    <height>580</height>
+    <width>590</width>
+    <height>678</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -105,9 +105,9 @@
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>0</y>
-          <width>461</width>
-          <height>572</height>
+          <y>-260</y>
+          <width>551</width>
+          <height>778</height>
          </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -248,17 +248,70 @@
              </item>
             </layout>
            </item>
-           <item>
-            <widget class="QLabel" name="label_urls">
+           <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+            <widget class="QLabel" name="label_GitHub">
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
              <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;http://sovellusprojektit.it.jyu.fi/potku/&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;http://sovellusprojektit.it.jyu.fi/monisiro/&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;Potku releases on GitHub:&lt;/p&gt;&lt;a href=&quot;https://github.com/JYU-IBA/potku/releases&quot; align=&quot;center&quot;&gt;https://github.com/JYU-IBA/potku/releases&lt;/a&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="openExternalLinks">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
            <item>
+            <spacer name="verticalSpacer_4">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeType">
+              <enum>QSizePolicy::Fixed</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>10</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_urls">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;Potku on JYU:&lt;/p&gt;&lt;a href=&quot;https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku&quot; align=&quot;center&quot;&gt;https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku&lt;/a&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;Subscribe to Potku's email list:&lt;/p&gt;&lt;a href=&quot;http://lists.jyu.fi/mailman/listinfo/potku&quot; align=&quot;center&quot;&gt;http://lists.jyu.fi/mailman/listinfo/potku&lt;/a&gt;&lt;p align=&quot;center&quot;&gt;Potku project's original page&lt;/p&gt;&lt;a href=&quot;https://sovellusprojektit.it.jyu.fi/potku/&quot; align=&quot;center&quot;&gt;https://sovellusprojektit.it.jyu.fi/potku/&lt;/a&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="openExternalLinks">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="verticalSpacer_5">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeType">
+              <enum>QSizePolicy::Fixed</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>10</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
             <widget class="QLabel" name="label_iconpack">
              <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Used Icon Pack&lt;br/&gt;&lt;/span&gt;'The Reinhardt Icon Set for KDE' under LGPL licence.&lt;br/&gt;http://www.leinir.dk/leinir/index.php?globalID=content/en/Reinhardt+Icon+Set&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Used Icon Pack&lt;br/&gt;&lt;/span&gt;'The Reinhardt Icon Set for KDE' under LGPL licence.&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;a href=&quot;http://www.leinir.dk/leinir/index.php?globalID=content/en/Reinhardt+Icon+Set&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;http://www.leinir.dk/leinir/index.php?globalID=content/en/Reinhardt+Icon+Set&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="openExternalLinks">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
