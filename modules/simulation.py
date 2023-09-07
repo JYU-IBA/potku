@@ -259,9 +259,12 @@ class Simulations:
 
                 prefix, name = element_str_with_name.split("-")
 
-                profile_file = next(
-                    p for p in profile_files if p.name.startswith(prefix)
-                )
+                try:
+                    profile_file = next(
+                        p for p in profile_files if p.name.startswith(prefix)
+                    )
+                except StopIteration:
+                    profile_file = None
 
                 if profile_file is not None:
                     # Create ElementSimulation from files
@@ -505,13 +508,17 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
         element_str = recoil_element.element.get_prefix()
         name = self.request.default_element_simulation.name
 
-        simulation_type = SimulationType.fromStr(recoil_element.type)
+        use_default_settings = True
+        request_simulation_type = self.request.default_element_simulation.simulation_type
+        recoil_simulation_type = SimulationType.fromStr(recoil_element.type)
+        if request_simulation_type is not recoil_simulation_type:
+            use_default_settings = False
 
         element_simulation = ElementSimulation(
             directory=self.directory, request=self.request, simulation=self,
             name_prefix=element_str, name=name,
-            recoil_elements=[recoil_element], simulation_type=simulation_type,
-            save_on_creation=save_on_creation)
+            recoil_elements=[recoil_element], simulation_type=recoil_simulation_type,
+            save_on_creation=save_on_creation, use_default_settings=use_default_settings)
 
         self.element_simulations.append(element_simulation)
         return element_simulation
@@ -578,10 +585,10 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
     #        simulation_file = self.path
     #
         time_stamp = time.time()
-        sim_config = ConfigManager()
-        sim_config.set_simulation(self)
-        sim_config.read_simulation()
-        sim_config.save()
+    #    sim_config = ConfigManager()
+    #    sim_config.set_simulation(self)
+    #    sim_config.read_simulation()
+    #    sim_config.save()
     #    obj = {
     #        "name": self.name,
     #        "description": self.description,
