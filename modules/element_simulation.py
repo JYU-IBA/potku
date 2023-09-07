@@ -665,7 +665,13 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         ElementSimulation in json format.
         """
         timestamp = time.time()
-
+        main_recoil = None
+        recoils = None
+        if self.directory is not None:
+            if self.directory.parts[-1] != 'Default':
+                main_recoil = self.get_main_recoil().get_name()
+                recoils = [recoil.get_json_content() for recoil
+                           in self.recoil_elements]
         self.optimization_results_to_file()
 
         return {
@@ -686,11 +692,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 self.minimum_main_scattering_angle,
             "minimum_energy": self.minimum_energy,
             "use_default_settings": str(self.use_default_settings),
-            "main_recoil": self.get_main_recoil().get_name(),
-            "recoils": [
-                    recoil.get_json_content()
-                for recoil in self.recoil_elements
-            ]
+            "main_recoil": main_recoil,
+            "recoils": recoils
         }
 
 
@@ -721,7 +724,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             if self.request.default_folder == file_path.parent:
                 if file_path.suffix == '.mcsimu':
                     with file_path.open("w") as file:
-                        json.dump(self.get_json_content(), file, indent=4)
+                        json.dump(self.get_new_json_content(), file, indent=4)
 
     def profile_to_file(self, file_path: Path):
         """Save profile settings (only channel width) to file.
