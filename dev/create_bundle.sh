@@ -4,18 +4,21 @@ CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 GREEN="\033[0;92m"
 RED="\033[0;91m"
 NC="\033[0m"
+cd ../
+ROOT_DIR = "$PWD"
 
 if [[ "${PIPENV_ACTIVE}" -ne 1 ]]; then
   echo -e "${RED}create_bundle must be run within pipenv shell ('pipenv run <script>')${NC}"
   exit 1
 fi
 
+cd ${CUR_DIR}
 echo
 echo -e "${GREEN}Compiling external programs${NC}"
 echo
 ./build.sh || exit 1
 
-cd ${CUR_DIR}
+cd ${ROOT_DIR}
 echo
 echo -e "${GREEN}Installing and updating Python dependencies${NC}"
 echo
@@ -31,13 +34,13 @@ pip freeze > dist/python_libs.txt
 
 echo -e "${GREEN}List of libraries written to dist/python_libs.txt${NC}"
 
-cd ${CUR_DIR}
+cd ${ROOT_DIR}
 echo
 echo -e "${GREEN}Running tests${NC}"
 echo
 python -m unittest discover || exit 1
 
-cd ${CUR_DIR}
+cd ${ROOT_DIR}
 echo
 echo -e "${GREEN}Installing and running PyInstaller${NC}"
 echo

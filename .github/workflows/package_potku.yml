@@ -1,0 +1,197 @@
+# Intended to run as a sub-workflow inside bump_version.yml.
+name: Package Potku
+
+on:
+  workflow_call:
+
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version_numebr: ${{ steps.get_content.outputs.version }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+      - name: Read version file
+        id: get_content
+        run: |
+          cd ${{runner.workspace}}/potku
+          echo "version=$(awk 'NR==1' version.txt)" >> $GITHUB_OUTPUT
+      - name: Check for pre-release
+        id: pre_release
+        run: |
+          if [[ ${{ steps.get_content.outputs.version }} =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*) ]]; then
+            echo "pre_release=false" >> $GITHUB_OUTPUT
+          else
+            echo "pre_release=true" >> $GITHUB_OUTPUT
+          fi
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_content.outputs.version }}
+          release_name: Potku ${{ steps.get_content.outputs.version }}
+          draft: false
+          prerelease: ${{ steps.pre_release.outputs.pre_release }}
+  
+  package_windows:
+    needs: create_release
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Download C artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          name: c-apps-windows
+          workflow: version_bump.yml
+          path: ${{runner.workspace}}/potku/external/bin
+          search_artifacts: true
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          # Semantic version range syntax or exact version of a Python version
+          python-version: '3.10'
+      - name: Collect external files and package Potku
+        run: |
+          cd ${{runner.workspace}}/potku
+          pip install pipenv
+          pipenv install
+          cd ${{runner.workspace}}/potku/dev
+          for /f %%A in ('pipenv run python external_file_manager.py fetch') do set "fails=%%A"
+          if "%fails%" neq "0" (
+            echo %fails% external files failed to download.
+            exit /b 1
+          )
+          cd ${{runner.workspace}}/potku
+          pipenv run pip install pyinstaller
+          pipenv run pyinstaller potku.spec
+      - name: Create archive
+        uses: thedoctor0/zip-release@0.7.1
+        with:
+          type: 'zip'
+          filename: 'Potku-${{ needs.create_release.outputs.version }}-Windows.zip'
+          directory: ${{runner.workspace}}/potku/dist
+          path: potku
+      - name: Upload Windows build to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ${{runner.workspace}}/potku/dist/Potku-${{ needs.create_release.outputs.version }}-Windows.zip
+          asset_name: Potku-Windows.zip
+          asset_content_type: application/zip
+      
+          
+  package_linux:
+    runs-on: ubuntu-latest
+    needs: create_release
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Download C artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          name: c-apps-linux
+          workflow: version_bump.yml
+          path: ${{runner.workspace}}/potku/external
+          search_artifacts: true
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          # Semantic version range syntax or exact version of a Python version
+          python-version: '3.10'
+      - name: Collect external files and package Potku
+        id: package
+        run: |
+          cd ${{runner.workspace}}/potku
+          pip install pipenv
+          pipenv install
+          cd ${{runner.workspace}}/potku/dev
+          fails=$(pipenv run python external_file_manager.py fetch)
+          if [ "$fails" -ne 0 ]; then
+            echo "$fails external files failed to download."
+            exit 1
+          fi
+          cd ${{runner.workspace}}/potku
+          pipenv run pip install pyinstaller
+          pipenv run pyinstaller potku.spec
+      - name: Create archive
+        uses: thedoctor0/zip-release@0.7.1
+        with:
+          type: 'zip'
+          filename: 'Potku-${{ needs.create_release.outputs.version }}-Linux.zip'
+          directory: ${{runner.workspace}}/potku/dist
+          path: potku
+      - name: Upload Linux build to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ${{runner.workspace}}/potku/dist/Potku-${{ needs.create_release.outputs.version }}-Linux.zip
+          asset_name: Potku-Linux.zip
+          asset_content_type: application/zip
+  
+  package_macos:
+    runs-on: macos-latest
+    needs: create_release
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Download C artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          name: c-apps-macos
+          workflow: version_bump.yml
+          path: ${{runner.workspace}}/potku/external
+          search_artifacts: true
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          # Semantic version range syntax or exact version of a Python version
+          python-version: '3.10'
+      - name: Collect external files and package Potku
+        id: package
+        run: |
+          cd ${{runner.workspace}}/potku
+          pip install pipenv
+          pipenv install
+          cd ${{runner.workspace}}/potku/dev
+          fails=$(pipenv run python external_file_manager.py fetch)
+          if [ "$fails" -ne 0 ]; then
+            echo "$fails external files failed to download."
+            exit 1
+          fi
+          cd ${{runner.workspace}}/potku
+          pipenv run pip install pyinstaller
+          pipenv run pyinstaller potku.spec
+      - name: Create archive
+        uses: thedoctor0/zip-release@0.7.1
+        with:
+          type: 'zip'
+          filename: 'Potku-${{ needs.create_release.outputs.version }}-macOS.zip'
+          directory: ${{runner.workspace}}/potku/dist
+          path: potku
+      - name: Upload MacOS build to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ${{runner.workspace}}/potku/dist/Potku-${{ needs.create_release.outputs.version }}-macOS.zip
+          asset_name: Potku-macOS.zip
+          asset_content_type: application/zip

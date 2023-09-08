@@ -10,7 +10,7 @@ the number crunching, written in C. Some of these software are in separate
 submodules, please see the instructions below if you want to run the
 development version.
 
-Ready to run binary packages are available are available on the 
+Ready to run binary packages are available on the releases page of this repository. Additionally older binary packages are available on the
 [official website](https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/).
 
     Copyright (C) 2013-2021 Potku developers
@@ -25,11 +25,11 @@ Ready to run binary packages are available are available on the
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
     
-Please refer to the [full license](LICENSE) for details.
+Please refer to the [full license](../LICENSE) for details.
 
 # Getting started with development
 
-First step is to install the latest version of Python 3.6.x along with pip package installer. Make 
+First step is to install the latest version of Python 3.10.x along with pip package installer. Make 
 sure the paths of the executables are added to your PATH environment variable. Then install Pipenv:
  
 ````
@@ -71,7 +71,7 @@ must be installed:
 ### Linux and macOS
 
 Install cmake and gsl using the package manager of your distribution or 
-homebrew. Then run
+homebrew. Then run the following shell script in `dev` directory
 
 ````
 $ ./build.sh
@@ -93,7 +93,7 @@ vcpkg.exe install gsl:x64-windows getopt:x64-windows
 
 as instructed.
 
-For make and gcc see [c_for_windows_example.md](c_for_windows_example.md) for an example on how to set up the rest of the C environment .
+For make and gcc see [c_for_windows_example.md](dev/c_for_windows_example.md) for an example on how to set up the rest of the C environment .
 
 To compile the programs, run
 
@@ -101,7 +101,7 @@ To compile the programs, run
 $ build.bat
 ````
 
-in the `potku/` root directory 
+in the `dev` directory 
 
 If you get errors in the build, try different command prompt ie. x64 Native Tools Command Prompt as an administrator.
 
@@ -112,8 +112,8 @@ In case of warnings but no errors, try running the build again.
 
 ## Data files
 
-JIBAL requires additional data files, which can be downloaded from
-[here](http://users.jyu.fi/~jaakjuli/jibal/data/). 
+JIBAL and Potku require additional data files. These can be either downloaded manually from
+[here](http://users.jyu.fi/~jaakjuli/jibal/data/) or you can use the ``external_file_manager.py`` in `dev` to download the files.
 These files need to be extracted to ``external/share/jibal``. You can run the 
 following command from the root folder of the repository to download and 
 extract the files. (note: `curl` is not installed by default on all windows versions)
@@ -160,7 +160,7 @@ $ python -m unittest discover
 
 Potku can be packaged into a standalone executable using [PyInstaller](https://www.pyinstaller.org/). 
 Make sure you have compiled potku with `build` successfully and added the needed data files and awk before the packaging.
-For quick deployment, run these commands:
+For quick deployment, run these commands in the root directory:
 ````
 $ pipenv install (if the virtual environment has not already been created)
 $ pipenv shell
@@ -170,7 +170,7 @@ $ pyinstaller potku.spec
 This creates a `dist/potku` folder which contains the executable and all 
 necessary libraries.
 
-For a more comprehensive packaging process, run the `create_bundle` script. 
+For a more comprehensive packaging process, run the `create_bundle` script in `dev`. 
 This script compiles all external programs, installs and updates Python 
 dependencies, runs tests and compresses the `dist/potku` folder into a .zip 
 archive.
@@ -184,6 +184,19 @@ or
 `````
 $ pipenv run ./create_bundle.sh
 `````
+
+## Automatic packaging and version numbering
+
+Potku can be packaged automatically for Windows, Linux and macOS on GitHub servers by bumping its version. Running `bump_version.py` in `dev` on a terminal
+prompts the user for a new version number. The script requires Git and GitHub CLI to use. Entering a valid version number initiates a chain of GitHub Actions workflows to bump the version number, give master branch a new tag on GitHub and create
+a release to which the newly packaged Potku binaries will be uploaded. Potku follows semantic version numbering. More in `dev/Automatic_packaging_README.md`.
+
+## External file manager
+
+In the ``dev`` directory a Python script `external_file_manager.py` paired with a manifest of external files `external_manifest.txt` can be used to manage Potku's external files.
+The script can be used to get external files by fetching any absent and out of sync files or force downloading all files. Additionally, the script can be used to update the manifest
+with local out of sync files or all local files. Finally, the script can be used to create an entirely new manifest based on the external files in ``external/share``. More in
+`dev/Automatic_packaging_README.md`.
 
 ## Code style
 

@@ -1,0 +1,142 @@
+# Intended to run as a sub-workflow in version_bump.yml
+name: Compile C apps
+
+on:
+  workflow_call:
+  
+jobs:
+  check_artifacts:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_exists: ${{ steps.check_artifacts.outputs.artifact_exists }}
+      ext_changed: ${{ steps.get_diff.outputs.ext_changed }}
+    steps:
+      - name: Make directory
+        run: |
+          mkdir -p ${{runner.workspace}}/artifact
+      - name: Download C artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          name: c-apps-windows
+          workflow: version_bump.yml
+          path: ${{runner.workspace}}/artifact
+          skip_unpack: true
+          if_no_artifact_found: ignore
+          search_artifacts: true
+      - name: Check C artifact
+        id: check_artifacts
+        run: |
+          if [ -e ${{runner.workspace}}/artifact/c-apps-windows.zip ]; then
+            echo "artifact_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "artifact_exists=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Checkout master
+        uses: actions/checkout@v3
+        with:
+          ref: master
+          fetch-depth: 0
+      - name: Get second-to-latest tag
+        id: latest_tag
+        run: |
+          cd ${{runner.workspace}}/potku
+          git_output=$(git tag --sort=-creatordate | awk 'NR==2') || exit 1
+          echo "tag_id=$git_output" >> $GITHUB_OUTPUT
+          echo "Second to latest tag commit ID: $git_output"
+      - name: Get diff between latest tag and master
+        id: get_diff
+        run: |
+          cd ${{runner.workspace}}/potku
+          diff=$(git diff ${{steps.latest_tag.outputs.tag_id}} master -- external)
+          if [ -z "$diff"]; then
+            echo "ext_changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "ext_changed=true" >> $GITHUB_OUTPUT
+          fi   
+
+  build_windows:
+    runs-on: windows-latest
+    needs: check_artifacts
+    if: |
+      needs.check_artifacts.outputs.artifact_exists == 'false' ||
+      needs.check_artifacts.outputs.ext_changed == 'true'
+    defaults:
+      run:
+        shell: cmd
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        path: repo
+    - name: vcpkg build
+      uses: johnwason/vcpkg-action@v5
+      id: vcpkg
+      with:
+        pkgs: gsl getopt
+        triplet: x64-windows
+        cache-key: windows
+        revision: master
+        token: ${{ github.token }}
+    - name: Set environment + build executables
+      run: |
+        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        set VCPKG_ROOT ${{ runner.workspace }}\potku\vcpkg
+        set VCPKG_DEFAULT_TRIPLET x64-windows
+        cd ${{runner.workspace}}\potku\repo\dev
+        build.bat ${{ runner.workspace }}\potku\vcpkg\scripts\buildsystems\vcpkg.cmake
+    - name: Archive windows executables
+      uses: actions/upload-artifact@v3
+      with:
+        name: c-apps-windows
+        path: ${{runner.workspace}}\potku\repo\external\bin
+
+  build_linux:
+    runs-on: ubuntu-latest
+    needs: check_artifacts
+    if: |
+      needs.check_artifacts.outputs.artifact_exists == 'false' ||
+      needs.check_artifacts.outputs.ext_changed == 'true'
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Build linux executables
+      run: |
+        sudo apt-get install -y libgsl27 libgsl-dev
+        cd ${{runner.workspace}}/potku/dev
+        ./build.sh
+    - name: Archive linux executables
+      uses: actions/upload-artifact@v3
+      with:
+        name: c-apps-linux
+        path: |
+          ${{runner.workspace}}/potku/external/bin
+          ${{runner.workspace}}/potku/external/lib
+  
+  build_macos:
+    runs-on: macos-latest
+    needs: check_artifacts
+    if: |
+      needs.check_artifacts.outputs.artifact_exists == 'false' ||
+      needs.check_artifacts.outputs.ext_changed == 'true'
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Build MacOS executables
+      run: |
+        brew install cmake
+        brew install gsl
+        cd ${{runner.workspace}}/potku/dev
+        ./build.sh
+    - name: Archive macos executables
+      uses: actions/upload-artifact@v3
+      with:
+        name: c-apps-macos
+        path: |
+          ${{runner.workspace}}/potku/external/bin
+          ${{runner.workspace}}/potku/external/lib
+        

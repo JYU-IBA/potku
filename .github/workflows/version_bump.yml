@@ -1,0 +1,160 @@
+name: Bump version
+
+on:
+  pull_request:
+    types:
+      - opened
+      
+jobs:
+  
+  # Run only for branches that start with pattern 'bump_version'
+  # This job checks if only version.txt changed and pull request
+  # creator has write permission.
+  branch_verification:
+    name: Verify user and changes
+    if: startsWith(github.head_ref, 'bump_version')
+    runs-on: ubuntu-latest
+    outputs:
+      files_ok: ${{ steps.changed_files.outputs.files_ok }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+        # Check if creator of pull request has write permission
+      - name: Verify user
+        id: check_user
+        uses: actions-cool/check-user-permission@v2.2.0
+        with:
+          require: 'write'
+        # Check all changed files between master and pull request head
+      - name: Get diff of head to master
+        id: get_diff
+        uses: tj-actions/changed-files@v36
+        # Check passed if only version.txt changed and user has write permission
+      - name: Verify changed files
+        id: changed_files
+        if: |
+          steps.get_diff.outputs.all_changed_and_modified_files == 'version.txt' &&
+          steps.get_diff.outputs.modified_files == 'version.txt' &&
+          steps.check_user.outputs.require-result == 'true'
+        run: |
+          echo "files_ok=true" >> $GITHUB_OUTPUT
+      
+  # Check the contents of version.txt
+  content_verification:
+    name: Verify version.txt content
+    needs: branch_verification
+    if: needs.branch_verification.outputs.files_ok == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      content_ok: ${{ steps.check_content.outputs.content_ok }}
+      version_number: ${{ steps.get_content.outputs.version }}
+      version_date: ${{ steps.get_content.outputs.date }}
+    steps:
+      - name: Git checkout head
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Read version file
+        id: get_content
+        run: |
+          cd ${{runner.workspace}}/potku
+          echo "version=$(awk 'NR==1' version.txt)" >> $GITHUB_OUTPUT
+          echo "date=$(awk 'NR==2' version.txt)" >> $GITHUB_OUTPUT
+      - name: Match file content
+        id: match_content
+        if: |
+          steps.get_content.outputs.version != '' &&
+          steps.get_content.outputs.date != ''
+        run: |
+          if [[ ${{ steps.get_content.outputs.version }} =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$ ]]; then
+            echo "version_match=true" >> $GITHUB_OUTPUT
+          fi
+          if [[ ${{ steps.get_content.outputs.date }} =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            echo "date_match=true" >> $GITHUB_OUTPUT
+          fi
+      - name: Verify file content
+        id: check_content
+        if: |
+          steps.match_content.outputs.version_match == 'true' &&
+          steps.match_content.outputs.date_match == 'true'
+        run: |
+          echo "content_ok=true" >> $GITHUB_OUTPUT
+  
+  # If branch_verification and content_verification jobs returns true 
+  # then the pull request is automatically approved by github-actions-bot.
+  auto_approve:
+    name: Auto approve
+    needs: [branch_verification, content_verification]
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    if: |
+      needs.branch_verification.outputs.files_ok == 'true' &&
+      needs.content_verification.outputs.content_ok == 'true'
+    steps:
+      - name: Auto approve
+        uses: hmarr/auto-approve-action@v3
+        with: 
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+  
+  # Automatically merge the approved version bump pull request. Version
+  # bump branch is automatically deleted after merging.
+  auto_merge:
+    name: Auto merge
+    needs: [branch_verification, content_verification, auto_approve]
+    runs-on: ubuntu-latest
+    if: |
+      needs.branch_verification.outputs.files_ok == 'true' &&
+      needs.content_verification.outputs.content_ok == 'true'
+    steps:
+      - name: Auto merge
+        uses: pascalgn/automerge-action@v0.15.6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MERGE_METHOD: "merge"
+          MERGE_LABELS: ""
+          MERGE_DELETE_BRANCH: "true"
+  
+  # Automatically create an annotated tag of master branch after
+  # merging version bump pull request.
+  auto_tag:
+    name: Auto tag
+    needs: [branch_verification, content_verification, auto_approve, auto_merge]
+    runs-on: ubuntu-latest
+    if: |
+      needs.branch_verification.outputs.files_ok == 'true' &&
+      needs.content_verification.outputs.content_ok == 'true'
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+        with:
+          ref: master
+          submodules: recursive
+      - name: git commands
+        run: |
+          cd ${{runner.workspace}}/potku
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          git tag -a ${{ needs.content_verification.outputs.version_number}} -m "Automatic tag for version ${{ needs.content_verification.outputs.version_number}}"
+          git push origin ${{ needs.content_verification.outputs.version_number}}
+  
+  # Building the C apps is run as a sub workflow in here.
+  build_c:
+    name: Build C apps
+    needs: [branch_verification, content_verification, auto_approve, auto_merge, auto_tag]
+    if: |
+      needs.branch_verification.outputs.files_ok == 'true' &&
+      needs.content_verification.outputs.content_ok == 'true'
+    uses: ./.github/workflows/compile_c_apps.yml
+  
+  # Packaging Potku is run as a sub workflow in here.
+  package_Potku:
+    name: Package Potku
+    needs: [branch_verification, content_verification, auto_approve, auto_merge, auto_tag, build_c]
+    if: |
+      needs.branch_verification.outputs.files_ok == 'true' &&
+      needs.content_verification.outputs.content_ok == 'true'
+    uses: ./.github/workflows/package_potku.yml
+    
