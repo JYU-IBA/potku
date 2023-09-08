@@ -3,13 +3,16 @@
 if "%PIPENV_ACTIVE%"== "" echo [91mcreate_bundle must be run within pipenv shell ('pipenv run script')[0m && exit /b 1
 
 set cur_dir=%cd%
+cd ..\
+set root_dir=%cd%
 
+cd %cur_dir%
 echo(
 echo [92mCompiling external programs[0m
 echo(
 call build.bat || (echo [91mCompiling failed[0m && goto :error)
 
-cd %cur_dir%
+cd %root_dir%
 echo(
 echo [92mInstalling and updating Python dependencies[0m
 echo(
@@ -24,13 +27,13 @@ mkdir dist
 pip freeze > dist/python_libs.txt
 echo [92mList of libraries written to dist/python_libs.txt[0m
 
-cd %cur_dir%
+cd %root_dir%
 echo(
 echo [92mRunning tests[0m
 echo(
 python -m unittest discover || (echo [91mTests failed[0m && goto :error)
 
-cd %cur_dir%
+cd %root_dir%
 echo(
 echo [92mInstalling and running PyInstaller[0m
 echo(

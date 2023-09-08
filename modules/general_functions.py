@@ -34,7 +34,9 @@ __version__ = "2.0"
 import bisect
 import hashlib
 import os
+import pathlib
 import platform
+import re
 import shutil
 import subprocess
 import tempfile
@@ -680,6 +682,39 @@ def check_if_sum_in_directory_name(directory):
                 simulated_sum_found = True
     return measured_sum_found, simulated_sum_found
 
+  
+def get_version_number_and_date():
+    """
+    Returns Potku's version number and date of the version from version.txt
+
+    Return:
+        version_number: semantic version number
+        version_date: yyyy-mm-dd format date of the version
+    """
+    root_dir = get_root_dir()
+    version_file_path = pathlib.Path.joinpath(root_dir, r'version.txt')
+    fallback_version_number = '2.0'
+    fallback_version_date = '2022-12-31'
+    try:
+        version_file = open(version_file_path, 'r')
+        version_file_content = version_file.read().splitlines()
+        version_number = version_file_content[0]
+        version_date = version_file_content[1]
+        version_file.close()
+
+    except FileNotFoundError:
+        return fallback_version_number, fallback_version_date
+    except IndexError:
+        return fallback_version_number, fallback_version_date
+
+    # Check date format
+    date_pattern = re.compile(r"\d{4}-\d{2}-\d{2}")
+    if re.match(date_pattern, version_date):
+        return version_number, version_date
+    else:
+        return fallback_version_number, fallback_version_date
+
+      
 def check_max_path_length(root_path = os.getcwd()):
     longest_size = 0
     longest_path = None
@@ -693,3 +728,4 @@ def check_max_path_length(root_path = os.getcwd()):
                 longest_size = len(os.path.join(root, name))
                 longest_path = os.path.join(root, name)
     return longest_size, longest_path
+  

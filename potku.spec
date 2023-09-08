@@ -59,6 +59,7 @@ a = Analysis(
         ("ui_files", "ui_files"),
         ("ui_icons", "ui_icons"),
         ("images", "images"),
+        ("version.txt", "./"),
         *extras
      ],
      hiddenimports=[
@@ -103,14 +104,14 @@ coll = COLLECT(
     name="potku"
 )
 
-if system == "Darwin":
-    app = BUNDLE(
-        coll,
-        name="potku.app",
-        icon=icon,
-        bundle_identifier=None,
-        info_plist={
-            'NSPrincipalClass': 'NSApplication',
-            'NSAppleScriptEnabled': False
-        },
-    )
+#if system == "Darwin":
+#    app = BUNDLE(
+#        coll,
+#        name="potku.app",
+#        icon=icon,
+#        bundle_identifier=None,
+#        info_plist={
+#            'NSPrincipalClass': 'NSApplication',
+#            'NSAppleScriptEnabled': False
+#        },
+#    )

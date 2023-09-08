@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-numpy = "1.22.5"
+numpy = "1.22.4"
 scipy = "1.8.1"
 matplotlib = "3.5.2"
 PyQt5 = "5.15.6"
@@ -13,6 +13,7 @@ wheel = "0.37.1"
 reactivex = "4.0.2"
 Pillow = "9.1.1"
 hypothesis = "6.47.0"
+requests = "2.31.0"
 
 [dev-packages]
 pypiwin32 = {sys_platform = "== 'win32'"}
