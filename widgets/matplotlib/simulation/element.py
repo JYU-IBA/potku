@@ -88,21 +88,7 @@ class ElementWidget(QtWidgets.QWidget):
         horizontal_layout.setContentsMargins(0, 0, 0, 0)
 
         self.radio_button = QtWidgets.QRadioButton()
-
-        if element.isotope:
-            isotope_superscript = general.digits_to_superscript(
-                str(element.isotope))
-            button_text = isotope_superscript + " " + element.symbol
-        else:
-            button_text = element.symbol
-
-        if element.RRectype == None:
-            #element.RRectype = str(element_simulation.simulation_type)
-            element.RRectype = str(self.recoil_element.get_simulation_type())
-        if str(element.RRectype) == "SCT" or element_simulation.simulation_type == "RBS":
-            button_text = button_text + "*"
-
-        self.radio_button.setText(button_text)
+        self.update_recoil_text()
 
         # Circle for showing the recoil color
         self.circle = Circle(color)
@@ -203,6 +189,7 @@ class ElementWidget(QtWidgets.QWidget):
             es.settings_updated.connect(settings_updated.emit)
         es.exec_()
 
+        self.update_recoil_text()
         self.update_settings_button(settings_button)
 
     def plot_spectrum(self, spectra_changed=None):
@@ -266,3 +253,18 @@ class ElementWidget(QtWidgets.QWidget):
             settings_button.setStyleSheet("")
         else:
             settings_button.setStyleSheet("background-color: yellow")
+
+    def update_recoil_text(self):
+        """
+        Updates a recoil's text based on the element and its simulation type.
+        """
+        element = self.element_simulation.get_main_recoil().element
+        if element.isotope:
+            isotope_superscript = general.digits_to_superscript(
+                str(element.isotope))
+            button_text = isotope_superscript + " " + element.symbol
+        else:
+            button_text = element.symbol
+        if str(element.RRectype) == "SCT" or self.element_simulation.simulation_type == "RBS":
+            button_text = button_text + "*"
+        self.radio_button.setText(button_text)

@@ -585,10 +585,9 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
     #        simulation_file = self.path
     #
         time_stamp = time.time()
-    #    sim_config = ConfigManager()
-    #    sim_config.set_simulation(self)
-    #    sim_config.read_simulation()
-    #    sim_config.save()
+        sim_config = ConfigManager()
+        sim_config.set_simulation(self)
+        sim_config.save()
     #    obj = {
     #        "name": self.name,
     #        "description": self.description,
