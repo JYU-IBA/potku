@@ -5,40 +5,8 @@ on:
   workflow_call:
 
 jobs:
-  create_release:
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      version_numebr: ${{ steps.get_content.outputs.version }}
-    steps:
-      - name: Git checkout
-        uses: actions/checkout@v3
-      - name: Read version file
-        id: get_content
-        run: |
-          cd ${{runner.workspace}}/potku
-          echo "version=$(awk 'NR==1' version.txt)" >> $GITHUB_OUTPUT
-      - name: Check for pre-release
-        id: pre_release
-        run: |
-          if [[ ${{ steps.get_content.outputs.version }} =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*) ]]; then
-            echo "pre_release=false" >> $GITHUB_OUTPUT
-          else
-            echo "pre_release=true" >> $GITHUB_OUTPUT
-          fi
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.get_content.outputs.version }}
-          release_name: Potku ${{ steps.get_content.outputs.version }}
-          draft: false
-          prerelease: ${{ steps.pre_release.outputs.pre_release }}
-  
+
   package_windows:
-    needs: create_release
     runs-on: windows-latest
     defaults:
       run:
@@ -48,13 +16,30 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: Download C artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Download old C artifact
+        uses: dawidd6/action-download-artifact@v2.27.0
         with:
           name: c-apps-windows
           workflow: version_bump.yml
           path: ${{runner.workspace}}/potku/external/bin
+          check_artifacts: true
           search_artifacts: true
+          if_no_artifact_found: ignore
+      - name: Check file existence
+        id: check_files
+        uses: andstor/file-existence-action@v2
+        with:
+          files: "${{runner.workspace}}/potku/external/bin/mcerd.exe"
+      - name: Download current C artifact
+        if: steps.check_files.outputs.files_exists == 'false'
+        uses: dawidd6/action-download-artifact@v2.27.0
+        with:
+          name: c-apps-windows
+          workflow: version_bump.yml
+          path: ${{runner.workspace}}/potku/external/bin
+          check_artifacts: true
+          search_artifacts: true
+          workflow_conclusion: 'in_progress'
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
@@ -78,35 +63,47 @@ jobs:
         uses: thedoctor0/zip-release@0.7.1
         with:
           type: 'zip'
-          filename: 'Potku-${{ needs.create_release.outputs.version }}-Windows.zip'
+          filename: 'Potku-Windows.zip'
           directory: ${{runner.workspace}}/potku/dist
           path: potku
-      - name: Upload Windows build to release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Archive Windows release
+        uses: actions/upload-artifact@v3
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ${{runner.workspace}}/potku/dist/Potku-${{ needs.create_release.outputs.version }}-Windows.zip
-          asset_name: Potku-Windows.zip
-          asset_content_type: application/zip
-      
-          
+          name: Potku-Windows
+          path: ${{runner.workspace}}/potku/dist/Potku-Windows.zip
+
+
   package_linux:
     runs-on: ubuntu-latest
-    needs: create_release
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: Download C artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Download old C artifact
+        uses: dawidd6/action-download-artifact@v2.27.0
         with:
           name: c-apps-linux
           workflow: version_bump.yml
           path: ${{runner.workspace}}/potku/external
+          check_artifacts: true
           search_artifacts: true
+          if_no_artifact_found: ignore
+      - name: Check file existence
+        id: check_files
+        uses: andstor/file-existence-action@v2
+        with:
+          files: "${{runner.workspace}}/potku/external/bin/mcerd"
+      - name: Download current C artifact
+        if: steps.check_files.outputs.files_exists == 'false'
+        uses: dawidd6/action-download-artifact@v2.27.0
+        with:
+          name: c-apps-linux
+          workflow: version_bump.yml
+          path: ${{runner.workspace}}/potku/external
+          check_artifacts: true
+          search_artifacts: true
+          workflow_conclusion: 'in_progress'
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
@@ -131,34 +128,46 @@ jobs:
         uses: thedoctor0/zip-release@0.7.1
         with:
           type: 'zip'
-          filename: 'Potku-${{ needs.create_release.outputs.version }}-Linux.zip'
+          filename: 'Potku-Linux.zip'
           directory: ${{runner.workspace}}/potku/dist
           path: potku
-      - name: Upload Linux build to release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Archive Linux release
+        uses: actions/upload-artifact@v3
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ${{runner.workspace}}/potku/dist/Potku-${{ needs.create_release.outputs.version }}-Linux.zip
-          asset_name: Potku-Linux.zip
-          asset_content_type: application/zip
-  
+          name: Potku-Linux
+          path: ${{runner.workspace}}/potku/dist/Potku-Linux.zip
+
   package_macos:
     runs-on: macos-latest
-    needs: create_release
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: Download C artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Download old C artifact
+        uses: dawidd6/action-download-artifact@v2.27.0
         with:
           name: c-apps-macos
           workflow: version_bump.yml
           path: ${{runner.workspace}}/potku/external
+          check_artifacts: true
           search_artifacts: true
+          if_no_artifact_found: ignore
+      - name: Check file existence
+        id: check_files
+        uses: andstor/file-existence-action@v2
+        with:
+          files: "${{runner.workspace}}/potku/external/bin/mcerd"
+      - name: Download current C artifact
+        if: steps.check_files.outputs.files_exists == 'false'
+        uses: dawidd6/action-download-artifact@v2.27.0
+        with:
+          name: c-apps-macos
+          workflow: version_bump.yml
+          path: ${{runner.workspace}}/potku/external
+          check_artifacts: true
+          search_artifacts: true
+          workflow_conclusion: 'in_progress'
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
@@ -183,15 +192,87 @@ jobs:
         uses: thedoctor0/zip-release@0.7.1
         with:
           type: 'zip'
-          filename: 'Potku-${{ needs.create_release.outputs.version }}-macOS.zip'
+          filename: 'Potku-macOS.zip'
           directory: ${{runner.workspace}}/potku/dist
           path: potku
-      - name: Upload MacOS build to release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Archive macOS release
+        uses: actions/upload-artifact@v3
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ${{runner.workspace}}/potku/dist/Potku-${{ needs.create_release.outputs.version }}-macOS.zip
-          asset_name: Potku-macOS.zip
-          asset_content_type: application/zip
+          name: Potku-macOS
+          path: ${{runner.workspace}}/potku/dist/Potku-macOS.zip
+
+  create_release:
+    needs: [package_windows, package_linux, package_macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+      - name: Read version file
+        id: get_content
+        run: |
+          cd ${{runner.workspace}}/potku
+          echo "version=$(awk 'NR==1' version.txt)" >> $GITHUB_OUTPUT
+      - name: Check for pre-release
+        id: pre_release
+        run: |
+          if [[ ${{ steps.get_content.outputs.version }} =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "pre_release=false" >> $GITHUB_OUTPUT
+          else
+            echo "pre_release=true" >> $GITHUB_OUTPUT
+          fi
+      - name: Make directory
+        run: |
+          mkdir -p ${{runner.workspace}}/potku/artifact
+      - name: Download Windows release artifact
+        uses: dawidd6/action-download-artifact@v2.27.0
+        with:
+          name: Potku-Windows
+          workflow: version_bump.yml
+          path: ${{runner.workspace}}/potku/artifact
+          check_artifacts: true
+          skip_unpack: true
+          workflow_conclusion: 'in_progress'
+      - name: Download Linux release artifact
+        uses: dawidd6/action-download-artifact@v2.27.0
+        with:
+          name: Potku-Linux
+          workflow: version_bump.yml
+          path: ${{runner.workspace}}/potku/artifact
+          check_artifacts: true
+          skip_unpack: true
+          workflow_conclusion: 'in_progress'
+      - name: Download macOS release artifact
+        uses: dawidd6/action-download-artifact@v2.27.0
+        with:
+          name: Potku-macOS
+          workflow: version_bump.yml
+          path: ${{runner.workspace}}/potku/artifact
+          check_artifacts: true
+          skip_unpack: true
+          workflow_conclusion: 'in_progress'
+      - name: Create prerelease
+        if: steps.pre_release.outputs.pre_release == 'true'
+        uses: marvinpinto/action-automatic-releases@v1.2.1
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: ${{ steps.get_content.outputs.version }}
+          title: Potku ${{ steps.get_content.outputs.version }}
+          draft: false
+          prerelease: true
+          files: |
+            ${{runner.workspace}}/potku/artifact/Potku-Linux.zip
+            ${{runner.workspace}}/potku/artifact/Potku-Windows.zip
+            ${{runner.workspace}}/potku/artifact/Potku-macOS.zip
+      - name: Create release
+        if: steps.pre_release.outputs.pre_release == 'false'
+        uses: marvinpinto/action-automatic-releases@v1.2.1
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: ${{ steps.get_content.outputs.version }}
+          title: Potku ${{ steps.get_content.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            ${{runner.workspace}}/potku/artifact/Potku-Linux.zip
+            ${{runner.workspace}}/potku/artifact/Potku-Windows.zip
+            ${{runner.workspace}}/potku/artifact/Potku-macOS.zip
