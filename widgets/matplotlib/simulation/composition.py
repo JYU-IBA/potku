@@ -517,7 +517,10 @@ class TargetCompositionWidget(_CompositionWidget):
         if dialog.isOk:
             old_target = Path(self.simulation.directory,
                               f"{self.target.name}.target")
-            os.remove(old_target)
+            try:
+                os.remove(old_target)
+            except FileNotFoundError:
+                pass
             self.target.name = dialog.name
             self.target.description = dialog.description
             self.parent.targetNameLabel.setText(self.target.name)
