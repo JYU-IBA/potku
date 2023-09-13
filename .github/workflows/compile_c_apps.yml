@@ -15,7 +15,7 @@ jobs:
         run: |
           mkdir -p ${{runner.workspace}}/artifact
       - name: Download C artifact
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v2.27.0
         with:
           name: c-apps-windows
           workflow: version_bump.yml
@@ -114,7 +114,7 @@ jobs:
         path: |
           ${{runner.workspace}}/potku/external/bin
           ${{runner.workspace}}/potku/external/lib
-  
+
   build_macos:
     runs-on: macos-latest
     needs: check_artifacts
@@ -139,4 +139,3 @@ jobs:
         path: |
           ${{runner.workspace}}/potku/external/bin
           ${{runner.workspace}}/potku/external/lib
-        
