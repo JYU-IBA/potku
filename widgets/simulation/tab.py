@@ -213,7 +213,7 @@ class SimulationTabWidget(BaseTab):
                     lines = save_file.readlines()
                 if not lines:
                     return
-                used_files = [Path(f) for f in lines[0].strip().split("\t")]
+                used_files = [Path(f) for f in lines[0].strip().split("\t") if f != '']
                 used_files_confirmed = []
                 for u_f in used_files:
                     if u_f.exists():
