@@ -154,7 +154,7 @@
                      <double>0.100000000000000</double>
                     </property>
                     <property name="value">
-                     <double>4.000000000000000</double>
+                     <double>5.000000000000000</double>
                     </property>
                    </widget>
                   </item>
@@ -165,17 +165,17 @@
                     </property>
                    </widget>
                   </item>
-                  <item row="2" column="0">
-                   <widget class="QLabel" name="label_3">
-                    <property name="text">
-                     <string>Foil width [mm]: </string>
-                    </property>
-                   </widget>
-                  </item>
                   <item row="1" column="1">
                    <widget class="QDoubleSpinBox" name="foilDistanceSpinBox">
                     <property name="maximum">
                      <double>9999.000000000000000</double>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="2" column="0">
+                   <widget class="QLabel" name="label_3">
+                    <property name="text">
+                     <string>Foil width [mm]: </string>
                     </property>
                    </widget>
                   </item>
@@ -212,7 +212,7 @@
                      <item row="1" column="0">
                       <widget class="QLabel" name="offsetLabel_3">
                        <property name="text">
-                        <string>Angle offset [rad]:</string>
+                        <string>Angle offset [channel]:</string>
                        </property>
                       </widget>
                      </item>
@@ -250,6 +250,16 @@
                 <property name="bottomMargin">
                  <number>6</number>
                 </property>
+                <item>
+                 <widget class="QPushButton" name="autoCalibrationButton">
+                  <property name="text">
+                   <string>Auto Calibration</string>
+                  </property>
+                  <property name="autoDefault">
+                   <bool>false</bool>
+                  </property>
+                 </widget>
+                </item>
                 <item>
                  <widget class="QLabel" name="acceptPointLabel">
                   <property name="minimumSize">

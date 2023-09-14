@@ -43,14 +43,13 @@ class MatplotlibAngleSelectorWidget(MatplotlibWidget):
     """Energy spectrum widget
     """
 
-    def __init__(self, parent, detector: Detector, tof_calibration, asc,
+    def __init__(self, parent, detector: Detector, asc,
                  run: Run, bin_width=2.0, column=0, dialog=None):
         """Inits Energy Spectrum widget.
 
         Args:
             parent: CalibrationCurveFittingWidget
             detector: Detector class object.
-            tof_calibration: TOFCalibration class object.
             asc: ASCFile class object.
             run: Run object.
             bin_width: Histograms bin width
@@ -67,16 +66,16 @@ class MatplotlibAngleSelectorWidget(MatplotlibWidget):
         self.bin_width = bin_width
         self.use_column = column
         self.run = run
-        #self.tof_calibration = tof_calibration
 
         self.angle_histogram = None
-        #self.tof_calibration_point = None
         self._calibration_point = None
-        #self.selected_tof = None
         self.selection_given_manually = False
         self.__limit_prev = 0
         self.__limit_low = 0
         self.__limit_high = 0
+        self.auto_calibration = False
+        self.auto_limit_high = 0
+        self.auto_limit_low = 0
 
         self.canvas.mpl_connect('button_press_event', self.onclick)
         self.on_draw()
@@ -89,8 +88,6 @@ class MatplotlibAngleSelectorWidget(MatplotlibWidget):
         """
         if not self.selection_given_manually:
             return
-        #if event.button == 1:
-        #    self.__set_calibration_point(event.xdata)
         if event.button == 1:
             value = int(event.xdata)
             if value == self.__limit_high or value == self.__limit_low:
@@ -143,15 +140,24 @@ class MatplotlibAngleSelectorWidget(MatplotlibWidget):
 
             self.axes.plot(self.angle_histogram.histogram_x,
                            self.angle_histogram.histogram_y)
+            if self.auto_calibration:
+                self.update_auto()
+                self.axes.plot(self.angle_histogram.gauss_x,
+                            self.angle_histogram.gauss_y)
 
 
         self.axes.set_ylabel("Counts")
         self.axes.set_xlabel("Time diff [channel]")
 
-        if self.__limit_low:
-            self.axes.axvline(self.__limit_low, linestyle="--")
-        if self.__limit_high:
-            self.axes.axvline(self.__limit_high, linestyle="--")
+        if self.auto_calibration:
+            self.axes.axvline(self.__limit_low, linestyle="--", color='Orange')
+            self.axes.axvline(self.__limit_high, linestyle="--", color='Orange')
+        else:
+            if self.__limit_low:
+                self.axes.axvline(self.__limit_low, linestyle="--")
+            if self.__limit_high:
+                self.axes.axvline(self.__limit_high, linestyle="--")
+
 
         # Remove axis ticks
         self.remove_axes_ticks()
@@ -163,7 +169,9 @@ class MatplotlibAngleSelectorWidget(MatplotlibWidget):
     def toggle_clicks(self):
         """Toggle between manual ToF channel (x axis) selection.
         """
+        self.auto_calibration = False
         self.selection_given_manually = not self.selection_given_manually
+        self.on_draw()
 
     def __fork_toolbar_buttons(self):
         """Custom toolbar buttons be here.
@@ -187,5 +195,24 @@ class MatplotlibAngleSelectorWidget(MatplotlibWidget):
         #foil_distance = self.detector.foils[-1].distance
         foil_distance = self.dialog.foilDistanceSpinBox.value()
         slope = (foil_size/foil_distance)/(self.__limit_high-self.__limit_low)
-        self.dialog.angleOffsetLineEdit.setText(str(offset*slope))
+        self.dialog.angleOffsetLineEdit.setText(str(offset))
         self.dialog.angleSlopeLineEdit.setText(str(slope))
+
+    def set_auto_calibration(self):
+        self.auto_calibration = True
+        self.selection_given_manually = False
+        self.selectButton.setChecked(False)
+        self.update_auto()
+        self.on_draw()
+
+    def set_auto_limits(self):
+        width = 1.2
+        params = self.angle_histogram.fitted_params
+        self.__limit_high = params[1] + abs(params[2] * width)
+        self.__limit_low = params[1] - abs(params[2] * width)
+
+    def update_auto(self):
+        self.angle_histogram.fit_normal_distribution()
+        self.set_auto_limits()
+        self.calculate_fit()
+        self.dialog.angleGroupBox.setTitle(f"Angle selector ({self.__limit_low}, {self.__limit_high})")

@@ -69,7 +69,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
     description = bnd.bind("descriptionLineEdit")
     detector_type = bnd.bind("typeComboBox", track_change=False) # True
     angle_slope = bnd.bind("scientific_angle_slope", track_change=True)
-    angle_offset = bnd.bind("scientific_angle_offset", track_change=True)
+    angle_offset = None
     tof_slope = bnd.bind("scientific_tof_slope", track_change=True)
     tof_offset = bnd.bind("scientific_tof_offset", track_change=True)
     timeres = bnd.bind("timeResSpinBox", track_change=False) # True
@@ -96,6 +96,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.icon_manager = icon_manager
         self.run = run
         self.__original_properties = {}
+
+        angle_offset = self.obj.angle_offset
 
         # Temporary foils list which holds all the information given in the
         # foil dialog
@@ -177,7 +179,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.formLayout_2.insertRow(
             -1, "Angle slope [rad/channel]", self.scientific_angle_slope)
         self.formLayout_2.insertRow(
-            -1, "Angle offset [rad]", self.scientific_angle_offset)
+            -1, "Angle offset [channel]", self.scientific_angle_offset)
 
         if platform.system() == "Darwin":
             self.scientific_tof_offset.setFixedWidth(170)
@@ -269,12 +271,15 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.scientific_tof_offset.setValue(float(self.obj.tof_offset))
         self.scientific_tof_slope.setValue(float(self.obj.tof_slope))
         self.scientific_angle_slope.setValue(float(self.obj.angle_slope))
-        self.scientific_angle_offset.setValue(float(self.obj.angle_offset))
+        if float(self.obj.angle_slope) != 0:
+            self.scientific_angle_offset.setValue(float(self.obj.angle_offset)/float(self.obj.angle_slope))
+
 
     def update_settings(self):
         """Update detector settings.
         """
         self.obj.set_settings(**self.get_properties())
+        self.obj.angle_offset = -self.scientific_angle_offset.value() * self.scientific_angle_slope.value()
         # Detector foils
         self.calculate_distance()
         self.obj.foils = self.tmp_foil_info
@@ -724,3 +729,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
 
     def detector_type_change(self, value):
         self.resolutionStack.setCurrentIndex(self.typeComboBox.currentIndex())
+
+    def set_calibrated_angles(self, slope, offset):
+        self.scientific_angle_slope.setValue(slope)
+        self.scientific_angle_offset.setValue(offset)
