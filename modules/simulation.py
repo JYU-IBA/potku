@@ -587,6 +587,9 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
         time_stamp = time.time()
         sim_config = ConfigManager()
         sim_config.set_simulation(self)
+        if simulation_file is not None:
+            sim_config.set_config_file(simulation_file)
+        # Handling for old .simulation files and default simulation.
         if self.path.name.split('.')[-1] != 'simulation':
             sim_config.set_config_file(self.path)
         sim_config.save()
