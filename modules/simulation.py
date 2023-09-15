@@ -644,7 +644,7 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             new_dir: Path to simulation folder with new name.
         """
         self.directory = new_dir
-        self.simulation_file = self.name + ".simulation"
+        self.simulation_file = self.name + ".mccfg"
 
         self.path = Path(self.directory, self.simulation_file)
         if self.detector:
