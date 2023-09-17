@@ -253,6 +253,20 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         else:
             self.__full_edit_on = True
 
+        # This save section is needed for creating new requests and the default files.
+        if save_on_creation and self.directory.parts[-1] == 'Default':
+            # Write .mcsimu file, recoil file and .profile file
+            self.to_file(Path(self.directory, f"{name}.mcsimu"))  # TL
+
+            for recoil_element in self.recoil_elements:
+                recoil_element.to_file(self.directory)
+
+            # print(f'type: {recoil_element.type}, sim_type: {self.simulation_type}')
+            # self.simulation_type = SimulationType.fromStr(recoil_element.get_simulation_type())
+            # print(f'sim_type: {self.simulation_type}')
+
+            self.profile_to_file(Path(self.directory, f"{prefix}.profile"))
+
     def unlock_edit(self):
         """Unlock full edit.
         """
