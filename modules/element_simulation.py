@@ -209,20 +209,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             else:
                 prefix = self.name_prefix
 
-        #if save_on_creation: -TL
-        if False:
-            # Write .mcsimu file, recoil file and .profile file
-            #self.to_file(Path(self.directory, f"{name}.mcsimu")) #TL
-
-            for recoil_element in self.recoil_elements:
-                recoil_element.to_file(self.directory)
-
-            #print(f'type: {recoil_element.type}, sim_type: {self.simulation_type}')
-            #self.simulation_type = SimulationType.fromStr(recoil_element.get_simulation_type())
-            #print(f'sim_type: {self.simulation_type}')
-
-            self.profile_to_file(Path(self.directory, f"{prefix}.profile"))
-
         # Collection of CancellationTokens
         self._cts: Set[CancellationToken] = set()
 
