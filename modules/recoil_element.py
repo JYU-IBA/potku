@@ -465,37 +465,41 @@ class RecoilElement(MCERDParameterContainer, Serializable):
             simulation_folder: Path to simulation folder in which ".rec" or
                                ".sct" files are stored.
         """
+        # This function remains to handle the old file formats of the default files of a request. Additionally, while
+        # the function should be called with only Path objects, occasionally there are strings, so they're converted.
+        if type(simulation_folder) is str:
+            simulation_folder = Path(simulation_folder)
+        if simulation_folder.parts[-1] == 'Default':
+            # TODO is it necessary to have the recoil type ('rec' or 'sct') in the
+            #  file extension? Currently Potku always has to delete the other types
+            #  of files when the simulation type is changed.
+            recoil_file_path = fp.get_recoil_file_path(self, simulation_folder)
 
-        # # TODO is it necessary to have the recoil type ('rec' or 'sct') in the
-        # #  file extension? Currently Potku always has to delete the other types
-        # #  of files when the simulation type is changed.
-        # recoil_file_path = fp.get_recoil_file_path(self, simulation_folder)
-        #
-        # timestamp = time.time()
-        #
-        # # Multiplier is saved to maintain backwards compatibility with old
-        # # save files
-        # obj = {
-        #     "name": self.name,
-        #     "description": self.description,
-        #     "modification_time": time.strftime("%c %z %Z", time.localtime(
-        #         timestamp)),
-        #     "modification_time_unix": timestamp,
-        #     "simulation_type": str(self.type).lower(),
-        #     "element":  self.element.get_prefix(),
-        #     "reference_density": self.reference_density,
-        #     "multiplier": 1,
-        #     "profile": [
-        #         {
-        #             "Point": str(point)
-        #         }
-        #         for point in self.get_points()
-        #     ],
-        #     "color": self.color
-        # }
-        #
-        # with recoil_file_path.open("w") as file:
-        #     json.dump(obj, file, indent=4)
+            timestamp = time.time()
+
+            # Multiplier is saved to maintain backwards compatibility with old
+            # save files
+            obj = {
+                "name": self.name,
+                "description": self.description,
+                "modification_time": time.strftime("%c %z %Z", time.localtime(
+                    timestamp)),
+                "modification_time_unix": timestamp,
+                "simulation_type": str(self.type).lower(),
+                "element":  self.element.get_prefix(),
+                "reference_density": self.reference_density,
+                "multiplier": 1,
+                "profile": [
+                    {
+                        "Point": str(point)
+                    }
+                    for point in self.get_points()
+                ],
+                "color": self.color
+            }
+
+            with recoil_file_path.open("w") as file:
+                json.dump(obj, file, indent=4)
 
     @classmethod
     def from_file(cls, file_path: Path, channel_width=None, rec_type=SimulationType.ERD) \
