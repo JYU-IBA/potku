@@ -672,7 +672,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 main_recoil = self.get_main_recoil().get_name()
                 recoils = [recoil.get_json_content() for recoil
                            in self.recoil_elements]
-        self.optimization_results_to_file()
+        if self.optimization_recoils is not None:
+            self.optimization_results_to_file()
 
         return {
             "name": self.get_full_name(),
