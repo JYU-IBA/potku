@@ -66,26 +66,32 @@ class TestRecoilElement(unittest.TestCase):
         rec_elem = RecoilElement(Element.from_string("16O"), [], name="")
         self.assertEqual("16O-Default", rec_elem.get_full_name())
 
-    def test_serialization(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            file_path = fp.get_recoil_file_path(self.rec_elem, tmp_dir)
-            self.rec_elem.to_file(tmp_dir)
-
-            rec_elem2 = RecoilElement.from_file(file_path,
-                                                channel_width=self.ch_width,
-                                                rec_type=self.rec_type)
-
-            self.compare_rec_elems(self.rec_elem, rec_elem2)
-
-            # Test with an empty list of points and no rec_type or ch_width
-            rec_elem3 = RecoilElement(Element.from_string("O"), [])
-            file_path = fp.get_recoil_file_path(rec_elem3, tmp_dir)
-            rec_elem3.to_file(tmp_dir)
-            rec_elem4 = RecoilElement.from_file(file_path)
-
-            self.compare_rec_elems(rec_elem3, rec_elem4)
-
-        self.assertFalse(os.path.exists(tmp_dir))
+    '''
+    This test is disabled for now as outdated. Recoil elements are serialized
+    as part of simulation's .mccfg files. The only time recoil elements are
+    serialized individually, are upon creating a new request as that is the only
+    context in which the old format is used. 
+    '''
+    # def test_serialization(self):
+    #     with tempfile.TemporaryDirectory() as tmp_dir:
+    #         file_path = fp.get_recoil_file_path(self.rec_elem, tmp_dir)
+    #         self.rec_elem.to_file(tmp_dir)
+    #
+    #         rec_elem2 = RecoilElement.from_file(file_path,
+    #                                             channel_width=self.ch_width,
+    #                                             rec_type=self.rec_type)
+    #
+    #         self.compare_rec_elems(self.rec_elem, rec_elem2)
+    #
+    #         # Test with an empty list of points and no rec_type or ch_width
+    #         rec_elem3 = RecoilElement(Element.from_string("O"), [])
+    #         file_path = fp.get_recoil_file_path(rec_elem3, tmp_dir)
+    #         rec_elem3.to_file(tmp_dir)
+    #         rec_elem4 = RecoilElement.from_file(file_path)
+    #
+    #         self.compare_rec_elems(rec_elem3, rec_elem4)
+    #
+    #     self.assertFalse(os.path.exists(tmp_dir))
 
     def compare_rec_elems(self, rec_elem1, rec_elem2):
         fst = dict(vars(rec_elem1))
