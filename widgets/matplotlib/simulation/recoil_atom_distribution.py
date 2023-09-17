@@ -839,25 +839,25 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             directory: Directory where to save to.
             progress: ProgressReporter.
         """
-        length = len(self.element_manager.element_simulations)
-        for i, element_simulation in enumerate(
-                self.element_manager.element_simulations):
-
-            element_simulation.to_file(
-                Path(directory, f"{element_simulation.get_full_name()}.mcsimu")
-            )
-            for recoil_element in element_simulation.recoil_elements:
-                recoil_element.to_file(directory)
-
-            element_simulation.profile_to_file(
-                Path(directory,
-                     f"{element_simulation.name_prefix}.profile"))
-
-            if progress is not None:
-                progress.report((i / length) * 100)
-
-        if progress is not None:
-            progress.report(100)
+    #    length = len(self.element_manager.element_simulations)
+    #    for i, element_simulation in enumerate(
+    #            self.element_manager.element_simulations):
+    #
+    #        element_simulation.to_file(
+    #            Path(directory, f"{element_simulation.get_full_name()}.mcsimu")
+    #        )
+    #        for recoil_element in element_simulation.recoil_elements:
+    #            recoil_element.to_file(directory)
+    #
+    #        element_simulation.profile_to_file(
+    #            Path(directory,
+    #                 f"{element_simulation.name_prefix}.profile"))
+    #
+    #        if progress is not None:
+    #            progress.report((i / length) * 100)
+    #
+    #    if progress is not None:
+    #        progress.report(100)
 
     def unlock_or_lock_edit(self):
         """Unlock or lock full edit.
