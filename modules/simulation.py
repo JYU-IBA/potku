@@ -599,8 +599,8 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             measurement_file: path to a .measurement_file
         """
 
-    #    if simulation_file is None:
-    #        simulation_file = self.path
+        if simulation_file is None:
+            simulation_file = self.path
     #
         time_stamp = time.time()
         sim_config = ConfigManager()
