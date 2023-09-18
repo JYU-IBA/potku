@@ -152,6 +152,12 @@ class Simulations:
                     # TODO need to check that element simulation can be added
                     simulation.element_simulations.append(
                         element_simulation)
+                    # Remove profile_files and mcsimu_files as they're not
+                    # needed after first initialization from them. This removal
+                    # also prevents issue with duplication of ElementSimulations.
+                    gf.remove_files(profile_file)
+
+                gf.remove_files(mcsimu_file)
 
         # Create a new simulation
         else:
