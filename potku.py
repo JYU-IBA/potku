@@ -794,7 +794,7 @@ class Potku(QtWidgets.QMainWindow):
             self.add_new_tab("simulation", Path(
                 self.request.directory, sample_item.obj.directory,
                 Simulation.DIRECTORY_PREFIX + "%02d" % serial_number + "-" +
-                dialog.name, f"{dialog.name}.simulation"), sample_item.obj,
+                dialog.name, f"{dialog.name}.mccfg"), sample_item.obj,
                              load_data=True,
                              progress=sbh.reporter.get_sub_reporter(
                                  lambda x: 0.9 * x
