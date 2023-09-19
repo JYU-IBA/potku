@@ -536,7 +536,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         if self.draw_legend:
             if not self.__initiated_box:
-                self.fig.tight_layout(pad=0.5)
                 box = self.axes.get_position()
                 self.axes.set_position([box.x0, box.y0,
                                         box.width * 0.9, box.height])
