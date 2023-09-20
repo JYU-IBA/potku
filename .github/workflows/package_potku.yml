@@ -13,11 +13,11 @@ jobs:
         shell: cmd
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
         with:
           submodules: recursive
       - name: Download old C artifact
-        uses: dawidd6/action-download-artifact@v2.27.0
+        uses: dawidd6/action-download-artifact@246dbf436b23d7c49e21a7ab8204ca9ecd1fe615 # v2.27.0
         with:
           name: c-apps-windows
           workflow: version_bump.yml
@@ -27,12 +27,12 @@ jobs:
           if_no_artifact_found: ignore
       - name: Check file existence
         id: check_files
-        uses: andstor/file-existence-action@v2
+        uses: andstor/file-existence-action@20b4d2e596410855db8f9ca21e96fbe18e12930b # v2
         with:
           files: "${{runner.workspace}}/potku/external/bin/mcerd.exe"
       - name: Download current C artifact
         if: steps.check_files.outputs.files_exists == 'false'
-        uses: dawidd6/action-download-artifact@v2.27.0
+        uses: dawidd6/action-download-artifact@246dbf436b23d7c49e21a7ab8204ca9ecd1fe615 # v2.27.0
         with:
           name: c-apps-windows
           workflow: version_bump.yml
@@ -41,7 +41,7 @@ jobs:
           search_artifacts: true
           workflow_conclusion: 'in_progress'
       - name: Set up Python 3.10
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1 # v4
         with:
           # Semantic version range syntax or exact version of a Python version
           python-version: '3.10'
@@ -60,14 +60,14 @@ jobs:
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
       - name: Create archive
-        uses: thedoctor0/zip-release@0.7.1
+        uses: thedoctor0/zip-release@a24011d8d445e4da5935a7e73c1f98e22a439464 # 0.7.1
         with:
           type: 'zip'
           filename: 'Potku-Windows.zip'
           directory: ${{runner.workspace}}/potku/dist
           path: potku
       - name: Archive Windows release
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
         with:
           name: Potku-Windows
           path: ${{runner.workspace}}/potku/dist/Potku-Windows.zip
@@ -77,11 +77,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
         with:
           submodules: recursive
       - name: Download old C artifact
-        uses: dawidd6/action-download-artifact@v2.27.0
+        uses: dawidd6/action-download-artifact@246dbf436b23d7c49e21a7ab8204ca9ecd1fe615 # v2.27.0
         with:
           name: c-apps-linux
           workflow: version_bump.yml
@@ -91,12 +91,12 @@ jobs:
           if_no_artifact_found: ignore
       - name: Check file existence
         id: check_files
-        uses: andstor/file-existence-action@v2
+        uses: andstor/file-existence-action@20b4d2e596410855db8f9ca21e96fbe18e12930b # v2
         with:
           files: "${{runner.workspace}}/potku/external/bin/mcerd"
       - name: Download current C artifact
         if: steps.check_files.outputs.files_exists == 'false'
-        uses: dawidd6/action-download-artifact@v2.27.0
+        uses: dawidd6/action-download-artifact@246dbf436b23d7c49e21a7ab8204ca9ecd1fe615 # v2.27.0
         with:
           name: c-apps-linux
           workflow: version_bump.yml
@@ -105,7 +105,7 @@ jobs:
           search_artifacts: true
           workflow_conclusion: 'in_progress'
       - name: Set up Python 3.10
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1 # v4
         with:
           # Semantic version range syntax or exact version of a Python version
           python-version: '3.10'
@@ -125,14 +125,14 @@ jobs:
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
       - name: Create archive
-        uses: thedoctor0/zip-release@0.7.1
+        uses: thedoctor0/zip-release@a24011d8d445e4da5935a7e73c1f98e22a439464 # 0.7.1
         with:
           type: 'zip'
           filename: 'Potku-Linux.zip'
           directory: ${{runner.workspace}}/potku/dist
           path: potku
       - name: Archive Linux release
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
         with:
           name: Potku-Linux
           path: ${{runner.workspace}}/potku/dist/Potku-Linux.zip
@@ -141,11 +141,11 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
         with:
           submodules: recursive
       - name: Download old C artifact
-        uses: dawidd6/action-download-artifact@v2.27.0
+        uses: dawidd6/action-download-artifact@246dbf436b23d7c49e21a7ab8204ca9ecd1fe615 # v2.27.0
         with:
           name: c-apps-macos
           workflow: version_bump.yml
@@ -155,12 +155,12 @@ jobs:
           if_no_artifact_found: ignore
       - name: Check file existence
         id: check_files
-        uses: andstor/file-existence-action@v2
+        uses: andstor/file-existence-action@20b4d2e596410855db8f9ca21e96fbe18e12930b # v2
         with:
           files: "${{runner.workspace}}/potku/external/bin/mcerd"
       - name: Download current C artifact
         if: steps.check_files.outputs.files_exists == 'false'
-        uses: dawidd6/action-download-artifact@v2.27.0
+        uses: dawidd6/action-download-artifact@246dbf436b23d7c49e21a7ab8204ca9ecd1fe615 # v2.27.0
         with:
           name: c-apps-macos
           workflow: version_bump.yml
@@ -169,7 +169,7 @@ jobs:
           search_artifacts: true
           workflow_conclusion: 'in_progress'
       - name: Set up Python 3.10
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1 # v4
         with:
           # Semantic version range syntax or exact version of a Python version
           python-version: '3.10'
@@ -189,14 +189,14 @@ jobs:
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
       - name: Create archive
-        uses: thedoctor0/zip-release@0.7.1
+        uses: thedoctor0/zip-release@a24011d8d445e4da5935a7e73c1f98e22a439464 # 0.7.1
         with:
           type: 'zip'
           filename: 'Potku-macOS.zip'
           directory: ${{runner.workspace}}/potku/dist
           path: potku
       - name: Archive macOS release
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
         with:
           name: Potku-macOS
           path: ${{runner.workspace}}/potku/dist/Potku-macOS.zip
@@ -206,7 +206,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
       - name: Read version file
         id: get_content
         run: |
@@ -224,7 +224,7 @@ jobs:
         run: |
           mkdir -p ${{runner.workspace}}/potku/artifact
       - name: Download Windows release artifact
-        uses: dawidd6/action-download-artifact@v2.27.0
+        uses: dawidd6/action-download-artifact@246dbf436b23d7c49e21a7ab8204ca9ecd1fe615 # v2.27.0
         with:
           name: Potku-Windows
           workflow: version_bump.yml
@@ -233,7 +233,7 @@ jobs:
           skip_unpack: true
           workflow_conclusion: 'in_progress'
       - name: Download Linux release artifact
-        uses: dawidd6/action-download-artifact@v2.27.0
+        uses: dawidd6/action-download-artifact@246dbf436b23d7c49e21a7ab8204ca9ecd1fe615 # v2.27.0
         with:
           name: Potku-Linux
           workflow: version_bump.yml
@@ -242,7 +242,7 @@ jobs:
           skip_unpack: true
           workflow_conclusion: 'in_progress'
       - name: Download macOS release artifact
-        uses: dawidd6/action-download-artifact@v2.27.0
+        uses: dawidd6/action-download-artifact@246dbf436b23d7c49e21a7ab8204ca9ecd1fe615 # v2.27.0
         with:
           name: Potku-macOS
           workflow: version_bump.yml
@@ -252,7 +252,7 @@ jobs:
           workflow_conclusion: 'in_progress'
       - name: Create prerelease
         if: steps.pre_release.outputs.pre_release == 'true'
-        uses: marvinpinto/action-automatic-releases@v1.2.1
+        uses: marvinpinto/action-automatic-releases@919008cf3f741b179569b7a6fb4d8860689ab7f0 # v1.2.1
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: ${{ steps.get_content.outputs.version }}
@@ -265,7 +265,7 @@ jobs:
             ${{runner.workspace}}/potku/artifact/Potku-macOS.zip
       - name: Create release
         if: steps.pre_release.outputs.pre_release == 'false'
-        uses: marvinpinto/action-automatic-releases@v1.2.1
+        uses: marvinpinto/action-automatic-releases@919008cf3f741b179569b7a6fb4d8860689ab7f0 # v1.2.1
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: ${{ steps.get_content.outputs.version }}
