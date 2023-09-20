@@ -457,8 +457,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.elementSelectionSelectButton.setCheckable(True)
         self.elementSelectionSelectButton.setEnabled(False)
         self.__icon_manager.set_icon(self.elementSelectionSelectButton,
-                                     "selectcursor.png")
-        self.elementSelectionSelectButton.setToolTip("Select element selection")
+                                     "editnode.png")
+        self.elementSelectionSelectButton.setToolTip("Edit nodes")
         self.mpl_toolbar.addWidget(self.elementSelectionSelectButton)
 
         # Selection delete button
