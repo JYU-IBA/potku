@@ -120,7 +120,7 @@ def get_efficiency_text_cuts(cuts: Iterable[Path], detector: Detector) -> str:
 
     if eff_files_used:
         eff_file_txt = "\t\n".join(str(f) for f in eff_files_used)
-        return f"Efficiency files used:\t\n{eff_file_txt}"
+        return f"Efficiency files found:\t\n{eff_file_txt}"
 
     return "No efficiency files."
 

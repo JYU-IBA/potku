@@ -106,6 +106,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.used_eff_str = used_eff_str
         self.eff_text = None
 
+        self.used_eff_file = parent.output_dir / 'used_eff_files.txt'
+
         # Set default filename for saving figure
         default_filename = "Depth_profile_" + parent.measurement.name
         self.canvas.get_default_filename = lambda: default_filename
@@ -313,7 +315,11 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         # If "Show used efficiency files" is checked and text-object is not
         # yet created.
         if self._show_eff_files and self.eff_text is None:
-            eff_str = self.used_eff_str.replace("\t", "")
+            try:
+                with open(self.used_eff_file, 'r') as f:
+                    eff_str = f.read()
+            except:
+                eff_str = self.used_eff_str.replace("\t", "")
 
             # Set position of text according to amount of lines in the string
             line_count = eff_str.count("\n") + 1
