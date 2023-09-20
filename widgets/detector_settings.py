@@ -69,7 +69,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
     description = bnd.bind("descriptionLineEdit")
     detector_type = bnd.bind("typeComboBox", track_change=False) # True
     angle_slope = bnd.bind("scientific_angle_slope", track_change=True)
-    angle_offset = None
+    angle_offset = bnd.bind("scientific_angle_offset", track_change=True)
     tof_slope = bnd.bind("scientific_tof_slope", track_change=True)
     tof_offset = bnd.bind("scientific_tof_offset", track_change=True)
     timeres = bnd.bind("timeResSpinBox", track_change=False) # True

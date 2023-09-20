@@ -209,20 +209,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             else:
                 prefix = self.name_prefix
 
-        #if save_on_creation: -TL
-        if False:
-            # Write .mcsimu file, recoil file and .profile file
-            #self.to_file(Path(self.directory, f"{name}.mcsimu")) #TL
-
-            for recoil_element in self.recoil_elements:
-                recoil_element.to_file(self.directory)
-
-            #print(f'type: {recoil_element.type}, sim_type: {self.simulation_type}')
-            #self.simulation_type = SimulationType.fromStr(recoil_element.get_simulation_type())
-            #print(f'sim_type: {self.simulation_type}')
-
-            self.profile_to_file(Path(self.directory, f"{prefix}.profile"))
-
         # Collection of CancellationTokens
         self._cts: Set[CancellationToken] = set()
 
@@ -252,6 +238,20 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             self.__full_edit_on = False
         else:
             self.__full_edit_on = True
+
+        # This save section is needed for creating new requests and the default files.
+        if save_on_creation and self.directory.parts[-1] == 'Default':
+            # Write .mcsimu file, recoil file and .profile file
+            self.to_file(Path(self.directory, f"{name}.mcsimu"))  # TL
+
+            for recoil_element in self.recoil_elements:
+                recoil_element.to_file(self.directory)
+
+            # print(f'type: {recoil_element.type}, sim_type: {self.simulation_type}')
+            # self.simulation_type = SimulationType.fromStr(recoil_element.get_simulation_type())
+            # print(f'sim_type: {self.simulation_type}')
+
+            self.profile_to_file(Path(self.directory, f"{prefix}.profile"))
 
     def unlock_edit(self):
         """Unlock full edit.
@@ -475,6 +475,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             in sorted(optimized_recoils_dict.items())
         ]
 
+        if "optimization_recoils" in mcsimu:
+            optimized_recoils = mcsimu.pop("optimization_recoils")
+
         # Check if fluence has been optimized
         optimized_fluence = None
         for file in files[".result"]:
@@ -483,6 +486,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                     optimized_fluence = float(f.readline())
                 break
 
+        if "optimized_fluence" in mcsimu:
+            optimized_fluence = mcsimu.pop("optimized_fluence")
 
         return cls(
             directory=simulation_folder, request=request,
@@ -610,6 +615,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             in sorted(optimized_recoils_dict.items())
         ]
 
+        if "optimization_recoils" in mcsimu:
+            optimized_recoils = mcsimu.pop("optimization_recoils")
+
         # Check if fluence has been optimized
         optimized_fluence = None
         for file in files[".result"]:
@@ -617,6 +625,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 with file.open("r") as f:
                     optimized_fluence = float(f.readline())
                 break
+
+        if "optimized_fluence" in mcsimu:
+            optimized_fluence = mcsimu.pop("optimized_fluence")
 
         #No save_on_creation -TL
         return cls(
@@ -667,12 +678,17 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         timestamp = time.time()
         main_recoil = None
         recoils = None
+        optimization_recoils = None
+        optimized_fluence = None
         if self.directory is not None:
             if self.directory.parts[-1] != 'Default':
                 main_recoil = self.get_main_recoil().get_name()
                 recoils = [recoil.get_json_content() for recoil
                            in self.recoil_elements]
-        self.optimization_results_to_file()
+        if self.optimization_recoils is not None:
+            optimization_recoils = [opt_rec for opt_rec in self.optimization_recoils]
+        if self.optimized_fluence is not None:
+            optimized_fluence = self.optimized_fluence
 
         return {
             "name": self.get_full_name(),
@@ -693,7 +709,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             "minimum_energy": self.minimum_energy,
             "use_default_settings": str(self.use_default_settings),
             "main_recoil": main_recoil,
-            "recoils": recoils
+            "recoils": recoils,
+            "optimization_recoils": optimization_recoils,
+            "optimized_fluence": optimized_fluence
         }
 
 

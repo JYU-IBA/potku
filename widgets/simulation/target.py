@@ -234,6 +234,8 @@ class TargetWidget(QtWidgets.QWidget):
         self.recoil_distribution_widget.save_mcsimu_rec_profile(
             self.simulation.directory, progress=sub_reporter)
 
+        self.simulation.to_file()
+
         if reporter is not None:
             reporter.report(100)
 

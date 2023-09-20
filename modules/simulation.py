@@ -152,6 +152,12 @@ class Simulations:
                     # TODO need to check that element simulation can be added
                     simulation.element_simulations.append(
                         element_simulation)
+                    # Remove profile_files and mcsimu_files as they're not
+                    # needed after first initialization from them. This removal
+                    # also prevents issue with duplication of ElementSimulations.
+                    gf.remove_files(profile_file)
+
+                gf.remove_files(mcsimu_file)
 
         # Create a new simulation
         else:
@@ -253,29 +259,30 @@ class Simulations:
                     len(directory_prefix):len(directory_prefix) + 2])
             simulation.serial_number = serial_number
             simulation.tab_id = tab_id
-
-            for mcsimu in simu_obj['element_simulations']:
-                element_str_with_name = mcsimu['name']
-
-                prefix, name = element_str_with_name.split("-")
-
-                try:
-                    profile_file = next(
-                        p for p in profile_files if p.name.startswith(prefix)
-                    )
-                except StopIteration:
-                    profile_file = None
-
-                if profile_file is not None:
-                    # Create ElementSimulation from files
-                    element_simulation = ElementSimulation.from_json(
-                        self.request, prefix, simulation_folder,
-                        mcsimu, profile_file, simulation=simulation
-                    )
-                    # TODO need to check that element simulation can be added
-                    simulation.element_simulations.append(
-                        element_simulation)
-
+            # The initialization of ElementSimulation objects for Simulations
+            # is handled in Simulation class init. Old code here is commented
+            # out.
+            # for mcsimu in simu_obj['element_simulations']:
+            #    element_str_with_name = mcsimu['name']
+            #
+            #    prefix, name = element_str_with_name.split("-")
+            #
+            #    try:
+            #        profile_file = next(
+            #            p for p in profile_files if p.name.startswith(prefix)
+            #        )
+            #    except StopIteration:
+            #        profile_file = None
+            #
+            #    if profile_file is not None:
+            #        # Create ElementSimulation from files
+            #        element_simulation = ElementSimulation.from_json(
+            #            self.request, prefix, simulation_folder,
+            #            mcsimu, profile_file, simulation=simulation
+            #        )
+            #        # TODO need to check that element simulation can be added
+            #        simulation.element_simulations.append(
+            #            element_simulation)
         # Create a new simulation
         else:
             # Not stripping the extension
@@ -377,6 +384,17 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             measurement_setting_file_description
 
         self.element_simulations: List[ElementSimulation] = []
+        # ElementSimulations are initialized here if the argument is given.
+        if element_simulations is not None:
+            for element_simulation in element_simulations:
+                prefix = element_simulation['name'].split('-')[0]
+                elem_sim = ElementSimulation.from_json(self.request,
+                                                       prefix,
+                                                       self.directory,
+                                                       element_simulation,
+                                                       None,
+                                                       self)
+                self.element_simulations.append(elem_sim)
 
         self.use_request_settings = use_request_settings
 
@@ -581,12 +599,15 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             measurement_file: path to a .measurement_file
         """
 
-    #    if simulation_file is None:
-    #        simulation_file = self.path
+        if simulation_file is None:
+            simulation_file = self.path
     #
         time_stamp = time.time()
         sim_config = ConfigManager()
         sim_config.set_simulation(self)
+        if simulation_file is not None:
+            sim_config.set_config_file(simulation_file)
+        # Handling for old .simulation files and default simulation.
         if self.path.name.split('.')[-1] != 'simulation':
             sim_config.set_config_file(self.path)
         sim_config.save()
@@ -644,7 +665,7 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             new_dir: Path to simulation folder with new name.
         """
         self.directory = new_dir
-        self.simulation_file = self.name + ".simulation"
+        self.simulation_file = self.name + ".mccfg"
 
         self.path = Path(self.directory, self.simulation_file)
         if self.detector:

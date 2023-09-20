@@ -213,7 +213,7 @@ class SimulationSettingsWidget(QtWidgets.QWidget, PropertyTrackingWidget,
                 #     os.remove(path_to_rec)
                 # except OSError:
                 #     pass
-                recoil.to_file(self.element_simulation.directory)
+                # recoil.to_file(self.element_simulation.directory)
 
         self.element_simulation.set_settings(**params)
         self.settings_updated.emit()
