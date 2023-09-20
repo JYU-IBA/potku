@@ -15,7 +15,7 @@ jobs:
         run: |
           mkdir -p ${{runner.workspace}}/artifact
       - name: Download C artifact
-        uses: dawidd6/action-download-artifact@v2.27.0
+        uses: dawidd6/action-download-artifact@246dbf436b23d7c49e21a7ab8204ca9ecd1fe615 # v2.27.0
         with:
           name: c-apps-windows
           workflow: version_bump.yml
@@ -32,7 +32,7 @@ jobs:
             echo "artifact_exists=false" >> $GITHUB_OUTPUT
           fi
       - name: Checkout master
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
         with:
           ref: master
           fetch-depth: 0
@@ -65,12 +65,12 @@ jobs:
         shell: cmd
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
       with:
         submodules: recursive
         path: repo
     - name: vcpkg build
-      uses: johnwason/vcpkg-action@v5
+      uses: johnwason/vcpkg-action@3839b028ca2400865ef5e83a899f336b1b8fd711 # v5
       id: vcpkg
       with:
         pkgs: gsl getopt
@@ -86,7 +86,7 @@ jobs:
         cd ${{runner.workspace}}\potku\repo\dev
         build.bat ${{ runner.workspace }}\potku\vcpkg\scripts\buildsystems\vcpkg.cmake
     - name: Archive windows executables
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
       with:
         name: c-apps-windows
         path: ${{runner.workspace}}\potku\repo\external\bin
@@ -99,7 +99,7 @@ jobs:
       needs.check_artifacts.outputs.ext_changed == 'true'
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
       with:
         submodules: recursive
     - name: Build linux executables
@@ -108,7 +108,7 @@ jobs:
         cd ${{runner.workspace}}/potku/dev
         ./build.sh
     - name: Archive linux executables
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
       with:
         name: c-apps-linux
         path: |
@@ -123,7 +123,7 @@ jobs:
       needs.check_artifacts.outputs.ext_changed == 'true'
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
       with:
         submodules: recursive
     - name: Build MacOS executables
@@ -133,7 +133,7 @@ jobs:
         cd ${{runner.workspace}}/potku/dev
         ./build.sh
     - name: Archive macos executables
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
       with:
         name: c-apps-macos
         path: |
