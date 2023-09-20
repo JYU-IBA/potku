@@ -108,7 +108,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self._lined = {}
         self.__point_selected = None
         self.__point_undo = None
-        self.__point_select_distance = 5 # Selection distance
+        self.__point_select_distance = 10 # Selection distance
 
         self.clipboard = QGuiApplication.clipboard()
 
