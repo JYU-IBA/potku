@@ -914,6 +914,43 @@ class Measurement(MeasurementLogger, Serializable):
         log_msg = f"Saving finished in {time.time() - starttime} seconds."
         self.log(log_msg)
 
+    def save_single_cut(self, selection, progress=None):
+        """Save cut files
+
+        Saves data points within selections into cut files.
+        """
+        if self.selector.is_empty():
+            # Remove .selections file
+            selection_file = self.get_data_dir() / f"{self.name}.selections"
+            gf.remove_files(selection_file)
+            return 0
+
+        self.__make_directories(self.get_cuts_dir())
+
+        starttime = time.time()
+
+        points_in_selection = selection.fast_points_inside(self.data)
+
+        self.selector.update_selection_beams()
+        self.selector.auto_save()
+
+        # Save all found data points into appropriate element cut files
+        # Firstly clear old cut files so those won't be accidentally
+        # left there.
+        if progress is not None:
+            progress.report(80)
+
+        if points_in_selection:  # If not empty selection -> save
+            cut_file = CutFile(self.get_cuts_dir())
+            cut_file.set_info(selection, points_in_selection)
+            cut_file.save()
+
+        if progress is not None:
+            progress.report(100)
+
+        log_msg = f"Saving single cut finished in {time.time() - starttime} seconds."
+        self.log(log_msg)
+
     def __remove_old_cut_files(self):
         """Remove old cut files.
         """

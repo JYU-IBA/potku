@@ -108,7 +108,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self._lined = {}
         self.__point_selected = None
         self.__point_undo = None
-        self.__point_select_distance = 5 # Selection distance
+        self.__point_select_distance = 10 # Selection distance
 
         self.clipboard = QGuiApplication.clipboard()
 
@@ -394,11 +394,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.mpl_toolbar.mode_tool = 1
         else:
             self.mpl_toolbar.mode_tool = 0
-            # self.elementSelectionButton.setChecked(False)
-        # self.elementSelectUndoButton.setEnabled(False)
-        #self.elementSelectionSelectButton.setChecked(False)
-        # self.measurement.purge_selection()
-        # self.measurement.reset_select()
+
         self.canvas.draw_idle()
 
     def __toggle_tool_zoom(self):
@@ -406,11 +402,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.mpl_toolbar.mode_tool = 2
         else:
             self.mpl_toolbar.mode_tool = 0
-            # self.elementSelectionButton.setChecked(False)
-        # self.elementSelectUndoButton.setEnabled(False)
-        # self.elementSelectionSelectButton.setChecked(False)
-        # self.measurement.purge_selection()
-        # self.measurement.reset_select()
+
         self.canvas.draw_idle()
 
     def __toggle_drag_zoom(self):
@@ -450,16 +442,16 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.mpl_toolbar.addWidget(self.elementSelectUndoButton)
         self.mpl_toolbar.addSeparator()
 
-        # Element Selection selecting tool
-        self.elementSelectionSelectButton = QtWidgets.QToolButton(self)
-        self.elementSelectionSelectButton.clicked.connect(
-            self.enable_selection_select)
-        self.elementSelectionSelectButton.setCheckable(True)
-        self.elementSelectionSelectButton.setEnabled(False)
-        self.__icon_manager.set_icon(self.elementSelectionSelectButton,
-                                     "selectcursor.png")
-        self.elementSelectionSelectButton.setToolTip("Select element selection")
-        self.mpl_toolbar.addWidget(self.elementSelectionSelectButton)
+        # Element Selection edit tool
+        self.elementSelectionEditButton = QtWidgets.QToolButton(self)
+        self.elementSelectionEditButton.clicked.connect(
+            self.enable_selection_edit)
+        self.elementSelectionEditButton.setCheckable(True)
+        self.elementSelectionEditButton.setEnabled(False)
+        self.__icon_manager.set_icon(self.elementSelectionEditButton,
+                                     "editnode.png")
+        self.elementSelectionEditButton.setToolTip("Edit nodes")
+        self.mpl_toolbar.addWidget(self.elementSelectionEditButton)
 
         # Selection delete button
         self.elementSelectDeleteButton = QtWidgets.QToolButton(self)
@@ -525,17 +517,16 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         #    for item in self.mpl_toolbar._positions:
         #        print("\t{0}".format(item))
         if event.button == 1:  # Left click
-            if not (self.elementSelectionButton.isChecked() or self.elementSelectionSelectButton.isChecked()):
-                #self.click_check(cursor_location)
+            if not (self.elementSelectionButton.isChecked() or self.elementSelectionEditButton.isChecked()):
                 if self.measurement.selection_select(cursor_location) == 1:
                     # self.elementSelectDeleteButton.setChecked(True)
                     self.elementSelectDeleteButton.setEnabled(True)
-                    self.elementSelectionSelectButton.setEnabled(True)
+                    self.elementSelectionEditButton.setEnabled(True)
                     self.elementSelectionButton.setEnabled(False)
                 else:
                     self.measurement.selector.reset_select()
                     self.elementSelectDeleteButton.setEnabled(False)
-                    self.elementSelectionSelectButton.setEnabled(False)
+                    self.elementSelectionEditButton.setEnabled(False)
                     self.elementSelectionButton.setEnabled(True)
                 self.canvas.draw_idle()
                 self.__on_draw_legend()
@@ -546,16 +537,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                     self.__on_draw_legend()
                     self.__emit_selections_changed()
                 self.canvas.draw_idle()  # Draw selection points
-            if self.elementSelectionSelectButton.isChecked() and self.measurement.selector.selected_id:
-                # self.cur_selection = self.measurement.selector.get_selected()
-                # self.cur_points = self.cur_selection.get_points()
-                # if self.cur_points[0] != self.cur_points[-1]:
-                #     self.cur_points.append(self.cur_points[0])
-                # # calculates midpoints from points
-                # self.cur_mid_points = [[(x[0]+y[0])/2, (x[1]+y[1])/2] for x, y in list(zip(self.cur_points, self.cur_points[1:]))]
-                # sc_x, sc_y = list(zip(*self.cur_mid_points))
-                # self.mid_point_elems = self.axes.plot(sc_x, sc_y, 's', color='blue')
-                # closest = None
+            if self.elementSelectionEditButton.isChecked() and self.measurement.selector.selected_id:
 
                 for i in range(len(self.cur_points)):
                     xdisplay, ydisplay = self.axes.transData.transform(self.cur_points[i])
@@ -596,13 +578,13 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             # If selection is enabled
             if self.elementSelectionButton.isChecked():
                 if self.measurement.end_open_selection(self.canvas):
-                    self.elementSelectionSelectButton.setEnabled(True)
+                    self.elementSelectionEditButton.setEnabled(True)
                     self.canvas.draw_idle()
                     self.__on_draw_legend()
                     self.__emit_selections_changed()
                 return  # We don't want menu to be shown also
 
-            if self.elementSelectionSelectButton.isChecked() and self.measurement.selector.selected_id:
+            if self.elementSelectionEditButton.isChecked() and self.measurement.selector.selected_id:
                 self.cur_points = self.cur_selection.get_points()
                 if self.cur_points[0] != self.cur_points[-1]:
                     self.cur_points.append(self.cur_points[0])
@@ -614,7 +596,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                         self.__point_selected = i
                         break
                 if (self.__point_selected != None):
-                    if len(self.cur_points) > 4:
+                    if len(self.cur_points) > self.__point_select_distance:
                         del self.cur_points[i]
                         self.cur_points[-1] = self.cur_points[0]
 
@@ -631,6 +613,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.__context_menu(event, cursor_location)
             self.canvas.draw_idle()
             self.__on_draw_legend()
+
+        self.update_event_count()
+
 
     def on_release(self, event):
         if (event.button == 1) and (self.__point_selected != None):
@@ -747,7 +732,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.elementSelectionButton.isChecked())
         if self.elementSelectionButton.isChecked():  # if button is enabled
             # One cannot choose selection while selecting
-            self.elementSelectionSelectButton.setChecked(False)
+            self.elementSelectionEditButton.setChecked(False)
             self.__toggle_drag_zoom()
             self.mpl_toolbar.mode_tool = 3
             str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
@@ -763,10 +748,10 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.canvas.draw_idle()
             self.__on_draw_legend()
 
-    def enable_selection_select(self):
+    def enable_selection_edit(self):
         """Enable selection selecting tool.
         """
-        if self.elementSelectionSelectButton.isChecked():
+        if self.elementSelectionEditButton.isChecked():
             self.measurement.purge_selection()
             self.canvas.draw_idle()
             # One cannot make new selection while choosing selection
@@ -780,6 +765,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             if self.measurement.selector.selected_id:
                 self.cur_selection = self.measurement.selector.get_selected()
                 self.cur_points = self.cur_selection.get_points()
+                self.start_points = self.cur_points
                 if self.cur_points[0] != self.cur_points[-1]:
                     self.cur_points.append(self.cur_points[0])
                 # calculates midpoints from points
@@ -790,9 +776,16 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 x,y = list(zip(*self.cur_points))
                 self.end_point_elems, = self.axes.plot(x, y, marker = '$\\bigodot$', color='red', markersize = 10, alpha=0.5)
         else:
+
+            self.cur_points=[[int(x), int(y)] for x,y in self.cur_points]
+
+            if (self.cur_points != self.start_points):
+                sbh = StatusBarHandler(self.statusbar)
+                self.measurement.save_single_cut(self.cur_selection, progress=sbh.reporter)
+
             self.elementSelectDeleteButton.setEnabled(False)
             self.elementSelectionButton.setEnabled(True)
-            self.elementSelectionSelectButton.setEnabled(False)
+            self.elementSelectionEditButton.setEnabled(False)
             self.measurement.selector.auto_save()
             self.__tool_label.setText("")
             self.mpl_toolbar.mode_tool = 0
@@ -803,6 +796,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.mid_point_elems = None
             self.end_point_elems = None
             self.measurement.reset_select()
+            self.update_event_count()
             self.__on_draw_legend()
             self.canvas.draw_idle()
 
@@ -879,7 +873,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 self.parent.tab.del_widget(comp_widget)
 
         self.elementSelectDeleteButton.setEnabled(False)
-        self.elementSelectionSelectButton.setEnabled(False)
+        self.elementSelectionEditButton.setEnabled(False)
         self.elementSelectionButton.setEnabled(True)
         self.__on_draw_legend()
         self.canvas.draw_idle()
@@ -983,14 +977,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             return
 
         if (self.__point_selected != None) and (event.button == 1):
-            #cur_selection = self.measurement.selector.get_selected()
-            #cur_points = cur_selection.get_points()
             x,y = zip(*self.cur_points)
             x, y = list(x), list(y)
-            for coords in zip(x,y):
-                print(coords)
-            for coords in self.cur_points:
-                print(coords)
+
             x[self.__point_selected], y[self.__point_selected] = int(event.xdata), int(event.ydata)
             if (self.__point_selected == 0):
                 x[-1] = x[0]
@@ -1010,13 +999,13 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         in_selection = False
         points = 0
         point = [int(event.xdata), int(event.ydata)]
-        if self.measurement.selector.axes_limits.is_inside(point):
-            for selection in self.measurement.selector.selections:
-                if selection.point_inside(point):
-                    points = selection.get_event_count()
-                    in_selection = True
-                    element = selection.element
-                    break
+        #if self.measurement.selector.axes_limits.is_inside(point):
+        for selection in self.measurement.selector.selections:
+            if selection.point_inside(point):
+                points = selection.get_event_count()
+                in_selection = True
+                element = selection.element
+                break
         if in_selection:
             points_text = str(element) + ", points in selection: {0}".format(points)
             if self.mpl_toolbar.mode_tool:
@@ -1030,7 +1019,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 self.mpl_toolbar.mode = self.tool_modes[
                     self.mpl_toolbar.mode_tool]
             else:
-                self.mpl_toolbar.mode = ""
+                self.mpl_toolbar.mode = "test"
 
     def sc_comp_inc(self, mode):
         """Shortcut to increase compression factor.
@@ -1060,15 +1049,16 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     def _on_pick(self,event):
         """When legend item is picked select and highlight selection
         """
-        if not (self.elementSelectionButton.isChecked() or self.elementSelectionSelectButton.isChecked()):
+        if not (self.elementSelectionButton.isChecked() or self.elementSelectionEditButton.isChecked()):
             for i, sel in enumerate(self.measurement.selector.selections):
                 if(sel.points == self._lined[event.artist]):
                     self.measurement.selector.reset_select()
                     self.measurement.selector.selected_id = i
                     self.measurement.selector.grey_out_except(i)
                     self.elementSelectDeleteButton.setEnabled(True)
-                    self.elementSelectionSelectButton.setEnabled(True)
+                    self.elementSelectionEditButton.setEnabled(True)
                     self.elementSelectionButton.setEnabled(False)
+                    self.update_event_count()
                     break
             self.canvas.draw_idle()
             self.__on_draw_legend()
@@ -1086,18 +1076,18 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 clipText = clipText + f"Potku_selection:{selection.save_string(transposed)}\n"
             self.clipboard.setText(clipText.strip("\n"))
 
-#    def copy_all_selections(self):
-#        clipText = ""
-#        for selection in self.measurement.selector.selections:
-#            transposed = self.measurement.selector.is_transposed
-#            clipText = clipText + f"Potku_selection:{selection.save_string(transposed)}\n"
-#        self.clipboard.setText(clipText.strip("\n"))
-
     def paste_selection(self):
         for string_data in self.clipboard.text().split("\n"):
             if string_data.split(":")[0] == "Potku_selection":
                 self.measurement.selector.selection_from_string(string_data.split(":")[1])
+                self.measurement.save_single_cut(self.measurement.selector.selections[-1])
         self.measurement.selector.auto_save()
         self.__on_draw_legend()
         self.on_draw()
         self.__emit_selections_changed()
+
+    def update_event_count(self):
+        titleText = self.parent.titleText
+        if self.measurement.selector.get_selected() != None:
+            titleText = titleText + f", Events in selection: {self.measurement.selector.get_selected().event_count}"
+        self.parent.setWindowTitle(titleText)
