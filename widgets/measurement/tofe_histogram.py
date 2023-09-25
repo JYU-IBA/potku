@@ -55,6 +55,7 @@ class TofeHistogramWidget(QtWidgets.QWidget):
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_histogram_widget.ui", self)
 
+        self.titleText = "ToF-E Histogram"
         self.measurement = measurement
         self.tab = tab
         self.statusbar = statusbar
@@ -72,7 +73,8 @@ class TofeHistogramWidget(QtWidgets.QWidget):
         self.set_cut_button_enabled(measurement.selector.selections)
 
         count = len(self.measurement.data)
-        self.setWindowTitle(f"ToF-E Histogram - Event count: {count}")
+        self.titleText = f"ToF-E Histogram - Event count: {count}"
+        self.setWindowTitle(self.titleText)
 
     def set_cut_button_enabled(self, selections=None):
         """Enables save cuts button if the given selections list's length is
