@@ -57,7 +57,7 @@ jobs:
             exit /b 1
           )
           cd ${{runner.workspace}}/potku
-          pipenv run pip install pyinstaller
+          pipenv run pip install pyinstaller==5.13.2
           pipenv run pyinstaller potku.spec
       - name: Create archive
         uses: thedoctor0/zip-release@a24011d8d445e4da5935a7e73c1f98e22a439464 # 0.7.1
@@ -122,7 +122,7 @@ jobs:
             exit 1
           fi
           cd ${{runner.workspace}}/potku
-          pipenv run pip install pyinstaller
+          pipenv run pip install pyinstaller==5.13.2
           pipenv run pyinstaller potku.spec
       - name: Create archive
         uses: thedoctor0/zip-release@a24011d8d445e4da5935a7e73c1f98e22a439464 # 0.7.1
@@ -186,7 +186,7 @@ jobs:
             exit 1
           fi
           cd ${{runner.workspace}}/potku
-          pipenv run pip install pyinstaller
+          pipenv run pip install pyinstaller==5.13.2
           pipenv run pyinstaller potku.spec
       - name: Create archive
         uses: thedoctor0/zip-release@a24011d8d445e4da5935a7e73c1f98e22a439464 # 0.7.1

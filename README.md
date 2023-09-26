@@ -164,7 +164,7 @@ For quick deployment, run these commands in the root directory:
 ````
 $ pipenv install (if the virtual environment has not already been created)
 $ pipenv shell
-$ pip install pyinstaller
+$ pip install pyinstaller==5.13.2
 $ pyinstaller potku.spec
 ````
 This creates a `dist/potku` folder which contains the executable and all 
