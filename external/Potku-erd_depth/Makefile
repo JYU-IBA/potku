@@ -11,8 +11,8 @@ CFLAGS += -I$(INCDIR) -DDATAPATH=$(DATADIR)
 # CFLAGS= -Wall -O2 -fomit-frame-pointer
 # CFLAGS= -O6 -mcpu=pentiumpro -funroll-loops -ffast-math -malign-double -fomit-frame-pointer
 
-LIB= -lm
-LIB+= -lgsto
+LIB= -lgsto
+LIB+= -lm
 
 LDFLAGS = -g -L$(LIBDIR)
 

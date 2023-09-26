@@ -10,8 +10,8 @@ CFLAGS  = -g -Wall -Wmissing-prototypes # -DDEBUG
 #CFLAGS += -I$(INCDIR) -DDATAPATH=$(DATADIR) -DDEBUG
 CFLAGS += -I$(INCDIR) -DDATAPATH=$(DATADIR) -DDEBUG
 
-LIB= -lm
-LIB += -lgsto
+LIB= -lgsto
+LIB+= -lm
 
 #LDFLAGS=-g -L${PWD}/$(LIBDIR)
 LDFLAGS=-g -L$(LIBDIR)
