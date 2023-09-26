@@ -6,7 +6,7 @@ system = platform.system()
 
 if system == "Darwin":
     ADD_TK_AND_TCL = False
-    extras = [("external/lib/*.dylib", ".")]
+    extras = [("external/lib/*.dylib", "."), ("README_macOS.txt", "./") ]
     icon = "ui_icons/potku/potku_logo_icons/potku_logo_icon.icns"
     console = False
 
