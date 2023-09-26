@@ -28,7 +28,7 @@ clean:
 
 depend .depend:
 	$(CC) -I$(INCDIR) -MM *.c > .depend
-include .depend
+    include .depend
 
 install:
 	install -d $(INSTALLDIR) 
