@@ -553,7 +553,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                         self.cur_points.insert(i+1, self.cur_mid_points[i])
                         self.cur_selection.points.set_data(zip(*self.cur_points))
                         self.end_point_elems.set_data(zip(*self.cur_points))
-                        self.cur_mid_points = [[(x[0] + y[0]) / 2, (x[1] + y[1]) / 2] for x, y in
+                        self.cur_mid_points = [[int((x[0] + y[0]) / 2), int((x[1] + y[1]) / 2)] for x, y in
                                                list(zip(self.cur_points, self.cur_points[1:]))]
                         sc_x, sc_y = list(zip(*self.cur_mid_points))
                         self.mid_point_elems.set_data(sc_x, sc_y)
@@ -601,7 +601,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                         self.cur_points[-1] = self.cur_points[0]
 
                     self.cur_selection.points.set_data(zip(*self.cur_points))
-                    self.cur_mid_points = [[(x[0]+y[0])/2, (x[1]+y[1])/2] for x, y in list(zip(self.cur_points, self.cur_points[1:]))]
+                    self.cur_mid_points = [[int((x[0]+y[0])/2), int((x[1]+y[1])/2)] for x, y in list(zip(self.cur_points, self.cur_points[1:]))]
                     sc_x, sc_y = list(zip(*self.cur_mid_points))
                     self.mid_point_elems.set_data(sc_x, sc_y)
                     self.end_point_elems.set_data(list(zip(*self.cur_points)))
@@ -769,7 +769,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 if self.cur_points[0] != self.cur_points[-1]:
                     self.cur_points.append(self.cur_points[0])
                 # calculates midpoints from points
-                self.cur_mid_points = [[(x[0] + y[0]) / 2, (x[1] + y[1]) / 2] for x, y in
+                self.cur_mid_points = [[int((x[0] + y[0]) / 2), int((x[1] + y[1]) / 2)] for x, y in
                                        list(zip(self.cur_points, self.cur_points[1:]))]
                 sc_x, sc_y = list(zip(*self.cur_mid_points))
                 self.mid_point_elems, = self.axes.plot(sc_x, sc_y, 's', color='blue', alpha=0.5)
@@ -987,7 +987,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 y[-1] = y[0]
             self.cur_selection.points.set_data(x,y)
             self.cur_points = list(zip(x,y))
-            self.cur_mid_points = [[(x[0] + y[0]) / 2, (x[1] + y[1]) / 2] for x, y in
+            self.cur_mid_points = [[int((x[0] + y[0]) / 2), int((x[1] + y[1]) / 2)] for x, y in
                                    list(zip(self.cur_points, self.cur_points[1:]))]
             sc_x, sc_y = list(zip(*self.cur_mid_points))
             self.mid_point_elems.set_data(sc_x, sc_y)
@@ -1067,7 +1067,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     def copy_selection(self):
         selection_id = self.measurement.selector.selected_id
         if selection_id != None:
-            selection = self.measurement.selector.selections[selection_id]
+            selection = self.measurement.selector.get_selected()
             transposed = self.measurement.selector.is_transposed
             self.clipboard.setText(f"Potku_selection:{selection.save_string(transposed)}")
         else:
