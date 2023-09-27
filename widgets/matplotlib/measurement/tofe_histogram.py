@@ -777,7 +777,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 self.end_point_elems, = self.axes.plot(x, y, marker = '$\\bigodot$', color='red', markersize = 10, alpha=0.5)
         else:
 
-            self.cur_points=[[int(x), int(y)] for x,y in self.cur_points]
+            if self.cur_points != None:
+                self.cur_points=[[int(x), int(y)] for x,y in self.cur_points]
 
             if (self.cur_points != self.start_points):
                 sbh = StatusBarHandler(self.statusbar)
