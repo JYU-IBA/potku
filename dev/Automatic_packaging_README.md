@@ -40,3 +40,12 @@ to fail to avoid releasing broken versions.
 
 Awk.exe is uploaded as a .zip file to the cloud in order to avoid virus scan issues. Additionally, Awk.exe is something of an exception as it's only intended for Windows, so there are some
 specific handling for it in the manager script. For example macOS and Linux are set to not report it as absent nor download it at all.
+
+## Future development of the automatic packaging.
+
+As the automatic packaging works on the master branch specifically, it is best to develop any new changes in a separate fork of Potku in order to have a proper environment to test the GitHub
+actions workflows. This can be easily done on GitHub and following this the developer should set similar settings as on the actual Potku repository. Mainly in the actions tab 
+you should allow all actions and reuseable workflows, give workflows read and write permissions and allow GitHub Actions to create and approve pull requests. Finally, in the branches section
+the developer should set a protection rule for the master branch and require pull requests before merging, with one approval. This way the main Potku repository's behaviour is replicated and
+the functionality of the workflows can be properly tested.
+
