@@ -40,3 +40,22 @@ else
 fi
 make
 make install
+
+os_name=$(uname -s)
+if [ "$os_name" = "Linux" ]; then
+    dpkg_gsl=$(dpkg -S libgsl.so.27)
+    path_to_gsl=$(echo "$dpkg_gsl" | awk -F: 'NR==1 {print $NF; exit}' | awk '{sub(/^[ \t]+/, "", $0); sub(/[ \t]+$/, "", $0); print}')
+    dpkg_gslcblas=$(dpkg -S libgslcblas.so.0)
+    path_to_gslcblas=$(echo "$dpkg_gslcblas" | awk -F: 'NR==1 {print $NF; exit}' | awk '{sub(/^[ \t]+/, "", $0); sub(/[ \t]+$/, "", $0); print}')
+fi
+
+if [ "$os_name" = "Darwin" ]; then
+    find_gsl=$(sudo find /usr/local -name "libgsl.27.dylib")
+    path_to_gsl=$(echo "$find_gsl" | awk -F: 'NR==1 {print $NF; exit}' | awk '{sub(/^[ \t]+/, "", $0); sub(/[ \t]+$/, "", $0); print}')
+    find_gslcblas=$(sudo find /usr/local -name "libgslcblas.0.dylib")
+    path_to_gslcblas=$(echo "$find_gslcblas" | awk -F: 'NR==1 {print $NF; exit}' | awk '{sub(/^[ \t]+/, "", $0); sub(/[ \t]+$/, "", $0); print}')
+fi
+
+cp "$path_to_gsl" "$EXT_DIR/lib"
+cp "$path_to_gslcblas" "$EXT_DIR/lib"
+
