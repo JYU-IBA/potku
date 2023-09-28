@@ -6,6 +6,7 @@ BINS := $(addprefix $(BIN_DIR), gsto* coinc* erd_depth* tof_list* \
           srim_gen_stop*)
 LIBS := $(addprefix $(LIB_DIR), libgsto.a)
 INCS := $(addprefix $(INC_DIR), gsto_masses.h libgsto.h)
+# Added comment to force change in .\external, can be removed whenever.
 
 all:
 	+$(MAKE) -C Potku-gsto
