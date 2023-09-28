@@ -1051,11 +1051,11 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         """When legend item is picked select and highlight selection
         """
         if not (self.elementSelectionButton.isChecked() or self.elementSelectionEditButton.isChecked()):
-            for i, sel in enumerate(self.measurement.selector.selections):
+            for sel in self.measurement.selector.selections:
                 if(sel.points == self._lined[event.artist]):
                     self.measurement.selector.reset_select()
-                    self.measurement.selector.selected_id = i
-                    self.measurement.selector.grey_out_except(i)
+                    self.measurement.selector.selected_id = sel.id
+                    self.measurement.selector.grey_out_except(sel.id)
                     self.elementSelectDeleteButton.setEnabled(True)
                     self.elementSelectionEditButton.setEnabled(True)
                     self.elementSelectionButton.setEnabled(False)
