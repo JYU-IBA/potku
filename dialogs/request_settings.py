@@ -209,6 +209,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
             # Detector settings
             self.detector_settings_widget.update_settings()
+            detector_file = Path(self.request.default_detector.path)
+            self.detector_settings_widget.obj.to_file(detector_file)
 
             # Simulation settings
             self.simulation_settings_widget.update_settings()
