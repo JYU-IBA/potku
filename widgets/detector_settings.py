@@ -158,19 +158,17 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.formLayout_2.removeRow(self.angleOffsetLineEdit)
 
         self.scientific_tof_slope = ScientificSpinBox(
-            minimum=-math.inf, maximum=math.inf
+            float(self.obj.tof_slope), minimum=-math.inf, maximum=math.inf
         )
         self.scientific_tof_offset = ScientificSpinBox(
-            minimum=-math.inf, maximum=math.inf
+            float(self.obj.tof_offset), minimum=-math.inf, maximum=math.inf
         )
         self.scientific_angle_slope = ScientificSpinBox(
-            minimum=-math.inf, maximum=math.inf
+            float(self.obj.angle_slope), minimum=-math.inf, maximum=math.inf
         )
         self.scientific_angle_offset = ScientificSpinBox(
-            minimum=-math.inf, maximum=math.inf
+            float(self.obj.angle_offset), minimum=-math.inf, maximum=math.inf
         )
-
-
 
         self.formLayout_2.insertRow(
             0, "ToF slope [s/channel]:", self.scientific_tof_slope)
