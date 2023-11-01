@@ -618,6 +618,10 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
 
     def on_release(self, event):
+        if event.inaxes != self.axes:
+            return
+        if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
+            return
         if (event.button == 1) and (self.__point_selected != None):
             self.__point_selected = None
 
@@ -973,6 +977,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             event: A MPL MouseEvent
         """
         if event.inaxes != self.axes:
+            return
+        if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
             return
         if event.xdata is None and event.ydata is None:
             return
