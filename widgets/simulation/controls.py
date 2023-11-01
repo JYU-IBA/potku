@@ -41,6 +41,7 @@ from modules.mcerd import MCERD
 from modules.global_settings import GlobalSettings
 from modules.enums import IonDivision
 from widgets.gui_utils import GUIObserver
+from modules.enums import SimulationType
 
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
@@ -109,8 +110,12 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         self.recoil_dist_widget = recoil_dist_widget
         self.progress_bars = {}
 
-        self.recoil_name = \
-            self.element_simulation.get_main_recoil().get_full_name()
+        main_recoil = self.element_simulation.get_main_recoil()
+        if main_recoil.type == SimulationType.ERD:
+            self.recoil_name = main_recoil.get_full_name()
+        else:
+            self.recoil_name = main_recoil.get_full_name() + "    Scatter"
+
         self.show_status(self.element_simulation.get_current_status())
         self.finished_processes = 0, self.process_count
 
@@ -164,7 +169,10 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         main recoil.
         """
         if recoil_elem is self.element_simulation.get_main_recoil():
-            self.recoil_name = recoil_elem.get_full_name()
+            if recoil_elem.type == SimulationType.ERD:
+                self.recoil_name = recoil_elem.get_full_name()
+            else:
+                self.recoil_name = recoil_elem.get_full_name() + "    Scatter"
 
     def enable_buttons(self, starting=False):
         """Switches the states of run and stop button depending on the state
