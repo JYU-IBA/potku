@@ -110,9 +110,6 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         self.recoil_dist_widget = recoil_dist_widget
         self.progress_bars = {}
 
-        self.recoil_name = \
-            self.element_simulation.get_main_recoil().get_full_name() + " TL2"
-
         main_recoil = self.element_simulation.get_main_recoil()
         if main_recoil.type == SimulationType.ERD:
             self.recoil_name = main_recoil.get_full_name()
