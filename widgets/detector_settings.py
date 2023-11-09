@@ -269,15 +269,13 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.scientific_tof_offset.setValue(float(self.obj.tof_offset))
         self.scientific_tof_slope.setValue(float(self.obj.tof_slope))
         self.scientific_angle_slope.setValue(float(self.obj.angle_slope))
-        if float(self.obj.angle_slope) != 0:
-            self.scientific_angle_offset.setValue(float(self.obj.angle_offset)/float(self.obj.angle_slope))
+        self.scientific_angle_offset.setValue(float(self.obj.angle_offset))
 
 
     def update_settings(self):
         """Update detector settings.
         """
         self.obj.set_settings(**self.get_properties())
-        self.obj.angle_offset = -self.scientific_angle_offset.value() * self.scientific_angle_slope.value()
         # Detector foils
         self.calculate_distance()
         self.obj.foils = self.tmp_foil_info
