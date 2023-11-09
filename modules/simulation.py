@@ -384,8 +384,9 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             measurement_setting_file_description
 
         self.element_simulations: List[ElementSimulation] = []
-        # ElementSimulations are initialized here if the argument is given.
-        if element_simulations is not None:
+        # ElementSimulations are initialized here if the argument is given,
+        # except if case is Default.simulation in defaults dir.
+        if element_simulations is not None and path.parts[-2] != 'Default':
             for element_simulation in element_simulations:
                 prefix = element_simulation['name'].split('-')[0]
                 elem_sim = ElementSimulation.from_json(self.request,
