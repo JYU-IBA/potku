@@ -68,8 +68,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         "dateLabel", fget=bnd.unix_time_from_label, fset=bnd.unix_time_to_label)
     description = bnd.bind("descriptionLineEdit")
     detector_type = bnd.bind("typeComboBox", track_change=False) # True
-    angle_slope = bnd.bind("scientific_angle_slope", track_change=True)
-    angle_offset = bnd.bind("scientific_angle_offset", track_change=True)
+    angle_slope = bnd.bind("scientific_angle_slope", track_change=False)
+    angle_offset = bnd.bind("scientific_angle_offset", track_change=False)
     tof_slope = bnd.bind("scientific_tof_slope", track_change=True)
     tof_offset = bnd.bind("scientific_tof_offset", track_change=True)
     timeres = bnd.bind("timeResSpinBox", track_change=False) # True
@@ -269,15 +269,13 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.scientific_tof_offset.setValue(float(self.obj.tof_offset))
         self.scientific_tof_slope.setValue(float(self.obj.tof_slope))
         self.scientific_angle_slope.setValue(float(self.obj.angle_slope))
-        if float(self.obj.angle_slope) != 0:
-            self.scientific_angle_offset.setValue(float(self.obj.angle_offset)/float(self.obj.angle_slope))
+        self.scientific_angle_offset.setValue(float(self.obj.angle_offset))
 
 
     def update_settings(self):
         """Update detector settings.
         """
         self.obj.set_settings(**self.get_properties())
-        self.obj.angle_offset = -self.scientific_angle_offset.value() * self.scientific_angle_slope.value()
         # Detector foils
         self.calculate_distance()
         self.obj.foils = self.tmp_foil_info

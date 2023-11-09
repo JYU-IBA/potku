@@ -301,6 +301,12 @@ class Request(ElementSimulationContainer, RequestLogger):
                 target=target, detector=detector, run=run, **kwargs,
                 enable_logging=False)
             sim.use_request_settings = False
+
+            # Safety check if unexpected element simulations have appeared in
+            # the Default.simulation file.
+            if sim.element_simulations:
+                sim.element_simulations = []
+
         else:
             # Create default simulation for request
             sim = Simulation(
