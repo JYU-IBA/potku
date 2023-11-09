@@ -111,7 +111,11 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         self.progress_bars = {}
 
         main_recoil = self.element_simulation.get_main_recoil()
-        if main_recoil.type == SimulationType.ERD:
+        # TODO: Clean up synonyms for simulation types in code. Currently recoil
+        #   example has three synonyms and both upper and lower case names.
+        if main_recoil.type == SimulationType.ERD or \
+                main_recoil.type.casefold() == str(SimulationType.ERD).casefold() or \
+                main_recoil.type.casefold() == "rec":
             self.recoil_name = main_recoil.get_full_name()
         else:
             self.recoil_name = main_recoil.get_full_name() + "    Scatter"
@@ -169,7 +173,9 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         main recoil.
         """
         if recoil_elem is self.element_simulation.get_main_recoil():
-            if recoil_elem.type == SimulationType.ERD:
+            if recoil_elem.type == SimulationType.ERD or \
+                    recoil_elem.type.casefold() == str(SimulationType.ERD).casefold() or \
+                    recoil_elem.type.casefold() == "rec":
                 self.recoil_name = recoil_elem.get_full_name()
             else:
                 self.recoil_name = recoil_elem.get_full_name() + "    Scatter"
