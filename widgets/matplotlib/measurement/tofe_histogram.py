@@ -156,6 +156,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.cur_mid_points = None
         self.mid_point_elems = None
         self.end_point_elems = None
+        self.start_points = None
 
         self.background = None
 
