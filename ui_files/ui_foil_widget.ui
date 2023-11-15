@@ -63,6 +63,9 @@
            <height>16777215</height>
           </size>
          </property>
+         <property name="minimum">
+          <double>0.010000000000000</double>
+         </property>
          <property name="maximum">
           <double>99999999999999996881384047029926983435371269061279689406644211752791525136670645395254002395395884805259264.000000000000000</double>
          </property>
