@@ -258,29 +258,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         area_1 = integrate.simps(y_1, x_1)
         area_2 = integrate.simps(y_2, x_2)
 
-        # Check if one of the self.lines_of_area is a hist file
-        # If so, use it as the one which is compare to the other
-        i = 0
-        j = 0
-        for line in self.lines_of_area:
-            for key, values in line.items():
-                if key.name.endswith(".hist"):
-                    i += 1
-                    break
-            if i != 0:
-                break
-            j += 1
-
-        if i != 0:
-            if j == 1 and i == 1 and area_2 != 0:
-                ratio = area_2 / area_1
-            else:
-                ratio = area_1 / area_2
-        else:
-            if area_1 > area_2:
-                ratio = area_2 / area_1
-            else:
-                ratio = area_1 / area_2
+        ratio = area_2 / area_1
 
         return ratio, area
 

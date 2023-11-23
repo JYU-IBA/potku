@@ -643,14 +643,6 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.efficiencyListWidget: QtWidgets.QListWidget
         selected_items = self.efficiencyListWidget.selectedItems()
         if selected_items:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Confirmation",
-                "Are you sure you want to delete selected efficiencies?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                return
 
             for item in selected_items:
                 selected_eff_file = item.data(QtCore.Qt.UserRole)

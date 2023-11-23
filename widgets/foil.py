@@ -64,7 +64,7 @@ class FoilWidget(QtWidgets.QWidget):
         self.deleteButton.clicked.connect(self._delete_foil)
 
         self.name = foil.name
-        self.distance_from_previous = 0
+        self.distance_from_previous = 0.01
         self.cumulative_distance = foil.distance
 
     def _delete_foil(self):
