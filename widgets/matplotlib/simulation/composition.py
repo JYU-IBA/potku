@@ -200,10 +200,11 @@ class _CompositionWidget(MatplotlibWidget):
                 if self.foil_behaviour:
                     zoom_to_bottom = True
 
-                self.simulation.target.reference_density.update_layers(
-                    self.layers)
+                if self.simulation is not None:
+                    self.simulation.target.reference_density.update_layers(
+                        self.layers)
 
-                self.update_target_info_labels()
+                    self.update_target_info_labels()
 
                 self.__update_figure(zoom_to_bottom=zoom_to_bottom)
 
