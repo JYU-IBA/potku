@@ -189,12 +189,10 @@ class MatplotlibAngleSelectorWidget(MatplotlibWidget):
         return (self.__limit_low, self.__limit_high)
 
     def calculate_fit(self):
-        offset = (self.__limit_high+self.__limit_low)/2
-        #foil_size = self.detector.foils[-1].size[0]
         foil_size = self.dialog.foilWidthSpinBox.value()
-        #foil_distance = self.detector.foils[-1].distance
         foil_distance = self.dialog.foilDistanceSpinBox.value()
         slope = (foil_size/foil_distance)/(self.__limit_high-self.__limit_low)
+        offset = -((self.__limit_high+self.__limit_low)/2)*slope
         self.dialog.angleOffsetLineEdit.setText(str(offset))
         self.dialog.angleSlopeLineEdit.setText(str(slope))
 
