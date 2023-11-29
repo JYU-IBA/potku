@@ -45,6 +45,8 @@ from modules.cut_file import CutFile
 from modules.detector import Detector
 from modules.measurement import Measurement
 from modules.run import Run
+from modules.foil import CircularFoil
+from modules.foil import RectangularFoil
 from widgets.matplotlib.calibration.curve_fitting \
     import MatplotlibCalibrationCurveFittingWidget
 from widgets.matplotlib.calibration.linear_fitting \
@@ -126,9 +128,14 @@ class AngleCalibrationDialog(QtWidgets.QDialog):
         self.angleSlopeLineEdit.setReadOnly(True)
         self.angleOffsetLineEdit.setText(str(0))
         self.angleSlopeLineEdit.setReadOnly(True)
-        self.foilDistanceSpinBox.setValue(self.detector.foils[-1].distance)
+
+        last_foil = self.detector.foils[-1]
+        self.foilDistanceSpinBox.setValue(last_foil.distance)
         self.foilDistanceSpinBox.valueChanged.connect(self.__value_changed)
-        self.foilWidthSpinBox.setValue(self.detector.foils[-1].size[0])
+        if isinstance(last_foil, RectangularFoil):
+            self.foilWidthSpinBox.setValue(last_foil.size[0])
+        if isinstance(last_foil, CircularFoil):
+            self.foilWidthSpinBox.setValue(last_foil.diameter)
         self.foilWidthSpinBox.valueChanged.connect(self.__value_changed)
 
         self.adjustSize()
