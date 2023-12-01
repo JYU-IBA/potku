@@ -252,12 +252,9 @@ class DepthProfileUnit(str, Enum):
 
     @classmethod
     def from_string(cls, string: str) -> "DepthProfileUnit":
-        print(f"from_string: {string}")
         if string in {"1e15 at./cm²", "1e15 at./cm2"}:
-            print("return: ATOMS_PER_SQUARE_CM")
             return cls.ATOMS_PER_SQUARE_CM
         if string in {"nm"}:
-            print("return: NM")
             return cls.NM
         raise ValueError("Unknown unit string")
 
