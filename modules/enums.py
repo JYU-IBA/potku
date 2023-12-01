@@ -245,6 +245,18 @@ class DepthProfileUnit(str, Enum):
     def __str__(self):
         return self.value
 
+    def simple_str(self):
+        if self is DepthProfileUnit.ATOMS_PER_SQUARE_CM:
+            return "1e15 at./cm2"
+        return self.__str__()
+
+    @classmethod
+    def from_string(cls, string: str) -> "DepthProfileUnit":
+        if string in {"1e15 at./cm²", "1e15 at./cm2"}:
+            return cls.ATOMS_PER_SQUARE_CM
+        if string in {"nm"}:
+            return cls.NM
+        raise ValueError("Unknown unit string")
 
 @enum.unique
 class SumSpectrumType(str, Enum):

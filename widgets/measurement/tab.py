@@ -232,7 +232,7 @@ class MeasurementTabWidget(BaseTab):
             elements = [Element.from_string(element)
                         for element in elements_string]
             try:
-                x_unit = DepthProfileUnit(lines[3].strip())
+                x_unit = DepthProfileUnit.from_string(lines[3].strip())
             except ValueError:
                 x_unit = DepthProfileUnit.ATOMS_PER_SQUARE_CM
             line_zero = False
