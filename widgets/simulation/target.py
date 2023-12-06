@@ -247,3 +247,14 @@ class TargetWidget(QtWidgets.QWidget):
         self.del_points.setKey(QtCore.Qt.Key_Delete)
         self.del_points.activated.connect(
             lambda: self.recoil_distribution_widget.remove_points())
+
+    def closeEvent(self, close_event):
+        """Event which happens when the windows is closing.
+        Instead of closing, minimize the window. Fixes close buttons on macOS,
+        which for the time being cannot be disabled.
+
+        Args:
+            close_event: Close event
+        """
+        close_event.ignore()
+        self.showMinimized()

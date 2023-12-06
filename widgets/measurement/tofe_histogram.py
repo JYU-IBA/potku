@@ -132,3 +132,14 @@ class TofeHistogramWidget(QtWidgets.QWidget):
         self.__paste_selection = QtWidgets.QShortcut(QKeySequence(QtCore.Qt.CTRL+QtCore.Qt.Key_V), self)
         self.__paste_selection.activated.connect(self.matplotlib.paste_selection)
 
+    def closeEvent(self, close_event):
+        """Event which happens when the windows is closing.
+        Instead of closing, minimize the window. Fixes close buttons on macOS,
+        which for the time being cannot be disabled.
+
+        Args:
+            close_event: Close event
+        """
+        close_event.ignore()
+        self.showMinimized()
+
