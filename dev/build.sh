@@ -46,9 +46,9 @@ gsl_libdir="$(pkg-config --variable=libdir gsl)"
 potku_libdir="$EXT_DIR/lib"
 gsl_version="$(pkg-config --modversion gsl|sed 's/^\(.*\)\.\(.*\)\.\(.*\)/\1\2/')" #E.g. 27 for 2.7.1
 if [ "$os_name" = "Linux" ]; then
-    cp "${gsl_libdir}/libgsl.so.${gsl_version} ${gsl_libdir}/libgslcblas.so.0 ${potku_libdir}"
+    cp "${gsl_libdir}/libgsl.so.${gsl_version}" "${gsl_libdir}/libgslcblas.so.0" "${potku_libdir}"
 fi
 
 if [ "$os_name" = "Darwin" ]; then
-    cp "${gsl_libdir}/libgsl.${gsl_version}.dylib ${gsl_libdir}/libgslcblas.0.dylib ${potku_libdir}"
+    cp "${gsl_libdir}/libgsl.${gsl_version}.dylib" "${gsl_libdir}/libgslcblas.0.dylib" "${potku_libdir}"
 fi
