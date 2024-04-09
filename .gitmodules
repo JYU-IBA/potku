@@ -4,3 +4,6 @@
 [submodule "external/submodules/mcerd"]
 	path = external/submodules/mcerd
 	url = https://github.com/JYU-IBA/mcerd.git
+[submodule "external/submodules/erd_depth"]
+	path = external/submodules/erd_depth
+	url = https://github.com/JYU-IBA/erd_depth.git
