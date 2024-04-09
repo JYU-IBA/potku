@@ -7,3 +7,6 @@
 [submodule "external/submodules/erd_depth"]
 	path = external/submodules/erd_depth
 	url = https://github.com/JYU-IBA/erd_depth.git
+[submodule "external/submodules/coinc"]
+	path = external/submodules/coinc
+	url = https://github.com/JYU-IBA/coinc
