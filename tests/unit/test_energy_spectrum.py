@@ -68,12 +68,12 @@ class TestCalculateMeasuredSpectra(unittest.TestCase):
                 mesu, tmp_dir, spectrum_width=0.5)
 
             expected = sorted([
-                *self.expected_hist_files, *self.expected_tof_list_files
+                *self.expected_hist_files, *self.expected_tofe_list_files
             ])
             spectra_files = sorted(os.listdir(mesu.get_energy_spectra_dir()))
             self.assertEqual(expected, spectra_files)
 
-    def test_tof_list_file_contents_are_expected(self):
+    def test_tofe_list_file_contents_are_expected(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_dir = Path(tmp_dir)
             mesu = mo.get_measurement(
@@ -81,11 +81,11 @@ class TestCalculateMeasuredSpectra(unittest.TestCase):
             run_spectra_calculation(
                 mesu, tmp_dir, spectrum_width=0.5)
 
-            tof_file = mesu.get_energy_spectra_dir() / "cuts.1H.ERD.0.tof_list"
+            tof_file = mesu.get_energy_spectra_dir() / "cuts.1H.ERD.0.tofe_list"
 
             expected = list(
                 parser.parse_strs(
-                    self.expected_1h_0_tof_list_content, method=parser.COLUMN)
+                    self.expected_1h_0_tofe_list_content, method=parser.COLUMN)
             )
             actual = list(
                 parser.parse_file(tof_file, method=parser.COLUMN)
@@ -168,12 +168,12 @@ class TestCalculateMeasuredSpectra(unittest.TestCase):
         }
 
     @property
-    def expected_tof_list_files(self):
+    def expected_tofe_list_files(self):
         return [
-            "cuts.1H.ERD.0.tof_list",
-            "cuts.1H.ERD.1.tof_list",
-            "cuts.35Cl.RBS_Mn.0.tof_list",
-            "cuts.7Li.0.0.0.tof_list",
+            "cuts.1H.ERD.0.tofe_list",
+            "cuts.1H.ERD.1.tofe_list",
+            "cuts.35Cl.RBS_Mn.0.tofe_list",
+            "cuts.7Li.0.0.0.tofe_list",
         ]
 
     @property
@@ -186,7 +186,7 @@ class TestCalculateMeasuredSpectra(unittest.TestCase):
         ]
 
     @property
-    def expected_1h_0_tof_list_content(self):
+    def expected_1h_0_tofe_list_content(self):
         return [
             '0.0 0.0 0.53703 1 1.0078 ERD 1.0 764\n',
             '0.0 0.0 0.54982 1 1.0078 ERD 1.0 3688\n',
@@ -207,8 +207,8 @@ class TestGetTofListFileName(unittest.TestCase):
         cut_file = Path("tmp", "cuts", "cuts.1H.ERD.0.cut")
         no_foil = False
         self.assertEqual(
-            directory / "cuts.1H.ERD.0.tof_list",
-            EnergySpectrum.get_tof_list_file_name(directory, cut_file, no_foil)
+            directory / "cuts.1H.ERD.0.tofe_list",
+            EnergySpectrum.get_tofe_list_file_name(directory, cut_file, no_foil)
         )
 
     def test_when_no_foil_is_true(self):
@@ -216,8 +216,8 @@ class TestGetTofListFileName(unittest.TestCase):
         cut_file = Path("tmp", "cuts", "cuts.1H.ERD.0.cut")
         no_foil = True
         self.assertEqual(
-            directory / "cuts.1H.ERD.0.no_foil.tof_list",
-            EnergySpectrum.get_tof_list_file_name(directory, cut_file, no_foil)
+            directory / "cuts.1H.ERD.0.no_foil.tofe_list",
+            EnergySpectrum.get_tofe_list_file_name(directory, cut_file, no_foil)
         )
 
 

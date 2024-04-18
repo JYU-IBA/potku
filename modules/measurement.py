@@ -1019,7 +1019,7 @@ class Measurement(MeasurementLogger, Serializable):
         """Generate tof.in file for external programs.
 
         Generates tof.in file for measurement to be used in external programs
-        (tof_list, erd_depth). By default,q the file is written to measurement
+        (tofe_list, erd_depth). By default,q the file is written to measurement
         folder.
 
         Args:
@@ -1069,7 +1069,7 @@ class Measurement(MeasurementLogger, Serializable):
         # Timing foil can only be carbon and have one layer!!!
         if no_foil:
             # no_foil parameter is used when energy spectra is generated from
-            # .tof_list files in simulation mode. Foil thickness is set to 0
+            # .tofe_list files in simulation mode. Foil thickness is set to 0
             # to make MCERD energy spectra and experimental energy spectra
             # comparable
             carbon_foil_thickness = 0
@@ -1103,7 +1103,7 @@ class Measurement(MeasurementLogger, Serializable):
                              f"{global_settings.get_num_iterations()}\n"
 
         # Efficiency file handling
-        detector.copy_efficiency_files_for_tof_list()
+        detector.copy_efficiency_files_for_tofe_list()
 
         str_eff_dir = "Efficiency directory: {0}".format(
             detector.get_used_efficiencies_dir())

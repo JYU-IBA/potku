@@ -197,13 +197,13 @@ class CSVParser:
 
 
 class ToFListParser(CSVParser):
-    """Default parser for reading data in the format produced by tof_list"""
+    """Default parser for reading data in the format produced by tofe_list"""
     __slots__ = ()
 
     def __init__(self):
         """Initializes a ToFListParses.
         """
-        # tof_list produces 8 columns and n rows of data.
+        # tofe_list produces 8 columns and n rows of data.
         super().__init__((0, float),
                          (1, float),
                          (2, float),

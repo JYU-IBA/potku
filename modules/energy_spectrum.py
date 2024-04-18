@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.4.2013
-Updated on 18.12.2018
+Updated on 17.4.2024
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -9,7 +9,7 @@ telescope. For physics calculations Potku uses external
 analyzation components.  
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, Jaakko Julin
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,12 +22,12 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program (file named 'LICENCE').
+along with this program (file named 'LICENSE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n " \
-             "Juhani Sundell"
+             "Juhani Sundell \n Jaakko Julin"
 __version__ = "2.0"
 
 import pathlib
@@ -73,15 +73,15 @@ class EnergySpectrum:
             cut_files: String list of cut files.
             spectrum_width: Float representing energy spectrum graph width.
             progress: ProgressReporter object.
-            no_foil: whether foil thickness is set to 0 when running tof_list
-            verbose: whether tof_list's stderr is printed to console
+            no_foil: whether foil thickness is set to 0 when running tofe_list
+            verbose: whether tofe_list's stderr is printed to console
         """
         self._measurement = measurement
         self._global_settings = self._measurement.request.global_settings
         self._cut_files = cut_files
         self._spectrum_width = spectrum_width
         self._directory_es = measurement.get_energy_spectra_dir()
-        self._tof_listed_files = self._load_cuts(
+        self._tofe_listed_files = self._load_cuts(
             no_foil=no_foil, progress=progress, verbose=verbose)
 
     @staticmethod
@@ -103,8 +103,8 @@ class EnergySpectrum:
             progress: ProgressReporter object.
             use_efficiency: whether efficiency is taken into account when
                 spectra is calculated
-            no_foil: whether foil thickness is set to 0 when running tof_list
-            verbose: whether tof_list's stderr is printed to console
+            no_foil: whether foil thickness is set to 0 when running tofe_list
+            verbose: whether tofe_list's stderr is printed to console
 
         Returns:
             energy spectra as a dictionary
@@ -131,7 +131,7 @@ class EnergySpectrum:
             energy spectra as a dictionary
         """
         return EnergySpectrum._calculate_spectrum(
-            self._tof_listed_files, self._spectrum_width, self._measurement,
+            self._tofe_listed_files, self._spectrum_width, self._measurement,
             self._directory_es, use_efficiency=use_efficiency, no_foil=no_foil)
 
     def _load_cuts(
@@ -139,14 +139,14 @@ class EnergySpectrum:
             no_foil: bool = False,
             progress: Optional[ProgressReporter] = None,
             verbose: bool = True) -> Dict[str, TofListData]:
-        """Loads cut files through tof_list into list.
+        """Loads cut files through tofe_list into list.
 
         Args:
-            no_foil: whether foil thickness is set to 0 when running tof_list
+            no_foil: whether foil thickness is set to 0 when running tofe_list
             progress: ProgressReporter object
 
         Return:
-            Returns list of cut files' tof_list results.
+            Returns list of cut files' tofe_list results.
         """
         tof_in = self._measurement.generate_tof_in(no_foil=no_foil)
         cut_dict = {}
@@ -171,7 +171,7 @@ class EnergySpectrum:
 
                 key = ".".join([str(element), *filename_split[2:-1]])
 
-                cut_dict[key] = EnergySpectrum.tof_list(
+                cut_dict[key] = EnergySpectrum.tofe_list(
                     cut_file, directory, no_foil=no_foil,
                     logger=self._measurement,
                     tof_in=tof_in, verbose=verbose)
@@ -187,29 +187,29 @@ class EnergySpectrum:
         return cut_dict
 
     @staticmethod
-    def tof_list(
+    def tofe_list(
             cut_file: Path,
             directory: Optional[Path] = None,
             no_foil: bool = False,
             logger: Optional[Logger] = None,
             tof_in: Path = Path("tof.in"),
             verbose: bool = True) -> TofListData:
-        """ToF_list
+        """tofe_list
 
-        Arstila's tof_list executables interface for Python.
+       tofe_list interface for Python.
 
         Args:
-            cut_file: A Path representing cut file to be ran through tof_list.
+            cut_file: A Path representing cut file to be ran through tofe_list.
             directory: A Path representing measurement's energy spectrum
                 directory.
             no_foil: whether foil thickness was used when .cut files were
                 generated. This affects the file path when saving output
             logger: optional Logger entity used for logging
             tof_in: path to tof_in_file
-            verbose: whether tof_list's stderr is printed to console
+            verbose: whether tofe_list's stderr is printed to console
 
         Returns:
-            Returns cut file as list transformed through Arstila's tof_list
+            Returns cut file as list transformed through tofe_list
             program.
         """
         if not cut_file:
@@ -222,24 +222,24 @@ class EnergySpectrum:
         try:
             with subprocess.Popen(
                     cmd, cwd=gf.get_bin_dir(), stdout=subprocess.PIPE,
-                    universal_newlines=True, stderr=stderr) as tof_list:
+                    universal_newlines=True, stderr=stderr) as tofe_list:
 
                 if directory is not None:
                     directory.mkdir(exist_ok=True)
-                    tof_list_file = EnergySpectrum.get_tof_list_file_name(
+                    tofe_list_file = EnergySpectrum.get_tofe_list_file_name(
                         directory, cut_file, no_foil=no_foil)
                 else:
-                    tof_list_file = None
+                    tofe_list_file = None
 
-                tof_list_data = sutils.process_output(
-                    tof_list,
+                tofe_list_data = sutils.process_output(
+                    tofe_list,
                     tof_parser.parse_str,
-                    file=tof_list_file,
+                    file=tofe_list_file,
                     text_func=lambda x: f"{' '.join(str(col) for col in x)}\n"
                 )
-                return tof_list_data
+                return tofe_list_data
         except Exception as e:
-            msg = f"Error in tof_list: {e}"
+            msg = f"Error in tofe_list: {e}"
             if logger is not None:
                 logger.log_error(msg)
             else:
@@ -248,19 +248,19 @@ class EnergySpectrum:
 
     @staticmethod
     def get_command(tof_in: Path, cut_file: Path) -> Tuple[str, str, str]:
-        """Returns the command for running tof_list.
+        """Returns the command for running tofe_list.
         """
         if platform.system() == 'Windows':
-            executable = str(gf.get_bin_dir() / "tof_list.exe")
+            executable = str(gf.get_bin_dir() / "tofe_list.exe")
         else:
-            executable = "./tof_list"
+            executable = "./tofe_list"
         return executable, str(tof_in), str(cut_file)
 
     @staticmethod
-    def get_tof_list_file_name(
+    def get_tofe_list_file_name(
             directory: Path, cut_file: Path, no_foil: bool = False) -> Path:
         foil_txt = ".no_foil" if no_foil else ""
-        return directory / f"{cut_file.stem}{foil_txt}.tof_list"
+        return directory / f"{cut_file.stem}{foil_txt}.tofe_list"
 
     @staticmethod
     def get_hist_file_name(
@@ -284,20 +284,20 @@ class EnergySpectrum:
 
     @staticmethod
     def _calculate_spectrum(
-            tof_listed_files,
+            tofe_listed_files,
             spectrum_width: float,
             measurement: Measurement,
             directory_es: Path,
             use_efficiency: bool = False,
             no_foil: bool = False) -> Dict[str, Espe]:
-        """Calculate energy spectrum data from .tof_list files and writes the
+        """Calculate energy spectrum data from .tofe_list files and writes the
         results to .hist files.
 
         Args:
-            tof_listed_files: contents of .tof_list files belonging to the
+            tofe_listed_files: contents of .tofe_list files belonging to the
                 measurement as a dict.
             spectrum_width: width of bins in the histogrammed spectra
-            measurement: measurement which the .tof_list files belong to
+            measurement: measurement which the .tofe_list files belong to
             directory_es: directory
             use_efficiency: whether efficiency is taken into account when
                 spectra is calculated
@@ -314,9 +314,9 @@ class EnergySpectrum:
             y_col = None
 
         keys = []
-        for key, tof_list_data in tof_listed_files.items():
+        for key, tofe_list_data in tofe_listed_files.items():
             espe = gf.hist(
-                tof_list_data, col=2, weight_col=y_col,
+                tofe_list_data, col=2, weight_col=y_col,
                 width=spectrum_width)
 
             if not espe:
