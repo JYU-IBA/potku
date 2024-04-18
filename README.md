@@ -6,14 +6,13 @@ macOS.
 
 This repository contains the Python source code for Potku's graphical user
 interface (Qt5) as well as the source code for programs that perform most of
-the number crunching, written in C. Some of these software are in separate
-submodules, please see the instructions below if you want to run the
-development version.
+the number crunching, written in C. These software are in separate submodules, 
+please see the instructions below if you want to run the development version.
 
 Ready to run binary packages are available on the releases page of this repository. Additionally older binary packages are available on the
 [official website](https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/).
 
-    Copyright (C) 2013-2021 Potku developers
+    Copyright (C) 2013-2024 Potku developers
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -55,7 +54,7 @@ Once the virtual environment is up and running, Potku GUI can be launched from t
 command line:
  
 ````
-$ python run_potku.py
+$ python potku.py
 ````
 
 ## Compiling the C programs
@@ -122,13 +121,6 @@ extract the files. (note: `curl` is not installed by default on all windows vers
 $ curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && \
 tar -xvf data.tar.gz -C external/share/jibal
 ````
-
-Potku requires `srim2013.tot` in `external/share/` for some operations. This 
-file can be copied from a 
-[binary distribution of Potku](https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/release_versions)
-or generated with 
-[Potku-gsto](https://github.com/JYU-IBA/potku/tree/master/external/Potku-gsto) 
-(no instructions available). `srim2013.tot` will be phased out in the future.
 
 ## External dependencies
 
