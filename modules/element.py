@@ -3,13 +3,11 @@
 Created on 10.4.2013
 Updated on 31.1.2020
 
-Potku is a graphical user interface for analyzation and
-visualization of measurement data collected from a ToF-ERD
-telescope. For physics calculations Potku uses external
-analyzation components.
+Potku
+
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen, 2020 Juhani Sundell
+Sinikka Siironen, 2020 Juhani Sundell, Jaakko Julin
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,12 +20,12 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program (file named 'LICENCE').
+along with this program (file named 'LICENSE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n " \
-             "Juhani Sundell \n Tuomas Pitkänen"
+             "Juhani Sundell \n Tuomas Pitkänen \n Jaakko Julin"
 __version__ = "2.0"
 
 import re
@@ -250,7 +248,7 @@ class Element(MCERDParameterContainer):
                 })
 
         isotopes.extend({
-                "element": cls(symbol, iso.pop("number")),
+                "element": cls(symbol, iso.pop("mass_number")),
                 **iso
             }
             for iso in masses.get_isotopes(

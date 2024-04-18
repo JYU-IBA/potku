@@ -1,12 +1,10 @@
 # coding=utf-8
 """
 Created on 20.3.2013
-Updated on 6.5.2018
+Updated on 18.4.2024
 
-Potku is a graphical user interface for analyzation and
-visualization of measurement data collected from a ToF-ERD
-telescope. For physics calculations Potku uses external
-analyzation components.
+Potku
+
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
 Sinikka Siironen, 2020 Juhani Sundell
@@ -22,14 +20,14 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program (file named 'LICENCE').
+along with this program (file named 'LICENSE').
 
-Reads data of the elements isotopes from masses.dat
+Reads element, isotope and abundance information from masses.dat and abundances.dat (from JIBAL)
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n " \
-             "Juhani Sundell"
+             "Juhani Sundell \n Jaakko Julin"
 __version__ = "2.0"
 
 from collections import defaultdict
@@ -37,30 +35,46 @@ from collections import defaultdict
 from . import general_functions as gf
 from .parsing import CSVParser
 
+_MAX_ELEMENTS = 120
 _ISOTOPES = defaultdict(list)
-NUMBER_KEY = "number"
+_ELEMENTS = [""] * _MAX_ELEMENTS
+MASS_NUMBER_KEY = "mass_number"
 ABUNDANCE_KEY = "abundance"
 MASS_KEY = "mass"
 
-masses_file = gf.get_data_dir() / "masses.dat"
+masses_file = gf.get_data_dir() / "jibal" / "masses.dat"
 
 # Parser to parse data from masses.dat. Empty rows are ignored, first line
-# is skipped.
-parser = CSVParser((3, str), (2, int), (5, float), (4, float))
+# is skipped since it contains information about the neutron, which we can ignore
+parser = CSVParser((1, str), (3, int), (4, int), (5, float))
 data = parser.parse_file(masses_file, ignore="e", method="row", skip=1)
 
-for elem, n, a, m in data:
+for elem, Z, A, m in data:
+    if 0 < Z < _MAX_ELEMENTS:
+        _ELEMENTS[Z] = elem
+
     _ISOTOPES[elem].append({
-        NUMBER_KEY: n,
-        ABUNDANCE_KEY: a,
+        MASS_NUMBER_KEY: A,
+        ABUNDANCE_KEY: 0.0,
         MASS_KEY: m
     })
+
+# Parsing abundances.dat, filling abundances in _ISOTOPES table
+
+abundances_file = gf.get_data_dir() / "jibal" / "abundances.dat"
+parser = CSVParser((0, int), (1, int), (2, float))
+data = parser.parse_file(abundances_file, ignore="e", method="row", skip=0)
+for Z, A, abundance in data:
+    for isotope in _ISOTOPES[_ELEMENTS[Z]]:
+        if isotope[MASS_NUMBER_KEY] == A:
+            isotope[ABUNDANCE_KEY] = abundance * 100.0
+
 
 # TODO maybe sort the isotopes by abundance already at this point. Most of the
 #  time we need them sorted anyway
 
 # Remove extra variables
-del elem, n, a, m
+del elem, A, Z, m
 del masses_file
 del parser, data
 
@@ -105,7 +119,7 @@ def find_mass_of_isotope(symbol, isotope):
     """
     rounded_isotope = round(isotope)
     for isotope in get_isotopes(symbol):
-        if rounded_isotope == isotope[NUMBER_KEY]:
+        if rounded_isotope == isotope[MASS_NUMBER_KEY]:
             return isotope[MASS_KEY] / 1_000_000
 
 
@@ -120,7 +134,7 @@ def get_standard_isotope(symbol):
         unknown, 0 is returned.
     """
     # TODO should this be called get_standard_mass?
-    return sum(iso[NUMBER_KEY] * iso[ABUNDANCE_KEY]
+    return sum(iso[MASS_NUMBER_KEY] * iso[ABUNDANCE_KEY]
                for iso in get_isotopes(symbol, sort_by_abundance=False)) / 100
 
 
