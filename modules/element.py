@@ -191,7 +191,7 @@ class Element(MCERDParameterContainer):
         isot = masses.get_most_common_isotope(self.symbol)
         if isot is None:
             return None
-        return isot[masses.NUMBER_KEY]
+        return isot[masses.MASS_NUMBER_KEY]
 
     def get_mcerd_params(self, return_amount=False):
         """Returns the element's mass or amount as a parameter for MCERD.

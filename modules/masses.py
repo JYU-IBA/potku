@@ -47,7 +47,7 @@ masses_file = gf.get_data_dir() / "jibal" / "masses.dat"
 # Parser to parse data from masses.dat. Empty rows are ignored, first line
 # is skipped since it contains information about the neutron, which we can ignore
 parser = CSVParser((1, str), (3, int), (4, int), (5, float))
-data = parser.parse_file(masses_file, ignore="e", method="row", skip=1)
+data = parser.parse_file(masses_file, method="row", skip=1)
 
 for elem, Z, A, m in data:
     if 0 < Z < _MAX_ELEMENTS:
@@ -63,7 +63,7 @@ for elem, Z, A, m in data:
 
 abundances_file = gf.get_data_dir() / "jibal" / "abundances.dat"
 parser = CSVParser((0, int), (1, int), (2, float))
-data = parser.parse_file(abundances_file, ignore="e", method="row", skip=0)
+data = parser.parse_file(abundances_file, method="row")
 for Z, A, abundance in data:
     for isotope in _ISOTOPES[_ELEMENTS[Z]]:
         if isotope[MASS_NUMBER_KEY] == A:
@@ -120,7 +120,7 @@ def find_mass_of_isotope(symbol, isotope):
     rounded_isotope = round(isotope)
     for isotope in get_isotopes(symbol):
         if rounded_isotope == isotope[MASS_NUMBER_KEY]:
-            return isotope[MASS_KEY] / 1_000_000
+            return isotope[MASS_KEY]
 
 
 def get_standard_isotope(symbol):
@@ -134,7 +134,7 @@ def get_standard_isotope(symbol):
         unknown, 0 is returned.
     """
     # TODO should this be called get_standard_mass?
-    return sum(iso[MASS_NUMBER_KEY] * iso[ABUNDANCE_KEY]
+    return sum(iso[MASS_KEY] * iso[ABUNDANCE_KEY]
                for iso in get_isotopes(symbol, sort_by_abundance=False)) / 100
 
 
