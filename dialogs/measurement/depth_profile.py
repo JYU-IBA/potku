@@ -36,6 +36,7 @@ from typing import Optional
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
+from PyQt5.QtWidgets import QMessageBox
 
 import dialogs.dialog_functions as df
 import modules.cut_file as cut_file
@@ -358,11 +359,10 @@ class DepthProfileWidget(QtWidgets.QWidget):
                 cuts = self.measurement.get_cut_files()[0]  # Ignore element losses
                 self._eff_files_str = df.get_efficiency_text_cuts(cuts, detector)
 
-            depth_files.generate_depth_files(
+            used_eff_files = depth_files.generate_depth_files(
                 self.use_cuts, self.output_dir, self.measurement,
                 progress=sub_progress
-            )
-
+                )
             if progress is not None:
                 progress.report(50)
 
@@ -403,11 +403,12 @@ class DepthProfileWidget(QtWidgets.QWidget):
                 depth_scale=depth_scale, x_units=self.x_units,
                 add_line_zero=self._line_zero_shown,
                 show_eff_files=self._eff_files_shown,
-                used_eff_str=self._eff_files_str,
+                used_eff_files=used_eff_files,
                 systematic_error=self._systematic_error, progress=sub_progress)
         except Exception as e:
-            msg = f"Could not create Depth Profile graph: {e}"
+            msg = f"Could not create a depth profile: {e}"
             self.measurement.log_error(msg)
+            QMessageBox.critical(self, "Error", msg)
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
         finally:

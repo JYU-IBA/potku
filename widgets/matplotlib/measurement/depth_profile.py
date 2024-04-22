@@ -68,7 +68,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                  depth_scale: Optional[Range] = None,
                  add_line_zero: bool = False, systematic_error: float = 3.0,
                  show_eff_files: bool = False,
-                 used_eff_str: str = None,
+                 used_eff_files: List[str] = None,
                  progress: Optional[ProgressReporter] = None):
         """Inits depth profile widget.
 
@@ -103,10 +103,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self._systematic_error = systematic_error
 
         self._show_eff_files = show_eff_files
-        self.used_eff_str = used_eff_str
+        self._used_eff_files = used_eff_files
         self.eff_text = None
 
-        self.used_eff_file = parent.output_dir / 'used_eff_files.txt'
+        self.used_eff_file = depth_dir / 'used_eff_files.txt'
 
         # Set default filename for saving figure
         default_filename = "Depth_profile_" + parent.measurement.name
@@ -315,11 +315,11 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         # If "Show used efficiency files" is checked and text-object is not
         # yet created.
         if self._show_eff_files and self.eff_text is None:
-            try:
-                with open(self.used_eff_file, 'r') as f:
-                    eff_str = f.read()
-            except:
-                eff_str = self.used_eff_str.replace("\t", "")
+            if(len(self._used_eff_files) > 0):
+                eff_str = "Used efficiency files:\n"
+                eff_str += "\n".join(self._used_eff_files)
+            else:
+                eff_str = "No efficiency files used"
 
             # Set position of text according to amount of lines in the string
             line_count = eff_str.count("\n") + 1
