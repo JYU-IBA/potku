@@ -1,6 +1,5 @@
-@echo off
 set CUR_DIR=%cd%
-cd ..\
+cd ..
 set ROOT_DIR=%cd%
 set EXT_DIR=%ROOT_DIR%\external
 set BIN_DIR=%EXT_DIR%\bin
@@ -15,9 +14,11 @@ if "%1"=="" (
 
 for %%G in (jibal erd_depth mcerd coinc) DO @(
 cd submodules\%%G\
-del /q build\CMakeCache.txt
 mkdir build
 cd build
+echo "Building %%G"
+cd
+del /q CMakeCache.txt
 
 if "%1"=="" (
 	cmake -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=%EXT_DIR% -DCMAKE_INSTALL_PREFIX=%EXT_DIR% .. || EXIT /b 1
