@@ -51,8 +51,8 @@ class IsotopeSelectionWidget(QObject):
     """
     DEFAULT_BTN_TXT = "Select"
     MISSING_ISOTOPE_TXT = "If you wish to use this element, please modify " \
-                          "abundances.dat file\nand change the natural abundance " \
-                          "of your\npreferred isotope to 1.0 and restart " \
+                          "masses.dat file\nand change the natural abundance " \
+                          "to 100 % on your\npreferred isotope and restart " \
                           "the application."
 
     # Signal that is emitted when isotope selection has changed

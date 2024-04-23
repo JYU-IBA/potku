@@ -2,7 +2,7 @@
 name: Compile C apps
 
 on:
-  [workflow_call, workflow_dispatch]
+  workflow_call:
   
 jobs:
   check_artifacts:

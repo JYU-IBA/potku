@@ -80,7 +80,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     used_bin_width = bnd.bind("histogramTicksDoubleSpinBox")
 
     external_files = bnd.bind("external_tree_widget")
-    tofe_list_files = bnd.bind("tofe_list_tree_widget")
+    tof_list_files = bnd.bind("tof_list_tree_widget")
     used_recoil = bnd.bind("treeWidget")
 
     def __init__(self, parent: BaseTab, spectrum_type: str = _MESU,
@@ -235,16 +235,16 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     def _set_measurement_files(self):
         """Sets up the .cut file list.
         """
-        self.tofe_list_tree_widget = QtWidgets.QTreeWidget()
-        self.tofe_list_tree_widget.setSizePolicy(
+        self.tof_list_tree_widget = QtWidgets.QTreeWidget()
+        self.tof_list_tree_widget.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding,
             QtWidgets.QSizePolicy.Expanding)
         header = QtWidgets.QTreeWidgetItem()
         header.setText(0, "Pre-calculated elements")
-        self.gridLayout_2.addWidget(self.tofe_list_tree_widget, 0, 1)
-        self.tofe_list_tree_widget.setHeaderItem(header)
+        self.gridLayout_2.addWidget(self.tof_list_tree_widget, 0, 1)
+        self.tof_list_tree_widget.setHeaderItem(header)
 
-        # Add calculated tofe_list files to tofe_list_tree_widget by
+        # Add calculated tof_list files to tof_list_tree_widget by
         # measurement under the same sample.
         for measurement in self.simulation.sample.get_measurements():
             root = QtWidgets.QTreeWidgetItem([measurement.name])
@@ -254,7 +254,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 root, cuts, data_func=lambda c: (c, measurement),
                 text_func=lambda c: c.name)
 
-            self.tofe_list_tree_widget.addTopLevelItem(root)
+            self.tof_list_tree_widget.addTopLevelItem(root)
 
             elem_loss_root = QtWidgets.QTreeWidgetItem(["Element losses"])
             gutils.fill_tree(
@@ -264,7 +264,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             root.addChild(elem_loss_root)
             root.setExpanded(True)
 
-        self.tofe_list_files = {}
+        self.tof_list_files = {}
 
     def _set_external_files(self):
         """Sets up the external file QTreeWidget.
@@ -291,7 +291,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         cut files belonging to each measurement, and the corresponding
         result file.
         """
-        mesus = self.tofe_list_files
+        mesus = self.tof_list_files
         used_measurements = {}
         # TODO result file is probably not needed here
         for c, m in mesus:
@@ -482,7 +482,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             # Measurements which each can have different Detector an thus
             # different efficiency files
             label_txt = df.get_multi_efficiency_text(
-                self.tofe_list_tree_widget,
+                self.tof_list_tree_widget,
                 self.simulation.sample.get_measurements(),
                 data_func=lambda tpl: tpl[0])
         else:

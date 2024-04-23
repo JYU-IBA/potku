@@ -40,8 +40,6 @@ import os
 import platform
 import subprocess
 import functools
-import re
-from datetime import datetime
 
 from pathlib import Path
 from typing import Optional
@@ -76,7 +74,6 @@ class DepthFileGenerator:
         """
         self._cut_files = cut_files
         self._output_path = Path(output_directory, prefix)
-        self._used_eff_files = []
         if tof_in_file is None:
             self._tof_in_file = Path("tof.in")
         else:
@@ -89,7 +86,7 @@ class DepthFileGenerator:
             tof_bin = str(gf.get_bin_dir() / "tof_list.exe")
             erd_bin = str(gf.get_bin_dir() / "erd_depth.exe")
         else:
-            tof_bin = "./tofe_list"
+            tof_bin = "./tof_list"
             erd_bin = "./erd_depth"
 
         return (tof_bin, str(self._tof_in_file),
@@ -101,49 +98,39 @@ class DepthFileGenerator:
         """
         bin_dir = gf.get_bin_dir()
         tof, erd = self.get_command()
-        # Pipe the output from tofe_list to erd_depth
-        date = datetime.now().astimezone().replace(microsecond=0).isoformat();
-        try:
-            tofe_list_process = subprocess.Popen(tof, cwd=bin_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            tofe_list_stdout, tofe_list_stderr = tofe_list_process.communicate()
-            tofe_log_filename = self._output_path.parents[0] / 'tofe_list_log.txt'
-            lines = tofe_list_stderr.decode().split('\n')
-            eff_re = re.compile(r'^tofe_list info: Used efficiency files \(([0-9.]+)\): (.*)$')
-            self._used_eff_files = []
-            with open(tofe_log_filename, "w") as f:
-                line_number = 0
-                f.write("tofe_list run on " + date + "\n")
-                for line in lines:
-                    line_number += 1
-                    f.write(str(line_number).zfill(3) + " " + line + "\n")
-                    g = eff_re.match(line)
-                    if g:
-                        self._used_eff_files = g.group(2).split()
-                        print("tofe_list reports using " + g.group(1) + " efficiency files: " + str(self._used_eff_files));
-                        if len(self._used_eff_files) != int(g.group(1)):
-                            print("mismatch between number of efficiency files and number of efficiency files reported to have been used by tofe_list.")
-            if tofe_list_process.returncode != 0:
-                raise Exception(f"tofe_list reports an error {tofe_list_process.returncode}, see {tofe_log_filename} for more information.")
-            erd_depth_process = subprocess.run(erd, cwd=bin_dir, input=tofe_list_stdout, capture_output=True, check=True)
-            erd_depth_log_filename = self._output_path.parents[0] / 'erd_depth_log.txt'
-            with open(erd_depth_log_filename, "w") as f:
-                f.write("erd_depth run on " + date + "\n")
-                f.write(erd_depth_process.stderr.decode())
-            if erd_depth_process.returncode != 0:
-                raise Exception(f"erd_depth reports an error {erd_depth_process.returncode}")
-        except Exception as e:
-            print("Exception when running tofe_list and erd_depth: " + str(e))
-            raise e
+        # Pipe the output from tof_list to erd_depth
+        tof_process = subprocess.Popen(tof, cwd=bin_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        tof_stdout, tof_stderr = tof_process.communicate()
 
-    def used_eff_files(self):
-        return self._used_eff_files
+        eff_filename = None
+        used_eff_files = []
+        used_eff_filename = self._output_path.parents[0] / 'used_eff_files.txt'
+        lines = tof_stderr.decode().split('\n')
+        for n, _ in enumerate(lines):
+            if lines[n][0:22] == "Used efficiency file: ":
+                eff_filename = lines[n][22:].replace('\\','/').split('/')[-1]
+                if lines[n+1].split()[0] == "Got":
+                    used_eff_files.append(eff_filename)
+        try:
+            with open(used_eff_filename, "w") as f:
+                f.write("Efficiency files used:\n")
+                for line in used_eff_files:
+                    f.write(line)
+                    f.write("\n")
+        except Exception as e:
+            print(f"Error: {e}")
+
+        ret = subprocess.run(
+            erd, cwd=bin_dir, input=tof_stdout).returncode
+        if ret != 0:
+            print(f"tof_list|erd_depth pipeline returned an error code: {ret}")
 
 
 def generate_depth_files(cut_files: List[Path], output_dir: Path,
                          measurement: Measurement, tof_in_dir: Optional[Path]
-                         = None, progress: Optional[ProgressReporter] = None) -> List[str]:
+                         = None, progress: Optional[ProgressReporter] = None):
     """Generates depth files from given cut files and writes them to output
-    directory. Returns a list of used efficiency files (but not full paths of them).
+    directory.
 
     Deletes any previous depth files in the given directory
 
@@ -173,8 +160,6 @@ def generate_depth_files(cut_files: List[Path], output_dir: Path,
 
     if progress is not None:
         progress.report(100)
-
-    return dp.used_eff_files()
 
 
 class DepthProfile:

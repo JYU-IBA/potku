@@ -2,7 +2,7 @@
 name: Package Potku
 
 on:
-  [workflow_call, workflow_dispatch]
+  workflow_call:
 
 jobs:
 
@@ -40,11 +40,11 @@ jobs:
           path: ${{runner.workspace}}/potku/external/bin
           check_artifacts: true
           search_artifacts: true
-      - name: Set up Python 3.12
-        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
+      - name: Set up Python 3.10
+        uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1 # v4
         with:
           # Semantic version range syntax or exact version of a Python version
-          python-version: '3.12'
+          python-version: '3.10'
       - name: Collect external files and package Potku
         run: |
           cd ${{runner.workspace}}/potku
@@ -57,7 +57,7 @@ jobs:
             exit /b 1
           )
           cd ${{runner.workspace}}/potku
-          pipenv run pip install pyinstaller
+          pipenv run pip install pyinstaller==5.13.2
           pipenv run pyinstaller potku.spec
       - name: Create archive
         uses: thedoctor0/zip-release@a24011d8d445e4da5935a7e73c1f98e22a439464 # 0.7.1
@@ -104,11 +104,11 @@ jobs:
           path: ${{runner.workspace}}/potku/external
           check_artifacts: true
           search_artifacts: true
-      - name: Set up Python 3.12
-        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
+      - name: Set up Python 3.10
+        uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1 # v4
         with:
           # Semantic version range syntax or exact version of a Python version
-          python-version: '3.12'
+          python-version: '3.10'
       - name: Collect external files and package Potku
         id: package
         run: |
@@ -122,7 +122,7 @@ jobs:
             exit 1
           fi
           cd ${{runner.workspace}}/potku
-          pipenv run pip install pyinstaller
+          pipenv run pip install pyinstaller==5.13.2
           pipenv run pyinstaller potku.spec
       - name: Create archive
         uses: thedoctor0/zip-release@a24011d8d445e4da5935a7e73c1f98e22a439464 # 0.7.1
@@ -168,11 +168,11 @@ jobs:
           path: ${{runner.workspace}}/potku/external
           check_artifacts: true
           search_artifacts: true
-      - name: Set up Python 3.12
-        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
+      - name: Set up Python 3.10
+        uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1 # v4
         with:
           # Semantic version range syntax or exact version of a Python version
-          python-version: '3.12'
+          python-version: '3.10'
       - name: Collect external files and package Potku
         id: package
         run: |
@@ -186,7 +186,7 @@ jobs:
             exit 1
           fi
           cd ${{runner.workspace}}/potku
-          pipenv run pip install pyinstaller
+          pipenv run pip install pyinstaller==5.13.2
           pipenv run pyinstaller potku.spec
       - name: Create archive
         uses: thedoctor0/zip-release@a24011d8d445e4da5935a7e73c1f98e22a439464 # 0.7.1
@@ -270,7 +270,7 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: ${{ steps.get_content.outputs.version }}
           title: Potku ${{ steps.get_content.outputs.version }}
-          draft: true
+          draft: false
           prerelease: false
           files: |
             ${{runner.workspace}}/potku/artifact/Potku-Linux.zip

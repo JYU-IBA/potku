@@ -31,7 +31,7 @@ from typing import Optional
 
 import numpy as np
 from scipy.optimize import curve_fit
-from math import exp
+from scipy import exp
 
 
 class AngleCalibrationHistogram:

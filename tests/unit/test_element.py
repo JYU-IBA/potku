@@ -159,7 +159,7 @@ class TestElement(unittest.TestCase):
                 self.assertEqual(mi, e.get_most_common_isotope())
             else:
                 self.assertEqual(
-                    masses.get_most_common_isotope(e.symbol)[masses.MASS_NUMBER_KEY],
+                    masses.get_most_common_isotope(e.symbol)[masses.NUMBER_KEY],
                     e.get_most_common_isotope())
 
     def test_hash(self):

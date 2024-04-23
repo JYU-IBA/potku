@@ -101,11 +101,13 @@ class TestMasses(unittest.TestCase):
         self.assertIsNone(masses.find_mass_of_isotope("foo", 42))
 
     def test_get_st_mass(self):
-        self.assertAlmostEqual(1.0079709, masses.get_standard_isotope("H"),
+        self.assertAlmostEqual(1.00015, masses.get_standard_isotope("H"),
                                places=5)
-        self.assertAlmostEqual(4.002598, masses.get_standard_isotope("He"),
+        self.assertAlmostEqual(4, masses.get_standard_isotope("He"),
                                places=5)
-        self.assertAlmostEqual(12.010636, masses.get_standard_isotope("C"),
+        self.assertAlmostEqual(12.0110, masses.get_standard_isotope("C"),
+                               places=5)
+        self.assertAlmostEqual(6.925, masses.get_standard_isotope("Li"),
                                places=5)
 
         self.assertEqual(0, masses.get_standard_isotope("U"))

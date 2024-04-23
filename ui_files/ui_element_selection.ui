@@ -1782,7 +1782,7 @@
         <string notr="true">QPushButton{background: rgb(170, 170, 170);}</string>
        </property>
        <property name="text">
-        <string>Nh</string>
+        <string>Uut</string>
        </property>
        <attribute name="buttonGroup">
         <string notr="true">elementButtons</string>
@@ -1826,7 +1826,7 @@
         <string notr="true">QPushButton{background: rgb(170, 170, 170);}</string>
        </property>
        <property name="text">
-        <string>Mc</string>
+        <string>Uup</string>
        </property>
        <attribute name="buttonGroup">
         <string notr="true">elementButtons</string>
@@ -1870,7 +1870,7 @@
         <string notr="true">QPushButton{background: rgb(255, 255, 100);}</string>
        </property>
        <property name="text">
-        <string>Ts</string>
+        <string>Uus</string>
        </property>
        <attribute name="buttonGroup">
         <string notr="true">elementButtons</string>
@@ -1892,7 +1892,7 @@
         <string notr="true">QPushButton{background: rgb(100, 170, 255);}</string>
        </property>
        <property name="text">
-        <string>Og</string>
+        <string>Uuo</string>
        </property>
        <attribute name="buttonGroup">
         <string notr="true">elementButtons</string>

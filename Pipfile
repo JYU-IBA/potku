@@ -4,20 +4,20 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-numpy = ">=1.22.4"
-scipy = ">=1.8.1"
-matplotlib = ">=3.5.2"
-Shapely = ">=1.8.2"
-wheel = ">=0.37.1"
-reactivex = ">=4.0.2"
-Pillow = ">=9.1.1"
-hypothesis = ">=6.47.0"
-requests = ">=2.31.0"
-pyqt5 = "*"
+numpy = "1.22.4"
+scipy = "1.8.1"
+matplotlib = "3.5.2"
+PyQt5 = "5.15.6"
+Shapely = "1.8.2"
+wheel = "0.37.1"
+reactivex = "4.0.2"
+Pillow = "9.1.1"
+hypothesis = "6.47.0"
+requests = "2.31.0"
 
 [dev-packages]
-pypiwin32 = { version = "*", markers = "sys_platform== 'win32'"}
-pywin32 = { version = "*", markers = "sys_platform== 'win32'"}
+pypiwin32 = {sys_platform = "== 'win32'"}
+pywin32 = {sys_platform = "== 'win32'"}
 
 [requires]
-python_version = "3.12"
+python_version = "3.10"

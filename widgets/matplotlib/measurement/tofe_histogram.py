@@ -338,7 +338,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             if sel.type == "RBS":
                 element = sel.element_scatter
                 rbs_string = "*"
-            sel.points.set_marker("None")  # Remove markers for legend.
+            sel.points.set_marker(None)  # Remove markers for legend.
             dirtyinteger = 0
             key_string = "{0}{1}".format(element.symbol, dirtyinteger)
             while key_string in selection_legend:

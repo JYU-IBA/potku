@@ -33,7 +33,10 @@ from typing import Optional
 
 import numpy as np
 import scipy.optimize as optimize
-from math import sin, cos, sqrt, pi
+from scipy import cos
+from scipy import sin
+from scipy import sqrt
+from scipy import pi
 from scipy.special import erf
 
 from .run import Run

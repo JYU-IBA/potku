@@ -1,5 +1,6 @@
+@echo off
 set CUR_DIR=%cd%
-cd ..
+cd ..\
 set ROOT_DIR=%cd%
 set EXT_DIR=%ROOT_DIR%\external
 set BIN_DIR=%EXT_DIR%\bin
@@ -12,16 +13,27 @@ if "%1"=="" (
 	echo Using toolchain file at: %1
 )
 
-cd %EXT_DIR%
-cd submodules
+cd external
 
-for %%G in (jibal erd_depth mcerd coinc) DO @(
-cd %%G
+make clean
+make
+
+cd submodules\jibal\
+del /q build\CMakeCache.txt
 mkdir build
 cd build
-echo "Building %%G"
-cd
-del /q CMakeCache.txt
+
+if "%1"=="" (
+	cmake -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%EXT_DIR% .. || EXIT /b 1
+) else (
+	cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=%1 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%EXT_DIR% .. || EXIT /b 1
+)
+msbuild INSTALL.vcxproj /property:Configuration=Release || EXIT /b 1
+
+cd ..\..\mcerd
+del /q build\CMakeCache.txt
+mkdir build
+cd build
 
 if "%1"=="" (
 	cmake -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=%EXT_DIR% -DCMAKE_INSTALL_PREFIX=%EXT_DIR% .. || EXIT /b 1
@@ -29,10 +41,8 @@ if "%1"=="" (
 	cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=%1 -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=%EXT_DIR% -DCMAKE_INSTALL_PREFIX=%EXT_DIR% .. || EXIT /b 1
 )
 msbuild INSTALL.vcxproj /property:Configuration=Release || EXIT /b 1
-cd ..\..
-)
 
-
+cd %CUR_DIR%
 setlocal enabledelayedexpansion
 
 if "%1"=="" (
