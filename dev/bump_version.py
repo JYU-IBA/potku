@@ -41,7 +41,7 @@ new version on the second row.
 
 dev_directory = os.path.dirname(os.path.realpath(__file__))
 root_directory = os.path.dirname(dev_directory)
-version_file_path = os.path.join(root_directory, r".\version.txt")
+version_file_path = os.path.join(root_directory, "version.txt")
 version_pattern = r'^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.' \
                   r'(?P<patch>0|[1-9]\d*)' \
                   r'(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)' \
