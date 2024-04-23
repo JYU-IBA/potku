@@ -53,8 +53,10 @@ version_pattern = r'^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.' \
 
 parser = argparse.ArgumentParser(description='Bump Potku version')
 parser.add_argument('--remote', help='Set git remote (usually origin)', default="origin")
+parser.add_argument('--repo', help='Set GitHub repository (usually JYU-IBA/potku)', default="JYU-IBA/potku")
 args = parser.parse_args()
 remote = args.remote
+repo = args.repo
 
 def get_github_status():
     """
@@ -122,19 +124,20 @@ def git_bump_and_pr(version_string: str):
     subprocess.run(["git", "push", remote,
                     f"bump_version_{version_string}"], cwd=root_directory, check=True)
 
-    subprocess.run(["gh", "pr", "create", "-B", "master", "-t",
-                    f"Version bump to {version_string}", "-b",
-                    "Version bump via script."], cwd=root_directory,
-                   stdout=subprocess.DEVNULL,
-                   stderr=subprocess.DEVNULL, check=True)
+    #subprocess.run(["gh", "pr", "create", "-R", repo, "-B", "master", "-t",
+    #                f"Version bump to {version_string}", "-b",
+    #                "Version bump via script."], cwd=root_directory,
+    #               stdout=subprocess.DEVNULL,
+    #               stderr=subprocess.DEVNULL, check=True)
+    print(f'Run this to create a pull request: gh pr create -B master -t "Version bump to {version_string}" --fill --web')
 
-    print('Done creating a pull request.')
+    #print('Done creating a pull request.')
 
     subprocess.run(["git", "checkout", "master"], cwd=root_directory, check=True)
 
     #subprocess.run(["git", "branch", "-D",
     #                f'bump_version_{version_string}'], cwd=root_directory, check=True)
-
+    print(f'Run this to remove the temporary branch locally: git branch -D bump_version_{version_string}')
     return
 
 
