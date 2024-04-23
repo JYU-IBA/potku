@@ -270,7 +270,7 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: ${{ steps.get_content.outputs.version }}
           title: Potku ${{ steps.get_content.outputs.version }}
-          draft: false
+          draft: true
           prerelease: false
           files: |
             ${{runner.workspace}}/potku/artifact/Potku-Linux.zip
