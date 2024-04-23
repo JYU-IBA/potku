@@ -126,7 +126,7 @@ class TestCalculateMeasuredSpectra(unittest.TestCase):
                 (3.400000000000001, 1.0),
                 (3.600000000000001, 0),
             ],
-            "7Li.0.0.0": [
+            "7Li.ERD.0.0": [
                 (1.4000000000000001, 0),
                 (1.6, 0.0),
                 (1.8, 2.0),
@@ -158,7 +158,7 @@ class TestCalculateMeasuredSpectra(unittest.TestCase):
                 (3.0, 6.0),
                 (3.5, 0),
             ],
-            "7Li.0.0.0": [
+            "7Li.ERD.0.0": [
                 (0.5, 0),
                 (1.0, 0.0),
                 (1.5, 2.0),
@@ -173,7 +173,7 @@ class TestCalculateMeasuredSpectra(unittest.TestCase):
             "cuts.1H.ERD.0.tofe_list",
             "cuts.1H.ERD.1.tofe_list",
             "cuts.35Cl.RBS_Mn.0.tofe_list",
-            "cuts.7Li.0.0.0.tofe_list",
+            "cuts.7Li.ERD.0.0.tofe_list",
         ]
 
     @property
@@ -182,7 +182,7 @@ class TestCalculateMeasuredSpectra(unittest.TestCase):
             "Default.1H.ERD.0.hist",
             "Default.1H.ERD.1.hist",
             "Default.35Cl.RBS_Mn.0.hist",
-            "Default.7Li.0.0.0.hist"
+            "Default.7Li.ERD.0.0.hist"
         ]
 
     @property
@@ -406,7 +406,7 @@ def run_spectra_calculation(mesu, tmp_dir: Path, **kwargs):
         resource_dir / "cuts.1H.ERD.0.cut",
         resource_dir / "cuts.1H.ERD.1.cut",
         resource_dir / "cuts.35Cl.RBS_Mn.0.cut",
-        resource_dir / "cuts.7Li.0.0.0.cut",
+        resource_dir / "cuts.7Li.ERD.0.0.cut",
     ]
     es = EnergySpectrum.calculate_measured_spectra(
         mesu, cuts, **kwargs, verbose=False
