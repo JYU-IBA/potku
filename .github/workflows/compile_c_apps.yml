@@ -89,7 +89,9 @@ jobs:
       uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
       with:
         name: c-apps-windows
-        path: ${{runner.workspace}}\potku\repo\external\bin
+        path: |
+          ${{runner.workspace}}\potku\repo\external\bin
+          ${{runner.workspace}}\potku\repo\external\share
 
   build_linux:
     runs-on: ubuntu-latest
@@ -114,6 +116,7 @@ jobs:
         path: |
           ${{runner.workspace}}/potku/external/bin
           ${{runner.workspace}}/potku/external/lib
+          ${{runner.workspace}}/potku/external/share
 
   build_macos:
     runs-on: macos-latest
@@ -139,3 +142,6 @@ jobs:
         path: |
           ${{runner.workspace}}/potku/external/bin
           ${{runner.workspace}}/potku/external/lib
+          ${{runner.workspace}}/potku/external/share
+
+
