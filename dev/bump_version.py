@@ -122,13 +122,13 @@ def git_bump_and_pr(version_string: str):
     subprocess.run(["git", "push", remote,
                     f"bump_version_{version_string}"], cwd=root_directory, check=True)
 
+    print('Created a new pull request, URL follows')
+
     subprocess.run(["gh", "pr", "create", "-B", "master", "-t",
                     f"Version bump to {version_string}", "-b",
                     "Version bump via script."], cwd=root_directory, check=True)
 
-    print('Please fill out the pull request and wait for the packaging. Hit any key to continue.')
-
-    continue_response = input().casefold()
+    print('Please edit the pull request to provide more information about the changes in this version.')
 
     subprocess.run(["git", "checkout", "master"], cwd=root_directory, check=True)
 
@@ -136,7 +136,8 @@ def git_bump_and_pr(version_string: str):
                     cwd=root_directory, check=True)
 
     subprocess.run(["git", "pull", remote, "master"], check=True)
-
+    print('You are now back on master branch, consider doing a git pull after GitHub actions bot finishes.')
+    
     return
 
 
