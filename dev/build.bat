@@ -12,8 +12,11 @@ if "%1"=="" (
 	echo Using toolchain file at: %1
 )
 
+cd %EXT_DIR%
+cd submodules
+
 for %%G in (jibal erd_depth mcerd coinc) DO @(
-cd submodules\%%G\
+cd %%G
 mkdir build
 cd build
 echo "Building %%G"
@@ -26,7 +29,7 @@ if "%1"=="" (
 	cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=%1 -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=%EXT_DIR% -DCMAKE_INSTALL_PREFIX=%EXT_DIR% .. || EXIT /b 1
 )
 msbuild INSTALL.vcxproj /property:Configuration=Release || EXIT /b 1
-cd %CUR_DIR%
+cd ..
 )
 
 
