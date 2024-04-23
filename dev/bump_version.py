@@ -65,20 +65,23 @@ def get_github_status():
     """
     git_status_process = subprocess.run(["git", "status", "-s"],
                                         capture_output=True,
-                                        cwd=root_directory)
+                                        cwd=root_directory,
+                                        check=True)
 
     ret = git_status_process.stdout.decode('UTF-8')
     if not ret:
         print("Working tree is clean, ready to proceed.")
         git_checkout_master = subprocess.run(["git", "checkout", "master"],
                                              capture_output=True,
-                                             cwd=root_directory)
+                                             cwd=root_directory,
+                                             check=True)
 
         print("Checked out master.")
 
         git_pull_remote_master = subprocess.run(["git", "pull", remote, "master"],
                                                 capture_output=True,
-                                                cwd=root_directory)
+                                                cwd=root_directory,
+                                                check=True)
         return True
 
     print("There are uncommitted differences, cannot proceed.")
@@ -100,36 +103,37 @@ def git_bump_and_pr(version_string: str):
     git_create_branch = subprocess.run(["git", "checkout", "-b",
                                         f"bump_version_{version_string}"],
                                        capture_output=True,
-                                       cwd=root_directory)
+                                       cwd=root_directory,
+                                       check=True)
     ret_branch = git_create_branch.stdout.decode('UTF-8')
     print(ret_branch)
 
-    subprocess.run(["git", "add", version_file_path])
+    subprocess.run(["git", "add", version_file_path], check=True)
 
     git_commit_process = subprocess.run(["git", "commit", "-m",
                                          f"Bump version to {version_string}"],
                                         capture_output=True,
-                                        cwd=root_directory)
+                                        cwd=root_directory, check=True)
     ret_commit = git_commit_process.stdout.decode('UTF-8')
     print(ret_commit)
 
     print(f'Pushing a new branch: bump_version_{version_string}')
 
     subprocess.run(["git", "push", remote,
-                    f"bump_version_{version_string}"], cwd=root_directory)
+                    f"bump_version_{version_string}"], cwd=root_directory, check=True)
 
     subprocess.run(["gh", "pr", "create", "-B", "master", "-t",
                     f"Version bump to {version_string}", "-b",
                     "Version bump via script."], cwd=root_directory,
                    stdout=subprocess.DEVNULL,
-                   stderr=subprocess.DEVNULL)
+                   stderr=subprocess.DEVNULL, check=True)
 
     print('Done creating a pull request.')
 
-    subprocess.run(["git", "checkout", "master"], cwd=root_directory)
+    subprocess.run(["git", "checkout", "master"], cwd=root_directory, check=True)
 
-    subprocess.run(["git", "branch", "-D",
-                    f'bump_version_{version_string}'], cwd=root_directory)
+    #subprocess.run(["git", "branch", "-D",
+    #                f'bump_version_{version_string}'], cwd=root_directory, check=True)
 
     return
 
@@ -142,7 +146,7 @@ def version_not_taken(version_text):
     Returns: bool whether the version number is already taken or not
     """
     git_tags = subprocess.run(["git", "tag"], capture_output=True,
-                              cwd=root_directory)
+                              cwd=root_directory, check=True)
     tag_list = git_tags.stdout.decode('UTF-8').splitlines()
     if version_text in tag_list:
         print("Version number is already taken on GitHub!")
@@ -233,7 +237,8 @@ def check_gh_cli_installation():
     """
     gh_version_process = subprocess.run(["gh", "version"],
                                         capture_output=True,
-                                        cwd=root_directory)
+                                        cwd=root_directory,
+                                        check=True)
     ret_gh = gh_version_process.stdout.decode('UTF-8')
     if "gh version" in ret_gh:
         return True
@@ -247,7 +252,8 @@ def check_git_installation():
     """
     git_version_process = subprocess.run(["git", "version"],
                                          capture_output=True,
-                                         cwd=root_directory)
+                                         cwd=root_directory,
+                                         check=True)
     ret_git = git_version_process.stdout.decode('UTF-8')
     if "git version" in ret_git:
         return True
