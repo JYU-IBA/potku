@@ -29,7 +29,7 @@ if "%1"=="" (
 	cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=%1 -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=%EXT_DIR% -DCMAKE_INSTALL_PREFIX=%EXT_DIR% .. || EXIT /b 1
 )
 msbuild INSTALL.vcxproj /property:Configuration=Release || EXIT /b 1
-cd ..
+cd ..\..
 )
 
 
