@@ -703,11 +703,18 @@ void read_input(const char *input_file, Input *input)
             fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
-         if(fscanf(fp,"%s",read) == 0){
+
+         // read the space before directory string
+         if(fgetc(fp) != ' ') {
             fprintf(stderr,"Faulty input file %s\n",input_file);
             exit(7);
          }
-		 sscanf(read,"%s",input->eff_dir);
+         // Read directory string, with max length of buffer
+         // if too long line, extra characters are not read.
+         if(fgets(input->eff_dir, EFF_DIR_LENGTH, fp) == NULL){
+            fprintf(stderr,"Faulty input file %s\n",input_file);
+            exit(7);
+         }
       }
    }
    fclose(fp);
