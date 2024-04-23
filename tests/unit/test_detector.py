@@ -292,7 +292,7 @@ class TestEfficiencyFiles(unittest.TestCase):
 
     def test_copying_eff_files(self):
         """When files are copied to the used efficiencies folder, which will
-        then be provided to tof_list as a parameter, file names are validated
+        then be provided to tofe_list as a parameter, file names are validated
         and extra comments are removed.
         """
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -310,7 +310,7 @@ class TestEfficiencyFiles(unittest.TestCase):
                 [f for f in self.eff_files.values() if f is not None])
             self.create_eff_files(self.det.get_efficiency_dir(), self.eff_files)
 
-            self.det.copy_efficiency_files_for_tof_list()
+            self.det.copy_efficiency_files_for_tofe_list()
             self.assertTrue(used_folder.exists())
             used_effs = sorted(os.listdir(used_folder))
             self.assertEqual(expected, used_effs)
@@ -320,7 +320,7 @@ class TestEfficiencyFiles(unittest.TestCase):
             self.create_eff_files(
                 self.det.get_used_efficiencies_dir(), ["O.eff"])
             self.assertTrue(path.exists())
-            self.det.copy_efficiency_files_for_tof_list()
+            self.det.copy_efficiency_files_for_tofe_list()
             self.assertFalse(path.exists())
 
     def test_remove_efficiencies(self):
@@ -331,7 +331,7 @@ class TestEfficiencyFiles(unittest.TestCase):
             self.det.update_directories(Path(tmp_dir))
             self.create_eff_files(self.det.get_efficiency_dir(), self.eff_files)
 
-            self.det.copy_efficiency_files_for_tof_list()
+            self.det.copy_efficiency_files_for_tofe_list()
             self.assertNotEqual([], os.listdir(self.det.get_efficiency_dir()))
             self.assertNotEqual(
                 [], os.listdir(self.det.get_used_efficiencies_dir()))

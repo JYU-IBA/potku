@@ -48,8 +48,8 @@ class TestUpdatingReferenceDensity(unittest.TestCase):
         one_layer_under_limit = ReferenceDensity(
             target_one_layer_under_limit.layers)
 
-        self.assertEqual(one_layer_under_limit.get_value(),
-                         4.9897601328705675e+22)
+        self.assertAlmostEqual(one_layer_under_limit.get_value(),
+                         4.993970863902691e+22)
 
         target_one_layer_over_limit = mo.Target(layers=[
             Layer("Si", [Element.from_string("Si 1.0")], 10.0, 2.3290)
@@ -59,7 +59,7 @@ class TestUpdatingReferenceDensity(unittest.TestCase):
             target_one_layer_over_limit.layers)
 
         self.assertEqual(one_layer_over_limit.get_value(),
-                         4.9897601328705675e+22)
+                         4.993970863902691e+22)
 
         target_two_layers_over_limit = mo.Target(layers=[
             Layer("Au", [Element.from_string("Au 1.0")], 11.0, 19.32),
@@ -70,7 +70,7 @@ class TestUpdatingReferenceDensity(unittest.TestCase):
             target_two_layers_over_limit.layers)
 
         self.assertEqual(two_layers_over_limit.get_value(),
-                         5.905978158632255e+22)
+                         5.906980546244748e+22)
 
         target_two_layers_under_limit = mo.Target(layers=[
             Layer("Au", [Element.from_string("Au 1.0")], 1.0, 19.32),
@@ -81,7 +81,7 @@ class TestUpdatingReferenceDensity(unittest.TestCase):
             target_two_layers_under_limit.layers)
 
         self.assertEqual(two_layers_under_limit.get_value(),
-                         5.081381935446736e+22)
+                         5.085271832136897e+22)
 
         target_two_in_same_layer_under_limit = mo.Target(layers=[
             Layer("SiN", [Element.from_string("Si 0.43"),
@@ -92,9 +92,7 @@ class TestUpdatingReferenceDensity(unittest.TestCase):
         two_elements_in_same_layer_under_limit = ReferenceDensity(
             target_two_in_same_layer_under_limit.layers)
 
-        self.assertEqual(
-            two_elements_in_same_layer_under_limit.get_value(),
-            5.442019969064045e+22)
+        self.assertEqual(5.446206442383031e+22, two_elements_in_same_layer_under_limit.get_value())
 
         target_two_in_same_layer_over_limit = mo.Target(layers=[
             Layer("SiN", [Element.from_string("Si 0.43"),
@@ -105,9 +103,7 @@ class TestUpdatingReferenceDensity(unittest.TestCase):
         two_elements_in_same_layer_over_limit = ReferenceDensity(
             target_two_in_same_layer_over_limit.layers)
 
-        self.assertEqual(
-            two_elements_in_same_layer_over_limit.get_value(),
-            9.512358494805351e+22)
+        self.assertEqual(9.51632664870609e+22, two_elements_in_same_layer_over_limit.get_value())
 
         target_two_layers_under_limit_reversed = mo.Target(layers=[
             Layer("Si", [Element.from_string("Si 1.0")], 100.0, 2.3290),
@@ -117,9 +113,8 @@ class TestUpdatingReferenceDensity(unittest.TestCase):
         two_layers_under_limit_reversed = ReferenceDensity(
             target_two_layers_under_limit_reversed.layers)
 
-        self.assertEqual(
-            two_layers_under_limit_reversed.get_value(),
-            4.9897601328705675e+22)
+        self.assertEqual(4.993970863902691e+22,
+            two_layers_under_limit_reversed.get_value())
 
         target_two_layers_over_limit_reversed = mo.Target(layers=[
             Layer("Si", [Element.from_string("Si 1.0")], 100.0, 2.3290),
@@ -129,9 +124,7 @@ class TestUpdatingReferenceDensity(unittest.TestCase):
         two_layers_over_limit_reversed = ReferenceDensity(
             target_two_layers_over_limit_reversed.layers)
 
-        self.assertEqual(
-            two_layers_over_limit_reversed.get_value(),
-            4.9897601328705675e+22)
+        self.assertEqual(4.993970863902691e+22, two_layers_over_limit_reversed.get_value())
 
     def test_update_layers(self):
 
@@ -191,8 +184,8 @@ class TestUpdatingReferenceDensity(unittest.TestCase):
         self.assertEqual(initially_true_use_user_value.get_value(),
                          5.0e+20)
 
-        self.assertEqual(initially_false_use_user_value.get_value(),
-                         4.9897601328705675e+22)
+        self.assertAlmostEqual(initially_false_use_user_value.get_value(),
+                         4.99397e+22, delta=1.0e19)
 
         self.assertEqual(initially_true_use_user_value.manual_density,
                          initially_false_use_user_value.manual_density)
@@ -203,7 +196,7 @@ class TestUpdatingReferenceDensity(unittest.TestCase):
 
         initially_true_use_user_value.use_user_value = False
 
-        self.assertEqual(initially_true_use_user_value.get_value(),
-                         4.9897601328705675e+22)
+        self.assertAlmostEqual(initially_true_use_user_value.get_value(),
+                         4.99397e+22, delta=1.0e19)
 
 

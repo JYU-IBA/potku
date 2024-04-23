@@ -345,7 +345,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
 
     @staticmethod
     def get_used_efficiency_file_name(file_name) -> Path:
-        """Returns an efficiency file name that can be used by tof_list.
+        """Returns an efficiency file name that can be used by tofe_list.
 
         File name should end in '.eff', otherwise ValueError is raised.
         If the file name includes comments (indicated by a '-'), they will be
@@ -375,12 +375,12 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
 
     def get_used_efficiencies_dir(self) -> Path:
         """Returns the path to efficiency folder where the files used when
-        running tof_list are located.
+        running tofe_list are located.
         """
         return self.get_efficiency_dir() / Detector.USED_EFFICIENCIES_DIR
 
-    def copy_efficiency_files_for_tof_list(self) -> None:
-        """Copies efficiency files to the directory where tof_list will be
+    def copy_efficiency_files_for_tofe_list(self) -> None:
+        """Copies efficiency files to the directory where tofe_list will be
         looking for them. Additional comments are stripped from the files.
         (i.e. 1H-example.eff becomes 1H.eff).
         """

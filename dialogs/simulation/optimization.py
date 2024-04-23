@@ -218,7 +218,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         self.efficiency_label.setEnabled(self.use_efficiency)
 
     def _fill_measurement_widget(self):
-        """Add calculated tof_list files to tof_list_tree_widget by
+        """Add calculated tofe_list files to tofe_list_tree_widget by
         measurement under the same sample.
         """
         for sample in self.simulation.request.samples.samples:

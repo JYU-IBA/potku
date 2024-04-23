@@ -2,11 +2,9 @@
 """
 Created on 8.2.2020
 
-Potku is a graphical user interface for analyzation and
-visualization of measurement data collected from a ToF-ERD
-telescope. For physics calculations Potku uses external
-analyzation components.
-Copyright (C) 2020 Juhani Sundell
+Potku
+
+Copyright (C) 2020 Juhani Sundell, 2024 Jaakko Julin
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -19,10 +17,10 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program (file named 'LICENCE').
+along with this program (file named 'LICENSE').
 """
 
-__author__ = "Juhani Sundell"
+__author__ = "Juhani Sundell \n Jaakko Julin"
 __version__ = "2.0"
 
 import tempfile
@@ -89,7 +87,7 @@ def get_element(randomize=False, isotope_p=0.5, amount_p=0.5,
         symbol = random.choice(list(masses._ISOTOPES.keys()))
         if random.random() < isotope_p:
             isotope = random.choice(
-                masses.get_isotopes(symbol, filter_unlikely=False))["number"]
+                masses.get_isotopes(symbol, filter_unlikely=False))[masses.MASS_NUMBER_KEY]
         else:
             isotope = None
 

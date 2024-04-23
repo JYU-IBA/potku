@@ -30,10 +30,11 @@ import subprocess
 import os
 from datetime import date
 import re
+import argparse
 
 """
 Script for updating the version number stored in version.txt and pushing the
-update to origin/master via a pull request. version.txt must be in the root of
+update to remote/master via a pull request. version.txt must be in the root of
 the repository. Git and GitHub CLI must be installed to run the script. Script
 saves the new version number on the first row of version.txt and the date of the
 new version on the second row.
@@ -41,7 +42,7 @@ new version on the second row.
 
 dev_directory = os.path.dirname(os.path.realpath(__file__))
 root_directory = os.path.dirname(dev_directory)
-version_file_path = os.path.join(root_directory, r".\version.txt")
+version_file_path = os.path.join(root_directory, "version.txt")
 version_pattern = r'^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.' \
                   r'(?P<patch>0|[1-9]\d*)' \
                   r'(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)' \
@@ -49,6 +50,11 @@ version_pattern = r'^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.' \
                   r'?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+' \
                   r'(?:\.[0-9a-zA-Z-]+)*))?$'
 
+
+parser = argparse.ArgumentParser(description='Bump Potku version')
+parser.add_argument('--remote', help='Set git remote (usually origin)', default="origin")
+args = parser.parse_args()
+remote = args.remote
 
 def get_github_status():
     """
@@ -70,7 +76,7 @@ def get_github_status():
 
         print("Checked out master.")
 
-        git_pull_origin_master = subprocess.run(["git", "pull", "origin", "master"],
+        git_pull_remote_master = subprocess.run(["git", "pull", remote, "master"],
                                                 capture_output=True,
                                                 cwd=root_directory)
         return True
@@ -109,7 +115,7 @@ def git_bump_and_pr(version_string: str):
 
     print(f'Pushing a new branch: bump_version_{version_string}')
 
-    subprocess.run(["git", "push", "origin",
+    subprocess.run(["git", "push", remote,
                     f"bump_version_{version_string}"], cwd=root_directory)
 
     subprocess.run(["gh", "pr", "create", "-B", "master", "-t",
