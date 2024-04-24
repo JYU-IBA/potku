@@ -417,7 +417,7 @@ class TOFCalibrationPoint:
         self.length = time_of_flight_length
         # Target angle, same with both recoiled and scattered atoms when
         # using same hardware.
-        self.target_angle = detector.detector_theta * pi / 180
+        self.theta = detector.detector_theta * pi / 180
         energy = self.__calculate_particle_energy(self.beam_energy)
 
         # Carbon stopping gives a list of different result values.
@@ -444,10 +444,9 @@ class TOFCalibrationPoint:
               "\nBeam mass [kg]: " + str(self.beam_mass) +
               "\nBeam energy [J]: " + str(self.beam_energy) +
               "\nToF length [m]: " + str(self.length) +
-              "\nTarget angle [rads]" + str(self.recoiled_mass) +
+              "\nRecoil/scattering angle [rads]" + str(self.theta) +
               "\nEnergy loss in foil [J]: " + str(self.energy_loss) +
-              "\nTime of Flight [Channel]: " + str(
-            self.time_of_flight_channel) +
+              "\nTime of Flight [channel]: " + str(self.time_of_flight_channel) +
               "\nTime of Flight [seconds]: " + str(self.time_of_flight_seconds))
 
     def __calculate_particle_energy(self, beam_energy):
@@ -505,9 +504,9 @@ class TOFCalibrationPoint:
         """
         # TODO: Print -> Raise and/or logger.error
         # error_msg = "Impossible parameters for calculating kinematic factor."
-        cosin = cos(self.target_angle)
+        cosin = cos(self.theta)
         cosin2 = cosin * cosin
-        sine = sin(self.target_angle)
+        sine = sin(self.theta)
         sine2 = sine * sine
         M_I = self.beam_mass
         if selection_type == "ERD":
