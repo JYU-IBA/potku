@@ -93,6 +93,27 @@ class Element(MCERDParameterContainer):
                 f"Could not intialize an Element from the given "
                 f"string: {element_str}")
 
+    @classmethod
+    def from_cutfile_string(cls, cutfile_str: str):
+        """A function that initializes an element object from a string containing a valid cutfile name.
+        e.g. 16O from tof1234.16O.ERD.0.cut or Ta from blahblh.35Cl.RBS_Ta.0.cut
+        Args:
+            cutfile_str: A string from which the element information will be
+                         parsed.
+
+        Return:
+            Element object.
+        """
+        s = cutfile_str.split(".")
+        if len(s) < 4:
+            raise ValueError(f"Invalid cutfile name: {cutfile_str}")
+        if s[2] == "ERD":
+            return cls.from_string(s[1])
+        elif s[2].startswith("RBS_"):
+            return cls.from_string(s[2].replace("RBS_", ""))
+        else:
+            raise ValueError(f"Invalid cutfile name: {cutfile_str}")
+
     def __str__(self):
         """Transform element into string.
 

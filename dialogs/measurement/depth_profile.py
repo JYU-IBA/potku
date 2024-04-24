@@ -160,40 +160,22 @@ class DepthProfileDialog(QtWidgets.QDialog):
             self.label_warning_text.setText('')
             return
         else:
-            cuts = []
-            for cut in self.used_cuts:
-                cuts.append(cut.suffixes[0])
-
-            indices = []
-            for c in cuts:
-                indices.append(
-                    [i for i, sublist in enumerate(cuts) if sublist == c])
-
-            indices = [list(sublist) for sublist in
-                       set(tuple(sublist) for sublist in indices)]
-            indices_length = [len(x) for x in indices]
-
-            if any(length > 1 for length in indices_length):
-                files = []
-                for index in indices:
-                    if len(index) < 2:
-                        continue
-                    files.append((self.used_cuts[index[0]].suffixes[
-                                      0].replace('.', '')))
-                warning_message = "Multiple .cut-files selected for " \
-                                  "following element(s): {} \nCheck the " \
-                                  "elemental losses if you are not sure " \
-                                  "what you are doing. "
-                if len(files) > 1:  # If there are multiple elements
-                    files = ' and '.join(files)
-                    warning_message = warning_message.format(files)
-                else:  # If theres is only one element
-                    warning_message = warning_message.format(files[0])
-                self.label_warning_text.setText(warning_message)
-                self.label_warning_text.setStyleSheet("color: red")
+            print(self.used_cuts)
+            elements = [Element.from_cutfile_string(fp.name) for fp in self.used_cuts]
+            seen = []
+            duplicates = []
+            for element in elements:
+                if element not in seen:
+                    seen.append(element)
+                else:
+                    duplicates.append(element)
+            if not duplicates:
+                self.label_warning_text.setText('')
                 return
-            self.label_warning_text.setText('')
-            return
+
+            self.label_warning_text.setText("Multiple cutfiles for {}\n"
+                                            "Check elemental losses".format(" and ".join([str(d) for d in duplicates])))
+            self.label_warning_text.setStyleSheet("color: red")
 
     @gutils.disable_widget
     def _accept_params(self, *_):
@@ -213,11 +195,8 @@ class DepthProfileDialog(QtWidgets.QDialog):
             used_cuts = self.used_cuts
             DepthProfileDialog.checked_cuts[self.measurement.name] = set(
                 used_cuts)
-            # TODO could take care of RBS selection here
-            elements = [
-                Element.from_string(fp.name.split(".")[1])
-                for fp in used_cuts
-            ]
+
+            elements = [Element.from_cutfile_string(fp.name) for fp in used_cuts]
 
             x_unit = self.x_axis_units
 
