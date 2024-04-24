@@ -106,7 +106,6 @@ class Potku(QtWidgets.QMainWindow):
         self.icon_manager = IconManager()
         self.settings = GlobalSettings()
         self.request = None
-        self.potku_bin_dir = os.getcwd()
 
         # Holds references to all the tab widgets in "tab_measurements"
         # (even when they are removed from the QTabWidget)
@@ -171,15 +170,12 @@ class Potku(QtWidgets.QMainWindow):
         self.actionCreate_report.triggered.connect(self.create_report)
 
         # Set up styles for main window
-        # Cannot use os.path.join (PyQT+css)
-        print("Root directory is " + str(gf.get_root_dir()))
-        print("Root directory relative to CWD is " + str(gf.get_root_dir().relative_to(os.getcwd())))
-        images_dir = str(gf.get_images_dir().relative_to(os.getcwd()))
-        images_dir.replace("\\", "/") #Not sure if needed, it's a hack anyway.
-        print("Images directory relative to CWD is " + images_dir)
+        # Cannot use os.path.join or pathlib, since PyQT+css want a URL-style (relative?) path
+        print("Potku root directory is " + str(gf.get_root_dir()))
+        print("C programs installed in " + str(gf.get_bin_dir()))
+        images_dir = str(gf.get_images_dir().relative_to(os.getcwd())).replace("\\", "/")
         bg_blue = images_dir + "/background_blue.svg"
         bg_green = images_dir + "/background_green.svg"
-        print("Blue background should be: " + bg_blue)
 
 
         style_intro = "QWidget#introduceTab {border-image: url(" \
