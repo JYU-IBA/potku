@@ -79,29 +79,18 @@ class TestErdFileHandler(unittest.TestCase):
     def test_get_seed(self):
         # get_seed looks for an integer in the second part of the string
         # split by dots
-        self.assertEqual(102, fp.get_seed(Path("O.102.erd")))
-        self.assertEqual(0, fp.get_seed(Path("..3.2.1.0.")))
-        self.assertEqual(-1, fp.get_seed(Path("..-1.2")))
-        self.assertEqual(101, fp.get_seed(Path("/tmp/.101.erd")))
-        self.assertEqual(101, fp.get_seed(Path("\\tmp\\.101.erd")))
+        self.assertEqual(102, fp.get_seed("O.102.erd"))
 
-        self.assertIsNone(fp.get_seed(Path(".101./erd")))
-
-        # strings cause AttributeError
-        self.assertRaises(AttributeError, lambda: fp.get_seed("O.102.erd"))
+        self.assertIsNone(fp.get_seed(".101./erd"))
 
         # Having less split parts before or after returns None
-        self.assertIsNone(fp.get_seed(Path("111.")))
-        self.assertIsNone(fp.get_seed(Path("0-111.")))
-        self.assertIsNone(fp.get_seed(Path(".111..")))
+        self.assertIsNone(fp.get_seed("111."))
+        self.assertIsNone(fp.get_seed("0-111."))
+        self.assertIsNone(fp.get_seed(".111.."))
 
         # So does having no splits at all
-        self.assertIsNone(fp.get_seed(Path("100")))
+        self.assertIsNone(fp.get_seed("100"))
 
-    # Expect failure on *nix systems because they accept different file names
-    # compared to Windows.
-    # TODO correct behaviour should be specified in the future
-    @only_succeed_on(utils.WINDOWS)
     def test_get_valid_erd_files(self):
         self.assertEqual([], list(fp.validate_erd_file_names(
             self.invalid_erd_files, self.elem_4he)))

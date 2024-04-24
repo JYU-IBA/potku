@@ -61,21 +61,26 @@ def get_erd_file_name(recoil_element: "RecoilElement", seed: Union[int, str],
     raise ValueError(f"Unknown optimization mode '{optim_mode}'")
 
 
-def get_seed(erd_file: Path) -> Optional[int]:
-    """Returns seed value from given .erd file path.
+def get_seed(erd_file: str) -> Optional[int]:
+    """Returns seed value from given .erd file name.
 
     Does not check if the 'erd_file' parameter is a valid
-    file name or path.
+    file name
 
     Args:
-        erd_file: name or path to an .erd file.
+        erd_file: name of an .erd file without path.
 
     Returns:
         seed as an integer or None if seed value could not be
         parsed.
     """
+    if "\\" in erd_file:
+        #Don't allow backslashes in file names. This helps with testing between *nix and Windows.
+        return None
+    if not erd_file.endswith(".erd"):
+        return None
     try:
-        return int(erd_file.name.rsplit('.', 2)[1])
+        return int(erd_file.rsplit('.', 2)[1])
     except (ValueError, IndexError):
         # int could not be parsed or the splitted string did not contain
         # two parts
@@ -98,12 +103,8 @@ def validate_erd_file_names(erd_files: Iterable[Union[Path, str]],
         tuple containing a valid erd file name or path and its seed value
     """
     for erd_file_path in erd_files:
-        # TODO on a Unix-like system this will allow file names like
-        #  '4He-default.\.101.erd' to be valid but on Win this is not the
-        #  case. Not sure how to specify what the correct behaviour should
-        #  be
         erd_file = Path(erd_file_path)
-        seed = get_seed(erd_file)
+        seed = get_seed(erd_file.name)
         if seed is None:
             continue
 
