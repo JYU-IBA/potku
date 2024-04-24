@@ -158,13 +158,13 @@
                 <item>
                  <widget class="QCommandLinkButton" name="makeSelectionsButton">
                   <property name="text">
-                   <string>Mass Selection</string>
+                   <string>Element Selection</string>
                   </property>
                   <property name="checkable">
                    <bool>true</bool>
                   </property>
                   <property name="description">
-                   <string>Select the masses using the selection tool.</string>
+                   <string>Select elements using the selection tool</string>
                   </property>
                  </widget>
                 </item>
@@ -174,7 +174,7 @@
                    <string>Save Cuts</string>
                   </property>
                   <property name="description">
-                   <string>Save points grouped inside the selection areas.</string>
+                   <string>Save points inside selections</string>
                   </property>
                  </widget>
                 </item>
@@ -184,7 +184,7 @@
                    <string>Composition Changes</string>
                   </property>
                   <property name="description">
-                   <string>Analyze the composition changes of the target sample.</string>
+                   <string>Analyze composition changes during the measurement</string>
                   </property>
                  </widget>
                 </item>
@@ -194,7 +194,7 @@
                    <string>Energy Spectra</string>
                   </property>
                   <property name="description">
-                   <string>Draw energy spectra graph of the sample.</string>
+                   <string>Create energy spectra</string>
                   </property>
                  </widget>
                 </item>
@@ -204,7 +204,7 @@
                    <string>Depth Profiles</string>
                   </property>
                   <property name="description">
-                   <string>Visualize the consentrations of the elements in the different depths of the sample</string>
+                   <string>Create depth profiles</string>
                   </property>
                  </widget>
                 </item>

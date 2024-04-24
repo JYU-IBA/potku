@@ -166,9 +166,6 @@ class Potku(QtWidgets.QMainWindow):
         self.addNewSimulationButton.clicked.connect(
             self.create_new_simulation)
 
-        # Set up report tool connection in UI
-        self.actionCreate_report.triggered.connect(self.create_report)
-
         # Set up styles for main window
         # Cannot use os.path.join or pathlib, since PyQT+css want a URL-style (relative?) path
         print("Potku root directory is " + str(gf.get_root_dir()))
@@ -413,15 +410,6 @@ class Potku(QtWidgets.QMainWindow):
                     # is also to be expected.
                     e.wait(timeout=1)
         return True
-
-    def create_report(self):
-        """
-        Opens a dialog for making a report.
-        """
-        # TODO: Replace this with the actual dialog call.
-        QtWidgets.QMessageBox.critical(
-            self, "Error", "Report tool not yet implemented!",
-            QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def current_measurement_create_depth_profile(self):
         """Opens the depth profile analyzation tool for the current open

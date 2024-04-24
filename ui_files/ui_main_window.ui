@@ -578,9 +578,6 @@ simulation</string>
     <addaction name="actionCreate_energy_spectrum"/>
     <addaction name="actionCreate_depth_profile"/>
     <addaction name="separator"/>
-    <addaction name="separator"/>
-    <addaction name="actionCreate_report"/>
-    <addaction name="separator"/>
     <addaction name="actionGlobal_Settings"/>
     <addaction name="actionRequest_Settings"/>
    </widget>
@@ -746,7 +743,7 @@ simulation</string>
   </action>
   <action name="actionGlobal_Settings">
    <property name="text">
-    <string>General settings...</string>
+    <string>Global settings...</string>
    </property>
   </action>
   <action name="action_manual">
@@ -783,11 +780,6 @@ simulation</string>
    </property>
    <property name="text">
     <string>Create energy spectrum (sim)...</string>
-   </property>
-  </action>
-  <action name="actionCreate_report">
-   <property name="text">
-    <string>Create report...</string>
    </property>
   </action>
   <action name="actionNew_Simulation">
