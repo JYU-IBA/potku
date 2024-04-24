@@ -172,8 +172,16 @@ class Potku(QtWidgets.QMainWindow):
 
         # Set up styles for main window
         # Cannot use os.path.join (PyQT+css)
-        bg_blue = "images/background_blue.svg"
-        bg_green = "images/background_green.svg"
+        print("Root directory is " + str(gf.get_root_dir()))
+        print("Root directory relative to CWD is " + str(gf.get_root_dir().relative_to(os.getcwd())))
+        images_dir = str(gf.get_images_dir().relative_to(os.getcwd()))
+        images_dir.replace("\\", "/") #Not sure if needed, it's a hack anyway.
+        print("Images directory relative to CWD is " + images_dir)
+        bg_blue = images_dir + "/background_blue.svg"
+        bg_green = images_dir + "/background_green.svg"
+        print("Blue background should be: " + bg_blue)
+
+
         style_intro = "QWidget#introduceTab {border-image: url(" \
                       + bg_blue + ");}"
         style_mesinfo = ("QWidget#infoTab {border-image: url(" +
