@@ -293,14 +293,13 @@ def carbon_stopping(element, isotope, energy, carbon_thickness, carbon_density):
     # parameters can be 0 but not None
     if element is not None and isotope is not None and energy is not None and \
             carbon_thickness is not None:
-        areal_density_tfu = (carbon_density * 1.0e3 * carbon_thickness * 1.0e-9) / (12.0 * 1.66053906660e-27) / 1.0e19
+        areal_density_tfu = (carbon_density * 1.0e3 * carbon_thickness * 1.0e-9) / (12.01 * 1.66053906660e-27) / 1.0e19
         if platform.system() == 'Windows':
-            get_stop = str(bin_dir / "get_stop.exe")
+            jibaltool = str(bin_dir / "jibaltool.exe")
         else:
-            get_stop = './get_stop'
+            jibaltool = './jibaltool'
 
-        args = [get_stop, "{0}{1}".format(isotope, element), str(energy),
-                '-l', 'C', '-t', "{0}tfu".format(areal_density_tfu)]
+        args = [jibaltool, "stop", '-l', 'C', '-t', "{0}tfu".format(areal_density_tfu), "{0}{1}".format(isotope, element), str(energy),]
         print(args)
         p = subprocess.Popen(
             args, cwd=bin_dir, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -634,6 +633,11 @@ def get_data_dir() -> Path:
     """Returns absolute path to Potku's data directory.
     """
     return _get_external_dir() / "share"
+
+def get_images_dir() -> Path:
+    """Returns absolute path to Potku's images directory.
+    """
+    return get_root_dir() / "images"
 
 
 # When running Potku as a bundle created by PyInstaller, the absolute path

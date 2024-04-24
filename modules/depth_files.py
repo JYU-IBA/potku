@@ -86,7 +86,7 @@ class DepthFileGenerator:
         """Returns the command(s) used to run both tof_list and erd_depth.
         """
         if platform.system() == "Windows":
-            tof_bin = str(gf.get_bin_dir() / "tof_list.exe")
+            tof_bin = str(gf.get_bin_dir() / "tofe_list.exe")
             erd_bin = str(gf.get_bin_dir() / "erd_depth.exe")
         else:
             tof_bin = "./tofe_list"
