@@ -444,7 +444,7 @@ class TOFCalibrationPoint:
               "\nBeam mass [kg]: " + str(self.beam_mass) +
               "\nBeam energy [J]: " + str(self.beam_energy) +
               "\nToF length [m]: " + str(self.length) +
-              "\nRecoil/scattering angle [rads]" + str(self.theta) +
+              "\nRecoil/scattering angle [rad]: " + str(self.theta) +
               "\nEnergy loss in foil [J]: " + str(self.energy_loss) +
               "\nTime of Flight [channel]: " + str(self.time_of_flight_channel) +
               "\nTime of Flight [seconds]: " + str(self.time_of_flight_seconds))
