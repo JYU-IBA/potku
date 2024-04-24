@@ -167,7 +167,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
             for element in elements:
                 if element not in seen:
                     seen.append(element)
-                else:
+                elif element not in duplicates:
                     duplicates.append(element)
             if not duplicates:
                 self.label_warning_text.setText('')
