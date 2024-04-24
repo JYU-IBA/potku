@@ -160,7 +160,6 @@ class DepthProfileDialog(QtWidgets.QDialog):
             self.label_warning_text.setText('')
             return
         else:
-            print(self.used_cuts)
             elements = [Element.from_cutfile_string(fp.name) for fp in self.used_cuts]
             seen = []
             duplicates = []

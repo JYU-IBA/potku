@@ -3,37 +3,25 @@ from PyQt5 import QtCore
 from PyQt5 import uic
 import os
 from pathlib import Path
-import dialogs.file_dialogs as fdialogs
 import widgets.gui_utils as gutils
 from modules.selection import Selector
 
 class SelectionDialog(QtWidgets.QDialog):
 
-    def __init__(self):
+    def __init__(self, filename: Path):
 
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_selection_dialog.ui", self)
-        self.setWindowTitle("Choose selection")
+        self.setWindowTitle("Choose selections")
 
         self.chosen_selections = None
         self.current_selections = None
-        self.filename = None
 
-
-        self.pushButton_ChooseSelection.clicked.connect(self.load_selection)
         self.pushButton_Cancel.clicked.connect(self.close)
         self.pushButton_OK.clicked.connect(self.on_clicked)
+        self.load_selection(filename)
 
-
-    def load_selection(self):
-        """Show dialog to load selections."""
-
-        filename = fdialogs.open_file_dialog(self, Path(os.getcwd()),
-                                             "Load Element Selection",
-                                             "Selection file (*.selections)")
-        self.filename = filename
-        if filename is None:
-            return
+    def load_selection(self, filename: Path):
         elements, current_selections = Selector.load_chosen(self, filename)
         self.current_selections = current_selections
         self.treeWidget.clear() #Clears old selections from the tree
@@ -65,4 +53,3 @@ class SelectionDialog(QtWidgets.QDialog):
 
         self.chosen_selections = chosen_selections
         self.close()
-

@@ -45,6 +45,7 @@ from dialogs.measurement.depth_profile import DepthProfileWidget
 from dialogs.measurement.element_losses import ElementLossesWidget
 from dialogs.measurement.selection import SelectionSettingsDialog
 from dialogs.measurement.import_selection import SelectionDialog
+import dialogs.file_dialogs as fdialogs
 
 from matplotlib import cm
 from matplotlib.colors import LogNorm
@@ -60,6 +61,7 @@ from widgets.matplotlib import mpl_utils
 import numpy as np
 from PIL import Image
 from math import sqrt
+
 
 class MatplotlibHistogramWidget(MatplotlibWidget):
     """Matplotlib histogram widget, used to graph "bananas" (ToF-E).
@@ -148,8 +150,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.axes_range = (self.__global_settings.get_tofe_bin_range_x(),
                            self.__global_settings.get_tofe_bin_range_y())
 
-        self.name_y_axis = "Energy (Ch)"
-        self.name_x_axis = "time of flight (Ch)"
+        self.name_y_axis = "Energy (ch)"
+        self.name_x_axis = "Time-of-flight (ch)"
 
         self.cur_points = None
         self.cur_selection = None
@@ -706,8 +708,13 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     def load_selections(self):
         """Show dialog to load selections.
                 """
+        filename = fdialogs.open_file_dialog(self, Path(),
+                                  "Load Element Selection",
+                                  "Selection file (*.selections)")
+        if filename is None:
+            return
 
-        dialog = SelectionDialog()
+        dialog = SelectionDialog(filename)
         dialog.exec()
 
         sbh = StatusBarHandler(self.statusbar)
