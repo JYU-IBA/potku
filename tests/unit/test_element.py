@@ -114,6 +114,16 @@ class TestElement(unittest.TestCase):
 
         self.assertNotEqual(Element.from_string("H"), "H")
 
+        self.assertEqual(Element("Al"), Element.from_cutfile_string("tof1234.Al.ERD.0.cut"))
+
+        self.assertEqual(Element("O", isotope=16), Element.from_cutfile_string("tof1234.16O.ERD.0.cut"))
+
+        self.assertNotEqual(Element("O", isotope=16), Element.from_cutfile_string("tof1234.15N.ERD.0.cut"))
+
+        self.assertEqual(Element("Ta"), Element.from_cutfile_string("tof1234.63Cu.RBS_Ta.1.cut"))
+
+        self.assertEqual(Element("Y", isotope=89), Element.from_cutfile_string("blabhhal.35Cl.RBS_89Y.1.0.cut"))
+
     def test_equals_prop_based(self):
         n = 1000
         for _ in range(n):
