@@ -708,7 +708,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     def load_selections(self):
         """Show dialog to load selections.
                 """
-        filename = fdialogs.open_file_dialog(self, Path(),
+        filename = fdialogs.open_file_dialog(self, self.measurement.request.directory,
                                   "Load Element Selection",
                                   "Selection file (*.selections)")
         if filename is None:
