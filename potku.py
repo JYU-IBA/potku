@@ -646,17 +646,14 @@ class Potku(QtWidgets.QMainWindow):
         Args:
             progress: a ProgressReporter object
         """
-        sample_paths_in_request = self.request.get_samples_files()
+        sample_paths_in_request = self.request.get_sample_directories()
         if sample_paths_in_request:
             for i, sample_path in enumerate(sample_paths_in_request):
-                sample = self.request.samples.add_sample(
-                    sample_path=sample_path)
+                sample = self.request.samples.add_sample(sample_path=sample_path)
                 self.add_root_item_to_tree(sample)
 
                 if progress is not None:
                     progress.report(i / len(sample_paths_in_request) * 100)
-
-            self.request.increase_running_int_by_1()
 
         if progress is not None:
             progress.report(100)

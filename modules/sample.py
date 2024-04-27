@@ -28,6 +28,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 __version__ = "2.0"
 
 import os
+import re
 
 from pathlib import Path
 from typing import Optional
@@ -69,27 +70,18 @@ class Samples:
             name: Optional name for the sample.
         """
         if sample_path is not None:
-            sample_path, sample_dir = sample_path.parent, sample_path.name
-            dir_split = sample_dir.split("-")
-            prefix = dir_split[0].split("_")
-            serial_string = prefix[1]
-            try:
-                serial_number = int(serial_string)
-                if name == "":
-                    name = dir_split[1]
-                sample = Sample(serial_number, self.request, sample_dir, name)
-            except Exception as e:
-                # Couldn't read sample's serial number from file path.
-                print(f"Couldn't read sample's serial number from path: {e}")
-                return None
+            if name == "":
+                name = sample_path.name.split("-")[1]
+            sample = Sample(Sample.get_number_from_directory_name(sample_path), self.request, sample_path.name, name)
         else:
+            self.request.increase_running_int_by_1()
             next_serial = self.request.get_running_int()
             sample_dir = f"Sample_{next_serial:02d}-{name}"
             new_path = Path(self.request.directory, sample_dir)
             sample = Sample(next_serial, self.request, sample_dir, name)
-            self.request.increase_running_int_by_1()
             new_path.mkdir(exist_ok=True)
         self.samples.append(sample)
+        self.request._running_int = max(self.request._running_int, sample.serial_number)
         return sample
 
     def get_samples_and_measurements(self) -> Dict["Sample", List[Path]]:
@@ -116,7 +108,6 @@ class Samples:
         for sample in self.samples:
             all_samples_and_simulations[sample] = sample.get_simulation_files()
         return all_samples_and_simulations
-
 
 class Sample:
     """Class for a sample.
@@ -254,3 +245,20 @@ class Sample:
     def get_measurements(self) -> Iterable[Measurement]:
         for measurement in self.measurements.measurements.values():
             yield measurement
+
+    @classmethod
+    def get_number_from_directory_name(cls, dir_name: Path) -> int:
+        """Returns sample number from a directory path.
+        Sample directories are expected to be e.g. "Sample_02-Something".
+
+        Args:
+            dir_name: Path to sample directory, can be full path.
+        Return:
+                Sample number. Zero if directory name is not appropriate.
+        """
+        m = re.search(r"^Sample_(\d*)-", dir_name.name)
+
+        if m:
+            return int(m.group(1))
+        else:
+            return 0

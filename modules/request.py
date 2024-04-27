@@ -46,13 +46,12 @@ from .element_simulation import ElementSimulation
 from .measurement import Measurement
 from .profile import Profile
 from .run import Run
-from .sample import Samples
+from .sample import Samples, Sample
 from .simulation import Simulation
 from .target import Target
 from .recoil_element import RecoilElement
 from .global_settings import GlobalSettings
 from .observing import ProgressReporter
-from .config_manager import ConfigManager
 
 
 class Request(ElementSimulationContainer, RequestLogger):
@@ -84,8 +83,8 @@ class Request(ElementSimulationContainer, RequestLogger):
         self.__non_slaves = []  # List of measurements that aren't slaves,
         # easier.
         # This is used to number all the samples
-        # e.g. Sample-01, Sample-02.optional_name,...
-        self._running_int = 1  # TODO: Maybe be saved into .request file?
+        # e.g. Sample_01-, Sample_02-optional_name,...
+        self._running_int = 0
 
         # Check folder exists and make request file there.
         if save_on_creation:
@@ -422,36 +421,21 @@ class Request(ElementSimulationContainer, RequestLogger):
         """
         return self.__master_measurement
 
-    def get_samples_files(self) -> List[Path]:
+    def get_sample_directories(self) -> List[Path]:
         """
-        Searches the directory for folders beginning with "Sample".
+        Searches the directory for folders matching expected sample naming pattern
+        (see. Sample.get_number_from_directory_name())
 
         Return:
-            Returns all the paths for these samples.
+            Returns all the paths for these samples, sorted by extracted sample number.
         """
         samples = []
         for item in os.listdir(self.directory):
-            if os.path.isdir(Path(self.directory, item)) and \
-                    item.startswith("Sample_"):
-                samples.append(Path(self.directory, item))
-                # It is presumed that the sample numbers are of format
-                # '01', '02',...,'10', '11',...
-
-                # Python 3.6 gives DeprecationWarning for using just "\d" as
-                # regex pattern. To avoid potential future issues, the pattern
-                # is declared as a raw  string (see https://stackoverflow.com/
-                # questions/50504500/deprecationwarning-invalid-escape-sequence
-                # -what-to-use-instead-of-d
-                match_object = re.search(r"\d", item)
-
-                if match_object:
-                    number_str = item[match_object.start()]
-                    if number_str == "0":
-                        n = int(item[match_object.start() + 1])
-                    else:
-                        n = int(
-                            item[match_object.start():match_object.start() + 2])
-                    self._running_int = max(self._running_int, n)
+            if os.path.isdir(Path(self.directory, item)):
+                n = Sample.get_number_from_directory_name(Path(item))
+                if n > 0:
+                    samples.append(Path(self.directory, item))
+        samples.sort(key=lambda item: Sample.get_number_from_directory_name(Path(item))) #Sorting should be done later
         return samples
 
     def get_running_int(self) -> int:
