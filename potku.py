@@ -37,6 +37,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import argparse
 from datetime import datetime
 from datetime import timedelta
 from pathlib import Path
@@ -90,16 +91,27 @@ class Potku(QtWidgets.QMainWindow):
         """Init main window for Potku.
         """
         super().__init__()
+        version_number, version_date = gf.get_version_number_and_date()
+        potku_version = f'Potku {version_number} - {version_date}'
+        self.setWindowTitle(potku_version)
+        parser = argparse.ArgumentParser(prog=potku_version)
+        parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
+        parser.add_argument('--no-scroll', action='store_true',
+                            help='Ignore mouse wheel events in comboboxes and spinboxes')
+        args = parser.parse_args()
+        if args.verbose:
+            print("Potku root directory is " + str(gf.get_root_dir()))
+            print("C programs installed in " + str(gf.get_bin_dir()))
         uic.loadUi(gutils.get_ui_dir() / "ui_main_window.ui", self)
 
         # Disable mouse wheel scrolling in all spin boxes and combo boxes as
         # requested by a user (see comments in
         # https://github.com/JYU-IBA/potku/issues/214).
-        gutils.disable_scrolling_in_spin_boxes()
-        gutils.disable_scrolling_in_combo_boxes()
+        # if --no-scroll is given
+        if args.no_scroll:
+            gutils.disable_scrolling_in_spin_boxes()
+            gutils.disable_scrolling_in_combo_boxes()
 
-        version_number, version_date = gf.get_version_number_and_date()
-        self.setWindowTitle(f'Potku {version_number} - {version_date}')
         self.title = self.windowTitle()
         self.treeWidget.setHeaderLabel("")
 
@@ -168,8 +180,6 @@ class Potku(QtWidgets.QMainWindow):
 
         # Set up styles for main window
         # Cannot use os.path.join or pathlib, since PyQT+css want a URL-style (relative?) path
-        print("Potku root directory is " + str(gf.get_root_dir()))
-        print("C programs installed in " + str(gf.get_bin_dir()))
         images_dir = str(gf.get_images_dir().relative_to(os.getcwd())).replace("\\", "/")
         bg_blue = images_dir + "/background_blue.svg"
         bg_green = images_dir + "/background_green.svg"
