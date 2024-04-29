@@ -71,6 +71,11 @@ a = Analysis(
      excludes=[
         "tkagg"
      ],
+     hooksconfig={
+        "matplotlib": {
+            "backends": "all" # collect all backends
+        },
+     },
      win_no_prefer_redirects=False,
      win_private_assemblies=False,
      cipher=block_cipher
