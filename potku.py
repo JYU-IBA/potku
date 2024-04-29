@@ -98,6 +98,7 @@ class Potku(QtWidgets.QMainWindow):
         parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
         parser.add_argument('--no-scroll', action='store_true',
                             help='Ignore mouse wheel events in comboboxes and spinboxes')
+        parser.add_argument('request', nargs='?', type=str, default=None)
         args = parser.parse_args()
         if args.verbose:
             print("Potku root directory is " + str(gf.get_root_dir()))
@@ -199,6 +200,8 @@ class Potku(QtWidgets.QMainWindow):
         # Set main window's icons to place
         self.__set_icons()
         self.showMaximized()
+        if args.request:
+            self.__open_request(Path(args.request))
 
     def __initialize_tree_view(self):
         """Inits the tree view and creates the top level items.

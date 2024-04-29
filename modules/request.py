@@ -172,12 +172,20 @@ class Request(ElementSimulationContainer, RequestLogger):
         """
         # TODO better error checking
         file_path = Path(file).resolve()
+        if file_path.is_dir():
+            #If we are given a directory, try to guess the request file name.
+            sp = str(file_path.name)
+            if sp.endswith(".potku"):
+                sp = sp[:-len(".potku")] + ".request"
+            else:
+                raise ValueError(f"Expected a .request file or directory ending with .potku. Got {file_path}, which is a directory.   ")
+            file_path = file_path / sp
         if not file_path.exists():
-            raise ValueError("Request file does not exist.")
+            raise ValueError(f"Request file {file_path} does not exist.")
         if not file_path.is_file():
-            raise ValueError("Expected file, got a directory")
+            raise ValueError(f"Expected file, but {file_path} is something else.")
         if file_path.suffix != ".request":
-            raise ValueError("Expected request file")
+            raise ValueError(f"Expected request file to end with .request, but {file_path} does not.")
         return cls(
             file_path.parent, file_path.stem, settings, tab_widgets,
             enable_logging=enable_logging)
