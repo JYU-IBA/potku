@@ -92,9 +92,12 @@ class ElementLossesDialog(QtWidgets.QDialog):
         cuts, _ = self.measurement.get_cut_files()
         gutils.fill_combobox(
             self.referenceCut, cuts, text_func=lambda fp: fp.name)
-        self.used_reference_cut = ElementLossesDialog.reference_cut[m_name]
 
-        # Cuts and element losses
+        try:
+            self.referenceCut.setCurrentIndex(cuts.index(ElementLossesDialog.reference_cut[m_name]))
+        except ValueError:
+            pass
+
         if m_name not in ElementLossesDialog.checked_cuts:
             ElementLossesDialog.checked_cuts[m_name] = set()
         gutils.fill_cuts_treewidget(
@@ -131,8 +134,7 @@ class ElementLossesDialog(QtWidgets.QDialog):
         else:
             y_scale = 1
 
-        ElementLossesDialog.reference_cut[m_name] = \
-            self.referenceCut.currentText()
+        ElementLossesDialog.reference_cut[m_name] = self.used_reference_cut
         ElementLossesDialog.split_count = split_count
         ElementLossesDialog.y_scale = y_scale
 

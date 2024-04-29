@@ -295,8 +295,7 @@ class MeasurementTabWidget(BaseTab):
                 new_folder_prefix, old_sample_name, new_sample_name)
             split_count = int(lines[2])
             y_scale = int(lines[3])
-            ElementLossesDialog.reference_cut[m_name] = \
-                os.path.basename(reference_cut)
+            ElementLossesDialog.reference_cut[m_name] = reference_cut
             ElementLossesDialog.checked_cuts[m_name] = set(checked_cuts)
             ElementLossesDialog.split_count = split_count
             ElementLossesDialog.y_scale = y_scale
