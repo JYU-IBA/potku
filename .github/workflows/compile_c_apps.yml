@@ -133,6 +133,7 @@ jobs:
       run: |
         brew install cmake
         brew install gsl
+        brew install libomp
         cd ${{runner.workspace}}/potku/dev
         ./build.sh
     - name: Archive macos executables
