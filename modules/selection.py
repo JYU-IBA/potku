@@ -988,8 +988,6 @@ class Selection:
         return points_inside
 
     def name(self):
-        print("what is the name of the selection?")
-        print(self.type, self.element, self.element_scatter, self.id)
         if self.type == "RBS":
             return self.element_scatter.name() + " (" + self.element.name() + ")"
         else:
