@@ -669,10 +669,10 @@ class GlobalSettings:
             "Ds": "red",
             "Rg": "red",
             "Cn": "red",
-            "Uut": "red",
+            "Nh": "red",
             "Fl": "red",
-            "Uup": "red",
+            "Mc": "red",
             "Lv": "red",
-            "Uus": "red",
-            "Uuo": "red"
+            "Ts": "red",
+            "Og": "red"
         }
