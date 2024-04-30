@@ -758,19 +758,20 @@ class Measurement(MeasurementLogger, Serializable):
         try:
             selection_file = self.get_data_dir() / f"{self.name}.selections"
             with selection_file.open("r"):
-                self.load_selection(selection_file, progress)
+                self.load_selection_from_file(selection_file, progress)
         except OSError:
             log_msg = "There was no old selection file to add to this " \
                       f"request."
             self.log(log_msg)
 
-    def add_point(self, point, canvas):
+    def add_point(self, point, canvas, axes):
         """Add point into selection or create new selection if first or all
         closed.
         
         Args:
             point: Point (x, y) to be added to selection.
             canvas: matplotlib's FigureCanvas where selections are drawn.
+            axes: Matplotlib FigureCanvas subplot
 
         Return:
             1: When point closes open selection and allows new selection to
@@ -778,9 +779,10 @@ class Measurement(MeasurementLogger, Serializable):
             0: When point was added to open selection.
             -1: When new selection is not allowed and there are no selections.
         """
-        flag = self.selector.add_point(point, canvas)
+        flag = self.selector.add_point(point, canvas, axes)
         if flag >= 0:
             self.selector.update_axes_limits()
+        self.selector.draw(axes)
         return flag
 
     def undo_point(self):
@@ -802,10 +804,10 @@ class Measurement(MeasurementLogger, Serializable):
         """
         self.selector.remove_all()
 
-    def draw_selection(self):
+    def draw_selection(self, axes):
         """Draw all selections in measurement.
         """
-        self.selector.draw()
+        self.selector.draw(axes)
 
     def end_open_selection(self, canvas):
         """End last open selection.
@@ -976,7 +978,7 @@ class Measurement(MeasurementLogger, Serializable):
         elem_losses.sort()
         return cuts, elem_losses
 
-    def load_selection(self, filename, progress=None):
+    def load_selection_from_file(self, filename, progress=None):
         """Load selections from a file_path.
         
         Removes all current selections and loads selections from given filename.

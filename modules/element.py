@@ -294,3 +294,9 @@ class Element(MCERDParameterContainer):
         isotope = data["isotope"]
         amount = data["amount"]
         return cls(symbol, isotope, amount)
+
+    def name(self):
+        if self.isotope is None:
+            return self.symbol
+        else:
+            return str(self.isotope) + self.symbol

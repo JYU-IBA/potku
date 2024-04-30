@@ -49,6 +49,8 @@ from .element import Element
 
 import math
 
+from .measurement import Measurement
+
 
 class AxesLimits:
     """
@@ -106,7 +108,7 @@ class AxesLimits:
 class Selector:
     """Selector objects handles all selections within measurement.
     """
-    def __init__(self, measurement: "Measurement", element_colormap):
+    def __init__(self, measurement: "Measurement", element_colormap, looseness=10):
         """Inits Selector.
         
         Inits Selector object.
@@ -114,6 +116,7 @@ class Selector:
         Args:
             measurement: Measurement object of this Selector.
             element_colormap: Default colors for new element selections.
+            looseness: threshold radius of closing selection in channels
         """
         self.element_colormap = element_colormap
         # self.settings = measurement.measurement_settings
@@ -126,7 +129,7 @@ class Selector:
         self.selections = []
         self.new_selection_is_allowed = True
         self.is_transposed = False
-        self.looseness = 10  # Default 40, looeness of the selection completion.
+        self.looseness = looseness
         self.axes = None
         self.axes_limits = AxesLimits()
         self.selected_id = None
@@ -176,7 +179,7 @@ class Selector:
                 return selection
         return None
 
-    def add_point(self, point, canvas):
+    def add_point(self, point, canvas, axes):
         """Adds a new point.
         
         Adds a new point to last selection. If new selection is allowed, create
@@ -195,8 +198,7 @@ class Selector:
             -1: When new selection is not allowed and there are no selections.
         """
         if self.new_selection_is_allowed:
-            sel = Selection(self.axes, self.element_colormap,
-                            measurement=self.measurement)
+            sel = Selection(axes, self.element_colormap, self.measurement, transposed=self.is_transposed)
             self.grey_out_except(sel.id)
             self.selections.append(sel)
             # Do not allow new selections without closing/purging
@@ -304,22 +306,22 @@ class Selector:
         self.selections.clear()
         self.selected_id = None
 
-    def draw(self):
+    def draw(self, axes):
         """Draw selections.
         
         Issue draw to all selections in selector.
         """
-        if self.axes:
+        if axes:
             lines = {}
             for s in self.selections:
-                s.draw()
+                s.draw(axes)
                 lines[s.element.symbol] = s.points
             if self.draw_legend:
                 line_text = lines.keys()
                 line_points = []
                 for k in line_text:
                     line_points.append(lines[k])
-                self.axes.legend(line_points, line_text, loc=0)
+                axes.legend(line_points, line_text, loc=0)
 
     def end_open_selection(self, canvas):
         """End last open selection.
@@ -346,6 +348,7 @@ class Selector:
             selection_is_ok = sel.end_selection(canvas)
             if not selection_is_ok:
                 self.__remove_last()
+            self.draw(self.axes)
             self.reset_colors()
             self.auto_save()
             if selection_is_ok:
@@ -466,7 +469,7 @@ class Selector:
         try:
             with open(filename) as fp:
                 for line in fp:
-                   self.selection_from_string(line)
+                    self.selection_from_string(line)
             message = f"Selection file {filename} was read successfully!"
             self.measurement.log(message)
         except OSError as e:
@@ -490,7 +493,7 @@ class Selector:
         try:
             for line in chosen_selections:
                 self.selection_from_string(line)
-            message = f"Chosen selections were read successfully!"
+            message = f"Chosen selections were added"
             self.measurement.log(message)
             self.update_selections(progress)
         except TypeError as e:
@@ -499,50 +502,15 @@ class Selector:
 
 
     def update_selections(self, progress=None):
-
         self.update_axes_limits()
-        self.draw()  # Draw all selections
+        self.draw(self.axes)  # Draw all selections
         self.auto_save()
         self.update_selection_points(progress=progress)
 
     def selection_from_string(self, line):
-        # ['ONone', '16', 'red', '3436, 2964, 4054;2376, 3964, 3914']
-        split = line.strip().split("    ")
-        sel = Selection(self.axes, self.element_colormap,
-                        element_type=split[0],
-                        element=split[1],
-                        isotope=(split[2] if split[2] == ""
-                                 else int(split[2])),
-                        weight_factor=float(split[3]),
-                        scatter=split[4],
-                        color=split[5],
-                        points=split[6],
-                        transposed=self.is_transposed,
-                        measurement=self.measurement)
-        self.selections.append(sel)
-
-    def load_chosen(self, filename):
-        """Load selections from a file.
-
-        Args:
-            filename: String representing (full) path to selection file.
-
-        Returns:
-            elements: a list of elements in a selection
-            selection: All of the information in a selection
-        """
-        elements = []
-        selection = []
-        with open(filename) as fp:
-            for line in fp:
-                # ['ONone', '16', 'red', '3436, 2964, 4054;2376, 3964, 3914']
-                split = line.strip().split("    ")
-                sel = line
-                el = split[1]
-                elements.append(el)
-                selection.append(sel)
-
-        return elements, selection
+        sel = Selection.from_string(self.axes, self.element_colormap, self.measurement, line, transposed=self.is_transposed)
+        if sel:
+            self.selections.append(sel)
 
     def update_axes_limits(self):
         """Update selector's axes limits based on all points in all selections.
@@ -608,8 +576,7 @@ class Selector:
         for selection in self.selections:
             if selection.type == "RBS":
                 if selection.measurement.use_request_settings:
-                    ion = self.measurement.request.default_measurement.run.beam\
-                        .ion
+                    ion = self.measurement.request.default_measurement.run.beam.ion
                 else:
                     ion = selection.measurement.run.beam.ion
                 selection.element = ion
@@ -655,13 +622,9 @@ class Selection:
             self.default_color = "red"
 
         self.type = element_type
-        self.element = Element(element, isotope)  # If RBS, this holds beam ion
+        self.element = Element(element, isotope=isotope)  # If RBS, this holds beam ion, value gets overwritten
         self.weight_factor = weight_factor
-        if scatter and scatter != "":
-            self.element_scatter = Element.from_string(scatter)
-        else:
-            self.element_scatter = ""
-
+        self.element_scatter = Element.from_string(scatter) if scatter else None
         self.events_counted = False
         self.event_count = 0
         self.__is_transposed = False
@@ -688,6 +651,19 @@ class Selection:
             self.end_selection()
 
         self.masses = None
+
+    @classmethod
+    def from_string(cls, axes, element_colormap, measurement, line: str, transposed=False) -> 'Selection':
+        # ['ONone', '16', 'red', '3436, 2964, 4054;2376, 3964, 3914']
+        split = line.strip().split("    ")
+        return cls(axes, element_colormap, measurement, element_type=split[0],
+                   element=split[1],
+                   isotope=(None if split[2] == "" else int(split[2])),
+                   weight_factor=float(split[3]),
+                   scatter=split[4],
+                   color=split[5],
+                   points=split[6],
+                   transposed=transposed)
 
     def add_point(self, point):
         """Adds a point to selection.
@@ -716,8 +692,22 @@ class Selection:
                 x.append(point[0])
                 y.append(point[1])
                 self.points.set_data(x, y)
-            self.axes.add_line(self.points)
             return 0
+
+    def draw_lines(self, axes):
+        if axes is None:
+            return
+        if not self.is_closed:
+            axes.add_line(self.points)
+        else:
+            x, y = self.points.get_data()
+            x.append(x[0])
+            y.append(y[0])
+            self.points.set_data(x, y)
+            axes.add_line(self.points)
+            x.pop()
+            y.pop()
+
 
     def undo_last(self):
         """Undo last point in selection.
@@ -807,20 +797,13 @@ class Selection:
         for point in self.get_points():
             self.axes_limits.update_limits(point)
 
-        # Add first point again, so drawing the line is closed.
-        # Then remove it, so no duplicates in points. (roundabout)
-        self.add_point(self.get_first())
-        x, y = self.points.get_data()
-        x.pop()
-        y.pop()
-
+        self.is_closed = True
         selection_completed = True
         if canvas is not None:
             canvas.draw_idle()
             selection_settings_dialog = SelectionSettingsDialog(self)
             # True = ok, False = cancel -> delete selection
             selection_completed = selection_settings_dialog.isOk
-        self.is_closed = True
         return selection_completed
 
     def delete(self):
@@ -831,10 +814,10 @@ class Selection:
         self.masses = None
         self.element_colormap = None
 
-    def draw(self):
+    def draw(self, axes):
         """Draw selection points into graph (matplotlib) axes
         """
-        self.axes.add_line(self.points)
+        self.draw_lines(axes)
 
     def set_color(self, color):
         """Set selection color
@@ -888,7 +871,7 @@ class Selection:
             else:
                 symbol = ""
             isotope = self.element.isotope
-            if self.element_scatter != "":
+            if self.element_scatter is not None:
                 element_scatter = self.element_scatter.__str__()
             else:
                 element_scatter = ""
@@ -1003,3 +986,11 @@ class Selection:
         self.event_count = len(points_inside) # update events_count
 
         return points_inside
+
+    def name(self):
+        print("what is the name of the selection?")
+        print(self.type, self.element, self.element_scatter, self.id)
+        if self.type == "RBS":
+            return self.element_scatter.name() + " (" + self.element.name() + ")"
+        else:
+            return self.element.name()

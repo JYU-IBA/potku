@@ -1,43 +1,50 @@
+import json
+
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5 import uic
 import os
 from pathlib import Path
 import widgets.gui_utils as gutils
-from modules.selection import Selector
+from modules.selection import Selector, Selection
+
 
 class SelectionDialog(QtWidgets.QDialog):
 
-    def __init__(self, filename: Path):
+    def __init__(self, selector, filename: Path):
 
         super().__init__()
         uic.loadUi(gutils.get_ui_dir() / "ui_selection_dialog.ui", self)
         self.setWindowTitle("Choose selections")
-
+        self.selector = selector
         self.chosen_selections = None
-        self.current_selections = None
 
         self.pushButton_Cancel.clicked.connect(self.close)
         self.pushButton_OK.clicked.connect(self.on_clicked)
         self.load_selection(filename)
 
     def load_selection(self, filename: Path):
-        elements, current_selections = Selector.load_chosen(self, filename)
-        self.current_selections = current_selections
-        self.treeWidget.clear() #Clears old selections from the tree
-        self.set_elements(elements)
+        selections = []
+        with filename.open() as f:
+            for line in f:
+                sel = Selection.from_string(None, None, None, line)
+                if sel:
+                    selections.append(sel)
+        self.set_selections(selections)
 
-    def set_elements(self, elements):
+    def set_selections(self, selections):
         """Sets the elements to the tree with checkboxes
 
         Args:
-            elements: List of elements from the chosen selections file
+            selections: List of selections from the chosen selections file
         """
+        self.current_selections = selections
+        self.treeWidget.clear()
 
-        for element in elements:
-            self.tree_element = QtWidgets.QTreeWidgetItem([element])
-            self.tree_element.setCheckState(0, QtCore.Qt.Checked)
-            self.treeWidget.addTopLevelItem(self.tree_element)
+        for selection in selections:
+            tree_element = QtWidgets.QTreeWidgetItem([selection.name()])
+            tree_element.setCheckState(0, QtCore.Qt.Checked)
+            self.treeWidget.addTopLevelItem(tree_element)
 
     @QtCore.pyqtSlot()
     def on_clicked(self):

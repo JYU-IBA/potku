@@ -268,7 +268,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
         self.mpl_toolbar.update()
 
-        self.measurement.draw_selection()
+        self.measurement.draw_selection(self.axes)
         
         # Invert axis
         if self.invert_Y and not self.__inverted_Y:
@@ -535,8 +535,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 self.__on_draw_legend()
             # If selection is enabled:
             if self.elementSelectionButton.isChecked():
-                if self.measurement.add_point(cursor_location, self.canvas) \
-                        == 1:
+                if self.measurement.add_point(cursor_location, self.canvas, self.axes) == 1:
                     self.__on_draw_legend()
                     self.__emit_selections_changed()
                 self.canvas.draw_idle()  # Draw selection points
@@ -714,15 +713,19 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         if filename is None:
             return
 
-        dialog = SelectionDialog(filename)
+        dialog = SelectionDialog(self.measurement.selector, filename)
         dialog.exec()
+        if dialog.chosen_selections is None:
+            return
 
         sbh = StatusBarHandler(self.statusbar)
         sbh.reporter.report(40)
-        self.measurement.load_chosen_selection(dialog.chosen_selections,
-                                               progress=
-                                               sbh.reporter.get_sub_reporter(
-                                                   lambda x: 40 + 0.6 * x))
+        for selection in dialog.chosen_selections:
+            selection.axes = self.axes
+            selection.measurement = self.measurement
+
+            self.measurement.selector.selections.append(selection)
+        self.measurement.selector.update_selections()
         self.on_draw()
         #self.elementSelectionSelectButton.setEnabled(True)
 

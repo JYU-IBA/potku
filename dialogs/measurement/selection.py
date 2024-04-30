@@ -281,7 +281,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         dialog = QtWidgets.QColorDialog(self)
         self.color = dialog.getColor(QtGui.QColor(self.color))
         if self.color.isValid():
-            if self.selection.element_scatter != "":
+            if self.selection.element_scatter is not None:
                 element = self.selection.element_scatter.symbol
             elif self.rbs_element_button.text() != "Select":
                 element = self.rbs_element_button.text()
@@ -368,7 +368,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
                                          current_isotope=current_isotope)
         # Put Scatter Element settings to dialog
         else:
-            if self.selection.element_scatter != "":
+            if self.selection.element_scatter is not None:
                 self.rbs_element_button.setText(
                     self.selection.element_scatter.symbol)
             else:
@@ -531,7 +531,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
                 elem = self.sample_isotope_combobox.currentData()["element"]
                 isotope = elem.isotope
 
-            self.selection.element_scatter = Element("")
+            self.selection.element_scatter = None
             self.selection.element = Element(symbol, isotope)
 
         else:
