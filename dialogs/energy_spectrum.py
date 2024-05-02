@@ -594,7 +594,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 sum_spectra_directory=sum_spectra_directory,
                 spectra_changed=spectra_changed,
                 channel_width=bin_width)
-        except (PermissionError, IsADirectoryError, FileNotFoundError) as e:
+        except (PermissionError, IsADirectoryError, FileNotFoundError, RuntimeError) as e:
             # If the file path points to directory, this will either raise
             # PermissionError (Windows) or IsADirectoryError (Mac)
             msg = f"Could not create Energy Spectrum graph: {e}"
