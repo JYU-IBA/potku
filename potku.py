@@ -985,12 +985,9 @@ class Potku(QtWidgets.QMainWindow):
                     tab_name = tab_widget.obj.name
                     if master_measurement_name and \
                             item.tab_id == master_measurement.tab_id:
-                        item.setText(0,
-                                     "{0} (master)".format(
-                                         master_measurement_name))
+                        item.setText(0, "{0} (master)".format(master_measurement_name))
                     elif tab_widget.obj in nonslaves or \
-                            not master_measurement_name or type(
-                        tab_widget.obj) == Simulation:
+                            not master_measurement_name or isinstance(tab_widget.obj, Simulation):
                         item.setText(0, tab_name)
                     else:
                         item.setText(0, "{0} (slave)".format(tab_name))

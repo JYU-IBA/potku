@@ -750,7 +750,7 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
     def from_json(cls, request: "Request", simulation_json_file, simu_obj,
                   measurement_file: Optional[Path] = None,
                   detector=None, target=None, run=None, sample=None,
-                  save_on_creation=True, enable_logging=True) -> "Simulation":
+                  enable_logging=True) -> "Simulation":
         """Initialize Simulation from a JSON.
 
         Args:
@@ -787,9 +787,10 @@ class Simulation(SimulationLogger, ElementSimulationContainer, Serializable):
             general = {}
 
         #not saving on creation -TL
+        #saving on creation, because otherwise logging doesn't work. -JJ
         return cls(
             simulation_json_file, request, detector=detector, target=target, run=run,
-            sample=sample, **simu_obj, save_on_creation=False,
+            sample=sample, **simu_obj, save_on_creation=True,
             enable_logging=enable_logging, **general)
 
     @classmethod

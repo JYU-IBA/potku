@@ -564,7 +564,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
 
                 self.measurement_energy = self.energy_spectrum_data
                 sum_spectra_directory = self.measurement.get_energy_spectra_dir()
-            else:
+            elif isinstance(self.parent.obj, Simulation):
                 self.simulation = self.parent.obj
                 self.save_file_int = save_file_int
                 self.save_file = f"widget_energy_spectrum_{save_file_int}.save"
@@ -580,6 +580,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 self.measurement_energy = \
                     self.measurement_energy_spectrum_dictionary
                 sum_spectra_directory = self.simulation.directory
+            else:
+                return
 
             widget_simulation_energy = copy.deepcopy(self.simulation_energy)
             widget_measurement_energy = copy.deepcopy(self.measurement_energy)
