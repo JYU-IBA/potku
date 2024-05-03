@@ -819,29 +819,24 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         y_values = []
         if self.simulation_energy:
             for spectrum in self.simulation_energy.values():
-                if len(spectrum) == 2:
-                    x, y = zip(*spectrum)
-                    xs.update(set(x))
-                else:
-                    raise RuntimeError("No simulation data produced. Check threshold energy.")
-
+                x, y = zip(*spectrum)
+                xs.update(set(x))
 
         if self.measurement_energy:
             for spectrum in self.measurement_energy.values():
-                if len(spectrum) == 2:
-                    x, y = zip(*spectrum)
-                    xs.update(set(x))
+                x, y = zip(*spectrum)
+                xs.update(set(x))
 
         xs = list(xs)
         xs = sorted(xs)
 
-        if self.simulation_energy != []:
+        if self.simulation_energy:
             for spectrum in self.simulation_energy.values():
                 x,y = zip(*spectrum)
                 new_y = [y[x.index(all_x)] if (all_x in x) else default_value for all_x in xs]
                 y_values.append(new_y)
 
-        if self.measurement_energy != []:
+        if self.measurement_energy:
             for spectrum in self.measurement_energy.values():
                 x,y = zip(*spectrum)
                 new_y = [y[x.index(all_x)] if (all_x in x) else default_value for all_x in xs]
