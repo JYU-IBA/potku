@@ -219,7 +219,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.channel_width = channel_width
         self.on_draw()
 
-        self.save_spectrums()
+        self.save_spectra()
 
     def closeEvent(self, evnt):
         """Disconnects the slot from the spectra_changed signal
@@ -810,64 +810,27 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.plots[self.measured_sum_spectrum.sum_spectrum_path]\
                 .set_data(data)
 
-    def save_spectrums(self):
-        """ Save plotted energy spectrums """
-        separator = ';'
-        default_value = 0.0
-        spectrums_file = self.sum_spectra_directory / "E-spectra.hist"
-        xs = set()
-        y_values = []
+    def save_spectrum(self, name: str, spectrum: list) -> None:
+        """ Saves a spectrum to a file.
+
+        Args:
+            name: name of the spectrum
+            spectrum: list of tuples (energy, counts)
+        """
+        spectrum_file = self.sum_spectra_directory / f"E-spectrum-{name}.hist"
+        with open(spectrum_file, 'w') as file:
+            file.write("#Energy (MeV)     Counts\n")
+            for val in spectrum:
+                file.write(f"{val[0]:>12.6f} {val[1]:>12.3f}\n")
+
+    def save_spectra(self):
+        """ Save the (plotted) spectra."""
         if self.simulation_energy:
-            for spectrum in self.simulation_energy.values():
-                x, y = zip(*spectrum)
-                xs.update(set(x))
-
+            for k in self.simulation_energy.keys():
+                self.save_spectrum(k.stem, self.simulation_energy[k])
         if self.measurement_energy:
-            for spectrum in self.measurement_energy.values():
-                x, y = zip(*spectrum)
-                xs.update(set(x))
-
-        xs = list(xs)
-        xs = sorted(xs)
-
-        if self.simulation_energy:
-            for spectrum in self.simulation_energy.values():
-                x,y = zip(*spectrum)
-                new_y = [y[x.index(all_x)] if (all_x in x) else default_value for all_x in xs]
-                y_values.append(new_y)
-
-        if self.measurement_energy:
-            for spectrum in self.measurement_energy.values():
-                x,y = zip(*spectrum)
-                new_y = [y[x.index(all_x)] if (all_x in x) else default_value for all_x in xs]
-                y_values.append(new_y)
-
-        with open(spectrums_file, 'w') as file:
-            file.write("#Energy")
-            if self.simulation_energy != []:
-                for title in self.simulation_energy.keys():
-                    file.write(f"{separator}{title.stem}")
-            if self.measurement_energy != []:
-                for title in self.measurement_energy.keys():
-                    if self.spectrum_type == 'measurement':
-                        file.write(f"{separator}{title}")
-                    else:
-                        file.write(f"{separator}{title.stem}")
-            file.write("\n")
-
-            file.write("#MeV")
-            for _ in y_values:
-                file.write(f"{separator}Count")
-            file.write("\n")
-
-            for i,x in enumerate(xs):
-                file.write(f"{x}")
-                for y in y_values:
-                    if (y[i] != None):
-                        file.write(f"{separator}{y[i]}")
-                    else:
-                        file.write(f"{separator}")
-                file.write("\n")
+            for k in self.measurement_energy.keys():
+                self.save_spectrum(k.stem, self.measurement_energy[k])
 
 def get_axis_values(data):
     """Returns the x and y axis values from given data."""
