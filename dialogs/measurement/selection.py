@@ -120,8 +120,6 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
             # Recoil Element
             if element.symbol:
                 self.sample_element_button.setText(element.symbol)
-                self.colorButton.setText(
-                    "Automatic [{0}]".format(element.symbol))
 
         elif self.selection.type == "RBS":
             rbs_element = self.selection.element_scatter
@@ -143,8 +141,6 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
 
             if rbs_element.symbol:
                 self.rbs_element_button.setText(rbs_element.symbol)
-                self.colorButton.setText(
-                    "Automatic [{0}]".format(rbs_element.symbol))
 
         else:
             raise ValueError("Invalid values")
@@ -256,9 +252,10 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         """
         self.groupBox_coloring.setEnabled(True)
         if element and element != "Select":
-            self.color = QtGui.QColor(self.element_colormap[element])
-            if self.selection.is_closed:
+            if self.selection.is_completed:
                 self.color = QtGui.QColor(self.selection.default_color)
+            else:
+                self.color = QtGui.QColor(self.element_colormap[element])
             self.__change_color_button_color(element)
 
     def __set_isotope_weight_factor(self, isotope_combobox=None):
@@ -456,7 +453,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
             self.sample_standard_mass_radio.setEnabled(False)
             self.sample_isotope_radio.setEnabled(False)
             self.colorButton.setStyleSheet("")  # Clear style
-            self.colorButton.setText("Automatic")
+            self.colorButton.setText("Automatique")
         
         # Clear RBS area.
         self.rbs_element_button.setText("Select")

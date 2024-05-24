@@ -629,6 +629,7 @@ class Selection:
         self.event_count = 0
         self.__is_transposed = False
         self.is_closed = False
+        self.is_completed = False
         self.points = None
         self.axes = axes
         self.axes_limits = AxesLimits()
@@ -804,6 +805,7 @@ class Selection:
             selection_settings_dialog = SelectionSettingsDialog(self)
             # True = ok, False = cancel -> delete selection
             selection_completed = selection_settings_dialog.isOk
+        self.is_completed = selection_completed
         return selection_completed
 
     def delete(self):
