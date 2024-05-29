@@ -737,6 +737,8 @@ class Selection:
         Return:
            ((x1, y1), (x2, y2), ...)
         """
+        if not self.points:
+            return []
         points = self.points.get_data()
         pointlist = []
         for i in range(len(points[0])):
