@@ -89,7 +89,10 @@ class LayerPropertiesDialog(QtWidgets.QDialog, bnd.PropertyTrackingWidget,
         self.cancelButton.clicked.connect(self.close)
 
         self.thicknessEdit.setMinimum(0.00)
+        self.thicknessEdit.setValue(10.0)
         self.densityEdit.setMinimum(0.01)
+        self.densityEdit.setSingleStep(0.01)
+        self.densityEdit.setValue(1.0)
 
         self.__original_properties = {}
 
@@ -308,10 +311,7 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.amount_spinbox = QtWidgets.QDoubleSpinBox()
 
         self.amount_spinbox.setMinimum(0.000)
-        self.amount_spinbox.setMaximum(9999.00)
-
-        self.amount_spinbox.setMinimum(0.001)
-        self.amount_spinbox.setMaximum(1)
+        self.amount_spinbox.setMaximum(100.0)
 
         self.amount_spinbox.setDecimals(3)
         self.amount_spinbox.setLocale(QLocale.c())
@@ -325,11 +325,10 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.delete_button.clicked.connect(self.__delete_element_layout)
      
         self.sum_button = QtWidgets.QPushButton("")
-        self.sum_button.setText("Sum to 1")
-        self.sum_button.setFixedWidth(85)
+        self.sum_button.setText("Sum to 100%")
+        self.sum_button.setFixedWidth(105)
         self.sum_button.setFixedHeight(28)
-        self.sum_button.setToolTip("Sets the amount remaining from " \
-        "1 to the box")
+        self.sum_button.setToolTip("Sets the concentration so that sum is 1 or 100%")
 
         self.sum_button.clicked.connect(self._sum_amount_to_one)
 
@@ -376,8 +375,9 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         if sum_of_other <= 1:
             missing_amount = 1 - sum_of_other
         else:
-            missing_amount = 100 - sum_of_other        
-        self.amount_spinbox.setValue(missing_amount)
+            missing_amount = 100 - sum_of_other
+        if missing_amount >= 0:
+            self.amount_spinbox.setValue(missing_amount)
         
         self.dialog._LayerPropertiesDialog__check_if_settings_ok()
 

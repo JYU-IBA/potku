@@ -111,20 +111,20 @@
         </item>
         <item>
          <widget class="QLabel" name="label_12">
-          <property name="maximumSize">
+          <property name="minimumSize">
            <size>
-            <width>76</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="baseSize">
-           <size>
-            <width>76</width>
+            <width>150</width>
             <height>0</height>
            </size>
           </property>
+          <property name="maximumSize">
+           <size>
+            <width>150</width>
+            <height>16777215</height>
+           </size>
+          </property>
           <property name="text">
-           <string>Amount [at. %]</string>
+           <string>Concentration [at. %]</string>
           </property>
          </widget>
         </item>
@@ -171,8 +171,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>338</width>
-           <height>121</height>
+           <width>449</width>
+           <height>38</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_7">
