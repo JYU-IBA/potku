@@ -71,7 +71,7 @@ class Samples:
         """
         if sample_path is not None:
             if name == "":
-                name = sample_path.name.split("-")[1]
+                name = sample_path.name.split("-", 1)[1]
             sample = Sample(Sample.get_number_from_directory_name(sample_path), self.request, sample_path.name, name)
         else:
             self.request.increase_running_int_by_1()
