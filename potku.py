@@ -262,8 +262,7 @@ class Potku(QtWidgets.QMainWindow):
         if not clicked_item:
             return
         # TODO do all name validation in the backend modules
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]+"
-        valid_text = iv.validate_text_input(clicked_item.text(0), regex)
+        valid_text = iv.validate_text_input(clicked_item.text(0))
 
         if valid_text != clicked_item.text(0):
             QtWidgets.QMessageBox.information(

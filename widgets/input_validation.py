@@ -149,27 +149,18 @@ def set_input_field_yellow(input_field: QtWidgets.QWidget):
     input_field.setStyleSheet("background-color: #ebde34")
 
 
-def validate_text_input(text, regex):
+def validate_text_input(text):
     """
-    Validate the text using given regular expression. If not valid, remove
+    Validate the text using a hard coded regular expression. If not valid, remove
     invalid characters.
 
     Args:
         text: Text to validate.
-        regex: Regular expression to match.
     """
-    valid = re.match(regex + "$", text)
 
-    if "_" in regex:  # Request name
-        substitute_regex = "[^A-Za-z0-9_ÖöÄäÅå-]"
-    else:  # Other names
-        substitute_regex = "[^A-Za-z0-9-ÖöÄäÅå]"
-
-    if not valid:
-        valid_text = re.sub(substitute_regex, '', text)
-        return valid_text
-    else:
-        return text
+    valid_text = re.sub(r"[^\w\-]", '', text)
+    valid_text = re.sub(r"[_]", '', valid_text)
+    return valid_text
 
 
 def sanitize_file_name(line_edit: QtWidgets.QLineEdit):
@@ -180,7 +171,6 @@ def sanitize_file_name(line_edit: QtWidgets.QLineEdit):
         line_edit: QLineEdit object.
     """
     text = line_edit.text()
-    regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-    valid_text = validate_text_input(text, regex)
+    valid_text = validate_text_input(text)
 
     line_edit.setText(valid_text)

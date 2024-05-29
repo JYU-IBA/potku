@@ -207,7 +207,6 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         Validate the recoil name.
         """
         text = self.name
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = iv.validate_text_input(text, regex)
+        valid_text = iv.validate_text_input(text)
 
         self.name = valid_text

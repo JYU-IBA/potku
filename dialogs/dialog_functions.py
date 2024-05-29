@@ -445,9 +445,7 @@ def import_new_measurement(request: Request, parent: "Potku",
     sample = request.samples.add_sample()
     parent.add_root_item_to_tree(sample)
     item_name = item.name.replace("_", "-")
-
-    regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-    item_name = iv.validate_text_input(item_name, regex)
+    item_name = iv.validate_text_input(item_name)
 
     measurement = parent.add_new_tab(
         "measurement", "", sample, object_name=item_name,

@@ -384,8 +384,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         """Validate the measurement settings file name.
         """
         text = self.measurement_setting_file_name
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = iv.validate_text_input(text, regex)
+        valid_text = iv.validate_text_input(text)
 
         self.measurement_setting_file_name = valid_text
 
