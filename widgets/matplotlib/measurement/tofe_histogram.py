@@ -331,46 +331,28 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                                     box.width * 0.9,
                                     box.height])
             self.__inited = True
-        selection_legend = {}
+        selection_legend = []
 
         # Get selections for legend
         for sel in self.measurement.selector.selections:
-            rbs_string = ""
-            element = sel.element
+            if not sel.is_completed:
+                continue
             if sel.type == "RBS":
                 element = sel.element_scatter
-                rbs_string = "*"
-            sel.points.set_marker("None")  # Remove markers for legend.
-            dirtyinteger = 0
-            key_string = "{0}{1}".format(element.symbol, dirtyinteger)
-            while key_string in selection_legend:
-                key_string = "{0}{1}".format(element.symbol, dirtyinteger)
-                dirtyinteger += 1
-
-            if element.isotope:
-                isotope_str = str(int(element.isotope))
-                add = r"$^{" + isotope_str + "}$"
             else:
-                isotope_str = str(round(element.get_st_mass()))
-                add = ""
+                element = sel.element
+            sel.points.set_marker("None")  # Remove markers for legend.
 
-            label = add + element.symbol + rbs_string
+            selection_legend.append([element, sel.name_label(), sel.points])
 
-            selection_legend[key_string] = (label, isotope_str, sel.points,
-                                            element)
-
-        # Sort legend text
-        global sel_text
         sel_text = []
-        global sel_points
         sel_points = []
 
-        items = sorted(selection_legend.items(), key=lambda x: x[1][3])
+        items = sorted(selection_legend, key=lambda x: x[0])
 
         for item in items:
-            # [0] is the key of the item.
-            sel_text.append(item[1][0])
-            sel_points.append(item[1][2])
+            sel_text.append(item[1])
+            sel_points.append(item[2])
 
         leg = self.axes.legend(sel_points,
                                sel_text,

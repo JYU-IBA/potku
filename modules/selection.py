@@ -996,3 +996,9 @@ class Selection:
             return self.element_scatter.name() + " (" + self.element.name() + ")"
         else:
             return self.element.name()
+
+    def name_label(self):
+        if self.type == "RBS":
+            return self.element_scatter.name_label() + "*"
+        else:
+            return self.element.name_label()

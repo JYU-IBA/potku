@@ -300,3 +300,9 @@ class Element(MCERDParameterContainer):
             return self.symbol
         else:
             return str(self.isotope) + self.symbol
+
+    def name_label(self):
+        if self.isotope is None:
+            return self.symbol
+        else:
+            return r"$^{" + str(self.isotope) + "}$" + self.symbol
