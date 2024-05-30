@@ -827,10 +827,10 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         """ Save the (plotted) spectra."""
         if self.simulation_energy:
             for k in self.simulation_energy.keys():
-                self.save_spectrum(k.stem, self.simulation_energy[k])
+                self.save_spectrum(k, self.simulation_energy[k])
         if self.measurement_energy:
             for k in self.measurement_energy.keys():
-                self.save_spectrum(k.stem, self.measurement_energy[k])
+                self.save_spectrum(k, self.measurement_energy[k])
 
 def get_axis_values(data):
     """Returns the x and y axis values from given data."""
