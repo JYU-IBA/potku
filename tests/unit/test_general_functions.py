@@ -425,7 +425,7 @@ class TestCoinc(unittest.TestCase):
         input_file = utils.get_resource_dir() / "events.evnt"
         self.params = {
             "adc_count": 3,
-            "columns": "$3,$5,$4",
+            "columns": [2, 4, 3],
             "input_file": input_file,
             "nevents": 0,
             "skip_lines": 1,
@@ -471,7 +471,7 @@ class TestCoinc(unittest.TestCase):
     def test_coinc_returns_empty_list_if_no_columns(self):
         with tempfile.TemporaryDirectory():
             params = dict(self.params)
-            params["columns"] = ""
+            params["columns"] = []
             self.assertEqual([], gf.coinc(**params))
 
     def test_coinc_returns_empty_list_if_no_timings(self):

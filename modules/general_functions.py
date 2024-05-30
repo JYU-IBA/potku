@@ -362,7 +362,7 @@ def coinc(input_file: Path, skip_lines: int, tablesize: int,
     )
     timings = [s for tpl in timings for s in tpl]
 
-    if not timings:
+    if not (timings and columns):
         return []
 
     if timediff:
