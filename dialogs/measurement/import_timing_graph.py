@@ -71,7 +71,7 @@ class ImportTimingGraphDialog(QtWidgets.QDialog):
         data = gf.coinc(
             input_file, skip_lines=skip_lines, tablesize=10, trigger=trigger,
             adc_count=adc_count, timing=timing, nevents=coinc_count,
-            columns="$4", timediff=True, output_file=output_file)
+            columns=[3], timediff=True, output_file=output_file)
         if not data:
             QtWidgets.QMessageBox.question(
                 self, "No data", "No coincidence events were found.",

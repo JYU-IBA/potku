@@ -67,7 +67,7 @@ class MatplotlibImportTimingWidget(MatplotlibWidget):
         self.data = [
             timediff for timediff, in
             parser.parse_strs(
-                data, separator="\t", method=parser.ROW, ignore=parser.EMPTY)
+                data, separator=" ", method=parser.ROW, ignore=parser.EMPTY)
         ]
         self.on_draw()
 

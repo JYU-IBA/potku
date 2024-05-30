@@ -145,8 +145,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         """Import listed files with settings defined in the dialog.
         """
         sbh = StatusBarHandler(self.statusbar)
-        string_columns = []
-
+        columns = []
         for i in range(self.grid_column.rowCount()):
             item = self.grid_column.itemAtPosition(i, 0)
             if not item.isEmpty():
@@ -156,9 +155,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                 cur_text = combo_widget.currentText()
                 adc = int(re.sub(r"ADC ([0-9]+).*", r"\1", cur_text))
                 # + 1 since actual column, not index
-                column_index = adc * 2 + cur_index % 2 + 1  
-                string_columns.append("${0}".format(column_index))
-        string_column = ",".join(string_columns)
+                columns.append(adc * 2 + cur_index % 2)
 
         root = self.treeWidget.invisibleRootItem()
         root_child_count = root.childCount()
@@ -185,7 +182,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                      trigger=self.spin_adctrigger.value(),
                      adc_count=self.spin_adccount.value(),
                      timing=timing,
-                     columns=string_column,
+                     columns=columns,
                      nevents=self.spin_eventcount.value())
 
             sbh.reporter.report(10 + (i + 1) / root_child_count * 90)

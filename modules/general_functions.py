@@ -329,9 +329,8 @@ def carbon_stopping(element, isotope, energy, carbon_thickness, carbon_density):
 
 
 def coinc(input_file: Path, skip_lines: int, tablesize: int,
-          trigger: int, adc_count: int, timing: Dict[str, Tuple[int, int]],
-          output_file: Optional[Path] = None, columns: str = "$3,$5",
-          nevents: int = 0, timediff: bool = True, verbose: bool = True) -> \
+          trigger: int, adc_count: int, timing: Dict[str, Tuple[int, int]], columns: list[int],
+          output_file: Optional[Path] = None, nevents: int = 0, timediff: bool = True, verbose: bool = True) -> \
         List[str]:
     """Calculate coincidences of file.
 
@@ -345,9 +344,9 @@ def coinc(input_file: Path, skip_lines: int, tablesize: int,
         adc_count: An integer representing the count of ADCs.
         timing: A dict consisting of (min, max) representing different ADC
                 timings.
+        columns: Columns (indices) to parse from output. Numbering starts from 0.
         output_file: Path to destination file. If None, the results will not
             be written to file.
-        columns: Columns to parse from output.
         nevents: An integer representing limit of how many events will the
                  program look for. 0 means no limit.
         timediff: A boolean representing whether timediff is output or not.
@@ -356,17 +355,14 @@ def coinc(input_file: Path, skip_lines: int, tablesize: int,
     Return:
         The output of coinc as a list
     """
-    # TODO consider replacing awk with something else so there is no need to
-    #   rely on an external dependency. Parsing individual lines with CSVParser
-    #   is too slow.
+
     timings = (
         (f"--low={key},{low}", f"--high={key},{high}")
         for key, (low, high) in timing.items()
     )
     timings = [s for tpl in timings for s in tpl]
 
-    col_split = columns.split(',')
-    if not (all(col_split) and timings):
+    if not timings:
         return []
 
     if timediff:
@@ -378,10 +374,8 @@ def coinc(input_file: Path, skip_lines: int, tablesize: int,
 
     if platform.system() != "Windows":
         executable = "./coinc"
-        awk_cmd = "awk", f"{{print {columns}}}"
     else:
         executable = bin_dir / "coinc.exe"
-        awk_cmd = str(get_bin_dir() / "awk.exe"), f"{{print {columns}}}"
 
     coinc_cmd = (
         str(executable),
@@ -403,13 +397,11 @@ def coinc(input_file: Path, skip_lines: int, tablesize: int,
         "universal_newlines": True,
     }
 
-    col_split_new = [int(col.replace("$", "")) - 1 for col in col_split]
-    print(col_split_new)
     try:
         with subprocess.Popen(coinc_cmd, **kwargs) as coinc_proc:
             data = sutils.process_output(coinc_proc,
                                          file=output_file,
-                                         text_func=lambda x: " ".join(x.split()[col] for col in col_split_new) + "\n")
+                                         parse_func=lambda x: " ".join(x.split()[col] for col in columns) + "\n")
             return data
     except OSError:
         return []
