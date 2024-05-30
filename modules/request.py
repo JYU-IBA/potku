@@ -396,7 +396,7 @@ class Request(ElementSimulationContainer, RequestLogger):
         if measurement in self.__non_slaves:
             return
         self.__non_slaves.append(measurement)
-        paths = [m.path for m in self.__non_slaves]
+        paths = [str(m.path) for m in self.__non_slaves]
         self.__request_information["meta"]["nonslave"] = "|".join(
             paths)
         self._save()
@@ -474,7 +474,7 @@ class Request(ElementSimulationContainer, RequestLogger):
         paths = self.__request_information["meta"]["nonslave"].split("|")
         for measurement in self._get_measurements():
             for path in paths:
-                if path == measurement.path:
+                if path == str(measurement.path):
                     if measurement in self.__non_slaves:
                         continue
                     self.__non_slaves.append(measurement)
@@ -492,7 +492,7 @@ class Request(ElementSimulationContainer, RequestLogger):
         Return:
             Measurement object.
         """
-        path = self.__request_information["meta"]["master"]
+        path = Path(self.__request_information["meta"]["master"])
         for measurement in self._get_measurements():
             if measurement.path == path:
                 return measurement
@@ -595,7 +595,7 @@ class Request(ElementSimulationContainer, RequestLogger):
         else:
             # name = measurement.name
             path = measurement.path
-            self.__request_information["meta"]["master"] = path
+            self.__request_information["meta"]["master"] = str(path)
         self._save()
 
     def get_imported_files_folder(self) -> Path:
