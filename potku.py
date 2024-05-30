@@ -139,7 +139,7 @@ class Potku(QtWidgets.QMainWindow):
         self.addNewMeasurementButton.clicked.connect(self.open_new_measurement)
         self.actionNew_measurement_2.triggered.connect(
             self.open_new_measurement)
-        self.actionImport_pelletron.triggered.connect(self.import_pelletron)
+        self.actionImport_jyfl.triggered.connect(self.import_jyfl)
         self.actionBinary_data_lst.triggered.connect(self.import_binary)
         self.action_manual.triggered.connect(self.__open_manual)
         self.actionDataHelp.triggered.connect(self.__open_data_help)
@@ -593,10 +593,8 @@ class Potku(QtWidgets.QMainWindow):
             print(e)  # TODO remove print
         sbh.reporter.report(100)
 
-    def import_pelletron(self):
-        """Import Pelletron's measurements into request.
-
-        Import Pelletron's measurements from
+    def import_jyfl(self):
+        """Import JYFL style evnt file measurements into request.
         """
         if not self.request:
             return

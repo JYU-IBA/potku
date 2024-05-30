@@ -550,7 +550,7 @@ simulation</string>
      <property name="title">
       <string>Import measurements</string>
      </property>
-     <addaction name="actionImport_pelletron"/>
+     <addaction name="actionImport_jyfl"/>
      <addaction name="actionBinary_data_lst"/>
     </widget>
     <widget class="QMenu" name="menuOpen_recent">
@@ -756,9 +756,9 @@ simulation</string>
     <string>Depth profile data explained</string>
    </property>
   </action>
-  <action name="actionImport_pelletron">
+  <action name="actionImport_jyfl">
    <property name="text">
-    <string>JYFL Pelletron... (.evnt)</string>
+    <string>Jyväskylä event files... (.evnt)</string>
    </property>
   </action>
   <action name="actionBinary_data_lst">
