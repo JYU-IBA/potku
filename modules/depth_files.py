@@ -119,9 +119,9 @@ class DepthFileGenerator:
                     g = eff_re.match(line)
                     if g:
                         self._used_eff_files = g.group(2).split()
-                        print("tofe_list reports using " + g.group(1) + " efficiency files: " + str(self._used_eff_files));
+                        #print("tofe_list reports using " + g.group(1) + " efficiency files: " + str(self._used_eff_files))
                         if len(self._used_eff_files) != int(g.group(1)):
-                            print("mismatch between number of efficiency files and number of efficiency files reported to have been used by tofe_list.")
+                            raise RuntimeError("mismatch between number of efficiency files and number of efficiency files reported to have been used by tofe_list.")
             if tofe_list_process.returncode != 0:
                 raise Exception(f"tofe_list reports an error {tofe_list_process.returncode}, see {tofe_log_filename} for more information.")
             erd_depth_process = subprocess.run(erd, cwd=bin_dir, input=tofe_list_stdout, capture_output=True, check=True)
