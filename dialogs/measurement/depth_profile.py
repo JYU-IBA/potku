@@ -408,10 +408,10 @@ class DepthProfileWidget(QtWidgets.QWidget):
 
         with file.open("w") as fh:
             fh.write("{0}\n".format(str(output_dir)))
+            fh.write("{0}\n".format("\t".join([str(element) for element in self.elements])))
             fh.write("{0}\n".format("\t".join([
-                str(element) for element in self.elements])))
-            fh.write("{0}\n".format("\t".join([
-                str(cut) for cut in self.use_cuts])))
+                str(cut.relative_to(self.measurement.directory)).replace('\\', '/')
+                for cut in self.use_cuts])))  # The replace improves compatibility between Windows and UNIX.
             fh.write("{0}\n".format(self.x_units.simple_str()))
             fh.write("{0}\n".format(self._line_zero_shown))
             fh.write("{0}\n".format(self._line_scale_shown))

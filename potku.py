@@ -1276,9 +1276,6 @@ class Potku(QtWidgets.QMainWindow):
         master = self.request.get_master()
         master_tab = self.tab_widgets[master.tab_id]
         master_name = master.name
-        directory_d = master.get_depth_profile_dir()
-        directory_e = master.get_energy_spectra_dir()
-        directory_c = master.get_composition_changes_dir()
 
         # Load selections and save cut files
         # TODO: Make a check for these if identical already -> don't redo.
@@ -1346,36 +1343,29 @@ class Potku(QtWidgets.QMainWindow):
                         # Update tree item icon to open folder
                         self.__change_tab_icon(tree_item)
 
-                    sample_folder_name = "Sample_" + "%02d" % \
-                                         master.sample.serial_number + "-" \
-                                         + master.sample.name
                     # Check all widgets of master and do them for slaves.
-                    if master_tab.depth_profile_widget and tab.data_loaded:
-                        if tab.depth_profile_widget:
-                            tab.del_widget(tab.depth_profile_widget)
-                        tab.make_depth_profile(directory_d, master_name,
-                                               master.serial_number,
-                                               sample_folder_name)
-                        tab.depth_profile_widget.save_to_file()
-
-                    item_reporter.report(80)
 
                     if master_tab.elemental_losses_widget and tab.data_loaded:
                         if tab.elemental_losses_widget:
                             tab.del_widget(tab.elemental_losses_widget)
-                        tab.make_elemental_losses(directory_c, master_name,
-                                                  master.serial_number,
-                                                  sample_folder_name)
+                        tab.make_elemental_losses(master.get_composition_changes_dir())
+                        tab.elemental_losses_widget.losses.save_splits()
                         tab.elemental_losses_widget.save_to_file()
+
+                    item_reporter.report(80)
+
+                    if master_tab.depth_profile_widget and tab.data_loaded:
+                        if tab.depth_profile_widget:
+                            tab.del_widget(tab.depth_profile_widget)
+                        tab.make_depth_profile(Path(master.get_depth_profiles_dir()))
+                        tab.depth_profile_widget.save_to_file()
 
                     item_reporter.report(90)
 
                     if master_tab.energy_spectrum_widget and tab.data_loaded:
                         if tab.energy_spectrum_widget:
                             tab.del_widget(tab.energy_spectrum_widget)
-                        tab.make_energy_spectrum(directory_e, master_name,
-                                                 master.serial_number,
-                                                 sample_folder_name)
+                        tab.make_energy_spectrum(master.get_energy_spectra_dir())
                         tab.energy_spectrum_widget.save_to_file()
 
                 item_reporter.report(100)

@@ -168,21 +168,12 @@ class MeasurementTabWidget(BaseTab):
         Args:
             progress: a ProgressReporter object
         """
-        sample_folder_name = "Sample_" + "%02d" % \
-                             self.obj.sample.serial_number + "-" + \
-                             self.obj.sample.name
-        directory_c = self.obj.get_composition_changes_dir()
-        self.make_elemental_losses(
-            directory_c, self.obj.name, self.obj.serial_number,
-            sample_folder_name)
+        self.make_elemental_losses(self.obj.get_composition_changes_dir())
 
         if progress is not None:
             progress.report(33)
 
-        directory_e = self.obj.get_energy_spectra_dir()
-        self.make_energy_spectrum(
-            directory_e, self.obj.name, self.obj.serial_number,
-            sample_folder_name)
+        self.make_energy_spectrum(self.obj.get_energy_spectra_dir())
 
         if progress is not None:
             progress.report(50)
@@ -191,46 +182,27 @@ class MeasurementTabWidget(BaseTab):
             sub_progress = None
 
         directory_d = self.obj.get_depth_profile_dir()
-        self.make_depth_profile(
-            directory_d, self.obj.name, self.obj.serial_number,
-            sample_folder_name, progress=sub_progress)
+        self.make_depth_profile(directory_d, progress=sub_progress)
 
         if progress is not None:
             progress.report(100)
 
-    def make_depth_profile(self, directory: Path, name: str, serial_number_m:
-                           int, sample_folder_name: str, progress=None):
+    def make_depth_profile(self, save_directory: Path, progress=None):
         """Make depth profile from loaded lines from saved file.
 
         Args:
             directory: A path to depth files directory.
-            name: A string representing measurement's name.
-            serial_number_m: Measurement's serial number.
-            sample_folder_name: Sample's serial number.
             progress: a ProgressReporter object
         """
-        file = Path(directory, DepthProfileWidget.save_file)
+        file = Path(save_directory, DepthProfileWidget.save_file)
         lines = MeasurementTabWidget._load_file(file)
         if not lines:
             return
         m_name = self.obj.name
         try:
-            base = Measurement.DIRECTORY_PREFIX
-            # TODO add sample prefix
-            old_folder_prefix = base + "%02d" % serial_number_m
-            new_folder_prefix = base + "%02d" % self.obj.serial_number
-            new_sample_name = "Sample_" + "%02d" % \
-                              self.obj.sample.serial_number + "-" + \
-                              self.obj.sample.name
-            output_dir = self.__confirm_filepath(
-                lines[0].strip(), name, m_name, old_folder_prefix,
-                new_folder_prefix, sample_folder_name, new_sample_name)
-            use_cuts = self.__confirm_filepath(
-                lines[2].strip().split("\t"), name, m_name, old_folder_prefix,
-                new_folder_prefix, sample_folder_name, new_sample_name)
-            elements_string = lines[1].strip().split("\t")
-            elements = [Element.from_string(element)
-                        for element in elements_string]
+            output_dir = self.obj.directory / lines[0].strip()
+            use_cuts = self.__cutfiles_from_other_measurement(save_directory.parent, lines[2].strip().split("\t"))
+            elements = [Element.from_string(e) for e in lines[1].strip().split("\t")]
             try:
                 x_unit = DepthProfileUnit.from_string(lines[3].strip())
             except ValueError:
@@ -252,19 +224,15 @@ class MeasurementTabWidget(BaseTab):
             DepthProfileDialog.used_eff = used_eff
             DepthProfileDialog.eff_files_str = eff_files_str
 
-            self.depth_profile_widget = DepthProfileWidget(
-                self, output_dir, use_cuts, elements, x_unit, line_zero,
-                used_eff, line_scale, systerr, eff_files_str,
-                progress=progress
-                )
+            self.depth_profile_widget = DepthProfileWidget(self, output_dir, use_cuts, elements, x_unit, line_zero, used_eff,
+                                                           line_scale, systerr, eff_files_str, progress=progress)
             icon = self.icon_manager.get_icon("depth_profile_icon_2_16.png")
             self.add_widget(self.depth_profile_widget, icon=icon)
         except Exception as e:
             # We do not need duplicate error logs, log in widget instead
             print(e)
 
-    def make_elemental_losses(self, directory, name, serial_number,
-                              old_sample_name, progress=None):
+    def make_elemental_losses(self, directory, progress=None):
         """Make elemental losses from loaded lines from saved file.
 
         Args:
@@ -280,19 +248,8 @@ class MeasurementTabWidget(BaseTab):
             return
         m_name = self.obj.name
         try:
-            base = Measurement.DIRECTORY_PREFIX
-            old_folder_prefix = base + "%02d" % serial_number
-            new_folder_prefix = base + "%02d" % self.obj.serial_number
-            new_sample_name = "Sample_" + "%02d" % \
-                              self.obj.sample.serial_number + "-" + \
-                              self.obj.sample.name
-            file_path = lines[0].strip()
-            reference_cut = self.__confirm_filepath(
-                file_path, name, m_name, old_folder_prefix, new_folder_prefix,
-                old_sample_name, new_sample_name)
-            checked_cuts = self.__confirm_filepath(
-                lines[1].strip().split("\t"), name, m_name, old_folder_prefix,
-                new_folder_prefix, old_sample_name, new_sample_name)
+            reference_cut = self.__cutfiles_from_other_measurement(directory.parent, [lines[0].strip()])[0]
+            checked_cuts = self.__cutfiles_from_other_measurement(directory.parent, lines[1].strip().split("\t"))
             split_count = int(lines[2])
             y_scale = int(lines[3])
             ElementLossesDialog.reference_cut[m_name] = reference_cut
@@ -308,15 +265,11 @@ class MeasurementTabWidget(BaseTab):
             # We do not need duplicate error logs, log in widget instead
             print(e)
 
-    def make_energy_spectrum(self, directory, name, serial_number,
-                             old_sample_name):
+    def make_energy_spectrum(self, directory: Path):
         """Make energy spectrum from loaded lines from saved file.
 
         Args:
-            directory: A string representing directory.
-            name: A string representing measurement's name.
-            serial_number: Measurement's serial number.
-            old_sample_name: TODO
+            directory: The directory where widget_energy_spectrum.save can be found, containing all settings .
         """
         file = Path(directory, EnergySpectrumWidget.save_file)
         lines = MeasurementTabWidget._load_file(file)
@@ -324,15 +277,7 @@ class MeasurementTabWidget(BaseTab):
             return
         m_name = self.obj.name
         try:
-            base = Measurement.DIRECTORY_PREFIX
-            old_folder_prefix = base + "%02d" % serial_number
-            new_folder_prefix = base + "%02d" % self.obj.serial_number
-            new_sample_name = "Sample_" + "%02d" % \
-                              self.obj.sample.serial_number + "-" + \
-                              self.obj.sample.name
-            use_cuts = self.__confirm_filepath(
-                lines[0].strip().split("\t"), name, m_name, old_folder_prefix,
-                new_folder_prefix, old_sample_name, new_sample_name)
+            use_cuts = self.__cutfiles_from_other_measurement(directory.parent, lines[0].strip().split("\t"))
             width = float(lines[1].strip())
             EnergySpectrumParamsDialog.bin_width = width
             EnergySpectrumParamsDialog.checked_cuts[m_name] = set(use_cuts)
@@ -404,43 +349,22 @@ class MeasurementTabWidget(BaseTab):
             master_name = None
         self.command_master.setEnabled(measurement_name == master_name)
 
-    def __confirm_filepath(self, filepath, name, m_name, old_folder_prefix,
-                           new_folder_prefix, old_sample_name, new_sample_name):
-        """Confirm whether file path exist and changes it accordingly.
-
-        Args:
-            filepath: A string or a collection of strings representing
-                      filepaths.
-            name: A string representing origin measurement's name.
-            m_name: A string representing measurement's name where graph is
-            created.
-            old_folder_prefix: Folder name of the original measurement.
-            new_folder_prefix: Folder prefix of the measurement who will have
-            the graph.
-            old_sample_name: Sample folder name of the original measurement.
-            new_sample_name: Sample folder name of the measurement who will
-            have the graph.
-
-        Return:
-            either a Path object or a list of Path objects depending on the
-            input type.
+    def __cutfiles_with_correct_measurement_name(self, cuts: list[Path]) -> list[Path]:
+        """Changes measurement name from a list of cutfiles. Bad solution that replaces an even worse solution.
+        e.g. path/to/foo.1H.ERD.0.cut will be turned into path/to/self_obj_name.1H.ERD.0.cut
         """
-        if type(filepath) == str:
-            # Replace two for measurement and cut file's name. Not all, in case 
-            # the request or directories above it have same name.
-            file = rreplace(
-                filepath, name, m_name, old_folder_prefix, new_folder_prefix,
-                old_sample_name, new_sample_name)
-            return self.__validate_file_path(file)
-        elif type(filepath) == list:
-            newfiles = []
-            for file in filepath:
-                file = rreplace(
-                    file, name, m_name, old_folder_prefix, new_folder_prefix,
-                    old_sample_name, new_sample_name)
-                newfiles.append(self.__validate_file_path(file))
-            return newfiles
-        raise TypeError("Expected either a string or a list")
+        return [cut.parent / cut.name.replace(cut.name.split(".", 1)[0], self.obj.name) for cut in cuts]
+    def __cutfiles_from_other_measurement(self, other_directory: Path, cutfiles_str: list[str]) -> list[Path]:
+        """Other measurement can also be the same measurement. Changes absolute and relative paths to be absolute
+        (and for this measurement). Changes the name of the measurement too
+        (see __cutfiles_with_correct_measurement_name())"""
+        cuts = [Path(cut_str).relative_to(other_directory) if Path(cut_str).is_absolute()
+                    else Path(cut_str) for cut_str in cutfiles_str if cut_str != '']  # Turn absolute paths
+        # relative to (target) measurement directory
+        cuts = [Path(self.obj.directory) / cut
+                    for cut in self.__cutfiles_with_correct_measurement_name(cuts)]
+        return cuts
+
 
     def __validate_file_path(self, file_path: Path):
         """Helper function that checks if the given file_path points to file.
@@ -552,42 +476,3 @@ class MeasurementTabWidget(BaseTab):
         else:
             self.warning_text.setText("")
             self.warning_text.setStyleSheet("")
-
-
-def rreplace(s, old, new, old_folder_prefix, new_folder_prefix,
-             old_sample_name, new_sample_name):
-    """Replace from last occurrence.
-
-    http://stackoverflow.com/questions/2556108/how-to-replace-the-last-
-    occurence-of-an-expression-in-a-string
-
-    Args:
-        s: String to modify.
-        old: Old name.
-        new: New name.
-        old_folder_prefix: Folder prefix of the old name.
-        new_folder_prefix: Folder prefix of the new name.
-        old_sample_name: Name of the old sample folder.
-        new_sample_name: Name of the new sample folder.
-    """
-    li = s.rsplit(old, 2)
-    if old_folder_prefix in li[0]:
-        new_f = li[0].replace(old_folder_prefix, new_folder_prefix)
-        li[0] = new_f
-    if old_sample_name in li[0]:
-        new_f = li[0].replace(old_sample_name, new_sample_name)
-        li[0] = new_f
-    # first = s.split(old_folder_prefix, 1)[0]
-    # f_done = first + new_folder_name
-    # second = s.rsplit(old, 1)[1]
-    # s_done = new + second
-    #
-    # result = f_done + s_done
-    result = new.join(li)
-    if "\\" in result and "/" not in result:
-        # This is a patch to make it possible to open .cut files made
-        # on another os.
-        # TODO it would be better to use Path when writing these paths
-        #      to file in the first place
-        result = result.replace("\\", "/")
-    return Path(result)

@@ -64,12 +64,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
     def __init__(self, parent: QtWidgets.QWidget, depth_dir: Path,
                  elements: List[Element], rbs_list: Dict[str, Element],
                  icon_manager: IconManager, selection_colors: Dict[str, str],
-                 x_units: DepthProfileUnit = DepthProfileUnit.NM,
-                 depth_scale: Optional[Range] = None,
-                 add_line_zero: bool = False, systematic_error: float = 3.0,
-                 show_eff_files: bool = False,
-                 used_eff_files: List[str] = None,
-                 progress: Optional[ProgressReporter] = None):
+                 x_units: DepthProfileUnit = DepthProfileUnit.NM, depth_scale: Optional[Range] = None,
+                 add_line_zero: bool = False, systematic_error: float = 3.0, show_eff_files: bool = False,
+                 used_eff_files: List[str] = None, progress: Optional[ProgressReporter] = None):
         """Inits depth profile widget.
 
         Args:
