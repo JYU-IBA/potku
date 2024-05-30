@@ -90,7 +90,7 @@ class Element(MCERDParameterContainer):
             #           - create a composition change graph or energy spectra
             #           - crashes here because of an empty string
             raise ValueError(
-                f"Could not intialize an Element from the given "
+                f"Could not initialize an Element from the given "
                 f"string: {element_str}")
 
     @classmethod
