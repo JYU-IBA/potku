@@ -36,12 +36,13 @@ from PyQt5 import uic
 from PyQt5 import QtWidgets
 
 from dialogs.new_sample import NewSampleDialog
+from modules.sample import Sample
 
 
 class LoadMeasurementDialog(QtWidgets.QDialog):
     """Dialog for loading a measurement.
     """
-    def __init__(self, samples, directory):
+    def __init__(self, samples: list[Sample], directory):
         """Inits a load measurement dialog.
 
         Args:
@@ -56,15 +57,14 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
         self.loadButton.clicked.connect(self.__load_measurement)
         self.cancelButton.clicked.connect(self.close)
         self.name = ""
-        self.sample = None
+        self.sample_str = None
         self.directory = directory
         self.filename = ""
         self.samples = samples
 
         self.__close = True
         for sample in samples:
-            self.samplesComboBox.addItem(
-                "Sample " + "%02d" % sample.serial_number + " " + sample.name)
+            self.samplesComboBox.addItem(sample.long_name())
 
         if not samples:
             iv.set_input_field_red(self.samplesComboBox)
@@ -92,18 +92,18 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
     def __load_measurement(self):
         self.path = self.pathLineEdit.text()
         self.name = self.nameLineEdit.text().replace(" ", "_")
-        self.sample = self.samplesComboBox.currentText()
+        self.sample_str = self.samplesComboBox.currentText()
         if not self.path:
             self.browseButton.setFocus()
             return
         if not self.name:
             self.nameLineEdit.setFocus()
             return
-        if not self.sample:
+        if not self.sample_str:
             self.addSampleButton.setFocus()
             return
 
-        sample = self.__find_existing_sample()
+        sample = self.__find_existing_sample(self.sample_str)
 
         if sample:
             # Check if measurement on the same name already exists.
@@ -130,16 +130,17 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
             self, self.directory, "Select a measurement to load",
             "Raw Measurement (*.asc)")
         self.pathLineEdit.setText(str(self.filename))
+        self.nameLineEdit.setText(self.filename.stem)
 
-    def __find_existing_sample(self):
+    def __find_existing_sample(self, sample_str: str):
         """
         Find existing sample that matches the sample name in dialog.
 
         Return:
             Sample object or None.
         """
+
         for sample in self.samples:
-            if "Sample " + "%02d" % sample.serial_number + " " + sample.name \
-                    == self.sample:
+            if sample_str == sample.long_name():
                 return sample
         return None

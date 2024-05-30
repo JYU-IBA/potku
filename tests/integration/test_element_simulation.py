@@ -58,7 +58,7 @@ class TestElementSimulationSettings(unittest.TestCase):
             # File paths
             tmp_dir = Path(tmp_dir).resolve()
             req_dir = tmp_dir / "req"
-            sim_dir = req_dir / "Sample_01-foo" / \
+            sim_dir = req_dir / Path(Sample.DIRECTORY_PREFIX + "01-foo") / \
                 f"{Simulation.DIRECTORY_PREFIX}01-bar"
             simu_file = sim_dir / "bar.simulation"
 

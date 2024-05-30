@@ -76,7 +76,7 @@ class Samples:
         else:
             self.request.increase_running_int_by_1()
             next_serial = self.request.get_running_int()
-            sample_dir = f"Sample_{next_serial:02d}-{name}"
+            sample_dir = Sample.DIRECTORY_PREFIX + f"{next_serial:02d}-{name}"
             new_path = Path(self.request.directory, sample_dir)
             sample = Sample(next_serial, self.request, sample_dir, name)
             new_path.mkdir(exist_ok=True)
@@ -112,6 +112,8 @@ class Samples:
 class Sample:
     """Class for a sample.
     """
+    DIRECTORY_PREFIX = "Sample_"
+
     def __init__(self, serial_number: int, request: "Request", dir_name: str,
                  name: str = ""):
         """
@@ -134,6 +136,9 @@ class Sample:
 
         self._running_int_measurement = 1
         self._running_int_simulation = 1
+
+    def long_name(self):
+        return f"Sample {self.serial_number:02d} {self.name}"
 
     def get_running_int_measurement(self) -> int:
         """Get running int for measurements,
@@ -256,7 +261,7 @@ class Sample:
         Return:
                 Sample number. Zero if directory name is not appropriate.
         """
-        m = re.search(r"^Sample_(\d*)-", dir_name.name)
+        m = re.search(r"^"+ Sample.DIRECTORY_PREFIX + r"(\d*)-", dir_name.name)
 
         if m:
             return int(m.group(1))

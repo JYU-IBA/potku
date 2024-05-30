@@ -132,7 +132,6 @@ class SimulationNewDialog(QtWidgets.QDialog):
             Sample object or None.
         """
         for sample in self.samples:
-            if "Sample " + "%02d" % sample.serial_number + " " + sample.name \
-                    == self.sample:
+            if sample.directory == self.sample.directory:
                 return sample
         return None

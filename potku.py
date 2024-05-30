@@ -746,7 +746,7 @@ class Potku(QtWidgets.QMainWindow):
 
         dialog = LoadMeasurementDialog(self.request.samples.samples,
                                        self.request.directory)
-        sample_name = dialog.sample
+        sample_name = dialog.sample_str
 
         if dialog.filename:
             try:
