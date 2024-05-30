@@ -347,19 +347,6 @@ class DepthProfileWidget(QtWidgets.QWidget):
             # Check for RBS selections.
             rbs_list = cut_file.get_rbs_selections(self.use_cuts)
 
-            for rbs in rbs_list:
-                # Search and replace instances of Beam element with scatter
-                # elements.
-                # When loading request, the scatter element is already
-                # replaced. This is essentially done only when creating
-                # a new Depth Profile graph.
-                # TODO seems overly complicated. This stuff should be sorted
-                #  before initializing the widget
-                element = Element.from_string(rbs.split(".")[0])
-                for i, elem in enumerate(elements):
-                    if elem == element:
-                        elements[i] = rbs_list[rbs]
-
             if self._line_scale_shown:
                 depth_scale = (
                     profile.depth_for_concentration_from,
