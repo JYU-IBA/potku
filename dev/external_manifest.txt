@@ -1,4 +1,3 @@
-{"file_path": "external/bin/awk.exe", "date": "18/08/2023 11:51:51", "hash": "d97fb11ee1d2f13b9661f180a680b3edc43882c9a998222a8e579129d838138d", "link": "ya96b4i7hgo7ikslpg9xc/awk.zip?rlkey=atk00alv9fsph14a5w1zihd94&dl=0"}
 {"file_path": "external/share/jibal/assignments.txt", "date": "18/08/2023 11:51:51", "hash": "9fa76952023a1b03b4955217a44740dd0a3971ba75fb50b3b94658343fb54905", "link": "47r0vmi4mkf1szjwosiz7/assignments.txt?rlkey=4u7wvby33oe56poe5eltdyvcg&dl=0"}
 {"file_path": "external/share/jibal/bohr.stg", "date": "18/08/2023 11:51:51", "hash": "4dbdc668cc7f1f29e70104a202909fa82e0730918ba792bddf06abaa5fb0ce30", "link": "ucgswpqdnejebwzjbgmjb/bohr.stg?rlkey=7hzv5o150c1e1c25nnq0lhdj4&dl=0"}
 {"file_path": "external/share/jibal/chu.stg", "date": "18/08/2023 11:51:51", "hash": "c5d2368217db7fcdd7a105398e88a0dc8cc1c3ad1227d72ce9183d2348439090", "link": "662482e7xfza0v4n7ce2n/chu.stg?rlkey=xkc3nhknrjkbuygl8pe328bdf&dl=0"}

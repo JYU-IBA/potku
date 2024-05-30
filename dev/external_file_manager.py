@@ -29,10 +29,8 @@ __version__ = "2.0"
 import sys
 import json
 import hashlib
-import platform
 import requests
 import time
-import zipfile
 import shutil
 
 from pathlib import Path
@@ -42,9 +40,10 @@ from typing import List
 
 """
 Script for managing the external data files of Potku located primarily in
-./external/share and additionally for Windows awk.exe in .external/bin. The
-script has a simple terminal interface that can be used by calling the script
-without arguments. The interface can be used to manage your local external files
+./external/share. The script has a simple terminal interface that can be used by
+calling the script without arguments.
+
+The interface can be used to manage your local external files
 and used to update or create an entirely new manifest file based on your local
 files and the existing manifest.
 
@@ -99,16 +98,9 @@ def download_file(file_id: str, destination: Path, verbose: Optional[bool] = Fal
     if response.status_code < 400:
 
         destination.parent.mkdir(exist_ok=True, parents=True)
-        if "awk.exe" in str(destination):
-            destination = destination.parent.joinpath('awk.zip')
         with open(destination, "wb") as f:
             for chunk in response.iter_content(8192):
                 f.write(chunk)
-        if "awk.zip" in str(destination):
-            with zipfile.ZipFile(destination, 'r') as zip_ref:
-                zip_ref.extractall(destination.parent)
-                zip_ref.close()
-            destination.unlink(missing_ok=True)
     else:
         if verbose:
             print(f"{destination.name} failed to download: {response.status_code}")
@@ -136,10 +128,8 @@ def calculate_sha256(absolute_path: Path) -> str:
 
 def create_local_manifest(git_manifest: List[dict]) -> List[dict]:
     """
-    Creates a manifest for the locally found files in ./external/share dir and
-    in the case of Windows awk.exe in .external/bin dir. Also copies over any
-    existing links from an existing external_manifest.txt file. Copies awk.exe
-    over on non-Windows systems.
+    Creates a manifest for the locally found files in ./external/share. Also
+    copies over any existing links from an existing external_manifest.txt file.
     Args:
         git_manifest: list of the dictionaries that represent each file in the
             existing external_manifest.txt file.
@@ -168,12 +158,6 @@ def create_local_manifest(git_manifest: List[dict]) -> List[dict]:
             "link": local_link
         }
         local_manifest.append(local_dict)
-
-    # Copy awk.exe to local manifest on non-Windows systems.
-    if platform.system() != "Windows":
-        for git_entry in git_manifest:
-            if "awk.exe" in str(git_entry["file_path"]):
-                local_manifest.append(git_entry)
 
     return local_manifest
 
@@ -215,7 +199,7 @@ def compare_manifests(git_manifest: List[dict], local_manifest: List[dict]) -> L
             if git["file_path"] == local["file_path"]:
                 file_found = True
                 break
-        if file_found or (platform.system() != 'Windows' and 'awk.exe' in str(git["file_path"])):
+        if file_found:
             continue
         only_on_git.append(git)
 
@@ -263,8 +247,7 @@ def read_manifest_file() -> List[dict]:
 def list_share_files() -> List[Path]:
     """
     Function that returns a list of all the files found in the .external/share
-    dir and any subdirectories. Additionally, seeks awk.exe in the ./external/bin
-    dir on Windows systems.
+    dir and any subdirectories.
 
     Returns: list of Path objects re
     """
@@ -277,13 +260,6 @@ def list_share_files() -> List[Path]:
             relative_path = path.relative_to(directory)
             path = Path("external/share") / relative_path
             external_files.append(path)
-
-    if platform.system() == 'Windows':
-        awk_path = root_directory.joinpath('external/bin/awk.exe')
-        if awk_path.is_file():
-            relative_path = awk_path.relative_to(root_directory)
-            external_files.append(relative_path)
-
     return external_files
 
 
@@ -306,9 +282,6 @@ def fetch_files(manifest: List[dict], verbose: Optional[bool] = False) -> int:
         attempts = 0
         download_success = False
         path = temp_directory.joinpath(entry["file_path"])
-        # Skip awk.exe for non-Windows systems.
-        if "awk.exe" in str(path) and platform.system() != "Windows":
-            continue
 
         while attempts < download_retries+1:
 
