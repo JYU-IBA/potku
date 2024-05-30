@@ -403,12 +403,14 @@ def coinc(input_file: Path, skip_lines: int, tablesize: int,
         "universal_newlines": True,
     }
 
+    col_split_new = [int(col.replace("$", "")) - 1 for col in col_split]
+    print(col_split_new)
     try:
         with subprocess.Popen(coinc_cmd, **kwargs) as coinc_proc:
-            with subprocess.Popen(
-                    awk_cmd, stdin=coinc_proc.stdout, **kwargs) as awk_proc:
-                data = sutils.process_output(awk_proc, file=output_file)
-                return data
+            data = sutils.process_output(coinc_proc,
+                                         file=output_file,
+                                         text_func=lambda x: " ".join(x.split()[col] for col in col_split_new) + "\n")
+            return data
     except OSError:
         return []
 
