@@ -60,12 +60,8 @@ $ python potku.py
 ## Compiling the C programs
 
 The graphical user interface won't be of much use without the C programs that 
-perform the depth profiling and simulation. In order to compile them, following tools 
-must be installed:
-
-- make
-- gcc
-- Requirements for [JIBAL](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#minimum-requirements)
+perform the depth profiling and simulation. In order to compile them, requirements for [JIBAL](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#minimum-requirements)
+should be installed. All programs use CMake build system and are included as [submodules](external/submodules) in this repository.
 
 ### Linux and macOS
 
@@ -80,9 +76,8 @@ to compile all programs. Note that this script has no error checking, if you enc
 
 ### Windows
 
-For installing the requirements for the Jibal, follow the instructions 1 - 4 described in [here](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#installation-instructions-for-microsoft-windows-10).
-
-- Note: instead of cloning the vcpkg master branch, download the latest stable release from
+For installing the requirements for JIBAL, follow the [instructions](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md).
+- Note: instead of cloning the vcpkg master branch, you can also download the latest stable release from
 [here](https://github.com/microsoft/vcpkg/tags ) and then continue with
 
 ````
@@ -104,7 +99,7 @@ in the `dev` directory
 
 If you get errors in the build, try different command prompt ie. x64 Native Tools Command Prompt as an administrator.
 
-Also be sure that make, gcc, cmake and vcpkg are installed and in the PATH
+Also be sure that `cmake` and `vcpkg` are installed and in the `PATH`
 
 In case of warnings but no errors, try running the build again.
 
@@ -122,17 +117,6 @@ $ curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && \
 tar -xvf data.tar.gz -C external/share/jibal
 ````
 
-## External dependencies
-
-Potku needs a copy of AWK to import data. It is probably installed on Linux 
-systems and possibly macOS too. Windows users will need to manually download
-it. [GNU AWK](https://www.gnu.org/software/gawk/) is tested and confirmed to be
-working on Windows.
-
-Place AWK under `potku/external/bin/`. The executable must be named `awk` or 
-(`awk.exe` on Windows) for Potku detect and use it.
-
-
 ## Tests
 
 Tests are located in the `tests` package. They are divided into unit tests 
@@ -148,7 +132,7 @@ activated, they can be run from the root directory of the project with:
 $ python -m unittest discover
 ````
 
-## Packaging Potku into a standalone executable (work in progress)
+## Packaging Potku into a standalone executable
 
 Potku can be packaged into a standalone executable using [PyInstaller](https://www.pyinstaller.org/). 
 Make sure you have compiled potku with `build` successfully and added the needed data files and awk before the packaging.
@@ -156,7 +140,7 @@ For quick deployment, run these commands in the root directory:
 ````
 $ pipenv install (if the virtual environment has not already been created)
 $ pipenv shell
-$ pip install pyinstaller==5.13.2
+$ pip install pyinstaller
 $ pyinstaller potku.spec
 ````
 This creates a `dist/potku` folder which contains the executable and all 
@@ -192,8 +176,7 @@ with local out of sync files or all local files. Finally, the script can be used
 
 ## Code style
 
-Potku follows [PEP 8](https://www.python.org/dev/peps/pep-0008/). Current maximum line length is 80, but that could be increased to 100 or 120 (see issue #209 for more information).
-
+Potku used to follow [PEP 8](https://www.python.org/dev/peps/pep-0008/). Current maximum line length is 80 in some files, but 120 in some (see issue #209 for more information).
 ### Code style/architecture guidelines
 
 - add typing annotations to new (and old) code. Potku didn't originally use typing annotations.

@@ -38,9 +38,6 @@ Care should be taken with the link key of the dictionaries! The script independe
 added, the link entry for that particular file has to be edited in manually. This script is used together with the automatic packaging and if any downloads fail, the whole packaging is set
 to fail to avoid releasing broken versions.
 
-Awk.exe is uploaded as a .zip file to the cloud in order to avoid virus scan issues. Additionally, Awk.exe is something of an exception as it's only intended for Windows, so there are some
-specific handling for it in the manager script. For example macOS and Linux are set to not report it as absent nor download it at all.
-
 ## Future development of the automatic packaging.
 
 As the automatic packaging works on the master branch specifically, it is best to develop any new changes in a separate fork of Potku in order to have a proper environment to test the GitHub
