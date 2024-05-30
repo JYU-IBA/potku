@@ -91,7 +91,6 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
 
     def __load_measurement(self):
         self.path = self.pathLineEdit.text()
-        self.name = self.nameLineEdit.text().replace(" ", "_")
         self.sample_str = self.samplesComboBox.currentText()
         if not self.path:
             self.browseButton.setFocus()

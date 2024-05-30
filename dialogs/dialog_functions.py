@@ -444,8 +444,7 @@ def import_new_measurement(request: Request, parent: "Potku",
                            item: QtWidgets.QListWidgetItem) -> Path:
     sample = request.samples.add_sample()
     parent.add_root_item_to_tree(sample)
-    item_name = item.name.replace("_", "-")
-    item_name = iv.validate_text_input(item_name)
+    item_name = iv.validate_text_input(item.name)
 
     measurement = parent.add_new_tab(
         "measurement", "", sample, object_name=item_name,

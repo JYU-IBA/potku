@@ -65,7 +65,7 @@ class NewSampleDialog(QtWidgets.QDialog):
     def __create_sample(self):
         """Read sample name from view and if it is accepted, close dialog.
         """
-        self.name = self.nameLineEdit.text().replace(" ", "_")
+        self.name = self.nameLineEdit.text()
         if not self.name:
             self.nameLineEdit.setFocus()
             return

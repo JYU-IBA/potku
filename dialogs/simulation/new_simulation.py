@@ -93,7 +93,6 @@ class SimulationNewDialog(QtWidgets.QDialog):
     def __create_simulation(self):
         """Check given values and store them in dialog object.
         """
-        self.name = self.simulationNameLineEdit.text().replace(" ", "_")
         self.sample = self.samplesComboBox.currentText()
         if not self.name:
             self.simulationNameLineEdit.setFocus()

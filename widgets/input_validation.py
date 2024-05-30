@@ -158,8 +158,8 @@ def validate_text_input(text):
         text: Text to validate.
     """
 
-    valid_text = re.sub(r"[^\w\-]", '', text)
-    valid_text = re.sub(r"[_]", '', valid_text)
+    valid_text = re.sub(r"[^\w\- ]", '', text)
+    #valid_text = re.sub(r"[_]", '', valid_text)
     return valid_text
 
 
