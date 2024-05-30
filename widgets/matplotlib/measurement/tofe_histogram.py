@@ -89,6 +89,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         """
         super().__init__(parent)
         self.canvas.manager.set_title("ToF-E Histogram")
+        self.canvas.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
         self.__icon_manager = icon_manager
@@ -104,6 +105,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.canvas.mpl_connect('button_release_event', self.on_release)
         self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
         self.canvas.mpl_connect('pick_event', self._on_pick)
+        self.canvas.mpl_connect('key_press_event', self.on_keypress)  # Note that Qt shortcuts are elsewhere
+        self.canvas.mpl_connect('scroll_event', self.on_scroll)
         self.__fork_toolbar_buttons()
 
         # maps legend lines with selections
@@ -1085,6 +1088,48 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__on_draw_legend()
         self.on_draw()
         self.__emit_selections_changed()
+
+    def on_keypress(self, event):
+        if event.key == 'left' or event.key == 'right':
+            limits = self.axes.get_xlim()
+            amount = (limits[1] - limits[0]) * 0.1
+            if event.key == 'right':
+                amount *= -1.0
+            self.axes.set_xlim((limits[0] - amount, limits[1] - amount))
+            self.canvas.draw_idle()
+        elif event.key == 'down' or event.key == 'up':
+            limits = self.axes.get_ylim()
+            amount = (limits[1] - limits[0]) * 0.1
+            if event.key == 'up':
+                amount *= -1.0
+            self.axes.set_ylim((limits[0] - amount, limits[1] - amount))
+            self.canvas.draw_idle()
+
+    def on_scroll(self, event):
+        xlim = self.axes.get_xlim()
+        ylim = self.axes.get_ylim()
+
+        xdata = event.xdata
+        ydata = event.ydata
+
+        if event.button == 'down':
+            scale_factor = 1 / 1.1
+        elif event.button == 'up':
+            scale_factor = 1.1
+        else:
+            return
+
+        w = (xlim[1] - xlim[0]) * scale_factor
+        h = (ylim[1] - ylim[0]) * scale_factor
+
+        relx = (xlim[1] - xdata) / (xlim[1] - xlim[0])
+        rely = (ylim[1] - ydata) / (ylim[1] - ylim[0])
+
+        self.axes.set_xlim([xdata - w * (1 - relx), xdata + w * relx])
+        self.axes.set_ylim([ydata - h * (1 - rely), ydata + h * rely])
+        self.canvas.draw_idle()
+
+
 
     def update_event_count(self):
         titleText = self.parent.titleText
