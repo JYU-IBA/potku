@@ -6,7 +6,7 @@ name = "pypi"
 [packages]
 numpy = ">=1.22.4"
 scipy = ">=1.8.1"
-matplotlib = ">=3.5.2"
+matplotlib = ">=3.8.0"
 Shapely = ">=1.8.2"
 wheel = ">=0.37.1"
 reactivex = ">=4.0.2"

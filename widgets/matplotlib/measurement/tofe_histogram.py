@@ -216,13 +216,11 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 self.axes_range, self.compression_x, self.compression_y,
                 max_count=MatplotlibHistogramWidget.MAX_BIN_COUNT
             )
-            axes_range = self.axes_range
         else:
             # Automatic mode
             bin_counts, msg = mf.calculate_bin_counts(
                 [x_data, y_data], self.compression_x, self.compression_y,
                 max_count=MatplotlibHistogramWidget.MAX_BIN_COUNT)
-            axes_range = None
 
         if msg is not None:
             # Message is displayed when bin count was too high and had to be
@@ -231,8 +229,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 self.parent, "Warning", msg,
                 QtWidgets.QMessageBox.Ok,
                 QtWidgets.QMessageBox.Ok)
-
-        colormap = cm.get_cmap(self.color_scheme.value)
 
         # if changes in compress values or transpose, recompute 2d histogram and histogram image
         if (self.__2d_hist_cx != self.compression_x) or \
