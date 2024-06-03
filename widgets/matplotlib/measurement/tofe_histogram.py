@@ -359,7 +359,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                                bbox_to_anchor=(1, 0),
                                borderaxespad=0,
                                prop={'size': 12})
-        for handle in leg.legendHandles:
+        for handle in leg.legend_handles:
             handle.set_linewidth(3.0)
 
         # Map legend items with selections and enable picker

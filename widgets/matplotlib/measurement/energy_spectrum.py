@@ -526,7 +526,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                         bbox_to_anchor=(1, 0),
                                         borderaxespad=0,
                                         prop={'size': 12})
-            for handle in self.leg.legendHandles:
+            for handle in self.leg.legend_handles:
                 handle.set_linewidth(3.0)
 
         lower_lim = 0.09
