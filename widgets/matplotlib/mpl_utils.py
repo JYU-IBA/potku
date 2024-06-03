@@ -202,7 +202,7 @@ class VerticalLimits(GraphWrapper):
         self._limit_lines[1].set_xdata([x1])
 
     def get_range(self) -> Range:
-        """Returns the x axis values of each limit line.
+        """Returns the x-axis values of each limit line.
         """
         x0, xn = sorted([line.get_xdata()[0] for line in self._limit_lines])
         return x0, xn

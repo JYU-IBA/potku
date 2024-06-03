@@ -88,6 +88,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             icon_manager: An iconmanager class object.
         """
         super().__init__(parent)
+        self.axes.autoscale(False)  #This somehow improves how "home" view works
         self.canvas.manager.set_title("ToF-E Histogram")
         self.canvas.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)

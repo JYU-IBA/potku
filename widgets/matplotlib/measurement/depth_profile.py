@@ -134,11 +134,13 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self._rbs_list = rbs_list
         self._fork_toolbar_buttons()
 
+        xmin, xmax = self._profile_handler.get_depth_range()
         self._limit_lines = AlternatingLimits(
-            self.canvas, self.axes, xs=self._profile_handler.get_depth_range(),
+            self.canvas, self.axes, xs=[xmin, xmax],
             colors=("blue", "red"))
         self._line_chart = self._create_depth_profile_chart()
         self.axes.set_ylim(bottom=0.0)
+        self.axes.set_xlim(left=xmin, right=xmax)
         self._make_legend_box()
 
         self.axes.axhline(y=0, color="#000000")

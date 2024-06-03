@@ -59,7 +59,6 @@ class MatplotlibWidget(QtWidgets.QWidget):
         self.canvas.manager = MockManager(self.main_frame)
         self.canvas.setParent(self.main_frame)
         self.axes = self.fig.add_subplot(111)
-        self.axes.autoscale(False)  #This somehow improves how "home" view works
 
         self.mpl_toolbar = NavigationToolBar(
             self.canvas, self.main_frame)
