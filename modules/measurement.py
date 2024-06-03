@@ -111,7 +111,7 @@ class Measurements:
         Return:
             Returns new measurement or None if it wasn't added
         """
-        directory_prefix = "Measurement_"
+        directory_prefix = Measurement.DIRECTORY_PREFIX
         measurement = None
 
         if import_evnt_or_binary:

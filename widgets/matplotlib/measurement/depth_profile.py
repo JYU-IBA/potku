@@ -103,8 +103,6 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self._used_eff_files = used_eff_files
         self.eff_text = None
 
-        self.used_eff_file = depth_dir / 'used_eff_files.txt'
-
         # Set default filename for saving figure
         default_filename = "Depth_profile_" + parent.measurement.name
         self.canvas.get_default_filename = lambda: default_filename
@@ -314,7 +312,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         # If "Show used efficiency files" is checked and text-object is not
         # yet created.
         if self._show_eff_files and self.eff_text is None:
-            if(len(self._used_eff_files) > 0):
+            if len(self._used_eff_files) > 0:
                 eff_str = "Used efficiency files:\n"
                 eff_str += "\n".join(self._used_eff_files)
             else:
