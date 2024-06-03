@@ -206,7 +206,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         # Clear old stuff
         self.axes.clear()
 
-        print("Drawing")
         # if changes in compress values or transpose, recompute 2d histogram and histogram image
         if (self.__2d_hist_cx != self.compression_x) or \
                 (self.__2d_hist_cy != self.compression_y) or\
@@ -220,7 +219,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.__y_data_max = max(y_data)  # max y-value of data
             self.__x_data_min = min(x_data)  # min x-value of data
             self.__y_data_min = min(y_data)  # min y-value of data
-            print("Recomputing histogram")
             bin_counts, msg = mf.calculate_bin_counts([x_data, y_data], self.compression_x, self.compression_y,
                                                       max_count=MatplotlibHistogramWidget.MAX_BIN_COUNT)
             if msg is not None:
