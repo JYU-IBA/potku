@@ -39,6 +39,8 @@ from dialogs.new_sample import NewSampleDialog
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
+from modules.sample import Sample
+
 
 class SimulationNewDialog(QtWidgets.QDialog):
     """Dialog creating a new simulation.
@@ -55,9 +57,7 @@ class SimulationNewDialog(QtWidgets.QDialog):
         # Add existing samples to view.
         self.samples = samples
         for sample in samples:
-            self.samplesComboBox.addItem("Sample "
-                                         + "%02d" % sample.serial_number
-                                         + " " + sample.name)
+            self.samplesComboBox.addItem(sample.long_name())
 
         if not samples:
             iv.set_input_field_red(self.samplesComboBox)
@@ -67,7 +67,6 @@ class SimulationNewDialog(QtWidgets.QDialog):
         self.pushCancel.clicked.connect(self.close)
         self.name = None
         self.sample = None
-        self.__close = True
 
         iv.set_input_field_red(self.simulationNameLineEdit)
         self.simulationNameLineEdit.textChanged.connect(
@@ -93,15 +92,16 @@ class SimulationNewDialog(QtWidgets.QDialog):
     def __create_simulation(self):
         """Check given values and store them in dialog object.
         """
-        self.sample = self.samplesComboBox.currentText()
-        if not self.name:
+        sample_str = self.samplesComboBox.currentText()
+        name = self.simulationNameLineEdit.text()
+        if not name:
             self.simulationNameLineEdit.setFocus()
             return
-        if not self.sample:
+        if not sample_str:
             self.addSampleButton.setFocus()
             return
 
-        sample = self.__find_existing_sample()
+        sample = self.__find_existing_sample(sample_str)
 
         if sample:
             # Check if measurement on the same name already exists.
@@ -114,16 +114,12 @@ class SimulationNewDialog(QtWidgets.QDialog):
                                                    "name.",
                                                    QtWidgets.QMessageBox.Ok,
                                                    QtWidgets.QMessageBox.Ok)
-                    self.__close = False
-                    break
-                else:
-                    self.__close = True
-        else:
-            self.close()
-        if self.__close:
-            self.close()
+                    return
+        self.name = name
+        self.sample_str = sample_str
+        self.close()
 
-    def __find_existing_sample(self):
+    def __find_existing_sample(self, sample_str: str):
         """
         Find existing sample that matches the sample name in dialog.
 
@@ -131,6 +127,6 @@ class SimulationNewDialog(QtWidgets.QDialog):
             Sample object or None.
         """
         for sample in self.samples:
-            if sample.directory == self.sample.directory:
+            if sample_str == sample.long_name():
                 return sample
         return None

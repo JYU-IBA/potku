@@ -776,7 +776,7 @@ class Potku(QtWidgets.QMainWindow):
         dialog = SimulationNewDialog(self.request.samples.samples)
 
         simulation_name = dialog.name
-        sample_name = dialog.sample
+        sample_name = dialog.sample_str
         if simulation_name and sample_name:
             sbh = StatusBarHandler(self.statusbar)
 
