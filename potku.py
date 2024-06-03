@@ -746,7 +746,7 @@ class Potku(QtWidgets.QMainWindow):
                                        self.request.directory)
         sample_name = dialog.sample_str
 
-        if dialog.filename:
+        if dialog.path:
             try:
                 self.tabs.removeTab(self.tabs.indexOf(
                     self.measurement_info_tab))
@@ -762,7 +762,7 @@ class Potku(QtWidgets.QMainWindow):
                 sample_item = self.__add_sample(sample_name)
 
             self.add_new_tab(
-                "measurement", dialog.filename, sample_item.obj, load_data=True,
+                "measurement", dialog.path, sample_item.obj, load_data=True,
                 object_name=dialog.name,
                 progress=sbh.reporter.get_sub_reporter(lambda x: 0.9 * x))
             self.__remove_info_tab()

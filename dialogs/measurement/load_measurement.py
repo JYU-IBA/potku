@@ -28,6 +28,8 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
+from pathlib import Path
+
 import widgets.input_validation as iv
 import dialogs.file_dialogs as fdialogs
 import widgets.gui_utils as gutils
@@ -59,8 +61,8 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
         self.name = ""
         self.sample_str = None
         self.directory = directory
-        self.filename = ""
         self.samples = samples
+        self.path = None
 
         self.__close = True
         for sample in samples:
@@ -90,15 +92,16 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
             iv.set_input_field_white(self.samplesComboBox)
 
     def __load_measurement(self):
-        self.path = self.pathLineEdit.text()
-        self.sample_str = self.samplesComboBox.currentText()
-        if not self.path:
+        path = Path(self.pathLineEdit.text())
+        name = self.nameLineEdit.text()
+        sample_str = self.samplesComboBox.currentText()
+        if not path:
             self.browseButton.setFocus()
             return
-        if not self.name:
+        if not name:
             self.nameLineEdit.setFocus()
             return
-        if not self.sample_str:
+        if not sample_str:
             self.addSampleButton.setFocus()
             return
 
@@ -115,21 +118,20 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
                                                    "name.",
                                                    QtWidgets.QMessageBox.Ok,
                                                    QtWidgets.QMessageBox.Ok)
-                    self.__close = False
-                    break
-                else:
-                    self.__close = True
-        else:
-            self.close()
-        if self.__close:
-            self.close()
+                    self.path = None
+                    return
+        self.path = path
+        self.name = name
+        self.sample_str = sample_str
+        self.close()
 
     def __browse_files(self):
-        self.filename = fdialogs.open_file_dialog(
+        filename = fdialogs.open_file_dialog(
             self, self.directory, "Select a measurement to load",
             "Raw Measurement (*.asc)")
-        self.pathLineEdit.setText(str(self.filename))
-        self.nameLineEdit.setText(self.filename.stem)
+        if filename:
+            self.pathLineEdit.setText(str(filename))
+            self.nameLineEdit.setText(filename.stem)
 
     def __find_existing_sample(self, sample_str: str):
         """
