@@ -128,7 +128,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__y_data_min = min(self.__y_data)  # min y-value of data
 
         # 2D histogram image and histogram
-        self.__2d_hist = None # 2D histogram
         self.__2d_hist_im = None # image of histogram
         self.__2d_hist_cx = None # x-compress value, used to trigger recomputing histogram
         self.__2d_hist_cy = None # y-compress value, used to trigger recomputing histogram
@@ -207,30 +206,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         # Clear old stuff
         self.axes.clear()
 
-        # Check bin counts and axes ranges
-        # If bin count too high -> it will crash the program, use 3500
-        # If 10 000, tofe_65 example can have compression as 1, but REALLY
-        # slow. Usually, bin count around 8000
-        if self.axes_range_mode == 1:
-            # Manual axe range mode
-            bin_counts, msg = mf.calculate_bin_counts(
-                self.axes_range, self.compression_x, self.compression_y,
-                max_count=MatplotlibHistogramWidget.MAX_BIN_COUNT
-            )
-        else:
-            # Automatic mode
-            bin_counts, msg = mf.calculate_bin_counts(
-                [x_data, y_data], self.compression_x, self.compression_y,
-                max_count=MatplotlibHistogramWidget.MAX_BIN_COUNT)
-
-        if msg is not None:
-            # Message is displayed when bin count was too high and had to be
-            # lowered
-            QtWidgets.QMessageBox.warning(
-                self.parent, "Warning", msg,
-                QtWidgets.QMessageBox.Ok,
-                QtWidgets.QMessageBox.Ok)
-
+        print("Drawing")
         # if changes in compress values or transpose, recompute 2d histogram and histogram image
         if (self.__2d_hist_cx != self.compression_x) or \
                 (self.__2d_hist_cy != self.compression_y) or\
@@ -244,12 +220,19 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.__y_data_max = max(y_data)  # max y-value of data
             self.__x_data_min = min(x_data)  # min x-value of data
             self.__y_data_min = min(y_data)  # min y-value of data
-
-            self.__2d_hist = np.histogram2d(y_data, x_data,
-                                            bins = (bin_counts[1], bin_counts[0]))
-
-            self.__2d_hist_im = Image.fromarray(self.__2d_hist[0].astype('uint16'))
-            self.__2d_hist = None # Free memory
+            print("Recomputing histogram")
+            bin_counts, msg = mf.calculate_bin_counts([x_data, y_data], self.compression_x, self.compression_y,
+                                                      max_count=MatplotlibHistogramWidget.MAX_BIN_COUNT)
+            if msg is not None:
+                # Message is displayed when bin count was too high and had to be
+                # lowered
+                QtWidgets.QMessageBox.warning(
+                    self.parent, "Warning", msg,
+                    QtWidgets.QMessageBox.Ok,
+                    QtWidgets.QMessageBox.Ok)
+            hist2d = np.histogram2d(y_data, x_data, bins=(bin_counts[1], bin_counts[0]))
+            print(bin_counts[1], bin_counts[0])
+            self.__2d_hist_im = Image.fromarray(hist2d[0].astype('uint16'))
 
         self.axes.imshow(self.__2d_hist_im, norm = LogNorm(), cmap=self.color_scheme,
                          extent=(self.__x_data_min, self.__x_data_max, self.__y_data_min, self.__y_data_max),
@@ -632,6 +615,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         action.triggered.connect(self.graph_settings_dialog)
         menu.addAction(action)
 
+        action = QtWidgets.QAction(self.tr("Redraw"), self)
+        action.triggered.connect(self.on_draw)
+        menu.addAction(action)
 
         if self.measurement.selector.selected_id != None:
             action = QtWidgets.QAction(self.tr("Selection settings..."), self)

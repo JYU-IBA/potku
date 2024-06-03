@@ -131,6 +131,9 @@ class TofeHistogramWidget(QtWidgets.QWidget):
         self.__copy_selection.activated.connect(self.matplotlib.copy_selection)
         self.__paste_selection = QtWidgets.QShortcut(QKeySequence(QtCore.Qt.CTRL+QtCore.Qt.Key_V), self)
         self.__paste_selection.activated.connect(self.matplotlib.paste_selection)
+        self.__redraw = QtWidgets.QShortcut(self)
+        self.__redraw.setKey(QtCore.Qt.Key_R)
+        self.__redraw.activated.connect(self.matplotlib.on_draw)
 
     def closeEvent(self, close_event):
         """Event which happens when the windows is closing.
