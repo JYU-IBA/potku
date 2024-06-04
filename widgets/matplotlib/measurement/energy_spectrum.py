@@ -810,15 +810,21 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.plots[self.measured_sum_spectrum.sum_spectrum_path]\
                 .set_data(data)
 
-    def save_spectrum(self, name: str, spectrum: list) -> None:
-        """ Saves a spectrum to a file.
+    def save_spectrum(self, spectrum_file: Path|str, spectrum: list) -> None:
+        """ Saves a spectrum to a file. This function mangles the path,
+        because other functions send us both relative and absolute paths. This (still) needs a rewrite...
 
         Args:
-            name: name of the spectrum
+            spectrum_file: Path (output) of the spectrum file
             spectrum: list of tuples (energy, counts)
         """
-        spectrum_file = self.sum_spectra_directory / f"E-spectrum-{name}.hist"
-        with open(spectrum_file, 'w') as file:
+        p = Path(spectrum_file)
+        # if not p.is_absolute():
+        #    p = self.sum_spectra_directory / p
+        #p = p.parent / f"E-spectrum-{p.name}"
+        p = self.sum_spectra_directory / f"E-spectrum-{p.name}"
+        #print(f"Writing spectrum to {p}")
+        with open(p, 'w') as file:
             file.write("#Energy (MeV)     Counts\n")
             for val in spectrum:
                 file.write(f"{val[0]:>12.6f} {val[1]:>12.3f}\n")
@@ -827,9 +833,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         """ Save the (plotted) spectra."""
         if self.simulation_energy:
             for k in self.simulation_energy.keys():
+                #print(f"Simulation spectrum {k}")
                 self.save_spectrum(k, self.simulation_energy[k])
         if self.measurement_energy:
             for k in self.measurement_energy.keys():
+                #print(f"Measurement spectrum {k}")
                 self.save_spectrum(k, self.measurement_energy[k])
 
 def get_axis_values(data):

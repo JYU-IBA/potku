@@ -226,8 +226,7 @@ class SimulationTabWidget(BaseTab):
                 is_simulated_sum_spectrum_selected = \
                     check_if_sum_in_directory_name(file_path.parent)
                 energy_spectrum_widget = EnergySpectrumWidget(
-                    self, "simulation",
-                    use_cuts=used_files_confirmed,
+                    self, use_cuts=used_files_confirmed, spectrum_type=EnergySpectrumWidget.SIMULATION,
                     bin_width=bin_width,
                     save_file_int=save_file_int,
                     spectra_changed=spectra_changed,

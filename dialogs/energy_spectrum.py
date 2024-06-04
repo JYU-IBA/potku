@@ -386,9 +386,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             if self.parent.energy_spectrum_widget:
                 self.parent.del_widget(self.parent.energy_spectrum_widget)
             self.parent.energy_spectrum_widget = EnergySpectrumWidget(
-                self.parent, spectrum_type=self.spectrum_type,
-                use_cuts=selected_cuts, bin_width=width,
-                use_efficiency=self.use_efficiency,
+                self.parent, use_cuts=selected_cuts, spectrum_type=self.spectrum_type,
+                bin_width=width, use_efficiency=self.use_efficiency,
                 statusbar=self.statusbar, spectra_changed=spectra_changed,
                 simulated_sum_spectrum_is_selected=self.simulated_sum_spectrum_is_selected,
                 measured_sum_spectrum_is_selected=self.measured_sum_spectrum_is_selected)
@@ -500,9 +499,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
 
     save_file = "widget_energy_spectrum.save"
 
-    def __init__(self, parent: BaseTab,
-                 spectrum_type: str = MEASUREMENT,
-                 use_cuts=None, bin_width=0.025, use_efficiency=False,
+    def __init__(self, parent: BaseTab, use_cuts: list[Path],
+                 spectrum_type: str = MEASUREMENT, bin_width=0.025, use_efficiency=False,
                  save_file_int=0, statusbar=None, spectra_changed=None,
                  simulated_sum_spectrum_is_selected=False,
                  measured_sum_spectrum_is_selected=False):
@@ -510,7 +508,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
 
         Args:
             parent: A TabWidget.
-            use_cuts: A string list representing Cut files.
+            use_cuts: A list of paths representing Cut files.
             bin_width: A float representing Energy Spectrum histogram's bin
                 width.
             use_efficiency: whether efficiency is taken into account when
@@ -570,15 +568,11 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 self.save_file = f"widget_energy_spectrum_{save_file_int}.save"
                 for file in use_cuts:
                     if self.simulation.directory in file.parents:
-                        self.simulation_energy_spectrum_dictionary[file] = \
-                            GetEspe.read_espe_file(file)
+                        self.simulation_energy_spectrum_dictionary[file] = GetEspe.read_espe_file(file)
                     else:
-                        self.measurement_energy_spectrum_dictionary[file] = \
-                            GetEspe.read_espe_file(file)
-                self.simulation_energy = \
-                    self.simulation_energy_spectrum_dictionary
-                self.measurement_energy = \
-                    self.measurement_energy_spectrum_dictionary
+                        self.measurement_energy_spectrum_dictionary[file] = GetEspe.read_espe_file(file)
+                self.simulation_energy = self.simulation_energy_spectrum_dictionary
+                self.measurement_energy = self.measurement_energy_spectrum_dictionary
                 sum_spectra_directory = self.simulation.directory
             else:
                 return

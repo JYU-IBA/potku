@@ -284,9 +284,9 @@ class MeasurementTabWidget(BaseTab):
             is_measured_sum_spectrum_selected, _ = \
                 check_if_sum_in_directory_name(directory)
             self.energy_spectrum_widget = EnergySpectrumWidget(
-                self, spectrum_type=EnergySpectrumWidget.MEASUREMENT,
+                self, use_cuts=use_cuts, spectrum_type=EnergySpectrumWidget.MEASUREMENT,
                 measured_sum_spectrum_is_selected=is_measured_sum_spectrum_selected,
-                use_cuts=use_cuts, bin_width=width)
+                bin_width=width)
             icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
             self.add_widget(self.energy_spectrum_widget, icon=icon)
         except Exception as e:
