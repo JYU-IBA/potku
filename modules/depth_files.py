@@ -104,16 +104,16 @@ class DepthFileGenerator:
         # Pipe the output from tofe_list to erd_depth
         date = datetime.now().astimezone().replace(microsecond=0).isoformat();
         try:
-            tofe_list_process = subprocess.Popen(tof, cwd=bin_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            tofe_list_process = subprocess.Popen(tof, cwd=bin_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                                 text=True)
             tofe_list_stdout, tofe_list_stderr = tofe_list_process.communicate()
             tofe_log_filename = self._output_path.parents[0] / 'tofe_list_log.txt'
-            lines = tofe_list_stderr.decode().split('\n')
             eff_re = re.compile(r'^tofe_list info: Used efficiency files \(([0-9.]+)\): (.*)$')
             self._used_eff_files = []
             with open(tofe_log_filename, "w") as f:
                 line_number = 0
                 f.write("tofe_list run on " + date + "\n")
-                for line in lines:
+                for line in tofe_list_stderr.splitlines():
                     line_number += 1
                     f.write(str(line_number).zfill(3) + " " + line + "\n")
                     g = eff_re.match(line)
@@ -124,11 +124,15 @@ class DepthFileGenerator:
                             raise RuntimeError("mismatch between number of efficiency files and number of efficiency files reported to have been used by tofe_list.")
             if tofe_list_process.returncode != 0:
                 raise Exception(f"tofe_list reports an error {tofe_list_process.returncode}, see {tofe_log_filename} for more information.")
-            erd_depth_process = subprocess.run(erd, cwd=bin_dir, input=tofe_list_stdout, capture_output=True, check=True)
+            erd_depth_process = subprocess.run(erd, cwd=bin_dir, input=tofe_list_stdout, capture_output=True,
+                                               check=True, text=True)
             erd_depth_log_filename = self._output_path.parents[0] / 'erd_depth_log.txt'
             with open(erd_depth_log_filename, "w") as f:
                 f.write("erd_depth run on " + date + "\n")
-                f.write(erd_depth_process.stderr.decode())
+                line_number = 0
+                for line in erd_depth_process.stderr.splitlines():
+                    line_number += 1
+                    f.write(str(line_number).zfill(3) + " " + line + "\n")
             if erd_depth_process.returncode != 0:
                 raise Exception(f"erd_depth reports an error {erd_depth_process.returncode}")
         except Exception as e:
