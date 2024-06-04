@@ -1,15 +1,16 @@
 # Potku
 
-Potku is a simulation and analysis software for time-of-flight elastic recoil
-detection analysis (ToF-ERDA). The software can be run on Windows, Linux and
+Potku is a simulation and analysis software for Time-of-Flight Elastic Recoil
+Detection Analysis (ToF-ERDA). The software can be run on Windows, Linux and
 macOS.
 
-This repository contains the Python source code for Potku's graphical user
-interface (Qt5) as well as the source code for programs that perform most of
-the number crunching, written in C. These software are in separate submodules, 
-please see the instructions below if you want to run the development version.
+This repository contains the Python source for the Qt 5 graphical user
+interface. Most of the number cruching is done by programs written in C.
+The source code of these is separate repositories on GitHub and are included as Git [Submodules](external/submodules),
+please see the instructions below on how to acquire the source code and compile the C codes e.g. if you wish to develop Potku. 
 
-Ready to run binary packages are available on the releases page of this repository. Additionally older binary packages are available on the
+For most users it is recommended to download one of the ready to run (all dependencies included) binary packages, which are available on the [releases page](https://github.com/JYU-IBA/potku/releases).
+Additionally older binary packages are available on the
 [official website](https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/).
 
     Copyright (C) 2013-2024 Potku developers
@@ -24,38 +25,42 @@ Ready to run binary packages are available on the releases page of this reposito
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
     
-Please refer to the [full license](../LICENSE) for details.
+Please refer to the [full license](../LICENSE) for details. 
+
+See the [changelog](CHANGELOG.md) for version history.
 
 # Getting started with development
+Install [Git](https://git-scm.com/downloads) and add it to the PATH (on Windows).
 
-First step is to install the latest version of Python 3.10.x along with pip package installer. Make 
-sure the paths of the executables are added to your PATH environment variable. Then install Pipenv:
+Clone the repository and change your current working directory.
  
-````
-$ pip install --user pipenv
-````
-Next install [Git](https://git-scm.com/downloads) and add it to the PATH too.
+```shell
+$ git clone --recursive https://github.com/JYU-IBA/potku.git
+$ cd potku
+```
 
-Once these prerequisites are met, you can clone the repository.
+Install the latest version of Python 3.12 along with pip package installer. Make 
+sure the paths of the executables are added to your PATH environment variable, i.e. you can run Python by running command `python`.
+
+Install Pipenv:
  
-````
-$ git clone --recursive https://github.com/JYU-IBA/potku.git
-$ cd potku
-````
+```shell
+$ pip install --user pipenv
+```
 
-Install and activate the virtual environment in `potku/` root directory with Pipenv:
+Install and activate the virtual environment with Pipenv:
 
-````
-$ pipenv install --dev
-$ pipenv shell
-````
+```shell
+$ pipenv install --dev
+$ pipenv shell
+```
 
 Once the virtual environment is up and running, Potku GUI can be launched from the 
 command line:
  
-````
-$ python potku.py
-````
+```shell
+$ python potku.py
+```
 
 ## Compiling the C programs
 
@@ -66,11 +71,12 @@ should be installed. All programs use CMake build system and are included as [su
 ### Linux and macOS
 
 Install cmake and gsl using the package manager of your distribution or 
-homebrew. Then run the following shell script in `dev` directory
+homebrew. Then run the following:
 
-````
-$ ./build.sh
-````
+```shell
+$ cd dev
+$ ./build.sh
+```
 
 to compile all programs. Note that this script has no error checking, if you encounter issues please check that all steps of the build have been successful.
 
@@ -80,29 +86,23 @@ For installing the requirements for JIBAL, follow the [instructions](https://git
 - Note: instead of cloning the vcpkg master branch, you can also download the latest stable release from
 [here](https://github.com/microsoft/vcpkg/tags ) and then continue with
 
-````
+```bat
 .\vcpkg\bootstrap-vcpkg.bat
 vcpkg.exe install gsl:x64-windows getopt:x64-windows
-````
+```
 
 as instructed.
 
-For make and gcc see [c_for_windows_example.md](dev/c_for_windows_example.md) for an example on how to set up the rest of the C environment .
-
 To compile the programs, run
 
-````
-$ build.bat
-````
+```bat
+cd dev
+build.bat
+```
 
-in the `dev` directory 
+If you get errors in the build, try different command prompt i.e. `x64 Native Tools Command Prompt` as an administrator.
 
-If you get errors in the build, try different command prompt ie. x64 Native Tools Command Prompt as an administrator.
-
-Also be sure that `cmake` and `vcpkg` are installed and in the `PATH`
-
-In case of warnings but no errors, try running the build again.
-
+Also be sure that `cmake` and `vcpkg` are installed and in the `PATH`.
 
 ## Data files
 
@@ -110,12 +110,11 @@ JIBAL and Potku require additional data files. These can be either downloaded ma
 [here](http://users.jyu.fi/~jaakjuli/jibal/data/) or you can use the ``external_file_manager.py`` in `dev` to download the files.
 These files need to be extracted to ``external/share/jibal``. You can run the 
 following command from the root folder of the repository to download and 
-extract the files. (note: `curl` is not installed by default on all windows versions)
+extract the files. (note: `curl` is not installed by default on all Windows versions)
 
-````
-$ curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && \
-tar -xvf data.tar.gz -C external/share/jibal
-````
+```shell
+$ curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && tar -xvf data.tar.gz -C external/share/jibal
+```
 
 ## Tests
 
@@ -128,55 +127,58 @@ of each test module.
 Tests have been written using unittest framework. With the virtual environment 
 activated, they can be run from the root directory of the project with:
 
-````
-$ python -m unittest discover
-````
+```shell
+python -m unittest discover
+```
 
 ## Packaging Potku into a standalone executable
 
 Potku can be packaged into a standalone executable using [PyInstaller](https://www.pyinstaller.org/). 
 Make sure you have compiled potku with `build` successfully and added the needed data files and awk before the packaging.
 For quick deployment, run these commands in the root directory:
-````
-$ pipenv install (if the virtual environment has not already been created)
-$ pipenv shell
-$ pip install pyinstaller
-$ pyinstaller potku.spec
-````
+```shell
+$ pipenv install #(if the virtual environment has not already been created)
+$ pipenv shell
+$ pip install pyinstaller
+$ pyinstaller potku.spec
+```
 This creates a `dist/potku` folder which contains the executable and all 
 necessary libraries.
 
 For a more comprehensive packaging process, run the `create_bundle` script in `dev`. 
 This script compiles all external programs, installs and updates Python 
 dependencies, runs tests and compresses the `dist/potku` folder into a .zip 
-archive.
+archive. Run on Windows:
 
-`````
-$ pipenv run create_bundle.bat
-`````
+```bat
+cd dev
+pipenv run create_bundle.bat
+```
 
-or
+or on other supported operating systems:
 
-`````
+```shell
+$ cd dev
 $ pipenv run ./create_bundle.sh
-`````
+```
 
 ## Automatic packaging and version numbering
 
-Potku can be packaged automatically for Windows, Linux and macOS on GitHub servers by bumping its version. Running `bump_version.py` in `dev` on a terminal
-prompts the user for a new version number. The script requires Git and GitHub CLI to use. Entering a valid version number initiates a chain of GitHub Actions workflows to bump the version number, give master branch a new tag on GitHub and create
-a release to which the newly packaged Potku binaries will be uploaded. Potku follows semantic version numbering. More in `dev/Automatic_packaging_README.md`.
+Potku can be packaged automatically for Windows, Linux and macOS on GitHub servers by bumping its version. Running [bump_version.py](dev/bump_version.py) interactively (command line) prompts the user for a new version number. The script requires Git and [GitHub CLI](https://cli.github.com/) to use.
+
+Entering a valid version number initiates a chain of GitHub Actions workflows to bump the version number, give master branch a new tag on GitHub and create
+a release to which the newly packaged Potku binaries will be uploaded. Potku follows semantic version numbering.
+There is more information in the [automatic packaging README](dev/Automatic_packaging_README.md).
 
 ## External file manager
 
-In the ``dev`` directory a Python script `external_file_manager.py` paired with a manifest of external files `external_manifest.txt` can be used to manage Potku's external files.
+A [Python script](dev/external_file_manager.py) paired with a [manifest of external files](dev/external_manifest.txt) can be used to manage Potku's external files.
 The script can be used to get external files by fetching any absent and out of sync files or force downloading all files. Additionally, the script can be used to update the manifest
-with local out of sync files or all local files. Finally, the script can be used to create an entirely new manifest based on the external files in ``external/share``. More in
-`dev/Automatic_packaging_README.md`.
+with local out of sync files or all local files. Finally, the script can be used to create an entirely new manifest based on the external files in [external/share](external/share).
 
 ## Code style
 
-Potku used to follow [PEP 8](https://www.python.org/dev/peps/pep-0008/). Current maximum line length is 80 in some files, but 120 in some (see issue #209 for more information).
+Potku used to follow [PEP 8](https://www.python.org/dev/peps/pep-0008/). Current maximum line length is 80 in some files, but 120 in some (see issue [#209](https://github.com/JYU-IBA/potku/issues/209) for more information).
 ### Code style/architecture guidelines
 
 - add typing annotations to new (and old) code. Potku didn't originally use typing annotations.
@@ -199,8 +201,4 @@ Some tests are timing-based. They may fail if executed too slowly or quickly.
 
 ### Tests using temporary files
 
-Some tests in `tests/unit/test_general_functions.py` or `tests/unit/test_get_espe.py` may fail because of permission issues with the directory returned by `tempfile.TemporaryDirectory()`. See issue #189 for more information.
-
-## Licence
-
-Potku is licensed under GNU General Public License. See [LICENSE](LICENSE) for details.
+Some tests in [test_general_functions.py](tests/unit/test_general_functions.py) or [test_get_espe.py](tests/unit/test_get_espe.py) may fail because of permission issues with the directory returned by `tempfile.TemporaryDirectory()`. See issue [#189](https://github.com/JYU-IBA/potku/issues/189) for more information.
