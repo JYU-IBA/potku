@@ -433,19 +433,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.elementSelectionDeleteButton.setToolTip("Delete all selections")
         self.mpl_toolbar.addWidget(self.elementSelectionDeleteButton)
 
-
-    def click_check(self, cursor_location):
-        import numpy as np
-        x_cut_coord = np.array(sel_points[0].get_xdata())
-        y_cut_coord = np.array(sel_points[0].get_ydata())
-
-        print(cursor_location)
-
-        idx_x = (np.abs(int(x_cut_coord[0]) - int(cursor_location[0]))).argmin()
-        idx_y = (np.abs(int(y_cut_coord[1]) - int(cursor_location[1]))).argmin()
-
-        chosen_point = [x_cut_coord[idx_x], y_cut_coord[idx_y]]
-
     def on_click(self, event):
         """On click event above graph.
 
@@ -527,7 +514,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                     self.end_point_elems.remove()
                     self.end_point_elems = None
             self.canvas.draw_idle()
-
 
         if event.button == 3:  # Right click
             # Return if matplotlib tools are in use.
@@ -751,11 +737,12 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 sc_x, sc_y = list(zip(*self.cur_mid_points))
                 self.mid_point_elems, = self.axes.plot(sc_x, sc_y, 's', color='blue', alpha=0.5)
                 x,y = list(zip(*self.cur_points))
-                self.end_point_elems, = self.axes.plot(x, y, marker = '$\\bigodot$', color='red', markersize = 10, alpha=0.5)
+                self.end_point_elems, = self.axes.plot(x, y, marker='$\\bigodot$', color='red', markersize=10,
+                                                       alpha=0.5)
         else:
 
             if self.cur_points != None:
-                self.cur_points=[[int(x), int(y)] for x,y in self.cur_points]
+                self.cur_points=[[int(x), int(y)] for x, y in self.cur_points]
 
             if (self.cur_points != self.start_points):
                 sbh = StatusBarHandler(self.statusbar)
@@ -956,12 +943,12 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         if event.xdata is None and event.ydata is None:
             return
 
-        if (self.__point_selected != None) and (event.button == 1):
+        if (self.__point_selected is not None) and (event.button == 1):
             x,y = zip(*self.cur_points)
             x, y = list(x), list(y)
 
             x[self.__point_selected], y[self.__point_selected] = int(event.xdata), int(event.ydata)
-            if (self.__point_selected == 0):
+            if self.__point_selected == 0:
                 x[-1] = x[0]
                 y[-1] = y[0]
             self.cur_selection.points.set_data(x,y)
@@ -1110,6 +1097,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
     def update_event_count(self):
         titleText = self.parent.titleText
-        if self.measurement.selector.get_selected() != None:
+        if self.measurement.selector.get_selected() is not None:
             titleText = titleText + f", Events in selection: {self.measurement.selector.get_selected().event_count}"
         self.parent.setWindowTitle(titleText)
