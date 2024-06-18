@@ -28,7 +28,7 @@ done
 os_name=$(uname -s)
 gsl_libdir="$(pkg-config --variable=libdir gsl)"
 potku_libdir="$EXT_DIR/lib"
-gsl_version="$(pkg-config --modversion gsl|sed 's/^\(.*\)\.\(.*\)\.\(.*\)/\1\2/')" #E.g. 27 for 2.7.1
+gsl_version="$(pkg-config --modversion gsl|sed 's/^\([0-9]*\)\.\([0-9]*\).*/\1\2/')" #E.g. 27 for 2.7.1 or 28 for 2.8
 
 mkdir -p "${potku_libdir}"
 
