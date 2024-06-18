@@ -104,8 +104,8 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
         if self._calibration_point is None:
             self._calibration_point = self.axes.axvline(
                 x=self.selected_tof, color="red")
-        else:           
-            self._calibration_point.set_xdata(self.selected_tof)
+        else:
+            self._calibration_point.set_xdata([self.selected_tof])
         self.canvas.draw()
         self.canvas.flush_events()        
 
