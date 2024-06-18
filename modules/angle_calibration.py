@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.4.2013
-Updated on 17.12.2018
+Updated on 18.6.2024
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -23,16 +23,20 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Timo Leppälä"
+__author__ = "Timo Leppälä \n Jaakko Julin"
 __version__ = "2.0"
 
 import collections
 from typing import Optional
 
 import numpy as np
+import scipy.stats
 from scipy.optimize import curve_fit
 from math import exp
 
+
+def gaussian_dist(x, a: float, x_0: float, sigma: float) -> float:
+    return a * np.exp(-(x - x_0) ** 2 / (2 * sigma ** 2))
 
 class AngleCalibrationHistogram:
     """Class for creating a histogram based on a asc-file data.
@@ -47,6 +51,9 @@ class AngleCalibrationHistogram:
             use_column: Which column of the CutFile's data is used to create a
                 histogram.
         """
+        self.gauss_y = None
+        self.gauss_x = None
+        self.fitted_params = None
         self.data = []
         with open(asc,"r") as f:
             for line in f:
@@ -57,11 +64,8 @@ class AngleCalibrationHistogram:
 
         histed_file = np.histogram(self.data, bins=self.bins)
 
-        self.histogram_x = [(histed_file[1][i] + histed_file[1][i + 1]) / 2 for i in range(len(histed_file[1]) - 1)]
+        self.histogram_x = np.array([(histed_file[1][i] + histed_file[1][i + 1]) / 2 for i in range(len(histed_file[1]) - 1)])
         self.histogram_y = histed_file[0]
-
-    def gaussian_dist(self, X, C, X_mean, sigma):
-        return C * exp(-(X - X_mean) ** 2 / (2 * sigma ** 2))
 
     def fit_normal_distribution(self):
         """ Fit Gaussian distribution to histogram
@@ -69,11 +73,8 @@ class AngleCalibrationHistogram:
 
         mean_0 = sum(self.histogram_x*self.histogram_y)/sum(self.histogram_y)
         sigma_0 = sum(self.histogram_y*(self.histogram_x-mean_0)**2)/sum(self.histogram_y)
-        self.fitted_params, _ = curve_fit(self.gaussian_dist, self.histogram_x, self.histogram_y, p0=(max(self.histogram_y), mean_0, sigma_0), maxfev=5000)
-
-        self.gauss_x = np.linspace(min(self.data),max(self.data),num=256)
-        self.gauss_y = [self.gaussian_dist(x, *self.fitted_params) for x in self.gauss_x]
-
-
-
-
+        fit_result = curve_fit(gaussian_dist, self.histogram_x, self.histogram_y,
+                               p0=(max(self.histogram_y), mean_0, sigma_0))
+        self.fitted_params = fit_result[0]
+        self.gauss_x = np.linspace(min(self.data), max(self.data), num=256)
+        self.gauss_y = [gaussian_dist(x, *self.fitted_params) for x in self.gauss_x]
