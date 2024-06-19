@@ -109,7 +109,9 @@ class DepthFileGenerator:
             tofe_list_stdout, tofe_list_stderr = tofe_list_process.communicate()
             tofe_log_filename = self._output_path.parents[0] / 'tofe_list_log.txt'
             eff_re = re.compile(r'^tofe_list info: Used efficiency files \(([0-9.]+)\): (.*)$')
+            clean_exit_re = re.compile(r'^tofe_list info: Clean exit from tofe_list.')
             self._used_eff_files = []
+            clean_exit = False
             with open(tofe_log_filename, "w") as f:
                 line_number = 0
                 f.write("tofe_list run on " + date + "\n")
@@ -118,12 +120,19 @@ class DepthFileGenerator:
                     f.write(str(line_number).zfill(3) + " " + line + "\n")
                     g = eff_re.match(line)
                     if g:
-                        self._used_eff_files = g.group(2).split()
+                        eff_files_str = g.group(2)
+                        # Parse a list of quoted filenames e.g. "1H.eff" "6Li.eff" "7Li.eff" into a list of strings: ['1H.eff', '6Li.eff', '7Li.eff']
+                        self._used_eff_files = [s[1:-1] for s in re.findall(r'[^"\s]\S*|".+?"', eff_files_str)]
                         #print("tofe_list reports using " + g.group(1) + " efficiency files: " + str(self._used_eff_files))
                         if len(self._used_eff_files) != int(g.group(1)):
-                            raise RuntimeError("mismatch between number of efficiency files and number of efficiency files reported to have been used by tofe_list.")
+                            raise RuntimeError(f"mismatch between number of efficiency files ({len(self._used_eff_files)}) and number of efficiency files reported to have been used by tofe_list ({g.group(1)}).")
+                    g = clean_exit_re.match(line)
+                    if g:
+                        clean_exit = True
             if tofe_list_process.returncode != 0:
                 raise Exception(f"tofe_list reports an error {tofe_list_process.returncode}, see {tofe_log_filename} for more information.")
+            if not clean_exit:
+                raise Exception(f"tofe_list did not report a clean exit. See {tofe_log_filename} for more information.")
             erd_depth_process = subprocess.run(erd, cwd=bin_dir, input=tofe_list_stdout, capture_output=True,
                                                check=True, text=True)
             erd_depth_log_filename = self._output_path.parents[0] / 'erd_depth_log.txt'
