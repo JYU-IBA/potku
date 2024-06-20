@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2024-06-20
+
 ### Added
 
 - Changelog (this file)
@@ -34,8 +36,11 @@ MSVC is now the preferred compiler on Windows.
 - Average mass calculation code fixed. Masses are now obtained from JIBAL supplied files.
 - Depth profiles were not shown if more than one scattered ("RBS") selection was used
 - Unnecessary warning was shown if more than one scattered ("RBS)" selection was used
-- Energy spectrum saving fixed, now we make one file per spectrum and donot attempt to save files with possibly different energy binning to one file
+- Energy spectrum saving fixed, now we make one file per spectrum and do not attempt to save files with possibly different energy binning to one file
 - Elemental losses forgot which reference cut was used
+- Number of bins in ToF-E histogram was calculated wrong in some cases, i.e. compress wasn't correct
+- Master measurement feature (at least partially)
+- Typos
 
 ### Removed
 
