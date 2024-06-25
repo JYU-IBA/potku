@@ -5,7 +5,7 @@ Detection Analysis (ToF-ERDA). The software can be run on Windows, Linux and
 macOS.
 
 This repository contains the Python source for the Qt 5 graphical user
-interface. Most of the number cruching is done by programs written in C.
+interface. Most of the number crunching is done by programs written in C.
 The source code of these is separate repositories on GitHub and are included as Git [Submodules](external/submodules),
 please see the instructions below on how to acquire the source code and compile the C codes e.g. if you wish to develop Potku. 
 
@@ -30,6 +30,7 @@ Please refer to the [full license](../LICENSE) for details.
 See the [changelog](CHANGELOG.md) for version history.
 
 # Getting started with development
+
 Install [Git](https://git-scm.com/downloads) and add it to the PATH (on Windows).
 
 Clone the repository and change your current working directory.
@@ -134,7 +135,7 @@ python -m unittest discover
 ## Packaging Potku into a standalone executable
 
 Potku can be packaged into a standalone executable using [PyInstaller](https://www.pyinstaller.org/). 
-Make sure you have compiled potku with `build` successfully and added the needed data files and awk before the packaging.
+Make sure you have compiled potku with `build` successfully and added the needed (JIBAL) data files before the packaging.
 For quick deployment, run these commands in the root directory:
 ```shell
 $ pipenv install #(if the virtual environment has not already been created)
@@ -179,6 +180,7 @@ with local out of sync files or all local files. Finally, the script can be used
 ## Code style
 
 Potku used to follow [PEP 8](https://www.python.org/dev/peps/pep-0008/). Current maximum line length is 80 in some files, but 120 in some (see issue [#209](https://github.com/JYU-IBA/potku/issues/209) for more information).
+
 ### Code style/architecture guidelines
 
 - add typing annotations to new (and old) code. Potku didn't originally use typing annotations.
