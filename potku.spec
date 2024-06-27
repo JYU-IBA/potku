@@ -64,6 +64,8 @@ a = Analysis(
      ],
      hiddenimports=[
         "scipy._lib.messagestream",
+        "scipy._lib.array_api_compat.numpy.fft",
+        "scipy.special._special_ufuncs",
         "pkg_resources.py2_warn"
      ],
      hookspath=[],
