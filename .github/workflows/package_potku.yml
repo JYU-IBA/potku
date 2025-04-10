@@ -242,8 +242,8 @@ jobs:
         uses: marvinpinto/action-automatic-releases@919008cf3f741b179569b7a6fb4d8860689ab7f0 # v1.2.1
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: ${{ needs.read_version.outputs.version }}.zip }}
-          title: Potku ${{ needs.read_version.outputs.version }}.zip }}
+          automatic_release_tag: ${{ needs.read_version.outputs.version }}
+          title: Potku ${{ needs.read_version.outputs.version }}
           draft: false
           prerelease: true
           files: |
@@ -255,7 +255,7 @@ jobs:
         uses: marvinpinto/action-automatic-releases@919008cf3f741b179569b7a6fb4d8860689ab7f0 # v1.2.1
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: ${{ needs.read_version.outputs.version }}.zip }}
+          automatic_release_tag: ${{ needs.read_version.outputs.version }}
           title: Potku ${{ needs.read_version.outputs.version  }}
           draft: true
           prerelease: false
