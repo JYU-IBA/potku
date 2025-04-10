@@ -15,7 +15,7 @@ jobs:
         run: |
           mkdir -p ${{runner.workspace}}/artifact
       - name: Download C artifact
-        uses: dawidd6/action-download-artifact@246dbf436b23d7c49e21a7ab8204ca9ecd1fe615 # v2.27.0
+        uses: dawidd6/action-download-artifact@v9
         with:
           name: c-apps-windows
           workflow: version_bump.yml
@@ -70,7 +70,7 @@ jobs:
         submodules: recursive
         path: repo
     - name: vcpkg build
-      uses: johnwason/vcpkg-action@3839b028ca2400865ef5e83a899f336b1b8fd711 # v5
+      uses: johnwason/vcpkg-action@v6
       id: vcpkg
       with:
         pkgs: gsl getopt
@@ -86,7 +86,7 @@ jobs:
         cd ${{runner.workspace}}\potku\repo\dev
         build.bat ${{ runner.workspace }}\potku\vcpkg\scripts\buildsystems\vcpkg.cmake
     - name: Archive windows executables
-      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
+      uses: actions/upload-artifact@v4
       with:
         name: c-apps-windows
         path: |
@@ -110,7 +110,7 @@ jobs:
         cd ${{runner.workspace}}/potku/dev
         ./build.sh
     - name: Archive linux executables
-      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
+      uses: actions/upload-artifact@v4
       with:
         name: c-apps-linux
         path: |
@@ -137,7 +137,7 @@ jobs:
         cd ${{runner.workspace}}/potku/dev
         ./build.sh
     - name: Archive macos executables
-      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
+      uses: actions/upload-artifact@v4
       with:
         name: c-apps-macos
         path: |
