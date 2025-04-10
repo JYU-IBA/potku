@@ -59,18 +59,11 @@ jobs:
           cd ${{runner.workspace}}/potku
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
-      - name: Create archive
-        uses: thedoctor0/zip-release@0.7.5
-        with:
-          type: 'zip'
-          filename: 'Potku-Windows.zip'
-          directory: ${{runner.workspace}}/potku/dist
-          path: potku
       - name: Archive Windows release
         uses: actions/upload-artifact@v4
         with:
-          name: Potku-Windows
-          path: ${{runner.workspace}}/potku/dist/Potku-Windows.zip
+          name: Potku-Windows-${{ steps.get_content.outputs.version }}
+          path: ${{runner.workspace}}/potku/dist/
 
 
   package_linux:
@@ -124,18 +117,11 @@ jobs:
           cd ${{runner.workspace}}/potku
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
-      - name: Create archive
-        uses: thedoctor0/zip-release@0.7.5 
-        with:
-          type: 'zip'
-          filename: 'Potku-Linux.zip'
-          directory: ${{runner.workspace}}/potku/dist
-          path: potku
       - name: Archive Linux release
         uses: actions/upload-artifact@v4
         with:
-          name: Potku-Linux
-          path: ${{runner.workspace}}/potku/dist/Potku-Linux.zip
+          name: Potku-Linux-${{ steps.get_content.outputs.version }}
+          path: ${{runner.workspace}}/potku/dist/
 
   package_macos:
     runs-on: macos-latest
@@ -188,18 +174,11 @@ jobs:
           cd ${{runner.workspace}}/potku
           pipenv run pip install pyinstaller
           pipenv run pyinstaller potku.spec
-      - name: Create archive
-        uses: thedoctor0/zip-release@0.7.5
-        with:
-          type: 'zip'
-          filename: 'Potku-macOS.zip'
-          directory: ${{runner.workspace}}/potku/dist
-          path: potku
       - name: Archive macOS release
         uses: actions/upload-artifact@v4
         with:
-          name: Potku-macOS
-          path: ${{runner.workspace}}/potku/dist/Potku-macOS.zip
+          name: Potku-macOS-${{ steps.get_content.outputs.version }}
+          path: ${{runner.workspace}}/potku/dist
 
   create_release:
     needs: [package_windows, package_linux, package_macos]
@@ -260,9 +239,9 @@ jobs:
           draft: false
           prerelease: true
           files: |
-            ${{runner.workspace}}/potku/artifact/Potku-Linux.zip
-            ${{runner.workspace}}/potku/artifact/Potku-Windows.zip
-            ${{runner.workspace}}/potku/artifact/Potku-macOS.zip
+            ${{runner.workspace}}/potku/artifact/Potku-Linux-${{ steps.get_content.outputs.version }}.zip
+            ${{runner.workspace}}/potku/artifact/Potku-Windows-${{ steps.get_content.outputs.version }}.zip
+            ${{runner.workspace}}/potku/artifact/Potku-macOS-${{ steps.get_content.outputs.version }}.zip
       - name: Create release
         if: steps.pre_release.outputs.pre_release == 'false'
         uses: marvinpinto/action-automatic-releases@919008cf3f741b179569b7a6fb4d8860689ab7f0 # v1.2.1
@@ -273,6 +252,6 @@ jobs:
           draft: true
           prerelease: false
           files: |
-            ${{runner.workspace}}/potku/artifact/Potku-Linux.zip
-            ${{runner.workspace}}/potku/artifact/Potku-Windows.zip
-            ${{runner.workspace}}/potku/artifact/Potku-macOS.zip
+            ${{runner.workspace}}/potku/artifact/Potku-Linux-${{ steps.get_content.outputs.version }}.zip
+            ${{runner.workspace}}/potku/artifact/Potku-Windows-${{ steps.get_content.outputs.version }}.zip
+            ${{runner.workspace}}/potku/artifact/Potku-macOS-${{ steps.get_content.outputs.version }}.zip
