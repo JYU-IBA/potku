@@ -18,7 +18,7 @@ jobs:
       files_ok: ${{ steps.changed_files.outputs.files_ok }}
     steps:
       - name: Git checkout
-        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 2
         # Check if creator of pull request has write permission
@@ -53,7 +53,7 @@ jobs:
       version_date: ${{ steps.get_content.outputs.date }}
     steps:
       - name: Git checkout head
-        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Read version file
@@ -128,7 +128,7 @@ jobs:
       needs.content_verification.outputs.content_ok == 'true'
     steps:
       - name: Git checkout
-        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+        uses: actions/checkout@v4
         with:
           ref: master
           submodules: recursive
