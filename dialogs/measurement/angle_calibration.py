@@ -87,13 +87,12 @@ class AngleCalibrationDialog(QtWidgets.QDialog):
         # Go through all the measurements and their cut files and list them.
         for measurement in self.measurements:
             item = QtWidgets.QTreeWidgetItem([measurement.name])
-            if measurement.measurement_file != None:
-                with open(measurement.measurement_file, 'r') as f:
-                    if len(f.readline().split()) > 2:
-                        item2 = QtWidgets.QTreeWidgetItem([str(measurement.measurement_file.stem)+".asc"])
-                        item2.setData(0, QtCore.Qt.UserRole, measurement.measurement_file)
-                        item.addChild(item2)
-                    self.cutFilesTreeWidget.addTopLevelItem(item)
+            if measurement.measurement_file is not None:
+                item2 = QtWidgets.QTreeWidgetItem([measurement.measurement_file.name])
+                item2.setData(0, QtCore.Qt.UserRole, measurement.measurement_file)
+                item.addChild(item2)
+                self.cutFilesTreeWidget.addTopLevelItem(item)
+
         # Resize columns to fit the content nicely
         for column in range(0, self.cutFilesTreeWidget.columnCount()):
             self.cutFilesTreeWidget.resizeColumnToContents(column)

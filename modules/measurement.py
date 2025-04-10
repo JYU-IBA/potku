@@ -215,7 +215,7 @@ class Measurements:
                     measurement.serial_number = serial_number
                     self.request.samples.measurements.measurements[tab_id] = \
                         measurement
-                    measurement.measurement_file = file_name
+                    measurement.measurement_file = new_data_file
                 except Exception as e:
                     log = f"Something went wrong while adding a new " \
                           f"measurement: {e}"
