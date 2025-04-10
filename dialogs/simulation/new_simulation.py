@@ -67,6 +67,7 @@ class SimulationNewDialog(QtWidgets.QDialog):
         self.pushCancel.clicked.connect(self.close)
         self.name = None
         self.sample = None
+        self.sample_str = None
 
         iv.set_input_field_red(self.simulationNameLineEdit)
         self.simulationNameLineEdit.textChanged.connect(
