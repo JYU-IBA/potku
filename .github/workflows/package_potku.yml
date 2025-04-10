@@ -76,7 +76,7 @@ jobs:
       - name: Archive Windows release
         uses: actions/upload-artifact@v4
         with:
-          name: Potku-Windows-${{ steps.get_content.outputs.version }}
+          name: Potku-Windows-${{ needs.read_version.outputs.version  }}
           path: ${{runner.workspace}}/potku/dist/
 
 
@@ -193,7 +193,7 @@ jobs:
       - name: Archive macOS release
         uses: actions/upload-artifact@v4
         with:
-          name: Potku-macOS-${{ steps.get_content.outputs.version }}
+          name: Potku-macOS-${{ needs.read_version.outputs.version }}
           path: ${{runner.workspace}}/potku/dist
 
   create_release:
@@ -216,7 +216,7 @@ jobs:
       - name: Download Windows release artifact
         uses: dawidd6/action-download-artifact@v9
         with:
-          name: Potku-Windows-${{ needs.read_version.outputs.version }}.zip }}
+          name: Potku-Windows-${{ needs.read_version.outputs.version }}
           workflow: version_bump.yml
           path: ${{runner.workspace}}/potku/artifact
           check_artifacts: true
@@ -259,10 +259,10 @@ jobs:
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: ${{ needs.read_version.outputs.version }}.zip }}
-          title: Potku ${{ steps.get_content.outputs.version }}
+          title: Potku ${{ needs.read_version.outputs.version  }}
           draft: true
           prerelease: false
           files: |
-            ${{runner.workspace}}/potku/artifact/Potku-Linux-${{ needs.read_version.outputs.version }}.zip }}.zip
-            ${{runner.workspace}}/potku/artifact/Potku-Windows-${{ needs.read_version.outputs.version }}.zip }}.zip
-            ${{runner.workspace}}/potku/artifact/Potku-macOS-${{ needs.read_version.outputs.version }}.zip }}.zip
+            ${{runner.workspace}}/potku/artifact/Potku-Linux-${{ needs.read_version.outputs.version }}.zip
+            ${{runner.workspace}}/potku/artifact/Potku-Windows-${{ needs.read_version.outputs.version }}.zip
+            ${{runner.workspace}}/potku/artifact/Potku-macOS-${{ needs.read_version.outputs.version }}.zip
