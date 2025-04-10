@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - MCERD updated, should handle spaces in filenames and directory paths better than before.
+- Angle calibration dialog crashing fixed
+- Spectrum ratio (MCERD) tool calculates ratio from counts properly
+- Context menu location should follow cursor location
+- GitHub actions use newer versions
 
 ## [2.3.0] - 2024-06-20
 
@@ -21,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Supports Python 3.12 and latest library versions and PyInstaller
-- Legacy C codes replaced with elatest versions, all using CMake as build system instead of Makefiles directly.
+- Legacy C codes replaced with latest versions, all using CMake as build system instead of Makefiles directly.
 MSVC is now the preferred compiler on Windows.
 - `erd_depth` and `coinc` executables are now obtained via submodules
 - `erd_depth` supports parallel processing, libomp dependency added on macOS
