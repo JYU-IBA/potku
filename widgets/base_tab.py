@@ -100,9 +100,9 @@ class BaseTab(QtWidgets.QWidget, abc.ABC, metaclass=QtABCMeta):
         widget.subwindow = subwindow
 
         if minimized:
-            widget.showMinimized()
+            subwindow.showMinimized()
         else:
-            widget.show()
+            subwindow.show()
 
     def add_log(self) -> None:
         """Add the log to tab widget.
