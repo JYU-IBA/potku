@@ -52,7 +52,7 @@ from matplotlib.colors import LogNorm
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
-from PyQt5.QtGui import QGuiApplication, QKeySequence
+from PyQt5.QtGui import QGuiApplication, QKeySequence, QCursor
 
 from widgets.matplotlib.base import MatplotlibWidget
 from widgets.gui_utils import StatusBarHandler
@@ -516,12 +516,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.canvas.draw_idle()
 
         if event.button == 3:  # Right click
-            # Return if matplotlib tools are in use.
-            if self.__button_drag.isChecked():
-                return
-            if self.__button_zoom.isChecked():
-                return
-
             # If selection is enabled
             if self.elementSelectionButton.isChecked():
                 if self.measurement.end_open_selection(self.canvas):
@@ -542,7 +536,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                              (event.y - ydisplay) ** 2) < self.__point_select_distance):
                         self.__point_selected = i
                         break
-                if (self.__point_selected != None):
+                if self.__point_selected is not None:
                     if len(self.cur_points) > self.__point_select_distance:
                         del self.cur_points[i]
                         self.cur_points[-1] = self.cur_points[0]
@@ -557,7 +551,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                     self.__on_draw_legend()
                     return
 
-            self.__context_menu(event, cursor_location)
+            self.__context_menu()
             self.canvas.draw_idle()
             self.__on_draw_legend()
 
@@ -569,7 +563,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             return
         if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
             return
-        if (event.button == 1) and (self.__point_selected != None):
+        if (event.button == 1) and (self.__point_selected is not None):
             self.__point_selected = None
 
 
@@ -588,7 +582,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         # self.emit(QtCore.SIGNAL("saveCuts(PyQt_PyObject)"), self.measurement)
         self.saveCuts.emit(self.measurement.selector.selections)
 
-    def __context_menu(self, event, cursor_location):
+    def __context_menu(self):
         menu = QtWidgets.QMenu(self)
 
         action = QtWidgets.QAction(self.tr("Graph Settings..."), self)
@@ -599,7 +593,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         action.triggered.connect(self.on_draw)
         menu.addAction(action)
 
-        if self.measurement.selector.selected_id != None:
+        if self.measurement.selector.selected_id is not None:
             action = QtWidgets.QAction(self.tr("Selection settings..."), self)
             action.triggered.connect(self.selection_settings_dialog)
             menu.addAction(action)
@@ -633,10 +627,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         if len(self.measurement.selector.selections) == 0:
             action.setEnabled(False)
 
-        coords = self.canvas.geometry().getCoords()
-        point = QtCore.QPoint(event.x, coords[3] - event.y - coords[1])
-        # coords[1] from spacing
-        menu.exec_(self.canvas.mapToGlobal(point))
+        cursor = QCursor()
+        menu.popup(cursor.pos())
 
     def graph_settings_dialog(self):
         """Show graph settings dialog.
