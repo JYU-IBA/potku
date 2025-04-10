@@ -232,20 +232,17 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             pass
         super().closeEvent(evnt)
 
-    def __calculate_selected_area(self, start, end):
+    def __calculate_selected_ratio(self, start, end):
         """
         Calculate the ratio between the two spectra areas.
         Return:
-            ratio, area(?) or None, None
+            ratio or None
         """
         # TODO move at least parts of this function to math_functions module
         all_areas = []
         for line_points in self.lines_of_area:
             points = list(line_points.values())[0]
-            all_areas.append(list(mf.get_continuous_range(
-                points, a=start, b=end)))
-
-        area = mf.calculate_area(all_areas[0], all_areas[1])
+            all_areas.append(list(mf.get_continuous_range(points, a=start, b=end)))
 
         # Calculate also the ratio of the two curve's areas
         try:
@@ -253,24 +250,20 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             x_2, y_2 = zip(*all_areas[1])
         except ValueError:
             # one of the areas contains no points
-            return None, None
+            return None
 
-        area_1 = integrate.simps(y_1, x_1)
-        area_2 = integrate.simps(y_2, x_2)
-
-        ratio = area_2 / area_1
-
-        return ratio, area
+        ratio = sum(y_2) / sum(y_1)
+        return ratio
 
     def show_ratio(self):
         """Calculates the ratio of spectra areas between the current limit
         range and displays it on screen.
         """
         start, end = self.get_limit_range()
-        ratio, area = self.__calculate_selected_area(start, end)
-        self.show_ratio_box(ratio, area, start, end)
+        ratio = self.__calculate_selected_ratio(start, end)
+        self.show_ratio_box(ratio, start, end)
 
-    def show_ratio_box(self, ratio, area, start, end, copy_to_clipboard=True):
+    def show_ratio_box(self, ratio, start, end, copy_to_clipboard=True):
         """Displays a text box that shows the ratio and of areas between two
         spectra within start and end.
         """
@@ -286,10 +279,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 text, textprops=dict(color="k", size=12)))
 
         else:
-            ratio_round = 9  # Round decimal number
+            ratio_round = 6  # Round decimal number
 
-            text = f"Difference: {round(area, 2)}\n" \
-                   f"Ratio: {round(ratio, ratio_round)}\n" \
+            text = f"Ratio: {round(ratio, ratio_round)}\n" \
                    f"Interval: [{round(start, 2)}, {round(end, 2)}]"
             child_boxes.append(offsetbox.TextArea(
                 text, textprops=dict(color="k", size=12)))
