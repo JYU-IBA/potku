@@ -139,7 +139,10 @@ jobs:
           path: ${{runner.workspace}}/potku/dist/
 
   package_macos:
-    runs-on: [macos-latest, macos-13]
+    strategy:
+      matrix:
+        os: macos-latest, macos-13
+    runs-on: ${{ matrix.os }}
     needs: read_version
     steps:
       - name: Checkout repository
