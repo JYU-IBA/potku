@@ -134,17 +134,15 @@ class MatplotlibAngleSelectorWidget(MatplotlibWidget):
 
         self.axes.clear()
 
-        if self.asc != None:
-            self.angle_histogram = AngleCalibrationHistogram(
-                self.asc, self.bin_width, self.use_column)
-
-            self.axes.plot(self.angle_histogram.histogram_x,
-                           self.angle_histogram.histogram_y)
+        if self.asc is not None:
+            self.angle_histogram = AngleCalibrationHistogram(self.asc, self.bin_width, self.use_column)
+            if self.angle_histogram.histogram_x is None or self.angle_histogram.histogram_y is None:
+                raise Exception("No angle data available")
+            self.axes.plot(self.angle_histogram.histogram_x, self.angle_histogram.histogram_y)
             if self.auto_calibration:
                 self.update_auto()
                 self.axes.plot(self.angle_histogram.gauss_x,
                             self.angle_histogram.gauss_y)
-
 
         self.axes.set_ylabel("Counts")
         self.axes.set_xlabel("Time diff [channel]")

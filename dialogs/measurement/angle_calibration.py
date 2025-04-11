@@ -164,7 +164,7 @@ class AngleCalibrationDialog(QtWidgets.QDialog):
             try:
                 self.AngleSelectorWidget.matplotlib.change_asc(
                     self.selected_asc_file)
-            except ValueError as e:
+            except (ValueError, Exception) as e:
                 QtWidgets.QMessageBox.critical(self, "Warning", str(e))
                 # TODO: Clear plot
 

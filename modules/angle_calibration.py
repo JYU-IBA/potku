@@ -55,9 +55,16 @@ class AngleCalibrationHistogram:
         self.gauss_x = None
         self.fitted_params = None
         self.data = []
-        with open(asc,"r") as f:
-            for line in f:
-                self.data.append(1*float(line.split()[2]))
+        self.histogram_x = None
+        self.histogram_y = None
+        with open(asc, "r") as f:
+                for line in f:
+                    cols = line.split()
+                    if len(cols) < 3:
+                        continue
+                    self.data.append(float(cols[2]))
+        if len(self.data) == 0:
+            return
         self.bin_width = bin_width
         self.use_column = use_column
         self.bins = int((max(self.data)-min(self.data))/self.bin_width)
