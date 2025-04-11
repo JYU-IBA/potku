@@ -17,7 +17,7 @@ jobs:
       - name: Download C artifact
         uses: dawidd6/action-download-artifact@v9
         with:
-          name: c-apps-windows
+          name: c-apps-linux-${{runner.arch}}
           workflow: version_bump.yml
           path: ${{runner.workspace}}/artifact
           skip_unpack: true
@@ -26,7 +26,7 @@ jobs:
       - name: Check C artifact
         id: check_artifacts
         run: |
-          if [ -e ${{runner.workspace}}/artifact/c-apps-windows.zip ]; then
+          if [ -e ${{runner.workspace}}/artifact/c-apps-linux.${{runner.arch}}.zip ]; then
             echo "artifact_exists=true" >> $GITHUB_OUTPUT
           else
             echo "artifact_exists=false" >> $GITHUB_OUTPUT
