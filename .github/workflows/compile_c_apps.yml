@@ -88,7 +88,7 @@ jobs:
     - name: Archive windows executables
       uses: actions/upload-artifact@v4
       with:
-        name: c-apps-windows
+        name: c-apps-windows-${{runner.arch}}
         path: |
           ${{runner.workspace}}\potku\repo\external\bin
           ${{runner.workspace}}\potku\repo\external\share
@@ -112,14 +112,14 @@ jobs:
     - name: Archive linux executables
       uses: actions/upload-artifact@v4
       with:
-        name: c-apps-linux
+        name: c-apps-linux-${{runner.arch}}
         path: |
           ${{runner.workspace}}/potku/external/bin
           ${{runner.workspace}}/potku/external/lib
           ${{runner.workspace}}/potku/external/share
 
   build_macos:
-    runs-on: macos-latest
+    runs-on: [macos-latest, macos-13]
     needs: check_artifacts
     if: |
       needs.check_artifacts.outputs.artifact_exists == 'false' ||
@@ -139,7 +139,7 @@ jobs:
     - name: Archive macos executables
       uses: actions/upload-artifact@v4
       with:
-        name: c-apps-macos
+        name: c-apps-macos-${{runner.arch}}
         path: |
           ${{runner.workspace}}/potku/external/bin
           ${{runner.workspace}}/potku/external/lib
