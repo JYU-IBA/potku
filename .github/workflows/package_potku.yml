@@ -139,7 +139,7 @@ jobs:
           path: ${{runner.workspace}}/potku/dist/
 
   package_macos:
-    runs-on: macos-latest
+    runs-on: [macos-latest, macos-13]
     needs: read_version
     steps:
       - name: Checkout repository
@@ -193,7 +193,7 @@ jobs:
       - name: Archive macOS release
         uses: actions/upload-artifact@v4
         with:
-          name: Potku-macOS-${{ needs.read_version.outputs.version }}
+          name: Potku-macOS-${{ needs.read_version.outputs.version }}-${{ runner.arch }}
           path: ${{runner.workspace}}/potku/dist
 
   create_release:
@@ -229,10 +229,18 @@ jobs:
           path: ${{runner.workspace}}/potku/artifact
           skip_unpack: true
           workflow_conclusion: 'in_progress'
-      - name: Download macOS release artifact
+      - name: Download macOS release artifact (X64)
         uses: dawidd6/action-download-artifact@v9
         with:
-          name: Potku-macOS-${{ needs.read_version.outputs.version }}
+          name: Potku-macOS-${{ needs.read_version.outputs.version }}-X64
+          workflow: version_bump.yml
+          path: ${{runner.workspace}}/potku/artifact
+          skip_unpack: true
+          workflow_conclusion: 'in_progress'
+      - name: Download macOS release artifact (ARM64)
+        uses: dawidd6/action-download-artifact@v9
+        with:
+          name: Potku-macOS-${{ needs.read_version.outputs.version }}-ARM64
           workflow: version_bump.yml
           path: ${{runner.workspace}}/potku/artifact
           skip_unpack: true
@@ -249,7 +257,8 @@ jobs:
           files: |
             ${{runner.workspace}}/potku/artifact/Potku-Linux-${{ needs.read_version.outputs.version }}.zip
             ${{runner.workspace}}/potku/artifact/Potku-Windows-${{ needs.read_version.outputs.version }}.zip
-            ${{runner.workspace}}/potku/artifact/Potku-macOS-${{ needs.read_version.outputs.version }}.zip
+            ${{runner.workspace}}/potku/artifact/Potku-macOS-${{ needs.read_version.outputs.version }}-X64.zip
+            ${{runner.workspace}}/potku/artifact/Potku-macOS-${{ needs.read_version.outputs.version }}-ARM64.zip
       - name: Create release
         if: steps.pre_release.outputs.pre_release == 'false'
         uses: marvinpinto/action-automatic-releases@919008cf3f741b179569b7a6fb4d8860689ab7f0 # v1.2.1
