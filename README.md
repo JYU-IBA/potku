@@ -13,7 +13,7 @@ For most users it is recommended to download one of the ready to run (all depend
 Additionally older binary packages are available on the
 [official website](https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/).
 
-    Copyright (C) 2013-2024 Potku developers
+    Copyright (C) 2013-2025 Potku developers
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
