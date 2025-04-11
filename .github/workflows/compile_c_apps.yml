@@ -48,7 +48,7 @@ jobs:
         run: |
           cd ${{runner.workspace}}/potku
           diff=$(git diff ${{steps.latest_tag.outputs.tag_id}} master -- external .github)
-          if [ -z "$diff"]; then
+          if [ -z "$diff" ]; then
             echo "ext_changed=false" >> $GITHUB_OUTPUT
           else
             echo "ext_changed=true" >> $GITHUB_OUTPUT
