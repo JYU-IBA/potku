@@ -9,9 +9,7 @@ interface. Most of the number crunching is done by programs written in C.
 The source code of these is separate repositories on GitHub and are included as Git [Submodules](external/submodules),
 please see the instructions below on how to acquire the source code and compile the C codes e.g. if you wish to develop Potku. 
 
-For most users it is recommended to download one of the ready to run (all dependencies included) binary packages, which are available on the [releases page](https://github.com/JYU-IBA/potku/releases).
-Additionally older binary packages are available on the
-[official website](https://www.jyu.fi/science/en/physics/research/infrastructures/accelerator-laboratory/pelletron/potku/).
+For most users it is recommended to download one of the ready to run (all dependencies included) binary packages, which are available on the [releases page](https://github.com/JYU-IBA/potku/releases). On macOS users should [remove quarantine attribute](README_macOS.txt) from the executable (and libraries) before attempting to run Potku.
 
     Copyright (C) 2013-2025 Potku developers
 
@@ -25,7 +23,7 @@ Additionally older binary packages are available on the
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
     
-Please refer to the [full license](../LICENSE) for details. 
+Please refer to the [full license](LICENSE) for details. 
 
 See the [changelog](CHANGELOG.md) for version history.
 
