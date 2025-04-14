@@ -210,10 +210,10 @@ jobs:
           draft: false
           prerelease: true
           files: |
-            ${{runner.workspace}}/potku/artifact/Potku-Linux-${{ needs.read_version.outputs.version }}.zip
             ${{runner.workspace}}/potku/artifact/Potku-Windows-${{ needs.read_version.outputs.version }}.zip
             ${{runner.workspace}}/potku/artifact/Potku-macOS-${{ needs.read_version.outputs.version }}-X64.zip
             ${{runner.workspace}}/potku/artifact/Potku-macOS-${{ needs.read_version.outputs.version }}-ARM64.zip
+            ${{runner.workspace}}/potku/artifact/Potku-Linux-${{ needs.read_version.outputs.version }}.zip
       - name: Create release
         if: steps.pre_release.outputs.pre_release == 'false'
         uses: marvinpinto/action-automatic-releases@919008cf3f741b179569b7a6fb4d8860689ab7f0 # v1.2.1
@@ -224,6 +224,7 @@ jobs:
           draft: true
           prerelease: false
           files: |
-            ${{runner.workspace}}/potku/artifact/Potku-Linux-${{ needs.read_version.outputs.version }}.zip
             ${{runner.workspace}}/potku/artifact/Potku-Windows-${{ needs.read_version.outputs.version }}.zip
-            ${{runner.workspace}}/potku/artifact/Potku-macOS-${{ needs.read_version.outputs.version }}.zip
+            ${{runner.workspace}}/potku/artifact/Potku-macOS-${{ needs.read_version.outputs.version }}-X64.zip
+            ${{runner.workspace}}/potku/artifact/Potku-macOS-${{ needs.read_version.outputs.version }}-ARM64.zip
+            ${{runner.workspace}}/potku/artifact/Potku-Linux-${{ needs.read_version.outputs.version }}.zip
