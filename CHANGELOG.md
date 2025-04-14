@@ -8,11 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+
+## [2.3.1] - 2025-04-14
+
+### Added
+- GitHub actions package Potku also for Intel macs
+
+### Changed
 - MCERD updated, should handle spaces in filenames and directory paths better than before.
-- Angle calibration dialog crashing fixed
+- GitHub actions use newer versions
+
+## Fixed
 - Spectrum ratio (MCERD) tool calculates ratio from counts properly
 - Context menu location should follow cursor location
-- GitHub actions use newer versions
+- Angle calibration dialog crashing fixed
 
 ## [2.3.0] - 2024-06-20
 
@@ -20,7 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Changelog (this file)
 - Zooming in and out (with mouse wheel) of ToF-E histograms, moving with arrow keys
-
 
 ### Changed
 
