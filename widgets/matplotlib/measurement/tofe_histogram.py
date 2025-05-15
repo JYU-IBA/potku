@@ -585,14 +585,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     def __context_menu(self):
         menu = QtWidgets.QMenu(self)
 
-        action = QtWidgets.QAction(self.tr("Graph Settings..."), self)
-        action.triggered.connect(self.graph_settings_dialog)
-        menu.addAction(action)
-
-        action = QtWidgets.QAction(self.tr("Redraw"), self)
-        action.triggered.connect(self.on_draw)
-        menu.addAction(action)
-
         if self.measurement.selector.selected_id is not None:
             action = QtWidgets.QAction(self.tr("Selection settings..."), self)
             action.triggered.connect(self.selection_settings_dialog)
@@ -603,7 +595,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             action.triggered.connect(self.copy_selection)
             menu.addAction(action)
         else:
-            menu.addSeparator()
             action = QtWidgets.QAction(self.tr("Copy all selections"), self)
             action.setShortcut(QKeySequence("Ctrl+C"))
             action.triggered.connect(self.copy_selection)
@@ -616,16 +607,27 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             menu.addAction(action)
 
 
-        menu.addSeparator()
         action = QtWidgets.QAction(self.tr("Load selections..."), self)
         action.triggered.connect(self.load_selections)
         menu.addAction(action)
+
+        menu.addSeparator()
 
         action = QtWidgets.QAction(self.tr("Save cuts"), self)
         action.triggered.connect(self.save_cuts)
         menu.addAction(action)
         if len(self.measurement.selector.selections) == 0:
             action.setEnabled(False)
+
+        menu.addSeparator()
+
+        action = QtWidgets.QAction(self.tr("Graph Settings..."), self)
+        action.triggered.connect(self.graph_settings_dialog)
+        menu.addAction(action)
+
+        action = QtWidgets.QAction(self.tr("Redraw"), self)
+        action.triggered.connect(self.on_draw)
+        menu.addAction(action)
 
         cursor = QCursor()
         menu.popup(cursor.pos())
