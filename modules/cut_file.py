@@ -135,7 +135,7 @@ class CutFile:
                         elif key == "Detector Angle":
                             self.detector_angle = int(value)
                         elif key == "Scatter Element":
-                            self.element_scatter = Element(value)
+                            self.element_scatter = Element.from_string(value)
                         elif key == "Element losses":
                             self.is_elem_loss = value == "True"
                         elif key == "Split count":
