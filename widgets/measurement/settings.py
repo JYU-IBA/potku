@@ -114,9 +114,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
     beam_profile = bnd.bind("profileComboBox", track_change=True)
 
     run_fluence = bnd.bind("fluenceDoubleSpinBox")
-    run_current = bnd.bind("currentDoubleSpinBox")
-    run_time = bnd.bind("timeDoubleSpinBox")
-    run_charge = bnd.bind("runChargeDoubleSpinBox")
 
     target_theta = bnd.bind("targetThetaDoubleSpinBox", track_change=True)
     detector_theta = bnd.bind("detectorThetaDoubleSpinBox", track_change=True)
@@ -146,9 +143,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         self.spotSizeXdoubleSpinBox.setLocale(locale)
         self.spotSizeYdoubleSpinBox.setLocale(locale)
         self.divergenceDoubleSpinBox.setLocale(locale)
-        self.currentDoubleSpinBox.setLocale(locale)
-        self.timeDoubleSpinBox.setLocale(locale)
-        self.runChargeDoubleSpinBox.setLocale(locale)
 
         self.targetThetaDoubleSpinBox.setLocale(locale)
         self.detectorThetaDoubleSpinBox.setLocale(locale)
@@ -180,6 +174,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
 
         self.run_form_layout: QtWidgets.QFormLayout
         self.run_form_layout.insertRow(3, "Fluence", self.fluenceDoubleSpinBox)
+        self.fluenceDoubleSpinBox.setMinimumSize(100, 0)
         self.fluenceDoubleSpinBox.setContextMenuPolicy(
             Qt.ActionsContextMenu)
         self.actionMultiply = QtWidgets.QAction(self.fluenceDoubleSpinBox)
@@ -352,12 +347,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
                 self.measurement_setting_file_description:
             return True
         if self.obj.run.beam.charge != self.beam_charge:
-            return True
-        if self.obj.run.current != self.run_current:
-            return True
-        if self.obj.run.time != self.run_time:
-            return True
-        if self.obj.run.charge != self.run_charge:
             return True
         if self.obj.run.fluence != self.run_fluence:
             return True

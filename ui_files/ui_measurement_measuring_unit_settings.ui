@@ -246,7 +246,7 @@
                <item>
                 <widget class="QLabel" name="label_17">
                  <property name="text">
-                  <string>Detector angle (Φ) [°]:</string>
+                  <string>Detector angle (𝜃) [°]:</string>
                  </property>
                 </widget>
                </item>
@@ -366,7 +366,7 @@
                <item>
                 <widget class="QLabel" name="label_16">
                  <property name="text">
-                  <string>Target angle (β) [°]:</string>
+                  <string>Target angle (𝛼) [°]:</string>
                  </property>
                 </widget>
                </item>
