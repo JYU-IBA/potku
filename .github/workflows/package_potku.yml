@@ -48,6 +48,8 @@ jobs:
           cd ${{runner.workspace}}/potku
           pip install pipenv
           pipenv install
+          pipenv requirements > pipenv_requirements.txt
+          pipenv run pip list > pip_list.txt
           cd ${{runner.workspace}}/potku/dev
           for /f %%A in ('pipenv run python external_file_manager.py fetch') do set "fails=%%A"
           if "%fails%" neq "0" (
@@ -91,6 +93,8 @@ jobs:
           cd ${{runner.workspace}}/potku
           pip install pipenv
           pipenv install
+          pipenv run pip list > pip_list.txt
+          pipenv requirements > pipenv_requirements.txt
           cd ${{runner.workspace}}/potku/dev
           fails=$(pipenv run python external_file_manager.py fetch)
           if [ "$fails" -ne 0 ]; then
@@ -136,6 +140,8 @@ jobs:
           cd ${{runner.workspace}}/potku
           pip install pipenv
           pipenv install
+          pipenv run pip list > pip_list.txt
+          pipenv requirements > pipenv_requirements.txt
           cd ${{runner.workspace}}/potku/dev
           fails=$(pipenv run python external_file_manager.py fetch)
           if [ "$fails" -ne 0 ]; then
