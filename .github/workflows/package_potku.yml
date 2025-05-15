@@ -46,7 +46,7 @@ jobs:
       - name: Collect external files and package Potku
         run: |
           cd ${{runner.workspace}}/potku
-          pip install pipenv
+          pip install "pipenv<2025.0.0"
           pipenv install
           pipenv requirements > pipenv_requirements.txt
           pipenv run pip list > pip_list.txt
