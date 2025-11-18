@@ -66,6 +66,7 @@ a = Analysis(
         "scipy._lib.messagestream",
         "scipy._lib.array_api_compat.numpy.fft",
         "scipy.special._special_ufuncs",
+        "scipy._cyutility",
         "pkg_resources.py2_warn"
      ],
      hookspath=[],
