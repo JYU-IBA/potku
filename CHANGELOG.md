@@ -5,9 +5,21 @@ All notable changes to Potku will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
 
 ### Changed
+
+## [Unreleased]
+
+### Added
+- READMEs to Potku GitHub packages and information on Python packages (pip list)
+
+### Changed
+- MCERD updated, supports more elements in targets
+- Reorganized 2D (ToF-E) histogram context menu
+- Unused spinboxes from measurement settings were removed and symbols of angles in UI were changed
+
+### Fixed
+- Loading cutfiles determined RBS cut element incorrectly, isotope information was lost. ToF calibration was affected.
 
 ## [2.3.1] - 2025-04-14
 
@@ -18,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MCERD updated, should handle spaces in filenames and directory paths better than before.
 - GitHub actions use newer versions
 
-## Fixed
+### Fixed
 - Spectrum ratio (MCERD) tool calculates ratio from counts properly
 - Context menu location should follow cursor location
 - Angle calibration dialog crashing fixed
